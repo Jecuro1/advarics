@@ -3,19 +3,21 @@
 On-Premise-Warenwirtschaft und Kassensystem für Mode, Sport, Outdoor und Lifestyle („Kontor“ ist ein Arbeitstitel).
 Desktop-Programm für Windows (Tauri). Aktuell: Programm-Hülle mit UI-Vorschau und Testdaten.
 
-## Kontor als Windows-Programm installieren
+## Kontor installieren und aktualisieren
 
-Kontor ist ein installiertes Programm (kein Browser, kein Web-Server, läuft ohne Internet).
+**Erstinstallation:** neuesten Release unter https://github.com/Jecuro1/advarics/releases öffnen und
+`Kontor_x.y.z_x64-setup.exe` ausführen (SmartScreen: „Weitere Informationen“ → „Trotzdem ausführen“).
 
-1. Auf GitHub **Actions** → Workflow **„Desktop · Windows-Installer“** → letzten erfolgreichen Lauf öffnen.
-2. Unten unter **Artifacts** `Kontor-Windows-Installer` herunterladen und entpacken.
-3. `Kontor_0.4.0_x64-setup.exe` doppelklicken → Kontor erscheint im Startmenü und öffnet sich maximiert.
-   (Alternativ für Firmen-Verteilung: die `.msi`-Datei.)
+**Updates:** direkt im Programm. Kontor sucht beim Start und alle 6 Stunden nach neuen Versionen
+(Einstellungen → Updates). Installiert wird nur nach Freigabe mit PIN – sofort, um 20:00 oder beim
+nächsten Start. Vorher wird automatisch gesichert. Updates sind signiert; manipulierte Pakete werden abgelehnt.
 
-Hinweise:
-- Der Installer ist noch nicht code-signiert → Windows SmartScreen zeigt „Computer wurde geschützt“:
-  „Weitere Informationen“ → „Trotzdem ausführen“.
-- `F11` schaltet Vollbild/Kassen-Kiosk um. Es kann nur eine Kontor-Instanz gleichzeitig laufen.
+**Neue Version veröffentlichen (Entwicklung):** Version in `desktop/src-tauri/tauri.conf.json`,
+`desktop/src-tauri/Cargo.toml` und `desktop/package.json` erhöhen, `desktop/RELEASE_NOTES.md` anpassen,
+pushen. GitHub Actions baut, signiert und veröffentlicht. Benötigte Repository-Secrets:
+`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+
+`F11` schaltet Vollbild/Kassen-Kiosk um. Es kann nur eine Kontor-Instanz gleichzeitig laufen.
 
 ### Entwickeln
 
@@ -29,14 +31,15 @@ npm run build    # baut den Installer lokal (unter Windows)
 Voraussetzungen zum Selberbauen: Node.js 22, Rust (stable), unter Windows zusätzlich die
 „Microsoft C++ Build Tools“. Nur zum Benutzen ist nichts davon nötig – nur der Installer.
 
-Stand 0.4.0:
+Stand 0.5.0:
 - **Echt:** lokale Datenbank, Einstellungen, Anzeigegröße, Datensicherung mit Wiederherstellung, Protokoll;
   **Artikel** (anlegen/bearbeiten, Varianten aus Farben × Größen, automatische EAN, eigene Felder,
   Kassen-Pflichtfelder), **Bestand** (Matrix je Artikel, Zugang/Abgang/Inventur mit Grund, Bewegungsjournal),
   **Kasse** verkauft aus der Datenbank (Belegnummer, Beleg gespeichert, Bestand wird abgebucht), **Belegliste**
   mit Bonansicht (Kasse → Mehr → Belege).
-- **Noch Testdaten / Vorschau:** Kunden, Dashboard-Zahlen, KI, andere Filialen. Echte Updates, RKSV-Signatur
-  und Hardware (Drucker, Terminal) folgen.
+- **Update-Dienst:** signierte Updates im Programm mit Freigabe, Zeitfenster und Sicherung vorher.
+- **Noch Testdaten / Vorschau:** Kunden, Dashboard-Zahlen, KI, andere Filialen. RKSV-Signatur und Hardware
+  (Drucker, Terminal) folgen.
 
 Datenbank: `%APPDATA%\at.kontor.desktop\kontor.db` · Sicherungen standardmäßig: `Dokumente\Kontor-Sicherungen`.
 Updates per neuem Installer behalten Datenbank und Einstellungen.

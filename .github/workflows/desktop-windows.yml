@@ -1,4 +1,8 @@
-name: Desktop · Windows-Installer
+name: Desktop · Windows-Installer & Update
+
+# Jede neue Version (desktop/src-tauri/tauri.conf.json → "version") wird gebaut, signiert und als
+# GitHub-Release veröffentlicht. Kontor findet sie über latest.json und installiert nach Freigabe.
+# Voraussetzung: Repository-Secrets TAURI_SIGNING_PRIVATE_KEY und TAURI_SIGNING_PRIVATE_KEY_PASSWORD.
 
 on:
   push:
@@ -7,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: desktop-windows-${{ github.ref }}
@@ -17,9 +21,9 @@ jobs:
   build:
     name: Kontor für Windows bauen
     runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: desktop
+    env:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -36,12 +40,42 @@ jobs:
           workspaces: desktop/src-tauri
 
       - name: Abhängigkeiten
+        working-directory: desktop
         run: npm ci
 
-      - name: Installer bauen (NSIS + MSI)
-        run: npx tauri build
+      - name: Version, Hinweise, Signatur prüfen
+        id: meta
+        shell: bash
+        working-directory: desktop
+        run: |
+          echo "version=$(node -p "require('./src-tauri/tauri.conf.json').version")" >> "$GITHUB_OUTPUT"
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then echo "signed=true" >> "$GITHUB_OUTPUT"; else echo "signed=false" >> "$GITHUB_OUTPUT"; fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v$(node -p "require('./src-tauri/tauri.conf.json').version")" >/dev/null; then echo "released=true" >> "$GITHUB_OUTPUT"; else echo "released=false" >> "$GITHUB_OUTPUT"; fi
 
-      - name: Installer bereitstellen
+      - name: Bauen, signieren und als Update veröffentlichen
+        if: steps.meta.outputs.signed == 'true' && steps.meta.outputs.released == 'false'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: desktop
+          tauriScript: npx tauri
+          tagName: v__VERSION__
+          releaseName: Kontor __VERSION__
+          releaseBodyPath: desktop/RELEASE_NOTES.md
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true
+          updaterJsonPreferNsis: true
+
+      - name: Bauen ohne Veröffentlichung (Version existiert schon oder Signatur-Secret fehlt)
+        if: steps.meta.outputs.signed != 'true' || steps.meta.outputs.released == 'true'
+        working-directory: desktop
+        shell: bash
+        run: |
+          if [ "${{ steps.meta.outputs.signed }}" = "true" ]; then npx tauri build; else npx tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'; fi
+
+      - name: Installer als Artefakt
         uses: actions/upload-artifact@v4
         with:
           name: Kontor-Windows-Installer

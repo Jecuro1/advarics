@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Kontor",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "identifier": "at.kontor.desktop",
   "build": {
     "frontendDist": "../../ui-preview"
@@ -24,12 +24,17 @@
     ],
     "security": {
       "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src ipc: http://ipc.localhost",
-      "dangerousDisableAssetCspModification": ["style-src"]
+      "dangerousDisableAssetCspModification": [
+        "style-src"
+      ]
     }
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi"],
+    "targets": [
+      "nsis",
+      "msi"
+    ],
     "publisher": "Kontor",
     "category": "Business",
     "shortDescription": "Warenwirtschaft & Kasse",
@@ -42,13 +47,29 @@
       "icons/icon.ico"
     ],
     "windows": {
-      "webviewInstallMode": { "type": "embedBootstrapper" },
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
       "nsis": {
-        "languages": ["German"],
+        "languages": [
+          "German"
+        ],
         "installMode": "currentUser"
       },
       "wix": {
         "language": "de-DE"
+      }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEFDQTBFQjk4QjA3RUUxMkIKUldRcjRYNndtT3VnckcweTVzK1Rrbmp5TkRqZEkwV1dCM3g4MWpZOVRRSkhUVXhYQ1U3dUZaaWEK",
+      "endpoints": [
+        "https://github.com/Jecuro1/advarics/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
       }
     }
   }

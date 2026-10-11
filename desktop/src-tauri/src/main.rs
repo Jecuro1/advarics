@@ -5,6 +5,7 @@
 mod backup;
 mod catalog;
 mod db;
+mod updates;
 
 use serde::Serialize;
 use serde_json::{json, Map, Value};
@@ -36,7 +37,7 @@ fn version(app: &AppHandle) -> String {
     app.package_info().version.to_string()
 }
 
-fn backup_dir(app: &AppHandle, db: &db::Db) -> PathBuf {
+pub(crate) fn backup_dir(app: &AppHandle, db: &db::Db) -> PathBuf {
     let c = db.conn.lock().unwrap();
     if let Some(Value::String(s)) = db::setting_get(&c, "backup.dir") {
         if !s.trim().is_empty() {
@@ -110,7 +111,7 @@ fn audit_recent(db: State<db::Db>, limit: Option<i64>) -> Res<Vec<Value>> {
     rows.collect::<Result<Vec<_>, _>>().map_err(err)
 }
 
-fn log_backup(db: &db::Db, kind: &str, e: &Result<backup::Entry, String>) {
+pub(crate) fn log_backup(db: &db::Db, kind: &str, e: &Result<backup::Entry, String>) {
     let c = db.conn.lock().unwrap();
     let (path, bytes, sha, ok, note) = match e {
         Ok(x) => {
@@ -318,6 +319,8 @@ fn main() {
             }
         }))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(updates::Pending::default())
         .setup(|app| {
             let dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&dir)?;
@@ -349,7 +352,9 @@ fn main() {
             stock_moves,
             beleg_peek,
             sale_commit,
-            sales_list
+            sales_list,
+            updates::update_check,
+            updates::update_install
         ])
         .run(tauri::generate_context!())
         .expect("Kontor konnte nicht gestartet werden");
