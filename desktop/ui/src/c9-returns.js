@@ -6,7 +6,7 @@
    eigener Beleg mit negativem Betrag und Verweis auf das Original.
    ════════════════════════════════════════════════════════════════════ */
 const RETURN_REASONS = ['Größe passt nicht', 'Gefällt nicht', 'Defekt / Reklamation', 'Falscher Artikel', 'Kulanz'];
-const kindLabel = s => ({retoure: 'Retoure', storno: 'Storno'})[s.kind || s.data?.kind] || 'Bon';
+const kindLabel = s => ({retoure: 'Retoure', storno: 'Storno', startbeleg: 'Startbeleg', nullbeleg: 'Nullbeleg', monatsbeleg: 'Monatsbeleg'})[s.kind || s.data?.kind] || 'Bon';
 const normBeleg = raw => {
   const s = String(raw).trim().replace(/\s/g, '');
   let m = /^(\d{4})-(\d{1,6})$/.exec(s); if (m) return `${m[1]}-${pad(+m[2], 6)}`;
@@ -47,7 +47,7 @@ async function openReceipts(opts = {}) {
   el.addEventListener('click', e => {
     const b = e.target.closest('[data-i]'); if (b) { sel = +b.dataset.i; render(); }
     const s = filtered()[sel];
-    if (e.target.closest('#rcCopy') && s) { toast(`Belegkopie ${s.no}`, {t2: 'Als „KOPIE“ gekennzeichnet', icon: 'printer'}); Hooks.emit('pos.receipt.copy', {beleg: s.no}); }
+    if (e.target.closest('#rcCopy') && s) { Hooks.emit('pos.receipt.copy', {beleg: s.no}); if (DESKTOP) printReceipt(recFromData(s.no, {...s.data, kind: s.kind || s.data?.kind}), {copy: true}); else toast(`Belegkopie ${s.no}`, {t2: 'Als „KOPIE“ gekennzeichnet', icon: 'printer'}); }
     if (e.target.closest('#rcRet') && s) openReturn(s.no, {onDone: after});
     if (e.target.closest('#rcVoid') && s) openReturn(s.no, {storno: true, onDone: after});
   });
@@ -89,7 +89,8 @@ async function openReturn(no, {storno = false, onDone} = {}) {
   const unitEff = lines.map((l, i) => info.effective[i] / Math.max(1, l.qty));
   const methods = [{m: 'bar', label: 'Bar'}];
   (d.parts || []).forEach(p => { if (p.m !== 'bar' && ['bankomat', 'kredit', 'apple', 'google'].includes(p.m) && !methods.some(x => x.m === p.m)) methods.push({m: p.m, label: p.label}); });
-  const st = {mode: storno ? 'storno' : 'retoure', qty: lines.map((l, i) => storno ? open[i] : (open.length === 1 || lines.length === 1 ? open[i] : 0)), reason: storno ? 'Fehlbon' : RETURN_REASONS[0], method: methods[methods.length > 1 && (d.parts || []).length === 1 ? 1 : 0], busy: false};
+  methods.push({m: 'gutschein', label: 'Gutschein (neu)'});
+  const st = {mode: storno ? 'storno' : 'retoure', qty: lines.map((l, i) => storno ? open[i] : (open.length === 1 || lines.length === 1 ? open[i] : 0)), reason: storno ? 'Fehlbon' : RETURN_REASONS[0], method: methods[methods.length > 2 && (d.parts || []).length === 1 && methods[1].m === d.parts[0].m ? 1 : 0], busy: false};
   const limit = +CFG['kasse.retoureGrenze'] || 100;
   const el = openLayer(`<div class="modal" style="width:min(720px,100%)" role="dialog" aria-modal="true" aria-label="Retoure"><div id="rtBody" style="display:flex;flex-direction:column;min-height:0;max-height:calc(100dvh - 48px)"></div></div>`, {closeOnScrim: false});
   const box = $('#rtBody', el);
@@ -106,8 +107,8 @@ async function openReturn(no, {storno = false, onDone} = {}) {
             ${st.mode === 'storno' ? `<b class="num">${l.qty} ×</b>` : open[i] > 0 ? `<div class="qty"><button data-rq="${i}" data-d="-1" aria-label="weniger">${ic('minus', 'i-xs')}</button><span>${st.qty[i]}</span><button data-rq="${i}" data-d="1" aria-label="mehr">${ic('plus', 'i-xs')}</button></div>` : '<span class="pill" style="height:20px">retour</span>'}</div>`;
         }).join('')}</div>
         <div><div class="field"><span>Grund · erscheint auf dem Beleg und in der Auswertung</span></div><div class="reasons" style="margin-top:6px">${(st.mode === 'storno' ? ['Fehlbon', 'Falsche Zahlart', 'Kunde verzichtet', 'Test'] : RETURN_REASONS).map(r => `<button class="chip" data-r="${esc(r)}" aria-pressed="${r === st.reason}">${esc(r)}</button>`).join('')}</div></div>
-        <div><div class="field"><span>Erstattung über</span></div><div class="reasons" style="margin-top:6px">${methods.map((m, i) => `<button class="chip" data-m="${i}" aria-pressed="${m === st.method}">${ic(m.m === 'bar' ? 'cash' : 'card', 'i-xs')}${esc(m.label)}${m.m === 'bar' ? '' : ' (Rückbuchung)'}</button>`).join('')}</div></div>
-        <div class="preview-box"><span>${st.mode === 'storno' ? 'Erstattung' : `${n} Artikel retour`}<br><span class="muted" style="font-size:12px">${st.method.m === 'bar' ? 'aus Lade 1 auszahlen' : 'auf das Zahlungsmittel zurückbuchen'}${d.customer ? ' · Punkte werden anteilig abgezogen' : ''}</span></span><b style="color:var(--neg)">− ${eur(sum)}</b></div>
+        <div><div class="field"><span>Erstattung über</span></div><div class="reasons" style="margin-top:6px">${methods.map((m, i) => `<button class="chip" data-m="${i}" aria-pressed="${m === st.method}">${ic(m.m === 'bar' ? 'cash' : m.m === 'gutschein' ? 'gift' : 'card', 'i-xs')}${esc(m.label)}${['bar', 'gutschein'].includes(m.m) ? '' : ' (Rückbuchung)'}</button>`).join('')}</div></div>
+        <div class="preview-box"><span>${st.mode === 'storno' ? 'Erstattung' : `${n} Artikel retour`}<br><span class="muted" style="font-size:12px">${st.method.m === 'bar' ? 'aus Lade 1 auszahlen' : st.method.m === 'gutschein' ? 'als neuer Gutschein (Code wird vergeben)' : 'auf das Zahlungsmittel zurückbuchen'}${d.customer ? ' · Punkte werden anteilig abgezogen' : ''}</span></span><b style="color:var(--neg)">− ${eur(sum)}</b></div>
         ${needs ? `<div class="rule-box">${ic('shield')}<div>${st.mode === 'storno' ? 'Stornos' : `Erstattungen über ${eur0(limit)}`} erfordern eine Freigabe durch die Filialleitung.</div></div>` : ''}
       </div>
       <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn ${st.mode === 'storno' ? 'btn-danger' : 'btn-primary'}" id="rtGo" ${sum > 0 && !st.busy ? '' : 'disabled'}>${needs ? ic('shield', 'i-sm') : ic('check', 'i-sm')}${st.mode === 'storno' ? 'Stornieren' : 'Retoure buchen'} · ${eur(sum)}</button></div>`;
@@ -149,7 +150,8 @@ function showReturnDone(el, box, r, sale) {
     <div class="ok-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
     <div class="done-title">${r.data.kind === 'storno' ? 'Storniert' : 'Retoure gebucht'} · ${eur(-r.total / 100)}</div>
     <div class="done-sub">Beleg ${esc(r.no)} zu Bon ${esc(sale.no)} · ${esc(r.data.reason)} · Bestand zurückgebucht</div>
-    <div class="change-big"><div class="l">${cash ? 'Bar auszahlen' : `Rückbuchung ${esc(r.data.parts?.[0]?.label || '')}`}</div><div class="v">${eur(-r.total / 100)}</div></div>
+    <div class="change-big"><div class="l">${cash ? 'Bar auszahlen' : r.data.parts?.[0]?.code ? 'Neuer Gutschein' : `Rückbuchung ${esc(r.data.parts?.[0]?.label || '')}`}</div><div class="v">${eur(-r.total / 100)}</div></div>
+    ${r.data.parts?.[0]?.code ? `<div class="note" style="margin-top:12px">${ic('gift')}<span>Gutschein-Code <b class="mono" style="color:var(--text)">${esc(r.data.parts[0].code)}</b></span></div>` : ''}
     ${r.points?.delta ? `<div class="note" style="margin-top:16px">${ic('star')}<span><b style="color:var(--text)">${num(r.points.delta)} Punkte</b> abgezogen · neuer Stand ${num(r.points.balance)}</span></div>` : ''}
     <div class="eyebrow" style="margin-top:26px">Beleg übergeben</div>
     <div class="rcpt-opts"><button class="btn btn-secondary" data-rp>${ic('printer')}Drucken</button></div>
@@ -157,7 +159,9 @@ function showReturnDone(el, box, r, sale) {
   </div>
   <div class="done-r"><div class="done-r-head"><span class="eyebrow">Beleg ${esc(r.no)}</span></div><div class="done-r-body"><div class="receipt-wrap">${receiptHTML(rec, prefs.tpl || 'classic')}</div></div></div>`;
   const pnl = el.querySelector('.pay-done');
-  pnl.addEventListener('click', e => { if (e.target.closest('[data-rp]')) { toast('Beleg gedruckt', {t2: `${kindLabel(r.data)} ${r.no}`, type: 'pos', icon: 'printer'}); Hooks.emit('device.printer.receipt', {beleg: r.no}); } });
+  pnl.addEventListener('click', e => { if (e.target.closest('[data-rp]')) { printReceipt(rec); Hooks.emit('device.printer.receipt', {beleg: r.no}); } });
+  if (CFG['drucker.auto']) printReceipt(rec, {quiet: true});
+  if (cash) openDrawer('Erstattung bar', true);
   el.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.target.closest('[data-rp]')) { e.preventDefault(); closeLayer(el); } });
   requestAnimationFrame(() => pnl.querySelector('[data-close]')?.focus());
 }
@@ -180,6 +184,5 @@ function returnReceiptHTML(rec, tpl) {
     ${(rec.t.vat || []).map(v => `<div class="r sm"><span>${v.rate} %</span><span>${money(v.net)} · ${money(v.tax)} · ${money(v.gross)}</span></div>`).join('')}
     ${rec.t.zero ? `<div class="r sm"><span>0 %</span><span>${money(rec.t.zero)} · 0,00 · ${money(rec.t.zero)}</span></div>` : ''}
     ${rec.customer ? `<hr><div class="sm c">Kunde ${esc(rec.customer.id)}${rec.points?.delta ? ` · ${rec.points.delta} Punkte` : ''}</div>` : ''}
-    <div class="qrw">${pseudoQR('rksv|' + rec.no + '|' + (rec.sig || ''))}</div>
-    <div class="sm c">RKSV-Signatur folgt mit der Signatureinheit<br>Unterschrift Kund:in: ____________________</div></div>`;
+    ${rksvBlockHTML(rec)}<div class="sm c" style="margin-top:6px">Unterschrift Kund:in: ____________________</div></div>`;
 }

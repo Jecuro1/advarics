@@ -158,6 +158,24 @@ pub fn verify(c: &Connection, id: &str, pin: &str) -> Result<User, String> {
     Err(if until.is_some() { format!("Falsche PIN – {LOCK_MINUTES} Minuten gesperrt") } else { format!("Falsche PIN ({} von {MAX_FAILED} Versuchen)", failed) })
 }
 
+/// Benutzer, die noch ihre Erst-PIN verwenden (Hinweis am Sperrbildschirm)
+pub fn default_pins(c: &Connection) -> Vec<String> {
+    let mut out = vec![];
+    for (id, pin) in [("lm", "1111"), ("dh", "2222"), ("ms", "3333")] {
+        let r: Option<(String, String, String)> = c
+            .query_row("SELECT name, pin_hash, pin_salt FROM users WHERE id = ?1 AND active = 1", [id], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+            .optional()
+            .ok()
+            .flatten();
+        if let Some((name, h, salt)) = r {
+            if hash_pin(&salt, pin) == h {
+                out.push(format!("{name} {pin}"));
+            }
+        }
+    }
+    out
+}
+
 /// Erstbefüllung: drei Benutzer mit Erst-PINs (bitte sofort ändern).
 pub fn seed(c: &Connection) -> Result<usize, String> {
     if db::count(c, "users") > 0 {

@@ -1,10 +1,11 @@
-## Neu in 0.6.0
-- Kunden: anlegen und bearbeiten (auch direkt an der Kasse mit F3 → Neu anlegen), eigene Felder, Vereinsrabatt, Newsletter-Einwilligung
-- Bonuspunkte: 1 Punkt je volle 10 € Einkauf, Punkteverlauf und Korrektur mit Freigabe
-- Kaufhistorie je Kunde mit allen Belegen
-- Retoure und Umtausch an der Kasse: Bon wählen, Positionen und Stückzahl auswählen, Erstattung bar oder per Rückbuchung
-- Storno ganzer Belege mit Freigabe durch die Filialleitung
-- Bestand und Punkte werden bei Retoure und Storno automatisch zurückgebucht
-- Dashboard mit echten Zahlen aus der Datenbank: Umsatz, Bons, Ø Bon, Retourenquote, Verlauf mit Vorperiode, Topseller, Warengruppen, Kundenfrequenz, Bestandswarnungen
-- X-Bericht mit echten Tageszahlen und Zahlungsarten
-- Neue Einstellungen: Umsatzziel je Verkaufstag, Erstattungsgrenze ohne Freigabe
+## Neu in 0.7.0
+- Anmeldung mit persönlicher PIN beim Start und beim Benutzerwechsel – Erst-PINs: Lena 1111, David 2222 (Administrator), Miriam 3333. Bitte sofort unter Einstellungen → Benutzer ändern
+- Freigaben (Rabatt, Storno, Entnahme, Kassendifferenz, Punkte) nur noch mit PIN von Filialleitung oder Administrator, Sperre nach 5 Fehlversuchen
+- Benutzerverwaltung mit Rollen: Kasse, Verkauf, Filialleitung, Administrator
+- RKSV im Testmodus: Startbeleg, Signaturkette, verschlüsselter Umsatzzähler, echter QR-Code auf jedem Beleg, Null- und Monatsbelege, DEP-Export
+- Bondrucker (ESC/POS) über Netzwerk oder Windows-Drucker, Kassenlade am Drucker, Testdruck, automatischer Bondruck
+- Gutscheine mit echtem Code: Verkauf, Einlösung mit Restwert, Erstattung als Gutschein, Übersicht offener Gutscheine
+- Kassenbuch (Einlage, Entnahme, Wechselgeld), X-Bericht und Tagesabschluss mit Kassensturz (Stückelung) und Z-Bericht
+- Einkauf: Lieferanten, Bestellungen, Bestellvorschlag nach Mindestbestand und Abverkauf, Wareneingang (auch Teillieferungen), CSV-Export
+- Artikel: Einkaufspreis mit Spanne, Lieferant, Mindestbestand
+- Berichte: Tage, Warengruppen, Artikel, Zahlungsarten, Steuern, Kassier:innen, Tagesabschlüsse, Gutscheine – jeweils als CSV für Excel

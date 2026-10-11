@@ -384,6 +384,11 @@ fn users_list(db: State<db::Db>) -> Res<Vec<users::User>> {
 }
 
 #[tauri::command]
+fn users_default_pins(db: State<db::Db>) -> Vec<String> {
+    users::default_pins(&db.conn.lock().unwrap())
+}
+
+#[tauri::command]
 fn user_verify(db: State<db::Db>, id: String, pin: String, purpose: Option<String>) -> Res<users::User> {
     let c = db.conn.lock().unwrap();
     let r = users::verify(&c, &id, &pin);
@@ -686,6 +691,7 @@ fn main() {
             customer_detail,
             customer_points,
             users_list,
+            users_default_pins,
             user_verify,
             user_save,
             user_delete,

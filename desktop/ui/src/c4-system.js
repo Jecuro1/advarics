@@ -2,62 +2,6 @@
 /* ════════════════════════════════════════════════════════════════════
    12 · ANMELDUNG — Sperrbildschirm mit PIN, Windows Hello, FIDO2, SSO
    ════════════════════════════════════════════════════════════════════ */
-function lock() {
-  if (S.locked) return;
-  closePopover(); [...layers].reverse().forEach(l => { if (!l.el.querySelector('.pay')) closeLayer(l.el); });
-  S.locked = true;
-  let user = S.user, pin = '', busy = false;
-  const el = document.createElement('div'); el.className = 'lockscreen'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Kasse gesperrt');
-  el.innerHTML = `<div class="lock-in">
-    <div class="lock-time" id="lockTime">${clock()}</div>
-    <div class="lock-date">${esc(DATE_LONG)} · Kasse INN-K01 gesperrt</div>
-    <div class="lock-users">${STAFF.map(u => `<button class="lock-user" data-u="${u.id}" aria-pressed="${u.id === user.id}"><span class="avatar xl" style="--h:${u.hue}">${u.initials}</span>${u.name.split(' ')[0]}</button>`).join('')}</div>
-    <div class="lock-card" id="lockCard"></div>
-    <div class="lock-foot"><span style="display:inline-flex;gap:6px;align-items:center">${ic('shield', 'i-xs')}RKSV aktiv</span><span>·</span><span>offline-fähig</span><span>·</span><span>Demo: jede PIN außer 0000</span></div></div>`;
-  document.body.appendChild(el);
-  const card = $('#lockCard', el);
-  const renderCard = () => {
-    card.innerHTML = `<div style="text-align:center;font-size:13px;color:var(--text-2)">PIN für <b style="color:var(--text)">${esc(user.name)}</b> · ${esc(user.role)}</div>
-      <div class="pin-dots" id="lockDots" style="margin:14px 0 16px"><i></i><i></i><i></i><i></i></div>
-      <div class="keypad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-k="${n}">${n}</button>`).join('')}<span></span><button data-k="0">0</button><button class="fn" data-k="back" aria-label="Löschen">${ic('chevron-left')}</button></div>
-      <div class="or">oder anmelden mit</div>
-      <div class="auth-alt"><button class="btn btn-secondary" data-m="hello">${ic('faceid')}Windows Hello</button><button class="btn btn-secondary" data-m="fido">${ic('usbkey')}Sicherheitsschlüssel</button><button class="btn btn-secondary" data-m="nfc">${ic('idcard')}Mitarbeiterkarte</button><button class="btn btn-secondary" data-m="sso">${ic('building')}Entra ID · SSO</button></div>`;
-  };
-  const dots = () => $$('#lockDots i', el).forEach((d, i) => d.classList.toggle('on', i < pin.length));
-  const unlock = method => {
-    busy = true; S.user = user; S.locked = false;
-    Hooks.emit('auth.login', {benutzer: user.name, rolle: user.role, methode: method, kasse: 'INN-K01'});
-    el.classList.add('closing'); setTimeout(() => el.remove(), 320);
-    renderMe(); renderTopbar(); if (S.view === 'dashboard') renderDashboard();
-    toast(`Willkommen zurück, ${user.name.split(' ')[0]}`, {t2: `Angemeldet per ${method}`, type: 'pos', icon: 'user'});
-    setTimeout(() => S.view === 'kasse' && $('#posSearch')?.focus(), 340);
-  };
-  const waitFor = async (icon, msg, method) => {
-    if (busy) return; busy = true;
-    card.innerHTML = `<div class="authwait" style="padding:26px 0"><div class="ring">${ic(icon)}</div><p>${esc(msg)}</p></div>`;
-    await wait(reduced() ? 200 : 1300); unlock(method);
-  };
-  const key = k => {
-    if (busy) return;
-    if (k === 'back') pin = pin.slice(0, -1); else if (pin.length < 4) pin += k;
-    dots();
-    if (pin.length === 4) {
-      if (pin === '0000') { const d = $('#lockDots', el); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake'); pin = ''; setTimeout(dots, 260); Hooks.emit('auth.login.failed', {benutzer: user.name, methode: 'PIN'}); }
-      else setTimeout(() => unlock('PIN'), 140);
-    }
-  };
-  el.addEventListener('click', e => {
-    const u = e.target.closest('[data-u]'); if (u && !busy) { user = STAFF.find(s => s.id === u.dataset.u); pin = ''; $$('.lock-user', el).forEach(b => b.setAttribute('aria-pressed', b === u)); renderCard(); return; }
-    const k = e.target.closest('[data-k]'); if (k) return key(k.dataset.k);
-    const m = e.target.closest('[data-m]'); if (!m) return;
-    ({hello: () => waitFor('faceid', 'Windows Hello · Gesicht wird erkannt …', 'Windows Hello'), fido: () => waitFor('usbkey', 'Sicherheitsschlüssel einstecken und berühren …', 'FIDO2'),
-      nfc: () => waitFor('idcard', 'Mitarbeiterkarte an den Leser halten …', 'NFC-Karte'), sso: () => waitFor('building', 'Weiterleitung an Ihren Identitätsanbieter (OIDC) …', 'Entra ID')})[m.dataset.m]();
-  });
-  S.lockKey = e => { if (/^\d$/.test(e.key)) { key(e.key); e.preventDefault(); } else if (e.key === 'Backspace') { key('back'); e.preventDefault(); } };
-  renderCard();
-  Hooks.emit('pos.locked', {kasse: 'INN-K01', benutzer: S.user.name});
-}
-
 /* ════════════════════════════════════════════════════════════════════
    13 · SYSTEM — Inspektor, Updates, Backup, RKSV, Mitteilungen
    ════════════════════════════════════════════════════════════════════ */
@@ -86,7 +30,7 @@ function toggleInspector() {
   render();
 }
 Hooks.on('*', (p, e) => { S.inspector && S.inspector._push(e); const c = $('#sbHookCount'); if (c) c.textContent = Hooks.count; });
-Hooks.on('pos.sale.completed', p => setTimeout(() => Hooks.emit(S.online ? 'webhook.delivered' : 'webhook.queued', {ziel: BINDINGS[0].target, beleg: p.beleg, status: S.online ? 200 : 'Warteschlange', dauer: S.online ? '38 ms' : undefined}), 450));
+if (!DESKTOP) Hooks.on('pos.sale.completed', p => setTimeout(() => Hooks.emit(S.online ? 'webhook.delivered' : 'webhook.queued', {ziel: BINDINGS[0].target, beleg: p.beleg, status: S.online ? 200 : 'Warteschlange', dauer: S.online ? '38 ms' : undefined}), 450));
 Hooks.on('pos.sale.completed', () => refreshDashboard());
 Hooks.on('pos.line.added', p => {
   if (p.warengruppe === 'ski' && p.sku === 'A5001' && !POS.cart.some(l => l.key === 'svc|S04'))
@@ -141,10 +85,6 @@ function backupNow() {
   toast('Backup läuft …', {t2: 'Konsistenter Snapshot · Datenbank & Artikelbilder → NAS-01', icon: 'database', dur: 1700});
   Hooks.emit('backup.started', {ziel: '\\\\NAS-01\\kontor-backup', art: 'manuell'});
   setTimeout(() => { S.backupH = 0; renderStatus(); refreshDashboard(['ops.system']); toast('Backup abgeschlossen', {t2: '2,4 GB · AES-256 verschlüsselt · Integrität geprüft', type: 'pos', icon: 'database'}); Hooks.emit('backup.completed', {groesse: '2,4 GB', verschluesselung: 'AES-256', integritaet: 'ok'}); }, reduced() ? 50 : 1700);
-}
-function depExport() {
-  toast('DEP-Export erstellt', {t2: `RKSV-Datenerfassungsprotokoll INN-K01 · ${NOW.toLocaleDateString('de-AT', {month: 'long', year: 'numeric'})} · lokal gespeichert`, type: 'pos', icon: 'shield'});
-  Hooks.emit('rksv.dep.exported', {kasse: 'INN-K01', format: 'DEP7 (JSON)'});
 }
 function openNotifications(anchor) {
   const items = [
@@ -392,11 +332,14 @@ async function init() {
   await loadSettings();
   await loadCatalog();
   await loadCustomers();
+  await loadUsers();
+  if (DESKTOP) { await refreshRksv(); await loadSuppliers(); }
   if (DESKTOP) { await refreshInfo(); Hooks.on('*', (p, e) => { if (!e.evt.startsWith('config.settings')) invoke('audit_append', {event: e.evt, payload: e.payload ?? {}}).catch(() => {}); }); }
   $('#palKbd').innerHTML = `<span class="kbd">${MOD}</span><span class="kbd">K</span>`;
   renderNav(); renderMe(); renderStore(); renderStatus();
-  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers();
+  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings();
   go(location.hash.slice(1) || 'dashboard');
+  if (DESKTOP) lock();   // Anmeldung mit PIN beim Start
   if (DESKTOP) { Hooks.emit('desktop.ready', {version: S.appVersion, datenbank: S.info?.db_path}); setTimeout(autoBackupCheck, 4000); setInterval(autoBackupCheck, 36e5); }
   Hooks.emit('system.ready', {version: S.appVersion, kanal: 'stable', server: 'KONTOR-SRV01', modus: DESKTOP ? 'desktop' : 'vorschau'});
 }

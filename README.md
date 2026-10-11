@@ -28,27 +28,26 @@ cd desktop
 npm install
 npm run dev      # startet Kontor als Programm-Fenster
 npm run build    # baut den Installer lokal (unter Windows)
-cd src-tauri && cargo test   # Tests: Retoure, Storno, Punkte, Datenbank-Migration
+cd src-tauri && cargo test   # Tests: Retoure, Storno, Punkte, Gutscheine, RKSV, PIN, Abschluss, Einkauf, Drucker, Migration
 ```
 
 Voraussetzungen zum Selberbauen: Node.js 22, Rust (stable), unter Windows zusätzlich die
 „Microsoft C++ Build Tools“. Nur zum Benutzen ist nichts davon nötig – nur der Installer.
 
-Stand 0.6.0:
-- **Echt:** lokale Datenbank, Einstellungen, Anzeigegröße, Datensicherung mit Wiederherstellung, Protokoll;
-  **Artikel** (anlegen/bearbeiten, Varianten aus Farben × Größen, automatische EAN, eigene Felder,
-  Kassen-Pflichtfelder), **Bestand** (Matrix je Artikel, Zugang/Abgang/Inventur mit Grund, Bewegungsjournal),
-  **Kasse** verkauft aus der Datenbank (Belegnummer, Beleg gespeichert, Bestand wird abgebucht), **Belegliste**
-  mit Bonansicht (Kasse → Mehr → Belege).
-- **Kunden:** anlegen (auch an der Kasse: F3 → Neu anlegen), eigene Felder, Vereinsrabatt, Newsletter-Einwilligung,
-  **Bonuspunkte** (1 Punkt je 10 €, Verlauf, Korrektur mit Freigabe), Kaufhistorie.
-- **Retoure / Umtausch und Storno:** Kasse → Mehr → Retoure, oder in der Belegliste. Erstattung bar oder per
-  Rückbuchung, Bestand und Punkte werden zurückgebucht; Stornos und hohe Erstattungen nur mit Freigabe.
-- **Dashboard** mit echten Zahlen: Umsatz, Bons, Ø Bon, Retourenquote, Verlauf mit Vorperiode, Topseller,
-  Warengruppen, Kundenfrequenz, Bestandswarnungen; X-Bericht mit Tageszahlen.
-- **Update-Dienst:** signierte Updates im Programm mit Freigabe, Zeitfenster und Sicherung vorher.
-- **Noch Vorschau** (im Dashboard als „Vorschau“ markiert): KI-Hinweise, Erweiterungs-Widgets, weitere Filialen.
-  RKSV-Signatur und Hardware (Drucker, Terminal) folgen.
+Stand 0.7.0 – alles mit lokaler Datenbank, ohne Server:
+- **Anmeldung & Rechte:** persönliche PIN (Erst-PINs Lena 1111 · David 2222 (Admin) · Miriam 3333 – sofort ändern),
+  Rollen Kasse/Verkauf/Filialleitung/Administrator, Freigaben per PIN, Sperre nach Fehlversuchen.
+- **Kasse:** Verkauf aus der Datenbank, Kunden & Bonuspunkte, Rabatte mit Freigabe, Retoure/Umtausch/Storno,
+  Gutscheine mit echtem Code und Restwert, Kassenbuch, X-Bericht, Tagesabschluss mit Kassensturz (Z-Bericht).
+- **RKSV (Testmodus):** Startbeleg, Signaturkette, AES-verschlüsselter Umsatzzähler, ES256-Signatur, QR-Code,
+  Null-/Monats-/Jahresbelege, DEP-Export. Software-Schlüssel statt Signaturkarte – technisch vollständig, aber nicht
+  bei FinanzOnline registrierbar. Für den Echtbetrieb wird nur die Signaturquelle getauscht.
+- **Hardware:** Bondrucker (ESC/POS) per Netzwerk oder Windows-Drucker, Kassenlade am Drucker.
+- **Sortiment & Einkauf:** Artikel mit Varianten, EK-Preis/Spanne, Lieferant, Mindestbestand; Bestand mit Journal;
+  Lieferanten, Bestellungen, Bestellvorschlag, Wareneingang.
+- **Auswertung:** Dashboard mit echten Zahlen, Berichte mit CSV-Export für Excel.
+- **Betrieb:** Datensicherung mit Prüfung und Wiederherstellung, signierte Updates im Programm, Protokoll.
+- **Noch Vorschau** (als „Vorschau“ markiert): KI-Hinweise, Erweiterungs-Widgets, weitere Filialen/Server.
 
 Datenbank: `%APPDATA%\at.kontor.desktop\kontor.db` · Sicherungen standardmäßig: `Dokumente\Kontor-Sicherungen`.
 Updates per neuem Installer behalten Datenbank und Einstellungen.

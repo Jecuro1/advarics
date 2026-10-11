@@ -9,6 +9,7 @@ const DEFAULTS = {
   'kasse.id': 'INN-K01', 'kasse.name': 'Kasse 1', 'kasse.freigabe': true, 'kasse.rabattGrenze': 20,
   'kasse.vereinsregel': true, 'kasse.retoureGrenze': 100, 'ziel.tag': 2500, 'kasse.pflichtfelder': true, 'kasse.bonFuss': 'Danke für Ihren Einkauf! Umtausch innerhalb von 30 Tagen mit Beleg.',
   'anzeige.zoom': 1, 'backup.dir': '', 'backup.auto': true, 'backup.keep': 14, 'update.kanal': 'stable', 'update.auto': true, 'update.freigabe': null,
+  'drucker.art': 'aus', 'drucker.adresse': '', 'drucker.name': '', 'drucker.breite': 48, 'drucker.auto': false, 'drucker.lade': false, 'gutschein.jahre': 3,
 };
 const CFG = {...DEFAULTS};
 async function loadSettings() {
@@ -75,7 +76,7 @@ async function autoBackupCheck() {
 }
 
 /* ── Ansicht ── */
-const SET_SECTIONS = [['allgemein', 'Firma & Filiale', 'store'], ['kasse', 'Kasse', 'register'], ['anzeige', 'Darstellung', 'palette'], ['sicherung', 'Datensicherung', 'database'], ['updates', 'Updates', 'download'], ['system', 'System & Protokoll', 'server']];
+const SET_SECTIONS = [['allgemein', 'Firma & Filiale', 'store'], ['kasse', 'Kasse', 'register'], ['benutzer', 'Benutzer', 'users'], ['drucker', 'Drucker & Lade', 'printer'], ['rksv', 'RKSV', 'shield'], ['anzeige', 'Darstellung', 'palette'], ['sicherung', 'Datensicherung', 'database'], ['updates', 'Updates', 'download'], ['system', 'System & Protokoll', 'server']];
 function field(key, label, help, type = 'text', extra = '') {
   const v = CFG[key];
   let ctl;
@@ -107,10 +108,12 @@ function renderSettings() {
         ${field('kasse.rabattGrenze', 'Rabattgrenze ohne Freigabe (%)', '', 'number', 'min="0" max="100" step="1" style="max-width:120px"')}
         ${field('kasse.retoureGrenze', 'Erstattung ohne Freigabe bis (€)', 'Retouren darüber und alle Stornos erfordern die Filialleitung (Step-up)', 'number', 'min="0" max="10000" step="10" style="max-width:120px"')}
         ${field('ziel.tag', 'Umsatzziel je Verkaufstag (€)', 'Grundlage für Tages-, Wochen- und Monatsziel im Dashboard', 'number', 'min="0" step="100" style="max-width:140px"')}
+        ${field('gutschein.jahre', 'Gutscheine gültig (Jahre nach Ausgabejahr)', 'Ablaufdatum = 31.12. des Ausgabejahres plus diese Anzahl Jahre', 'number', 'min="1" max="30" step="1" style="max-width:100px"')}
         ${field('kasse.vereinsregel', 'Vereinsrabatt automatisch', 'Regel greift beim Zuordnen von Vereinsmitgliedern', 'switch')}
         ${field('kasse.pflichtfelder', 'Pflichtfelder je Warengruppe', 'z. B. Z-Wert und Seriennummer beim Skiverkauf', 'switch')}
         ${field('kasse.bonFuss', 'Text am Bonende', '', 'textarea')}
       </div></section>
+      ${usersSectionHTML()}${printerSectionHTML()}${rksvSectionHTML()}
       <section class="set-sec" id="sec-anzeige"><h2>Darstellung</h2><p>Gilt für den angemeldeten Benutzer. Anzeigegröße auch mit <span class="kbd">Strg</span> <span class="kbd">+</span> / <span class="kbd">−</span> / <span class="kbd">0</span>.</p><div class="card">
         <div class="set-row"><div><div class="set-l">Anzeigegröße</div><div class="set-h">Für große Bildschirme oder Touch-Kassen</div></div><div class="set-c"><div class="seg" id="zoomSeg">${[.8, .9, 1, 1.1, 1.25, 1.5].map(z => `<button data-v="${z}" aria-pressed="${Math.abs(z - zoom) < .001}">${Math.round(z * 100)} %</button>`).join('')}</div></div></div>
         ${segRow('Modus', 'Hell, Dunkel oder wie Windows', 'theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['system', 'System']])}
@@ -132,7 +135,7 @@ function renderSettings() {
     if (s.dataset.pref) { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }
   }));
   if (DESKTOP) { renderBackups(); renderSys(); }
-  renderUpdSection(); renderAudit();
+  renderUpdSection(); renderAudit(); renderUsersBox(); renderPrinterBox(); renderRksvBox().then(renderSettingsKasseLock);
 }
 async function renderSys() {
   const i = await refreshInfo(); const box = $('#sysBox'); if (!i || !box) return;

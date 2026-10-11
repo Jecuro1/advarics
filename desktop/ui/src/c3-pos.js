@@ -182,7 +182,7 @@ function addService(id, amount, fromEl) {
   const key = isGS ? 'gs|' + uid() : 'svc|' + id;
   let l = POS.cart.find(x => x.key === key);
   if (l) { l.qty++; POS.lastNew = false; }
-  else { l = {key, service: true, icon: s.icon, name: isGS ? 'Gutschein (Mehrzweck)' : s.name, unit: isGS ? amount : s.price, vat: isGS ? 0 : 20, qty: 1, meta: isGS ? `Code GS-${YEAR}-${1000 + Math.floor(Math.random() * 8999)}` : 'Dienstleistung'}; POS.cart.push(l); POS.lastNew = true; }
+  else { l = {key, service: true, voucher: isGS, icon: s.icon, name: isGS ? 'Gutschein (Mehrzweck)' : s.name, unit: isGS ? amount : s.price, vat: isGS ? 0 : 20, qty: 1, meta: isGS ? (DESKTOP ? 'Code wird beim Abschluss vergeben' : `Code GS-${YEAR}-${1000 + Math.floor(Math.random() * 8999)}`) : 'Dienstleistung'}; POS.cart.push(l); POS.lastNew = true; }
   POS.lastKey = key; renderCart();
   Hooks.emit('pos.line.added', {beleg: belegNo(), sku: id, bezeichnung: l.name, preis: l.unit, ust: l.vat});
 }
@@ -380,45 +380,6 @@ function openDiscount() {
   el.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.target.closest('[data-close]') && !e.target.closest('#dRemove')) { e.preventDefault(); go2(); } });
   render();
 }
-function stepUp({title, text, rule}) {
-  return new Promise((resolve, reject) => {
-    let done = false, pin = '';
-    const ap = STAFF[1];
-    const el = openLayer(`<div class="modal" style="width:min(430px,100%)" role="dialog" aria-modal="true" aria-label="${esc(title)}">
-      <div class="m-head"><div class="m-ic" style="color:var(--warn)">${ic('shield')}</div><div><h2>${esc(title)}</h2><p>${esc(text)}</p></div></div>
-      <div class="m-body" id="suBody">
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);margin-bottom:14px"><span class="avatar" style="--h:${ap.hue}">${ap.initials}</span><div style="flex:1"><div style="font-size:13px;font-weight:600">${ap.name}</div><div class="muted" style="font-size:12px">${ap.role} · berechtigt</div></div><span class="pill">${ic('lock')}Step-up</span></div>
-        <div class="pin-dots" id="suDots" aria-label="PIN-Eingabe"><i></i><i></i><i></i><i></i></div>
-        <div class="keypad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-k="${n}">${n}</button>`).join('')}<button class="fn" data-close>Abbr.</button><button data-k="0">0</button><button class="fn" data-k="back" aria-label="Löschen">${ic('chevron-left')}</button></div>
-        <div class="or">oder ohne PIN</div>
-        <div class="auth-alt"><button class="btn btn-secondary" data-m="FIDO2-Schlüssel">${ic('usbkey')}Sicherheitsschlüssel</button><button class="btn btn-secondary" data-m="Windows Hello">${ic('faceid')}Windows Hello</button></div>
-        ${rule ? `<div class="prompt-hint" style="margin-top:14px">${ic('flow', 'i-xs')}${esc(rule)}</div>` : ''}
-      </div></div>`, {onClose: () => { if (!done) reject(new Error('abgebrochen')); }});
-    const body = $('#suBody', el);
-    const dots = () => $$('#suDots i', el).forEach((d, i) => d.classList.toggle('on', i < pin.length));
-    const ok = async method => {
-      done = true;
-      body.innerHTML = `<div class="authwait"><div class="ok-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div><p><b style="color:var(--text)">Freigegeben</b> von ${ap.name} · ${esc(method)}</p></div>`;
-      Hooks.emit('auth.stepup.granted', {von: ap.name, methode: method, regel: rule || null});
-      await wait(reduced() ? 100 : 800); closeLayer(el); resolve({by: ap, method});
-    };
-    const wait4 = async (icon, msg, method) => {
-      body.innerHTML = `<div class="authwait"><div class="ring">${ic(icon)}</div><p>${esc(msg)}</p></div>`;
-      await wait(reduced() ? 200 : 1300); ok(method);
-    };
-    const key = k => {
-      if (k === 'back') pin = pin.slice(0, -1); else if (pin.length < 4) pin += k;
-      dots();
-      if (pin.length === 4) {
-        if (pin === '0000') { const d = $('#suDots', el); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake'); pin = ''; setTimeout(dots, 250); Hooks.emit('auth.stepup.failed', {von: ap.name, methode: 'PIN'}); }
-        else ok('PIN');
-      }
-    };
-    el.addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (b) key(b.dataset.k); const m = e.target.closest('[data-m]'); if (m) wait4(m.dataset.m === 'Windows Hello' ? 'faceid' : 'usbkey', m.dataset.m === 'Windows Hello' ? 'Gesicht wird erkannt …' : 'Sicherheitsschlüssel berühren …', m.dataset.m); });
-    el.addEventListener('keydown', e => { if (done) return; if (/^\d$/.test(e.key)) { key(e.key); e.preventDefault(); } else if (e.key === 'Backspace') { key('back'); e.preventDefault(); } });
-  });
-}
-
 /* ── Parken, Gutschein, Kassenablauf ── */
 function park() {
   if (!POS.cart.length) return toast('Nichts zu parken', {type: 'warn', icon: 'pause'});
@@ -474,16 +435,17 @@ function openFlow() {
   });
 }
 function openMore(anchor) {
-  const el = openPopover(anchor, `<button class="pop-i" data-m="gs">${ic('gift')}Gutschein verkaufen</button><button class="pop-i" data-m="ret">${ic('undo')}Retoure / Umtausch<span class="r muted" style="font-size:11.5px">mit Beleg</span></button><button class="pop-i" data-m="rcpts">${ic('receipt')}Belege<span class="r muted" style="font-size:11.5px">${DESKTOP ? 'gespeichert' : 'Sitzung'}</span></button><button class="pop-i" data-m="copy">${ic('printer')}Belegkopie drucken</button><button class="pop-i" data-m="drawer">${ic('cash')}Lade öffnen<span class="r muted" style="font-size:11.5px">protokolliert</span></button><button class="pop-i" data-m="x">${ic('receipt')}X-Bericht (Zwischenstand)</button><div class="pop-sep"></div><button class="pop-i" data-m="net">${ic(S.online ? 'wifi-off' : 'wifi')}${S.online ? 'Offline-Modus simulieren' : 'Verbindung wiederherstellen'}</button><button class="pop-i" data-m="flow">${ic('flow')}Kassenablauf bearbeiten</button>`, {align: 'right', width: 260});
+  const el = openPopover(anchor, `<button class="pop-i" data-m="gs">${ic('gift')}Gutschein verkaufen</button><button class="pop-i" data-m="ret">${ic('undo')}Retoure / Umtausch<span class="r muted" style="font-size:11.5px">mit Beleg</span></button><button class="pop-i" data-m="rcpts">${ic('receipt')}Belege<span class="r muted" style="font-size:11.5px">${DESKTOP ? 'gespeichert' : 'Sitzung'}</span></button><button class="pop-i" data-m="copy">${ic('printer')}Belegkopie drucken</button><button class="pop-i" data-m="drawer">${ic('cash')}Lade öffnen<span class="r muted" style="font-size:11.5px">protokolliert</span></button><button class="pop-i" data-m="book">${ic('cash')}Kassenbuch<span class="r muted" style="font-size:11.5px">Einlage · Entnahme</span></button><button class="pop-i" data-m="x">${ic('receipt')}X-Bericht (Zwischenstand)</button><button class="pop-i" data-m="z">${ic('lock')}Tagesabschluss</button><div class="pop-sep"></div>${DESKTOP ? '' : `<button class="pop-i" data-m="net">${ic(S.online ? 'wifi-off' : 'wifi')}${S.online ? 'Offline-Modus simulieren' : 'Verbindung wiederherstellen'}</button>`}<button class="pop-i" data-m="flow">${ic('flow')}Kassenablauf bearbeiten</button>`, {align: 'right', width: 260});
   if (!el) return;
   el.addEventListener('click', e => {
     const b = e.target.closest('[data-m]'); if (!b) return; closePopover();
-    ({gs: openVoucherSale, ret: openReturnStart, rcpts: () => openReceipts(), copy: reprint, drawer: () => { toast('Kassenlade geöffnet', {t2: 'Ereignis im Audit-Log gespeichert', icon: 'cash'}); Hooks.emit('device.drawer.opened', {kasse: 'INN-K01', benutzer: S.user.name, grund: 'manuell'}); },
+    ({gs: openVoucherSale, ret: openReturnStart, rcpts: () => openReceipts(), copy: reprint, drawer: () => openDrawer('manuell'), book: openCashBook, z: openClosing,
       x: xReport, net: () => setOnline(!S.online), flow: openFlow})[b.dataset.m]();
   });
 }
 function reprint() {
   if (!POS.last) return toast('Noch kein Beleg in dieser Sitzung', {type: 'warn', icon: 'receipt'});
+  if (DESKTOP && POS.lastRec) { Hooks.emit('pos.receipt.copy', {beleg: POS.last.no}); return printReceipt(POS.lastRec, {copy: true}); }
   toast(`Belegkopie ${POS.last.no}`, {t2: 'Als „KOPIE“ gekennzeichnet · RKSV-konform', icon: 'printer'});
   Hooks.emit('pos.receipt.copy', {beleg: POS.last.no});
 }
@@ -626,6 +588,7 @@ function payClick(e) {
 function payGo() {
   if (!PAY || PAY.busy || PAY.done) return;
   const m = METHODS.find(x => x.id === PAY.method), rem = remaining();
+  if (m.kind === 'voucher' && DESKTOP) return voucherPay(m, rem);
   if (m.kind === 'voucher') {
     const code = ($('#gsCode').value.trim() || `GS-${YEAR}-1187`).toUpperCase(), bal = hash(code) % 2 ? 50 : 100, use = Math.min(bal, rem);
     if (!PAY.vcheck) {
@@ -651,8 +614,8 @@ function payKeys(e) {
 async function finalizePayment() {
   PAY.busy = true; PAY.done = true;
   const L = $('#payL');
-  L.innerHTML = `<div style="flex:1;display:grid;place-items:center;text-align:center"><div class="authwait"><div class="ring">${ic('shield')}</div><p><b style="color:var(--text)">Beleg wird signiert …</b><br>Signatureinheit ${S.online ? 'Smartcard · Kasse ' + esc(CFG['kasse.id']) : 'Smartcard (offline)'} · Umsatzzähler verschlüsselt</p></div></div>`;
-  await wait(reduced() ? 150 : 1000);
+  L.innerHTML = `<div style="flex:1;display:grid;place-items:center;text-align:center"><div class="authwait"><div class="ring">${ic('shield')}</div><p><b style="color:var(--text)">${DESKTOP ? 'Beleg wird gespeichert …' : 'Beleg wird signiert …'}</b><br>${DESKTOP ? (S.rksv?.active ? `RKSV-Testmodus · Kasse ${esc(CFG['kasse.id'])} · Umsatzzähler verschlüsselt` : 'Lokale Datenbank') : `Signatureinheit ${S.online ? 'Smartcard · Kasse ' + esc(CFG['kasse.id']) : 'Smartcard (offline)'} · Umsatzzähler verschlüsselt`}</p></div></div>`;
+  await wait(reduced() ? 150 : DESKTOP ? 250 : 1000);
   const t = PAY.t, change = r2(PAY.parts.reduce((s, p) => s + (p.change || 0), 0));
   const rec = {no: belegNo(), date: new Date(), lines: POS.cart.map(l => ({...l})), t, parts: PAY.parts.slice(), change, customer: POS.customer, billDisc: POS.billDisc, cashier: S.user.name, offline: !S.online,
     sig: (hash(belegNo() + t.total) >>> 0).toString(16).toUpperCase().padStart(8, '0') + (hash(String(t.total)) >>> 0).toString(16).toUpperCase().padStart(8, '0')};
@@ -661,6 +624,7 @@ async function finalizePayment() {
     const r = await commitSale(rec);
     if (r) {
       rec.no = r.no; POS.no = r.number;
+      if (r.data) { rec.rksv = r.data.rksv || null; (r.data.lines || []).forEach((dl, i) => { if (dl.voucher && rec.lines[i]) { rec.lines[i].meta = dl.meta; rec.lines[i].codes = dl.codes; } }); }
       if (rec.customer) {
         if (r.points?.balance != null) { rec.pointsAfter = r.points.balance; rec.pointsEarned = r.points.earned; rec.customer.points = r.points.balance; }
         rec.customer.visits = (rec.customer.visits || 0) + 1; rec.customer.revenue = r2((rec.customer.revenue || 0) + t.total); rec.customer.lastVisit = new Date(); custFinish(rec.customer);
@@ -673,7 +637,9 @@ async function finalizePayment() {
     $('#payRetry').onclick = () => finalizePayment();
     return;
   }
-  POS.last = {no: rec.no, total: t.total};
+  POS.last = {no: rec.no, total: t.total}; POS.lastRec = rec;
+  if (DESKTOP && CFG['drucker.auto']) printReceipt(rec, {quiet: true});
+  if (rec.parts.some(p => p.m === 'bar')) openDrawer('Barzahlung', true);
   Hooks.emit('rksv.receipt.signed', {beleg: rec.no, kassenId: 'INN-K01', betragSatzNormal: t.vat.find(v => v.rate === 20)?.gross || 0, betragSatzNull: t.zero, signatur: 'ES256 · …' + rec.sig.slice(-8), offline: rec.offline});
   if (!S.online) { S.queue++; renderStatus(); updateQueueInfo(); }
   Dash.session.rev += t.total; Dash.session.bons++;
@@ -687,13 +653,14 @@ function showDone(rec) {
   box.innerHTML = `<div class="done-l">
     <div class="ok-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
     <div class="done-title">Bezahlt · ${eur(rec.t.total)}</div>
-    <div class="done-sub">Bon ${rec.no} · ${rec.lines.reduce((s, l) => s + l.qty, 0)} Artikel · RKSV-signiert ${clock(true)}${rec.offline ? ' · offline erfasst, Sync folgt' : ''}</div>
+    <div class="done-sub">Bon ${rec.no} · ${rec.lines.reduce((s, l) => s + l.qty, 0)} Artikel · ${DESKTOP ? (rec.rksv ? 'RKSV-signiert (Testmodus)' : 'gespeichert') : 'RKSV-signiert'} ${clock(true)}${rec.offline ? ' · offline erfasst, Sync folgt' : ''}</div>
+    ${rec.lines.some(l => l.codes?.length) ? `<div class="note" style="margin-top:14px">${ic('gift')}<span>Gutschein-Code: <b style="color:var(--text)" class="mono">${esc(rec.lines.flatMap(l => l.codes || []).join(', '))}</b></span></div>` : ''}
     <div class="pay-parts" style="margin-top:18px">${rec.parts.map(x => `<div class="ppart"><span class="reg-ic">${ic(METHODS.find(m => m.id === x.m).icon, 'i-sm')}</span><span><span style="display:block;font-weight:550">${esc(x.label)}</span><span class="muted" style="font-size:11.5px">${esc(x.ref)}</span></span><b>${eur(x.given || x.amount)}</b></div>`).join('')}</div>
     ${rec.change > 0 ? `<div class="change-big"><div class="l">Rückgeld</div><div class="v">${eur(rec.change)}</div></div>` : ''}
     ${rec.customer ? `<div class="note" style="margin-top:16px">${ic('star')}<span><b style="color:var(--text)">+${num(rec.pointsEarned ?? rec.t.points)} Gipfel-Punkte</b> für ${esc(rec.customer.name)} · neuer Stand ${num(rec.pointsAfter ?? rec.customer.points)}</span></div>` : ''}
     <div class="eyebrow" style="margin-top:26px">Beleg übergeben</div>
-    <div class="rcpt-opts"><button class="btn btn-secondary" data-r="print">${ic('printer')}Drucken</button><button class="btn btn-secondary" data-r="qr">${ic('qr')}Digital (QR)</button><button class="btn btn-secondary" data-r="mail">${ic('mail')}E-Mail</button></div>
-    <div class="note" style="margin-top:12px">${ic('shield')}<span>Belegerteilungspflicht: Ausgabe als Papier- oder digitaler Beleg. Signatur im DEP gespeichert${rec.offline ? ', Übertragung folgt nach Sync' : ''}.</span></div>
+    <div class="rcpt-opts"><button class="btn btn-secondary" data-r="print">${ic('printer')}Drucken</button>${DESKTOP ? '' : `<button class="btn btn-secondary" data-r="qr">${ic('qr')}Digital (QR)</button><button class="btn btn-secondary" data-r="mail">${ic('mail')}E-Mail</button>`}</div>
+    <div class="note" style="margin-top:12px">${ic('shield')}<span>Belegerteilungspflicht: Beleg aushändigen.${DESKTOP ? (rec.rksv ? ' Signatur im DEP gespeichert (Testmodus).' : ' RKSV noch nicht in Betrieb.') : ` Signatur im DEP gespeichert${rec.offline ? ', Übertragung folgt nach Sync' : ''}.`}</span></div>
     <div style="margin-top:auto;display:flex;gap:8px;padding-top:22px"><button class="btn btn-ghost btn-lg" data-close>Schließen</button><button class="btn btn-primary btn-lg" id="newSale" style="flex:1">Neuer Verkauf<span class="kbd">↵</span></button></div>
   </div>
   <div class="done-r"><div class="done-r-head"><span class="eyebrow">Bonvorschau</span><div class="seg" id="rcSeg" style="margin-left:auto">${[['classic', 'Klassisch'], ['modern', 'Modern'], ['minimal', 'Minimal']].map(([k, l]) => `<button data-tpl="${k}" aria-pressed="${k === tpl}">${l}</button>`).join('')}</div></div>
@@ -709,7 +676,7 @@ function showDone(rec) {
   box.addEventListener('click', e => {
     const r = e.target.closest('[data-r]'); if (!r) return;
     const k = r.dataset.r;
-    if (k === 'print') { toast('Beleg gedruckt', {t2: `Bondrucker BD-1 · Vorlage „${{classic: 'Klassisch', modern: 'Modern', minimal: 'Minimal'}[prefs.tpl]}“`, type: 'pos', icon: 'printer'}); Hooks.emit('device.printer.receipt', {beleg: rec.no, vorlage: prefs.tpl}); }
+    if (k === 'print') { if (DESKTOP) printReceipt(rec); else toast('Beleg gedruckt', {t2: `Bondrucker BD-1 · Vorlage „${{classic: 'Klassisch', modern: 'Modern', minimal: 'Minimal'}[prefs.tpl]}“`, type: 'pos', icon: 'printer'}); Hooks.emit('device.printer.receipt', {beleg: rec.no, vorlage: prefs.tpl}); }
     if (k === 'qr') { const w = $('#rcWrap', box); w.innerHTML = `<div style="text-align:center;padding-top:30px"><div class="qr" style="width:220px;height:220px;margin:0 auto">${pseudoQR('beleg|' + rec.no, 29)}</div><p style="margin-top:16px;font-size:13px;color:var(--text-2)">Kund:in scannt den Code am Kundendisplay.<br><span class="muted">Beleg wird über Ihr Kontor-Gateway bereitgestellt (24 h gültig).</span></p></div>`; Hooks.emit('pos.receipt.digital', {beleg: rec.no, kanal: 'qr'}); }
     if (k === 'mail') { const to = rec.customer?.email; toast(to ? 'Beleg per E-Mail gesendet' : 'E-Mail-Adresse erforderlich', {t2: to || 'Kund:in zuordnen oder Adresse eingeben', type: to ? 'pos' : 'warn', icon: 'mail'}); if (to) Hooks.emit('pos.receipt.digital', {beleg: rec.no, kanal: 'email'}); }
   });
@@ -731,6 +698,7 @@ function receiptHead(tpl) {
 }
 function receiptHTML(rec, tpl) {
   if (rec.kind === 'retoure' || rec.kind === 'storno') return returnReceiptHTML(rec, tpl);
+  if (['startbeleg', 'nullbeleg', 'monatsbeleg'].includes(rec.kind)) return zeroReceiptHTML(rec, tpl);
   const dt = rec.date, d = `${pad(dt.getDate())}.${pad(dt.getMonth() + 1)}.${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
   const money = v => num(v, 2);
   const lines = rec.lines.map(l => {
@@ -750,9 +718,8 @@ function receiptHTML(rec, tpl) {
     <div class="r sm"><span>MwSt</span><span>Netto · Steuer · Brutto</span></div>
     ${rec.t.vat.map(v => `<div class="r sm"><span>${v.rate} %</span><span>${money(v.net)} · ${money(v.tax)} · ${money(v.gross)}</span></div>`).join('')}
     ${rec.t.zero ? `<div class="r sm"><span>0 %</span><span>${money(rec.t.zero)} · 0,00 · ${money(rec.t.zero)}</span></div>` : ''}
-    ${rec.customer ? `<hr><div class="sm c">Kunde ${esc(rec.customer.id)} · +${rec.t.points} Gipfel-Punkte</div>` : ''}
-    <div class="qrw">${pseudoQR('rksv|' + rec.no + '|' + rec.sig)}</div>
-    <div class="sm c">RKSV · Signatur ES256 · Zert. 3D1F8A20<br>Sig. …${rec.sig.slice(-12)}${rec.offline ? '<br>Offline erfasst · Sync ausstehend' : ''}</div><hr>
+    ${rec.customer ? `<hr><div class="sm c">Kunde ${esc(rec.customer.id)} · +${rec.pointsEarned ?? rec.t.points} Gipfel-Punkte</div>` : ''}${rec.copy ? '<div class="c" style="font-weight:700;margin-top:6px">*** KOPIE ***</div>' : ''}
+    ${rksvBlockHTML(rec)}<hr>
     <div class="c" style="font-size:${tpl === 'minimal' ? '11px' : '12px'};white-space:pre-line">${esc(CFG['kasse.bonFuss'])}</div></div>`;
 }
 

@@ -1089,6 +1089,17 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
 .cpick button .ord{font-size:10px;font-weight:700;color:var(--accent)}
 .frow{display:grid;grid-template-columns:1fr 1.4fr auto;gap:8px;margin-bottom:6px}
 .select{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text-3) 50%),linear-gradient(135deg,var(--text-3) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:30px}
+.zr{display:grid;gap:14px}
+.zr-sec{display:grid;gap:4px}
+.zr-sec .eyebrow{margin-bottom:2px}
+.zr .trow{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--text-2);padding:2px 0}
+.zr .trow b{color:var(--text);font-weight:550}
+.zr .trow.disc b{color:var(--text-3)}
+.denoms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.denoms label{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px;font-size:12.5px;color:var(--text-2)}
+.denoms label span{min-width:48px;text-align:right}
+.denoms .input{height:34px;text-align:right}
+@media (max-width:760px){.denoms{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .rcpts{width:min(1040px,100%);height:min(700px,calc(100dvh - 48px));display:grid;grid-template-columns:minmax(0,1fr) 380px;overflow:hidden}
 .rcpts-l{display:flex;flex-direction:column;min-height:0}
 .rcpts-list{flex:1;overflow:auto;padding:0 10px 12px}

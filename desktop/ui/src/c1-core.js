@@ -190,7 +190,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.6.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.7.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -312,7 +312,7 @@ const NAV = [
   {id: 'einstellungen', label: 'Einstellungen', icon: 'sliders'},
 ];
 const TITLES = {dashboard: 'Dashboard', kasse: 'Kasse', artikel: 'Artikel', bestand: 'Bestand', einkauf: 'Einkauf', kunden: 'Kunden', berichte: 'Berichte', erweiterungen: 'Erweiterungen', designsystem: 'Designsystem', einstellungen: 'Einstellungen'};
-const PH_VIEWS = ['einkauf', 'berichte', 'erweiterungen'];
+const PH_VIEWS = ['erweiterungen'];
 
 function renderNav() {
   $('#nav').innerHTML = NAV.map(n => n.g ? `<div class="nav-group">${n.g}</div>` :
@@ -349,6 +349,8 @@ function go(view) {
   else if (view === 'artikel') renderArtikel();
   else if (view === 'bestand') renderBestand();
   else if (view === 'kunden') renderKunden();
+  else if (view === 'einkauf') renderEinkauf();
+  else if (view === 'berichte') renderBerichte();
   else renderPlaceholder(view);
   const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
   $$('.nav-item').forEach(n => n.dataset.view === view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
@@ -365,7 +367,7 @@ function renderTopbar() {
     L.innerHTML = `<div class="tb-title"><h1>${esc(CFG['kasse.name'])}</h1><span class="tb-sub">${esc(CFG['kasse.id'])} · Bon ${belegNo()} · ${esc(S.user.name)}</span></div><div class="parked" id="parked"></div>`;
     renderParked();
   } else {
-    const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster', einstellungen: DESKTOP ? 'Lokale Datenbank' : 'Vorschau', artikel: `${ART.length} Artikel · ${DESKTOP ? 'Datenbank' : 'Vorschau, nicht gespeichert'}`, bestand: `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, kunden: `${num(CUSTOMERS.length)} Kund:innen · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`}[S.view] || 'In Vorbereitung';
+    const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster', einstellungen: DESKTOP ? 'Lokale Datenbank' : 'Vorschau', artikel: `${ART.length} Artikel · ${DESKTOP ? 'Datenbank' : 'Vorschau, nicht gespeichert'}`, bestand: `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, kunden: `${num(CUSTOMERS.length)} Kund:innen · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, einkauf: 'Bestellungen & Wareneingang', berichte: 'Auswertungen & Abschlüsse'}[S.view] || 'In Vorbereitung';
     L.innerHTML = `<div class="tb-title"><h1>${TITLES[S.view]}</h1><span class="tb-sub">${esc(sub)}</span></div>`;
   }
 }
@@ -375,7 +377,7 @@ function renderStatus() {
   $('#statusbar').innerHTML = `
     ${DESKTOP ? `<span class="sbi ok"><span class="dot live"></span>Einzelplatz · lokale Datenbank</span>
     <span class="sb-sep"></span>
-    <span class="sbi hide-sm" data-tip="Kommt mit dem RKSV-Paket (zuerst Testmodus)">${ic('shield')}RKSV-Signatur noch nicht aktiv</span>` : `<button class="sbi ${off ? 'off' : 'ok'}" id="sbConn" data-tip="${off ? 'Klicken: Verbindung wiederherstellen' : 'Klicken: Offline-Modus simulieren'}"><span class="dot ${off ? '' : 'live'}"></span>${off ? 'Server nicht erreichbar · lokaler Betrieb' : 'KONTOR-SRV01 · lokal · 4 ms'}</button>
+    <span class="sbi hide-sm ${S.rksv?.active ? '' : 'off'}">${ic('shield')}${S.rksv?.active ? `RKSV-Testmodus · ${esc(S.rksv.kassen_id)}` : 'RKSV nicht in Betrieb'}</span>` : `<button class="sbi ${off ? 'off' : 'ok'}" id="sbConn" data-tip="${off ? 'Klicken: Verbindung wiederherstellen' : 'Klicken: Offline-Modus simulieren'}"><span class="dot ${off ? '' : 'live'}"></span>${off ? 'Server nicht erreichbar · lokaler Betrieb' : 'KONTOR-SRV01 · lokal · 4 ms'}</button>
     <span class="sb-sep"></span>
     <span class="sbi ${S.queue ? 'accent' : ''}">${ic('sync')}${S.queue ? `${S.queue} Beleg${S.queue > 1 ? 'e' : ''} in Warteschlange` : 'Synchron'}</span>
     <span class="sbi hide-sm">${ic('shield')}RKSV · Signatureinheit aktiv</span>`}
@@ -407,6 +409,13 @@ function cmdList() {
     c('Navigation', 'Einstellungen', 'sliders', () => go('einstellungen')),
     c('Kasse', 'Neuer Verkauf', 'plus', () => { go('kasse'); newSale(); }),
     c('Kasse', 'Belege anzeigen', 'receipt', () => openReceipts(), {kw: 'bon beleg journal kopie'}),
+    c('Kasse', 'Kassenbuch (Einlage/Entnahme)', 'cash', openCashBook, {kw: 'einlage entnahme wechselgeld bank'}),
+    c('Kasse', 'X-Bericht (Zwischenstand)', 'receipt', xReport, {kw: 'bericht tag'}),
+    c('Kasse', 'Tagesabschluss (Z-Bericht)', 'lock', openClosing, {kw: 'kassensturz abschluss z bericht'}),
+    c('Einkauf', 'Neue Bestellung', 'truck', () => { go('einkauf'); setTimeout(() => openPO(null), 120); }, {kw: 'bestellen lieferant'}),
+    c('Einkauf', 'Bestellvorschlag', 'truck', () => { EK.tab = 'vorschlag'; go('einkauf'); }, {kw: 'nachbestellen mindestbestand'}),
+    c('Navigation', 'Berichte & Abschlüsse', 'chart', () => go('berichte'), {kw: 'umsatz auswertung csv excel'}),
+    c('System', 'Benutzer wechseln', 'user', lock, {kw: 'abmelden anmelden pin'}),
     c('Kasse', 'Retoure / Umtausch', 'undo', () => { go('kasse'); setTimeout(openReturnStart, 80); }, {kw: 'rückgabe storno erstattung umtausch'}),
     c('Kunden', 'Neuer Kunde', 'user-plus', () => { go('kunden'); setTimeout(() => openCustomerEditor(null, {onSaved: c => openCustomerDetail(c)}), 80); }, {kw: 'kundin anlegen kundenkarte'}),
     c('Sortiment', 'Neuer Artikel', 'tag', () => { go('artikel'); setTimeout(() => openEditor(null), 80); }, {kw: 'anlegen artikel'}),
@@ -426,7 +435,7 @@ function cmdList() {
     c('Darstellung', dark ? 'Heller Modus' : 'Dunkler Modus', dark ? 'sun' : 'moon', toggleTheme, {kw: 'theme light dark'}),
     ...Object.entries(ACCENTS).map(([k, a]) => c('Darstellung', `Akzentfarbe: ${a.name}`, 'palette', () => setAccent(k), {kw: 'farbe'})),
     ...[['compact', 'Kompakt'], ['comfort', 'Komfort'], ['touch', 'Touch']].map(([k, l]) => c('Darstellung', `Dichte: ${l}`, 'sliders', () => { prefs.density = k; applyPrefs(); toast(`Dichte: ${l}`, {icon: 'sliders'}); })),
-    c('System', 'Update 1.8.0 prüfen & freigeben', 'download', openUpdate, {kw: 'version changelog beta stable'}),
+    c('System', DESKTOP ? 'Nach Updates suchen' : 'Update 1.8.0 prüfen & freigeben', 'download', openUpdate, {kw: 'version changelog beta stable'}),
     c('System', 'Backup jetzt erstellen', 'database', backupNow, {kw: 'sicherung'}),
     c('System', 'Ereignis-Inspektor (Hooks & Webhooks)', 'braces', toggleInspector, {kw: 'events entwickler'}),
     c('System', 'RKSV: DEP-Export erstellen', 'shield', depExport, {kw: 'finanz prüfung datenerfassungsprotokoll'}),

@@ -1089,6 +1089,17 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
 .cpick button .ord{font-size:10px;font-weight:700;color:var(--accent)}
 .frow{display:grid;grid-template-columns:1fr 1.4fr auto;gap:8px;margin-bottom:6px}
 .select{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text-3) 50%),linear-gradient(135deg,var(--text-3) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:30px}
+.zr{display:grid;gap:14px}
+.zr-sec{display:grid;gap:4px}
+.zr-sec .eyebrow{margin-bottom:2px}
+.zr .trow{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--text-2);padding:2px 0}
+.zr .trow b{color:var(--text);font-weight:550}
+.zr .trow.disc b{color:var(--text-3)}
+.denoms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.denoms label{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px;font-size:12.5px;color:var(--text-2)}
+.denoms label span{min-width:48px;text-align:right}
+.denoms .input{height:34px;text-align:right}
+@media (max-width:760px){.denoms{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .rcpts{width:min(1040px,100%);height:min(700px,calc(100dvh - 48px));display:grid;grid-template-columns:minmax(0,1fr) 380px;overflow:hidden}
 .rcpts-l{display:flex;flex-direction:column;min-height:0}
 .rcpts-list{flex:1;overflow:auto;padding:0 10px 12px}
@@ -1317,6 +1328,8 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
       <section class="view" id="view-artikel" aria-label="Artikel"></section>
       <section class="view" id="view-bestand" aria-label="Bestand"></section>
       <section class="view" id="view-kunden" aria-label="Kunden"></section>
+      <section class="view" id="view-einkauf" aria-label="Einkauf"></section>
+      <section class="view" id="view-berichte" aria-label="Berichte"></section>
       <section class="view" id="view-ph" aria-live="polite"></section>
     </main>
   </div>
@@ -1517,7 +1530,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.6.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.7.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1639,7 +1652,7 @@ const NAV = [
   {id: 'einstellungen', label: 'Einstellungen', icon: 'sliders'},
 ];
 const TITLES = {dashboard: 'Dashboard', kasse: 'Kasse', artikel: 'Artikel', bestand: 'Bestand', einkauf: 'Einkauf', kunden: 'Kunden', berichte: 'Berichte', erweiterungen: 'Erweiterungen', designsystem: 'Designsystem', einstellungen: 'Einstellungen'};
-const PH_VIEWS = ['einkauf', 'berichte', 'erweiterungen'];
+const PH_VIEWS = ['erweiterungen'];
 
 function renderNav() {
   $('#nav').innerHTML = NAV.map(n => n.g ? `<div class="nav-group">${n.g}</div>` :
@@ -1676,6 +1689,8 @@ function go(view) {
   else if (view === 'artikel') renderArtikel();
   else if (view === 'bestand') renderBestand();
   else if (view === 'kunden') renderKunden();
+  else if (view === 'einkauf') renderEinkauf();
+  else if (view === 'berichte') renderBerichte();
   else renderPlaceholder(view);
   const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
   $$('.nav-item').forEach(n => n.dataset.view === view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
@@ -1692,7 +1707,7 @@ function renderTopbar() {
     L.innerHTML = `<div class="tb-title"><h1>${esc(CFG['kasse.name'])}</h1><span class="tb-sub">${esc(CFG['kasse.id'])} · Bon ${belegNo()} · ${esc(S.user.name)}</span></div><div class="parked" id="parked"></div>`;
     renderParked();
   } else {
-    const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster', einstellungen: DESKTOP ? 'Lokale Datenbank' : 'Vorschau', artikel: `${ART.length} Artikel · ${DESKTOP ? 'Datenbank' : 'Vorschau, nicht gespeichert'}`, bestand: `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, kunden: `${num(CUSTOMERS.length)} Kund:innen · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`}[S.view] || 'In Vorbereitung';
+    const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster', einstellungen: DESKTOP ? 'Lokale Datenbank' : 'Vorschau', artikel: `${ART.length} Artikel · ${DESKTOP ? 'Datenbank' : 'Vorschau, nicht gespeichert'}`, bestand: `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, kunden: `${num(CUSTOMERS.length)} Kund:innen · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, einkauf: 'Bestellungen & Wareneingang', berichte: 'Auswertungen & Abschlüsse'}[S.view] || 'In Vorbereitung';
     L.innerHTML = `<div class="tb-title"><h1>${TITLES[S.view]}</h1><span class="tb-sub">${esc(sub)}</span></div>`;
   }
 }
@@ -1702,7 +1717,7 @@ function renderStatus() {
   $('#statusbar').innerHTML = `
     ${DESKTOP ? `<span class="sbi ok"><span class="dot live"></span>Einzelplatz · lokale Datenbank</span>
     <span class="sb-sep"></span>
-    <span class="sbi hide-sm" data-tip="Kommt mit dem RKSV-Paket (zuerst Testmodus)">${ic('shield')}RKSV-Signatur noch nicht aktiv</span>` : `<button class="sbi ${off ? 'off' : 'ok'}" id="sbConn" data-tip="${off ? 'Klicken: Verbindung wiederherstellen' : 'Klicken: Offline-Modus simulieren'}"><span class="dot ${off ? '' : 'live'}"></span>${off ? 'Server nicht erreichbar · lokaler Betrieb' : 'KONTOR-SRV01 · lokal · 4 ms'}</button>
+    <span class="sbi hide-sm ${S.rksv?.active ? '' : 'off'}">${ic('shield')}${S.rksv?.active ? `RKSV-Testmodus · ${esc(S.rksv.kassen_id)}` : 'RKSV nicht in Betrieb'}</span>` : `<button class="sbi ${off ? 'off' : 'ok'}" id="sbConn" data-tip="${off ? 'Klicken: Verbindung wiederherstellen' : 'Klicken: Offline-Modus simulieren'}"><span class="dot ${off ? '' : 'live'}"></span>${off ? 'Server nicht erreichbar · lokaler Betrieb' : 'KONTOR-SRV01 · lokal · 4 ms'}</button>
     <span class="sb-sep"></span>
     <span class="sbi ${S.queue ? 'accent' : ''}">${ic('sync')}${S.queue ? `${S.queue} Beleg${S.queue > 1 ? 'e' : ''} in Warteschlange` : 'Synchron'}</span>
     <span class="sbi hide-sm">${ic('shield')}RKSV · Signatureinheit aktiv</span>`}
@@ -1734,6 +1749,13 @@ function cmdList() {
     c('Navigation', 'Einstellungen', 'sliders', () => go('einstellungen')),
     c('Kasse', 'Neuer Verkauf', 'plus', () => { go('kasse'); newSale(); }),
     c('Kasse', 'Belege anzeigen', 'receipt', () => openReceipts(), {kw: 'bon beleg journal kopie'}),
+    c('Kasse', 'Kassenbuch (Einlage/Entnahme)', 'cash', openCashBook, {kw: 'einlage entnahme wechselgeld bank'}),
+    c('Kasse', 'X-Bericht (Zwischenstand)', 'receipt', xReport, {kw: 'bericht tag'}),
+    c('Kasse', 'Tagesabschluss (Z-Bericht)', 'lock', openClosing, {kw: 'kassensturz abschluss z bericht'}),
+    c('Einkauf', 'Neue Bestellung', 'truck', () => { go('einkauf'); setTimeout(() => openPO(null), 120); }, {kw: 'bestellen lieferant'}),
+    c('Einkauf', 'Bestellvorschlag', 'truck', () => { EK.tab = 'vorschlag'; go('einkauf'); }, {kw: 'nachbestellen mindestbestand'}),
+    c('Navigation', 'Berichte & Abschlüsse', 'chart', () => go('berichte'), {kw: 'umsatz auswertung csv excel'}),
+    c('System', 'Benutzer wechseln', 'user', lock, {kw: 'abmelden anmelden pin'}),
     c('Kasse', 'Retoure / Umtausch', 'undo', () => { go('kasse'); setTimeout(openReturnStart, 80); }, {kw: 'rückgabe storno erstattung umtausch'}),
     c('Kunden', 'Neuer Kunde', 'user-plus', () => { go('kunden'); setTimeout(() => openCustomerEditor(null, {onSaved: c => openCustomerDetail(c)}), 80); }, {kw: 'kundin anlegen kundenkarte'}),
     c('Sortiment', 'Neuer Artikel', 'tag', () => { go('artikel'); setTimeout(() => openEditor(null), 80); }, {kw: 'anlegen artikel'}),
@@ -1753,7 +1775,7 @@ function cmdList() {
     c('Darstellung', dark ? 'Heller Modus' : 'Dunkler Modus', dark ? 'sun' : 'moon', toggleTheme, {kw: 'theme light dark'}),
     ...Object.entries(ACCENTS).map(([k, a]) => c('Darstellung', `Akzentfarbe: ${a.name}`, 'palette', () => setAccent(k), {kw: 'farbe'})),
     ...[['compact', 'Kompakt'], ['comfort', 'Komfort'], ['touch', 'Touch']].map(([k, l]) => c('Darstellung', `Dichte: ${l}`, 'sliders', () => { prefs.density = k; applyPrefs(); toast(`Dichte: ${l}`, {icon: 'sliders'}); })),
-    c('System', 'Update 1.8.0 prüfen & freigeben', 'download', openUpdate, {kw: 'version changelog beta stable'}),
+    c('System', DESKTOP ? 'Nach Updates suchen' : 'Update 1.8.0 prüfen & freigeben', 'download', openUpdate, {kw: 'version changelog beta stable'}),
     c('System', 'Backup jetzt erstellen', 'database', backupNow, {kw: 'sicherung'}),
     c('System', 'Ereignis-Inspektor (Hooks & Webhooks)', 'braces', toggleInspector, {kw: 'events entwickler'}),
     c('System', 'RKSV: DEP-Export erstellen', 'shield', depExport, {kw: 'finanz prüfung datenerfassungsprotokoll'}),
@@ -2613,7 +2635,7 @@ function addService(id, amount, fromEl) {
   const key = isGS ? 'gs|' + uid() : 'svc|' + id;
   let l = POS.cart.find(x => x.key === key);
   if (l) { l.qty++; POS.lastNew = false; }
-  else { l = {key, service: true, icon: s.icon, name: isGS ? 'Gutschein (Mehrzweck)' : s.name, unit: isGS ? amount : s.price, vat: isGS ? 0 : 20, qty: 1, meta: isGS ? `Code GS-${YEAR}-${1000 + Math.floor(Math.random() * 8999)}` : 'Dienstleistung'}; POS.cart.push(l); POS.lastNew = true; }
+  else { l = {key, service: true, voucher: isGS, icon: s.icon, name: isGS ? 'Gutschein (Mehrzweck)' : s.name, unit: isGS ? amount : s.price, vat: isGS ? 0 : 20, qty: 1, meta: isGS ? (DESKTOP ? 'Code wird beim Abschluss vergeben' : `Code GS-${YEAR}-${1000 + Math.floor(Math.random() * 8999)}`) : 'Dienstleistung'}; POS.cart.push(l); POS.lastNew = true; }
   POS.lastKey = key; renderCart();
   Hooks.emit('pos.line.added', {beleg: belegNo(), sku: id, bezeichnung: l.name, preis: l.unit, ust: l.vat});
 }
@@ -2811,45 +2833,6 @@ function openDiscount() {
   el.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.target.closest('[data-close]') && !e.target.closest('#dRemove')) { e.preventDefault(); go2(); } });
   render();
 }
-function stepUp({title, text, rule}) {
-  return new Promise((resolve, reject) => {
-    let done = false, pin = '';
-    const ap = STAFF[1];
-    const el = openLayer(`<div class="modal" style="width:min(430px,100%)" role="dialog" aria-modal="true" aria-label="${esc(title)}">
-      <div class="m-head"><div class="m-ic" style="color:var(--warn)">${ic('shield')}</div><div><h2>${esc(title)}</h2><p>${esc(text)}</p></div></div>
-      <div class="m-body" id="suBody">
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);margin-bottom:14px"><span class="avatar" style="--h:${ap.hue}">${ap.initials}</span><div style="flex:1"><div style="font-size:13px;font-weight:600">${ap.name}</div><div class="muted" style="font-size:12px">${ap.role} · berechtigt</div></div><span class="pill">${ic('lock')}Step-up</span></div>
-        <div class="pin-dots" id="suDots" aria-label="PIN-Eingabe"><i></i><i></i><i></i><i></i></div>
-        <div class="keypad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-k="${n}">${n}</button>`).join('')}<button class="fn" data-close>Abbr.</button><button data-k="0">0</button><button class="fn" data-k="back" aria-label="Löschen">${ic('chevron-left')}</button></div>
-        <div class="or">oder ohne PIN</div>
-        <div class="auth-alt"><button class="btn btn-secondary" data-m="FIDO2-Schlüssel">${ic('usbkey')}Sicherheitsschlüssel</button><button class="btn btn-secondary" data-m="Windows Hello">${ic('faceid')}Windows Hello</button></div>
-        ${rule ? `<div class="prompt-hint" style="margin-top:14px">${ic('flow', 'i-xs')}${esc(rule)}</div>` : ''}
-      </div></div>`, {onClose: () => { if (!done) reject(new Error('abgebrochen')); }});
-    const body = $('#suBody', el);
-    const dots = () => $$('#suDots i', el).forEach((d, i) => d.classList.toggle('on', i < pin.length));
-    const ok = async method => {
-      done = true;
-      body.innerHTML = `<div class="authwait"><div class="ok-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div><p><b style="color:var(--text)">Freigegeben</b> von ${ap.name} · ${esc(method)}</p></div>`;
-      Hooks.emit('auth.stepup.granted', {von: ap.name, methode: method, regel: rule || null});
-      await wait(reduced() ? 100 : 800); closeLayer(el); resolve({by: ap, method});
-    };
-    const wait4 = async (icon, msg, method) => {
-      body.innerHTML = `<div class="authwait"><div class="ring">${ic(icon)}</div><p>${esc(msg)}</p></div>`;
-      await wait(reduced() ? 200 : 1300); ok(method);
-    };
-    const key = k => {
-      if (k === 'back') pin = pin.slice(0, -1); else if (pin.length < 4) pin += k;
-      dots();
-      if (pin.length === 4) {
-        if (pin === '0000') { const d = $('#suDots', el); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake'); pin = ''; setTimeout(dots, 250); Hooks.emit('auth.stepup.failed', {von: ap.name, methode: 'PIN'}); }
-        else ok('PIN');
-      }
-    };
-    el.addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (b) key(b.dataset.k); const m = e.target.closest('[data-m]'); if (m) wait4(m.dataset.m === 'Windows Hello' ? 'faceid' : 'usbkey', m.dataset.m === 'Windows Hello' ? 'Gesicht wird erkannt …' : 'Sicherheitsschlüssel berühren …', m.dataset.m); });
-    el.addEventListener('keydown', e => { if (done) return; if (/^\d$/.test(e.key)) { key(e.key); e.preventDefault(); } else if (e.key === 'Backspace') { key('back'); e.preventDefault(); } });
-  });
-}
-
 /* ── Parken, Gutschein, Kassenablauf ── */
 function park() {
   if (!POS.cart.length) return toast('Nichts zu parken', {type: 'warn', icon: 'pause'});
@@ -2905,16 +2888,17 @@ function openFlow() {
   });
 }
 function openMore(anchor) {
-  const el = openPopover(anchor, `<button class="pop-i" data-m="gs">${ic('gift')}Gutschein verkaufen</button><button class="pop-i" data-m="ret">${ic('undo')}Retoure / Umtausch<span class="r muted" style="font-size:11.5px">mit Beleg</span></button><button class="pop-i" data-m="rcpts">${ic('receipt')}Belege<span class="r muted" style="font-size:11.5px">${DESKTOP ? 'gespeichert' : 'Sitzung'}</span></button><button class="pop-i" data-m="copy">${ic('printer')}Belegkopie drucken</button><button class="pop-i" data-m="drawer">${ic('cash')}Lade öffnen<span class="r muted" style="font-size:11.5px">protokolliert</span></button><button class="pop-i" data-m="x">${ic('receipt')}X-Bericht (Zwischenstand)</button><div class="pop-sep"></div><button class="pop-i" data-m="net">${ic(S.online ? 'wifi-off' : 'wifi')}${S.online ? 'Offline-Modus simulieren' : 'Verbindung wiederherstellen'}</button><button class="pop-i" data-m="flow">${ic('flow')}Kassenablauf bearbeiten</button>`, {align: 'right', width: 260});
+  const el = openPopover(anchor, `<button class="pop-i" data-m="gs">${ic('gift')}Gutschein verkaufen</button><button class="pop-i" data-m="ret">${ic('undo')}Retoure / Umtausch<span class="r muted" style="font-size:11.5px">mit Beleg</span></button><button class="pop-i" data-m="rcpts">${ic('receipt')}Belege<span class="r muted" style="font-size:11.5px">${DESKTOP ? 'gespeichert' : 'Sitzung'}</span></button><button class="pop-i" data-m="copy">${ic('printer')}Belegkopie drucken</button><button class="pop-i" data-m="drawer">${ic('cash')}Lade öffnen<span class="r muted" style="font-size:11.5px">protokolliert</span></button><button class="pop-i" data-m="book">${ic('cash')}Kassenbuch<span class="r muted" style="font-size:11.5px">Einlage · Entnahme</span></button><button class="pop-i" data-m="x">${ic('receipt')}X-Bericht (Zwischenstand)</button><button class="pop-i" data-m="z">${ic('lock')}Tagesabschluss</button><div class="pop-sep"></div>${DESKTOP ? '' : `<button class="pop-i" data-m="net">${ic(S.online ? 'wifi-off' : 'wifi')}${S.online ? 'Offline-Modus simulieren' : 'Verbindung wiederherstellen'}</button>`}<button class="pop-i" data-m="flow">${ic('flow')}Kassenablauf bearbeiten</button>`, {align: 'right', width: 260});
   if (!el) return;
   el.addEventListener('click', e => {
     const b = e.target.closest('[data-m]'); if (!b) return; closePopover();
-    ({gs: openVoucherSale, ret: openReturnStart, rcpts: () => openReceipts(), copy: reprint, drawer: () => { toast('Kassenlade geöffnet', {t2: 'Ereignis im Audit-Log gespeichert', icon: 'cash'}); Hooks.emit('device.drawer.opened', {kasse: 'INN-K01', benutzer: S.user.name, grund: 'manuell'}); },
+    ({gs: openVoucherSale, ret: openReturnStart, rcpts: () => openReceipts(), copy: reprint, drawer: () => openDrawer('manuell'), book: openCashBook, z: openClosing,
       x: xReport, net: () => setOnline(!S.online), flow: openFlow})[b.dataset.m]();
   });
 }
 function reprint() {
   if (!POS.last) return toast('Noch kein Beleg in dieser Sitzung', {type: 'warn', icon: 'receipt'});
+  if (DESKTOP && POS.lastRec) { Hooks.emit('pos.receipt.copy', {beleg: POS.last.no}); return printReceipt(POS.lastRec, {copy: true}); }
   toast(`Belegkopie ${POS.last.no}`, {t2: 'Als „KOPIE“ gekennzeichnet · RKSV-konform', icon: 'printer'});
   Hooks.emit('pos.receipt.copy', {beleg: POS.last.no});
 }
@@ -3057,6 +3041,7 @@ function payClick(e) {
 function payGo() {
   if (!PAY || PAY.busy || PAY.done) return;
   const m = METHODS.find(x => x.id === PAY.method), rem = remaining();
+  if (m.kind === 'voucher' && DESKTOP) return voucherPay(m, rem);
   if (m.kind === 'voucher') {
     const code = ($('#gsCode').value.trim() || `GS-${YEAR}-1187`).toUpperCase(), bal = hash(code) % 2 ? 50 : 100, use = Math.min(bal, rem);
     if (!PAY.vcheck) {
@@ -3082,8 +3067,8 @@ function payKeys(e) {
 async function finalizePayment() {
   PAY.busy = true; PAY.done = true;
   const L = $('#payL');
-  L.innerHTML = `<div style="flex:1;display:grid;place-items:center;text-align:center"><div class="authwait"><div class="ring">${ic('shield')}</div><p><b style="color:var(--text)">Beleg wird signiert …</b><br>Signatureinheit ${S.online ? 'Smartcard · Kasse ' + esc(CFG['kasse.id']) : 'Smartcard (offline)'} · Umsatzzähler verschlüsselt</p></div></div>`;
-  await wait(reduced() ? 150 : 1000);
+  L.innerHTML = `<div style="flex:1;display:grid;place-items:center;text-align:center"><div class="authwait"><div class="ring">${ic('shield')}</div><p><b style="color:var(--text)">${DESKTOP ? 'Beleg wird gespeichert …' : 'Beleg wird signiert …'}</b><br>${DESKTOP ? (S.rksv?.active ? `RKSV-Testmodus · Kasse ${esc(CFG['kasse.id'])} · Umsatzzähler verschlüsselt` : 'Lokale Datenbank') : `Signatureinheit ${S.online ? 'Smartcard · Kasse ' + esc(CFG['kasse.id']) : 'Smartcard (offline)'} · Umsatzzähler verschlüsselt`}</p></div></div>`;
+  await wait(reduced() ? 150 : DESKTOP ? 250 : 1000);
   const t = PAY.t, change = r2(PAY.parts.reduce((s, p) => s + (p.change || 0), 0));
   const rec = {no: belegNo(), date: new Date(), lines: POS.cart.map(l => ({...l})), t, parts: PAY.parts.slice(), change, customer: POS.customer, billDisc: POS.billDisc, cashier: S.user.name, offline: !S.online,
     sig: (hash(belegNo() + t.total) >>> 0).toString(16).toUpperCase().padStart(8, '0') + (hash(String(t.total)) >>> 0).toString(16).toUpperCase().padStart(8, '0')};
@@ -3092,6 +3077,7 @@ async function finalizePayment() {
     const r = await commitSale(rec);
     if (r) {
       rec.no = r.no; POS.no = r.number;
+      if (r.data) { rec.rksv = r.data.rksv || null; (r.data.lines || []).forEach((dl, i) => { if (dl.voucher && rec.lines[i]) { rec.lines[i].meta = dl.meta; rec.lines[i].codes = dl.codes; } }); }
       if (rec.customer) {
         if (r.points?.balance != null) { rec.pointsAfter = r.points.balance; rec.pointsEarned = r.points.earned; rec.customer.points = r.points.balance; }
         rec.customer.visits = (rec.customer.visits || 0) + 1; rec.customer.revenue = r2((rec.customer.revenue || 0) + t.total); rec.customer.lastVisit = new Date(); custFinish(rec.customer);
@@ -3104,7 +3090,9 @@ async function finalizePayment() {
     $('#payRetry').onclick = () => finalizePayment();
     return;
   }
-  POS.last = {no: rec.no, total: t.total};
+  POS.last = {no: rec.no, total: t.total}; POS.lastRec = rec;
+  if (DESKTOP && CFG['drucker.auto']) printReceipt(rec, {quiet: true});
+  if (rec.parts.some(p => p.m === 'bar')) openDrawer('Barzahlung', true);
   Hooks.emit('rksv.receipt.signed', {beleg: rec.no, kassenId: 'INN-K01', betragSatzNormal: t.vat.find(v => v.rate === 20)?.gross || 0, betragSatzNull: t.zero, signatur: 'ES256 · …' + rec.sig.slice(-8), offline: rec.offline});
   if (!S.online) { S.queue++; renderStatus(); updateQueueInfo(); }
   Dash.session.rev += t.total; Dash.session.bons++;
@@ -3118,13 +3106,14 @@ function showDone(rec) {
   box.innerHTML = `<div class="done-l">
     <div class="ok-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
     <div class="done-title">Bezahlt · ${eur(rec.t.total)}</div>
-    <div class="done-sub">Bon ${rec.no} · ${rec.lines.reduce((s, l) => s + l.qty, 0)} Artikel · RKSV-signiert ${clock(true)}${rec.offline ? ' · offline erfasst, Sync folgt' : ''}</div>
+    <div class="done-sub">Bon ${rec.no} · ${rec.lines.reduce((s, l) => s + l.qty, 0)} Artikel · ${DESKTOP ? (rec.rksv ? 'RKSV-signiert (Testmodus)' : 'gespeichert') : 'RKSV-signiert'} ${clock(true)}${rec.offline ? ' · offline erfasst, Sync folgt' : ''}</div>
+    ${rec.lines.some(l => l.codes?.length) ? `<div class="note" style="margin-top:14px">${ic('gift')}<span>Gutschein-Code: <b style="color:var(--text)" class="mono">${esc(rec.lines.flatMap(l => l.codes || []).join(', '))}</b></span></div>` : ''}
     <div class="pay-parts" style="margin-top:18px">${rec.parts.map(x => `<div class="ppart"><span class="reg-ic">${ic(METHODS.find(m => m.id === x.m).icon, 'i-sm')}</span><span><span style="display:block;font-weight:550">${esc(x.label)}</span><span class="muted" style="font-size:11.5px">${esc(x.ref)}</span></span><b>${eur(x.given || x.amount)}</b></div>`).join('')}</div>
     ${rec.change > 0 ? `<div class="change-big"><div class="l">Rückgeld</div><div class="v">${eur(rec.change)}</div></div>` : ''}
     ${rec.customer ? `<div class="note" style="margin-top:16px">${ic('star')}<span><b style="color:var(--text)">+${num(rec.pointsEarned ?? rec.t.points)} Gipfel-Punkte</b> für ${esc(rec.customer.name)} · neuer Stand ${num(rec.pointsAfter ?? rec.customer.points)}</span></div>` : ''}
     <div class="eyebrow" style="margin-top:26px">Beleg übergeben</div>
-    <div class="rcpt-opts"><button class="btn btn-secondary" data-r="print">${ic('printer')}Drucken</button><button class="btn btn-secondary" data-r="qr">${ic('qr')}Digital (QR)</button><button class="btn btn-secondary" data-r="mail">${ic('mail')}E-Mail</button></div>
-    <div class="note" style="margin-top:12px">${ic('shield')}<span>Belegerteilungspflicht: Ausgabe als Papier- oder digitaler Beleg. Signatur im DEP gespeichert${rec.offline ? ', Übertragung folgt nach Sync' : ''}.</span></div>
+    <div class="rcpt-opts"><button class="btn btn-secondary" data-r="print">${ic('printer')}Drucken</button>${DESKTOP ? '' : `<button class="btn btn-secondary" data-r="qr">${ic('qr')}Digital (QR)</button><button class="btn btn-secondary" data-r="mail">${ic('mail')}E-Mail</button>`}</div>
+    <div class="note" style="margin-top:12px">${ic('shield')}<span>Belegerteilungspflicht: Beleg aushändigen.${DESKTOP ? (rec.rksv ? ' Signatur im DEP gespeichert (Testmodus).' : ' RKSV noch nicht in Betrieb.') : ` Signatur im DEP gespeichert${rec.offline ? ', Übertragung folgt nach Sync' : ''}.`}</span></div>
     <div style="margin-top:auto;display:flex;gap:8px;padding-top:22px"><button class="btn btn-ghost btn-lg" data-close>Schließen</button><button class="btn btn-primary btn-lg" id="newSale" style="flex:1">Neuer Verkauf<span class="kbd">↵</span></button></div>
   </div>
   <div class="done-r"><div class="done-r-head"><span class="eyebrow">Bonvorschau</span><div class="seg" id="rcSeg" style="margin-left:auto">${[['classic', 'Klassisch'], ['modern', 'Modern'], ['minimal', 'Minimal']].map(([k, l]) => `<button data-tpl="${k}" aria-pressed="${k === tpl}">${l}</button>`).join('')}</div></div>
@@ -3140,7 +3129,7 @@ function showDone(rec) {
   box.addEventListener('click', e => {
     const r = e.target.closest('[data-r]'); if (!r) return;
     const k = r.dataset.r;
-    if (k === 'print') { toast('Beleg gedruckt', {t2: `Bondrucker BD-1 · Vorlage „${{classic: 'Klassisch', modern: 'Modern', minimal: 'Minimal'}[prefs.tpl]}“`, type: 'pos', icon: 'printer'}); Hooks.emit('device.printer.receipt', {beleg: rec.no, vorlage: prefs.tpl}); }
+    if (k === 'print') { if (DESKTOP) printReceipt(rec); else toast('Beleg gedruckt', {t2: `Bondrucker BD-1 · Vorlage „${{classic: 'Klassisch', modern: 'Modern', minimal: 'Minimal'}[prefs.tpl]}“`, type: 'pos', icon: 'printer'}); Hooks.emit('device.printer.receipt', {beleg: rec.no, vorlage: prefs.tpl}); }
     if (k === 'qr') { const w = $('#rcWrap', box); w.innerHTML = `<div style="text-align:center;padding-top:30px"><div class="qr" style="width:220px;height:220px;margin:0 auto">${pseudoQR('beleg|' + rec.no, 29)}</div><p style="margin-top:16px;font-size:13px;color:var(--text-2)">Kund:in scannt den Code am Kundendisplay.<br><span class="muted">Beleg wird über Ihr Kontor-Gateway bereitgestellt (24 h gültig).</span></p></div>`; Hooks.emit('pos.receipt.digital', {beleg: rec.no, kanal: 'qr'}); }
     if (k === 'mail') { const to = rec.customer?.email; toast(to ? 'Beleg per E-Mail gesendet' : 'E-Mail-Adresse erforderlich', {t2: to || 'Kund:in zuordnen oder Adresse eingeben', type: to ? 'pos' : 'warn', icon: 'mail'}); if (to) Hooks.emit('pos.receipt.digital', {beleg: rec.no, kanal: 'email'}); }
   });
@@ -3162,6 +3151,7 @@ function receiptHead(tpl) {
 }
 function receiptHTML(rec, tpl) {
   if (rec.kind === 'retoure' || rec.kind === 'storno') return returnReceiptHTML(rec, tpl);
+  if (['startbeleg', 'nullbeleg', 'monatsbeleg'].includes(rec.kind)) return zeroReceiptHTML(rec, tpl);
   const dt = rec.date, d = `${pad(dt.getDate())}.${pad(dt.getMonth() + 1)}.${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
   const money = v => num(v, 2);
   const lines = rec.lines.map(l => {
@@ -3181,9 +3171,8 @@ function receiptHTML(rec, tpl) {
     <div class="r sm"><span>MwSt</span><span>Netto · Steuer · Brutto</span></div>
     ${rec.t.vat.map(v => `<div class="r sm"><span>${v.rate} %</span><span>${money(v.net)} · ${money(v.tax)} · ${money(v.gross)}</span></div>`).join('')}
     ${rec.t.zero ? `<div class="r sm"><span>0 %</span><span>${money(rec.t.zero)} · 0,00 · ${money(rec.t.zero)}</span></div>` : ''}
-    ${rec.customer ? `<hr><div class="sm c">Kunde ${esc(rec.customer.id)} · +${rec.t.points} Gipfel-Punkte</div>` : ''}
-    <div class="qrw">${pseudoQR('rksv|' + rec.no + '|' + rec.sig)}</div>
-    <div class="sm c">RKSV · Signatur ES256 · Zert. 3D1F8A20<br>Sig. …${rec.sig.slice(-12)}${rec.offline ? '<br>Offline erfasst · Sync ausstehend' : ''}</div><hr>
+    ${rec.customer ? `<hr><div class="sm c">Kunde ${esc(rec.customer.id)} · +${rec.pointsEarned ?? rec.t.points} Gipfel-Punkte</div>` : ''}${rec.copy ? '<div class="c" style="font-weight:700;margin-top:6px">*** KOPIE ***</div>' : ''}
+    ${rksvBlockHTML(rec)}<hr>
     <div class="c" style="font-size:${tpl === 'minimal' ? '11px' : '12px'};white-space:pre-line">${esc(CFG['kasse.bonFuss'])}</div></div>`;
 }
 
@@ -3268,6 +3257,7 @@ const DEFAULTS = {
   'kasse.id': 'INN-K01', 'kasse.name': 'Kasse 1', 'kasse.freigabe': true, 'kasse.rabattGrenze': 20,
   'kasse.vereinsregel': true, 'kasse.retoureGrenze': 100, 'ziel.tag': 2500, 'kasse.pflichtfelder': true, 'kasse.bonFuss': 'Danke für Ihren Einkauf! Umtausch innerhalb von 30 Tagen mit Beleg.',
   'anzeige.zoom': 1, 'backup.dir': '', 'backup.auto': true, 'backup.keep': 14, 'update.kanal': 'stable', 'update.auto': true, 'update.freigabe': null,
+  'drucker.art': 'aus', 'drucker.adresse': '', 'drucker.name': '', 'drucker.breite': 48, 'drucker.auto': false, 'drucker.lade': false, 'gutschein.jahre': 3,
 };
 const CFG = {...DEFAULTS};
 async function loadSettings() {
@@ -3334,7 +3324,7 @@ async function autoBackupCheck() {
 }
 
 /* ── Ansicht ── */
-const SET_SECTIONS = [['allgemein', 'Firma & Filiale', 'store'], ['kasse', 'Kasse', 'register'], ['anzeige', 'Darstellung', 'palette'], ['sicherung', 'Datensicherung', 'database'], ['updates', 'Updates', 'download'], ['system', 'System & Protokoll', 'server']];
+const SET_SECTIONS = [['allgemein', 'Firma & Filiale', 'store'], ['kasse', 'Kasse', 'register'], ['benutzer', 'Benutzer', 'users'], ['drucker', 'Drucker & Lade', 'printer'], ['rksv', 'RKSV', 'shield'], ['anzeige', 'Darstellung', 'palette'], ['sicherung', 'Datensicherung', 'database'], ['updates', 'Updates', 'download'], ['system', 'System & Protokoll', 'server']];
 function field(key, label, help, type = 'text', extra = '') {
   const v = CFG[key];
   let ctl;
@@ -3366,10 +3356,12 @@ function renderSettings() {
         ${field('kasse.rabattGrenze', 'Rabattgrenze ohne Freigabe (%)', '', 'number', 'min="0" max="100" step="1" style="max-width:120px"')}
         ${field('kasse.retoureGrenze', 'Erstattung ohne Freigabe bis (€)', 'Retouren darüber und alle Stornos erfordern die Filialleitung (Step-up)', 'number', 'min="0" max="10000" step="10" style="max-width:120px"')}
         ${field('ziel.tag', 'Umsatzziel je Verkaufstag (€)', 'Grundlage für Tages-, Wochen- und Monatsziel im Dashboard', 'number', 'min="0" step="100" style="max-width:140px"')}
+        ${field('gutschein.jahre', 'Gutscheine gültig (Jahre nach Ausgabejahr)', 'Ablaufdatum = 31.12. des Ausgabejahres plus diese Anzahl Jahre', 'number', 'min="1" max="30" step="1" style="max-width:100px"')}
         ${field('kasse.vereinsregel', 'Vereinsrabatt automatisch', 'Regel greift beim Zuordnen von Vereinsmitgliedern', 'switch')}
         ${field('kasse.pflichtfelder', 'Pflichtfelder je Warengruppe', 'z. B. Z-Wert und Seriennummer beim Skiverkauf', 'switch')}
         ${field('kasse.bonFuss', 'Text am Bonende', '', 'textarea')}
       </div></section>
+      ${usersSectionHTML()}${printerSectionHTML()}${rksvSectionHTML()}
       <section class="set-sec" id="sec-anzeige"><h2>Darstellung</h2><p>Gilt für den angemeldeten Benutzer. Anzeigegröße auch mit <span class="kbd">Strg</span> <span class="kbd">+</span> / <span class="kbd">−</span> / <span class="kbd">0</span>.</p><div class="card">
         <div class="set-row"><div><div class="set-l">Anzeigegröße</div><div class="set-h">Für große Bildschirme oder Touch-Kassen</div></div><div class="set-c"><div class="seg" id="zoomSeg">${[.8, .9, 1, 1.1, 1.25, 1.5].map(z => `<button data-v="${z}" aria-pressed="${Math.abs(z - zoom) < .001}">${Math.round(z * 100)} %</button>`).join('')}</div></div></div>
         ${segRow('Modus', 'Hell, Dunkel oder wie Windows', 'theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['system', 'System']])}
@@ -3391,7 +3383,7 @@ function renderSettings() {
     if (s.dataset.pref) { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }
   }));
   if (DESKTOP) { renderBackups(); renderSys(); }
-  renderUpdSection(); renderAudit();
+  renderUpdSection(); renderAudit(); renderUsersBox(); renderPrinterBox(); renderRksvBox().then(renderSettingsKasseLock);
 }
 async function renderSys() {
   const i = await refreshInfo(); const box = $('#sysBox'); if (!i || !box) return;
@@ -3486,10 +3478,12 @@ function finishArt(a) {
 function artFromDb(d) {
   return finishArt({id: d.id, name: d.name, brand: d.brand, cat: d.category, g: d.glyph || 'shirt', price: d.price / 100, sale: d.sale_price ? d.sale_price / 100 : undefined,
     vat: d.vat, tag: d.tag || undefined, pop: d.popularity, colors: d.colors, sizes: d.sizes, fields: d.fields || {}, prompts: Array.isArray(d.prompts) ? d.prompts : undefined,
+    cost: d.cost != null ? d.cost / 100 : null, supplierId: d.supplier_id || '', minStock: d.min_stock ?? 2,
     variants: d.variants.map(v => ({vid: v.id, c: v.color, s: v.size, ean: v.ean, q: v.stock, other: null}))});
 }
 const artToDb = a => ({id: a.id, name: a.name, brand: a.brand || '', category: a.cat, glyph: a.g, price: Math.round(a.price * 100), sale_price: a.sale ? Math.round(a.sale * 100) : null,
   vat: a.vat ?? 20, tag: a.tag || null, popularity: a.pop || 0, colors: a.colors, sizes: a.sizes, fields: a.fields || {}, prompts: a.prompts || null,
+  cost: a.cost != null ? Math.round(a.cost * 100) : null, supplier_id: a.supplierId || null, min_stock: a.minStock ?? 2,
   variants: a.variants.map(v => ({color: v.c, size: v.s, ean: v.ean, stock: v.q || 0}))});
 function replaceCatalog(list) { ART.length = 0; list.forEach(d => ART.push(artFromDb(d))); }
 async function loadCatalog() {
@@ -3507,9 +3501,9 @@ async function loadCatalog() {
 }
 function recData(rec) {
   return {date: rec.date.toISOString(), cashier: rec.cashier, offline: rec.offline, sig: rec.sig, change: rec.change, billDisc: rec.billDisc || null, t: rec.t,
-    parts: rec.parts.map(p => ({m: p.m, label: p.label, amount: p.amount, ref: p.ref, given: p.given || null, change: p.change || 0})),
+    parts: rec.parts.map(p => ({m: p.m, label: p.label, amount: p.amount, ref: p.ref, given: p.given || null, change: p.change || 0, code: p.code || null})),
     customer: rec.customer ? {id: rec.customer.id, name: rec.customer.name, points: rec.customer.points, email: rec.customer.email} : null,
-    lines: rec.lines.map(l => ({name: l.name, sku: l.art?.id || null, glyph: l.art?.g || null, c: l.c || null, s: l.s || null, qty: l.qty, unit: l.unit, was: l.was || null, vat: l.vat, disc: l.disc || null, service: !!l.service, icon: l.icon || null, meta: l.meta || null, vals: l.vals || null}))};
+    lines: rec.lines.map(l => ({name: l.name, sku: l.art?.id || null, glyph: l.art?.g || null, c: l.c || null, s: l.s || null, qty: l.qty, unit: l.unit, was: l.was || null, vat: l.vat, disc: l.disc || null, service: !!l.service, voucher: !!l.voucher, icon: l.icon || null, meta: l.meta || null, vals: l.vals || null}))};
 }
 const recFromData = (no, d) => ({...d, no, date: new Date(d.date), lines: d.lines.map(l => ({...l, art: l.sku ? (artById(l.sku) || {g: l.glyph, id: l.sku}) : null}))});
 async function commitSale(rec) {
@@ -3570,8 +3564,8 @@ function newEan(artId, used) {
 /* ── Artikel-Editor ── */
 function openEditor(a) {
   const isNew = !a;
-  const st = a ? {id: a.id, name: a.name, brand: a.brand, cat: a.cat, g: a.g, price: num(a.price, 2), sale: a.sale ? num(a.sale, 2) : '', vat: a.vat ?? 20, tag: a.tag || '', colors: [...a.colors], sizes: a.sizes.join(', '), fields: Object.entries(a.fields || {}), ski: !!a.prompts, pop: a.pop || 50}
-    : {id: nextArtId(), name: '', brand: '', cat: AV.cat !== 'alle' ? AV.cat : 'jacken', g: 'jacket', price: '', sale: '', vat: 20, tag: '', colors: [], sizes: 'S, M, L, XL', fields: [], ski: false, pop: 50};
+  const st = a ? {id: a.id, name: a.name, brand: a.brand, cat: a.cat, g: a.g, price: num(a.price, 2), sale: a.sale ? num(a.sale, 2) : '', vat: a.vat ?? 20, tag: a.tag || '', colors: [...a.colors], sizes: a.sizes.join(', '), fields: Object.entries(a.fields || {}), ski: !!a.prompts, pop: a.pop || 50, cost: a.cost != null ? num(a.cost, 2) : '', supplierId: a.supplierId || '', minStock: String(a.minStock ?? 2)}
+    : {id: nextArtId(), name: '', brand: '', cat: AV.cat !== 'alle' ? AV.cat : 'jacken', g: 'jacket', price: '', sale: '', vat: 20, tag: '', colors: [], sizes: 'S, M, L, XL', fields: [], ski: false, pop: 50, cost: '', supplierId: '', minStock: '2'};
   const el = openLayer(`<div class="drawer-panel" style="width:min(600px,100%)" role="dialog" aria-modal="true" aria-label="Artikel bearbeiten"><div id="edHead"></div><div class="drawer-body" id="edBody"></div>
     <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">${isNew ? '' : `<button class="btn btn-danger" id="edDel">${ic('trash', 'i-sm')}Deaktivieren</button>`}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="edSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {cls: 'drawer', focus: '[data-f="name"]'});
   const collect = () => {
@@ -3592,6 +3586,9 @@ function openEditor(a) {
         <label class="field"><span>Verkaufspreis € <b class="req">*</b></span><input class="input num" data-f="price" inputmode="decimal" value="${esc(st.price)}"></label>
         <label class="field"><span>Aktionspreis €</span><input class="input num" data-f="sale" inputmode="decimal" value="${esc(st.sale)}" placeholder="leer = kein Aktionspreis"></label>
         <label class="field"><span>Steuersatz</span><select class="input select" data-f="vat">${[20, 13, 10, 0].map(r => `<option value="${r}" ${+st.vat === r ? 'selected' : ''}>${r} %</option>`).join('')}</select></label>
+        <label class="field"><span>Einkaufspreis netto € <span class="muted" id="edMargin"></span></span><input class="input num" data-f="cost" inputmode="decimal" value="${esc(st.cost)}" placeholder="für Spanne & Bestellung"></label>
+        <label class="field"><span>Lieferant</span><select class="input select" data-f="supplierId"><option value="">–</option>${SUPPLIERS.map(x => `<option value="${esc(x.id)}" ${x.id === st.supplierId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
+        <label class="field"><span>Mindestbestand je Variante</span><input class="input num" data-f="minStock" inputmode="numeric" value="${esc(st.minStock)}"></label>
         <label class="field"><span>Kennzeichnung</span><select class="input select" data-f="tag"><option value="" ${!st.tag ? 'selected' : ''}>keine</option><option ${st.tag === 'Neu' ? 'selected' : ''}>Neu</option><option ${st.tag === 'Bestseller' ? 'selected' : ''}>Bestseller</option><option ${st.tag === 'Auslauf' ? 'selected' : ''}>Auslauf</option></select></label>
       </div>
       <div class="ed-sec"><div class="lab">Farben <span class="muted">Reihenfolge = Anzeige · erste Farbe = Kachelbild</span></div><div class="cpick">${COLOR_KEYS.map(k => { const i = st.colors.indexOf(k); return `<button type="button" data-col="${k}" aria-pressed="${i >= 0}" style="--sw:${COLORS[k][1]}"><i></i>${COLORS[k][0]}${i >= 0 ? `<span class="ord">${i + 1}</span>` : ''}</button>`; }).join('')}</div></div>
@@ -3629,7 +3626,8 @@ function openEditor(a) {
       const variants = [];
       st.colors.forEach(c => sizes.forEach(s => { const ex = a?.variants.find(v => v.c === c && v.s === s); if (ex) variants.push({...ex}); else { const ean = newEan(st.id, used); used.add(ean); variants.push({c, s, ean, q: 0, other: null}); } }));
       const art = finishArt({id: st.id.trim(), name: st.name.trim(), brand: st.brand.trim(), cat: st.cat, g: st.g, price: r2(price), sale: sale ? r2(sale) : undefined, vat: +st.vat, tag: st.tag || undefined, pop: st.pop,
-        colors: [...st.colors], sizes, fields: Object.fromEntries(st.fields.filter(([k]) => k)), prompts: st.ski ? SKI_PROMPTS : undefined, variants});
+        colors: [...st.colors], sizes, fields: Object.fromEntries(st.fields.filter(([k]) => k)), prompts: st.ski ? SKI_PROMPTS : undefined, variants,
+        cost: String(st.cost).trim() && isFinite(parseAmt(st.cost)) ? r2(parseAmt(st.cost)) : null, supplierId: st.supplierId || '', minStock: Math.max(0, parseInt(st.minStock, 10) || 0)});
       const btn = $('#edSave', el); btn.disabled = true;
       try {
         if (DESKTOP) replaceCatalog(await invoke('article_save', {article: artToDb(art), user: S.user.name}));
@@ -4091,7 +4089,7 @@ function bindCustomers() {
    eigener Beleg mit negativem Betrag und Verweis auf das Original.
    ════════════════════════════════════════════════════════════════════ */
 const RETURN_REASONS = ['Größe passt nicht', 'Gefällt nicht', 'Defekt / Reklamation', 'Falscher Artikel', 'Kulanz'];
-const kindLabel = s => ({retoure: 'Retoure', storno: 'Storno'})[s.kind || s.data?.kind] || 'Bon';
+const kindLabel = s => ({retoure: 'Retoure', storno: 'Storno', startbeleg: 'Startbeleg', nullbeleg: 'Nullbeleg', monatsbeleg: 'Monatsbeleg'})[s.kind || s.data?.kind] || 'Bon';
 const normBeleg = raw => {
   const s = String(raw).trim().replace(/\s/g, '');
   let m = /^(\d{4})-(\d{1,6})$/.exec(s); if (m) return `${m[1]}-${pad(+m[2], 6)}`;
@@ -4132,7 +4130,7 @@ async function openReceipts(opts = {}) {
   el.addEventListener('click', e => {
     const b = e.target.closest('[data-i]'); if (b) { sel = +b.dataset.i; render(); }
     const s = filtered()[sel];
-    if (e.target.closest('#rcCopy') && s) { toast(`Belegkopie ${s.no}`, {t2: 'Als „KOPIE“ gekennzeichnet', icon: 'printer'}); Hooks.emit('pos.receipt.copy', {beleg: s.no}); }
+    if (e.target.closest('#rcCopy') && s) { Hooks.emit('pos.receipt.copy', {beleg: s.no}); if (DESKTOP) printReceipt(recFromData(s.no, {...s.data, kind: s.kind || s.data?.kind}), {copy: true}); else toast(`Belegkopie ${s.no}`, {t2: 'Als „KOPIE“ gekennzeichnet', icon: 'printer'}); }
     if (e.target.closest('#rcRet') && s) openReturn(s.no, {onDone: after});
     if (e.target.closest('#rcVoid') && s) openReturn(s.no, {storno: true, onDone: after});
   });
@@ -4174,7 +4172,8 @@ async function openReturn(no, {storno = false, onDone} = {}) {
   const unitEff = lines.map((l, i) => info.effective[i] / Math.max(1, l.qty));
   const methods = [{m: 'bar', label: 'Bar'}];
   (d.parts || []).forEach(p => { if (p.m !== 'bar' && ['bankomat', 'kredit', 'apple', 'google'].includes(p.m) && !methods.some(x => x.m === p.m)) methods.push({m: p.m, label: p.label}); });
-  const st = {mode: storno ? 'storno' : 'retoure', qty: lines.map((l, i) => storno ? open[i] : (open.length === 1 || lines.length === 1 ? open[i] : 0)), reason: storno ? 'Fehlbon' : RETURN_REASONS[0], method: methods[methods.length > 1 && (d.parts || []).length === 1 ? 1 : 0], busy: false};
+  methods.push({m: 'gutschein', label: 'Gutschein (neu)'});
+  const st = {mode: storno ? 'storno' : 'retoure', qty: lines.map((l, i) => storno ? open[i] : (open.length === 1 || lines.length === 1 ? open[i] : 0)), reason: storno ? 'Fehlbon' : RETURN_REASONS[0], method: methods[methods.length > 2 && (d.parts || []).length === 1 && methods[1].m === d.parts[0].m ? 1 : 0], busy: false};
   const limit = +CFG['kasse.retoureGrenze'] || 100;
   const el = openLayer(`<div class="modal" style="width:min(720px,100%)" role="dialog" aria-modal="true" aria-label="Retoure"><div id="rtBody" style="display:flex;flex-direction:column;min-height:0;max-height:calc(100dvh - 48px)"></div></div>`, {closeOnScrim: false});
   const box = $('#rtBody', el);
@@ -4191,8 +4190,8 @@ async function openReturn(no, {storno = false, onDone} = {}) {
             ${st.mode === 'storno' ? `<b class="num">${l.qty} ×</b>` : open[i] > 0 ? `<div class="qty"><button data-rq="${i}" data-d="-1" aria-label="weniger">${ic('minus', 'i-xs')}</button><span>${st.qty[i]}</span><button data-rq="${i}" data-d="1" aria-label="mehr">${ic('plus', 'i-xs')}</button></div>` : '<span class="pill" style="height:20px">retour</span>'}</div>`;
         }).join('')}</div>
         <div><div class="field"><span>Grund · erscheint auf dem Beleg und in der Auswertung</span></div><div class="reasons" style="margin-top:6px">${(st.mode === 'storno' ? ['Fehlbon', 'Falsche Zahlart', 'Kunde verzichtet', 'Test'] : RETURN_REASONS).map(r => `<button class="chip" data-r="${esc(r)}" aria-pressed="${r === st.reason}">${esc(r)}</button>`).join('')}</div></div>
-        <div><div class="field"><span>Erstattung über</span></div><div class="reasons" style="margin-top:6px">${methods.map((m, i) => `<button class="chip" data-m="${i}" aria-pressed="${m === st.method}">${ic(m.m === 'bar' ? 'cash' : 'card', 'i-xs')}${esc(m.label)}${m.m === 'bar' ? '' : ' (Rückbuchung)'}</button>`).join('')}</div></div>
-        <div class="preview-box"><span>${st.mode === 'storno' ? 'Erstattung' : `${n} Artikel retour`}<br><span class="muted" style="font-size:12px">${st.method.m === 'bar' ? 'aus Lade 1 auszahlen' : 'auf das Zahlungsmittel zurückbuchen'}${d.customer ? ' · Punkte werden anteilig abgezogen' : ''}</span></span><b style="color:var(--neg)">− ${eur(sum)}</b></div>
+        <div><div class="field"><span>Erstattung über</span></div><div class="reasons" style="margin-top:6px">${methods.map((m, i) => `<button class="chip" data-m="${i}" aria-pressed="${m === st.method}">${ic(m.m === 'bar' ? 'cash' : m.m === 'gutschein' ? 'gift' : 'card', 'i-xs')}${esc(m.label)}${['bar', 'gutschein'].includes(m.m) ? '' : ' (Rückbuchung)'}</button>`).join('')}</div></div>
+        <div class="preview-box"><span>${st.mode === 'storno' ? 'Erstattung' : `${n} Artikel retour`}<br><span class="muted" style="font-size:12px">${st.method.m === 'bar' ? 'aus Lade 1 auszahlen' : st.method.m === 'gutschein' ? 'als neuer Gutschein (Code wird vergeben)' : 'auf das Zahlungsmittel zurückbuchen'}${d.customer ? ' · Punkte werden anteilig abgezogen' : ''}</span></span><b style="color:var(--neg)">− ${eur(sum)}</b></div>
         ${needs ? `<div class="rule-box">${ic('shield')}<div>${st.mode === 'storno' ? 'Stornos' : `Erstattungen über ${eur0(limit)}`} erfordern eine Freigabe durch die Filialleitung.</div></div>` : ''}
       </div>
       <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn ${st.mode === 'storno' ? 'btn-danger' : 'btn-primary'}" id="rtGo" ${sum > 0 && !st.busy ? '' : 'disabled'}>${needs ? ic('shield', 'i-sm') : ic('check', 'i-sm')}${st.mode === 'storno' ? 'Stornieren' : 'Retoure buchen'} · ${eur(sum)}</button></div>`;
@@ -4234,7 +4233,8 @@ function showReturnDone(el, box, r, sale) {
     <div class="ok-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
     <div class="done-title">${r.data.kind === 'storno' ? 'Storniert' : 'Retoure gebucht'} · ${eur(-r.total / 100)}</div>
     <div class="done-sub">Beleg ${esc(r.no)} zu Bon ${esc(sale.no)} · ${esc(r.data.reason)} · Bestand zurückgebucht</div>
-    <div class="change-big"><div class="l">${cash ? 'Bar auszahlen' : `Rückbuchung ${esc(r.data.parts?.[0]?.label || '')}`}</div><div class="v">${eur(-r.total / 100)}</div></div>
+    <div class="change-big"><div class="l">${cash ? 'Bar auszahlen' : r.data.parts?.[0]?.code ? 'Neuer Gutschein' : `Rückbuchung ${esc(r.data.parts?.[0]?.label || '')}`}</div><div class="v">${eur(-r.total / 100)}</div></div>
+    ${r.data.parts?.[0]?.code ? `<div class="note" style="margin-top:12px">${ic('gift')}<span>Gutschein-Code <b class="mono" style="color:var(--text)">${esc(r.data.parts[0].code)}</b></span></div>` : ''}
     ${r.points?.delta ? `<div class="note" style="margin-top:16px">${ic('star')}<span><b style="color:var(--text)">${num(r.points.delta)} Punkte</b> abgezogen · neuer Stand ${num(r.points.balance)}</span></div>` : ''}
     <div class="eyebrow" style="margin-top:26px">Beleg übergeben</div>
     <div class="rcpt-opts"><button class="btn btn-secondary" data-rp>${ic('printer')}Drucken</button></div>
@@ -4242,7 +4242,9 @@ function showReturnDone(el, box, r, sale) {
   </div>
   <div class="done-r"><div class="done-r-head"><span class="eyebrow">Beleg ${esc(r.no)}</span></div><div class="done-r-body"><div class="receipt-wrap">${receiptHTML(rec, prefs.tpl || 'classic')}</div></div></div>`;
   const pnl = el.querySelector('.pay-done');
-  pnl.addEventListener('click', e => { if (e.target.closest('[data-rp]')) { toast('Beleg gedruckt', {t2: `${kindLabel(r.data)} ${r.no}`, type: 'pos', icon: 'printer'}); Hooks.emit('device.printer.receipt', {beleg: r.no}); } });
+  pnl.addEventListener('click', e => { if (e.target.closest('[data-rp]')) { printReceipt(rec); Hooks.emit('device.printer.receipt', {beleg: r.no}); } });
+  if (CFG['drucker.auto']) printReceipt(rec, {quiet: true});
+  if (cash) openDrawer('Erstattung bar', true);
   el.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.target.closest('[data-rp]')) { e.preventDefault(); closeLayer(el); } });
   requestAnimationFrame(() => pnl.querySelector('[data-close]')?.focus());
 }
@@ -4265,8 +4267,7 @@ function returnReceiptHTML(rec, tpl) {
     ${(rec.t.vat || []).map(v => `<div class="r sm"><span>${v.rate} %</span><span>${money(v.net)} · ${money(v.tax)} · ${money(v.gross)}</span></div>`).join('')}
     ${rec.t.zero ? `<div class="r sm"><span>0 %</span><span>${money(rec.t.zero)} · 0,00 · ${money(rec.t.zero)}</span></div>` : ''}
     ${rec.customer ? `<hr><div class="sm c">Kunde ${esc(rec.customer.id)}${rec.points?.delta ? ` · ${rec.points.delta} Punkte` : ''}</div>` : ''}
-    <div class="qrw">${pseudoQR('rksv|' + rec.no + '|' + (rec.sig || ''))}</div>
-    <div class="sm c">RKSV-Signatur folgt mit der Signatureinheit<br>Unterschrift Kund:in: ____________________</div></div>`;
+    ${rksvBlockHTML(rec)}<div class="sm c" style="margin-top:6px">Unterschrift Kund:in: ____________________</div></div>`;
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -4419,7 +4420,7 @@ function realRegistersHTML() {
   return `<div style="flex:1;min-height:0;overflow:auto">
     <div class="reg"><span class="reg-ic">${ic('register', 'i-sm')}</span><div class="wl-main"><div class="wl-t">${esc(CFG['kasse.name'])} · ${esc(CFG['kasse.id'])}</div><div class="wl-s">${esc(S.user.name)} · heute ${d ? num(d.bons) : '…'} Bons · ${d ? eur0(d.rev) : '…'}</div></div>${statusPill(['Diese Kasse', 'pos'])}</div>
     <div class="reg" style="opacity:.6"><span class="reg-ic">${ic('server', 'i-sm')}</span><div class="wl-main"><div class="wl-t">Weitere Kassen</div><div class="wl-s">erscheinen mit dem Filial-Server</div></div>${statusPill(['Geplant', ''])}</div>
-  </div><div class="note" style="margin-top:10px">${ic('shield')}<span>RKSV-Signatureinheit noch nicht angebunden – kommt mit dem RKSV-Paket (Testmodus zuerst).</span></div>`;
+  </div><div class="note" style="margin-top:10px">${ic('shield')}<span>${S.rksv?.active ? `RKSV-Testmodus aktiv · Kassen-ID ${esc(S.rksv.kassen_id)} · Software-Schlüssel (nicht registrierbar)` : 'RKSV nicht in Betrieb – Einstellungen → RKSV → Testbetrieb starten'}</span>${S.rksv?.active ? `<button class="btn btn-secondary btn-sm" data-act="dep" style="margin-left:auto;flex:none">DEP-Export</button>` : ''}</div>`;
 }
 function realSystemHTML() {
   const i = S.info || {};
@@ -4430,19 +4431,34 @@ function realSystemHTML() {
     <div class="ops-row" style="opacity:.6">${ic('sparkle', 'i-sm')}<div class="k"><b>KI lokal</b>Vorschau – Modell wird in einem späteren Paket angebunden</div></div>
   </div><div class="wl-foot" style="margin-top:6px">${ic('info', 'i-xs')} Backups liegen in Ihrer Verantwortung – Kontor stellt die Werkzeuge.</div>`;
 }
-function xReport() {
-  if (!DESKTOP) return toast('X-Bericht', {t2: `${num(118 + Dash.session.bons)} Bons · ${eur0(periodData('heute').rev)} · ohne Abschluss`, icon: 'receipt'});
-  const sp = periodSpec('heute');
-  invoke('stats', {ranges: [{from: isoL(sp.cur[0]), to: isoL(sp.cur[1])}], detail: true}).then(([a]) => {
-    const s = sums(a.rows);
-    toast(`X-Bericht · ${new Date().toLocaleDateString('de-AT')}`, {t2: `${num(s.bons)} Bons · Umsatz ${eur(s.rev)} · Retouren ${eur(s.ret)} · ${(a.pay || []).map(p => `${p.label} ${eur(p.amount / 100)}`).join(' · ') || 'keine Zahlungen'} · ohne Abschluss`, icon: 'receipt', dur: 9000});
-    Hooks.emit('pos.report.x', {bons: s.bons, umsatz: s.rev});
-  }).catch(e => toast('X-Bericht nicht möglich', {t2: String(e), type: 'warn'}));
-}
 
 /* ════════════════════════════════════════════════════════════════════
-   12 · ANMELDUNG — Sperrbildschirm mit PIN, Windows Hello, FIDO2, SSO
+   21 · BENUTZER, ANMELDUNG, FREIGABEN
+   Desktop: Benutzer und PINs in der lokalen Datenbank (PIN nur als
+   gesalzener Hash), Sperre nach Fehlversuchen. Freigaben (Step-up)
+   nur durch Filialleitung oder Administrator.
+   Browser-Vorschau: Testbenutzer, jede PIN außer 0000.
    ════════════════════════════════════════════════════════════════════ */
+const ROLE_NAMES = {kasse: 'Kasse', verkauf: 'Verkauf', leitung: 'Filialleitung', admin: 'Administrator'};
+const canApprove = u => ['leitung', 'admin'].includes(u?.roleKey);
+function setUsers(list) {
+  const cur = S.user?.id;
+  STAFF.length = 0;
+  list.forEach(u => STAFF.push({id: u.id, name: u.name, role: ROLE_NAMES[u.role] || u.role, roleKey: u.role, hue: hash(u.id) % 360, initials: initials(u.name)}));
+  S.user = STAFF.find(s => s.id === cur) || STAFF[0];
+}
+async function loadUsers() {
+  if (!DESKTOP) { STAFF.forEach(s => { s.roleKey ||= s.role === 'Filialleitung' ? 'leitung' : 'verkauf'; }); return; }
+  try { setUsers(await invoke('users_list')); } catch (e) { toast('Benutzer konnten nicht geladen werden', {t2: String(e), type: 'warn'}); }
+}
+async function checkPin(user, pin, purpose) {
+  if (!DESKTOP) { if (pin === '0000') throw new Error('Falsche PIN'); if (purpose === 'freigabe' && !canApprove(user)) throw new Error(`${user.name} darf keine Freigaben erteilen`); return user; }
+  try { await invoke('user_verify', {id: user.id, pin, purpose}); return user; } catch (e) { throw new Error(String(e)); }
+}
+const pinPad = () => `<div class="keypad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-k="${n}">${n}</button>`).join('')}<span></span><button data-k="0">0</button><button class="fn" data-k="back" aria-label="Löschen">${ic('chevron-left')}</button></div>`;
+const shakeEl = el => { if (!el) return; el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); };
+
+/* ── Sperrbildschirm / Anmeldung ── */
 function lock() {
   if (S.locked) return;
   closePopover(); [...layers].reverse().forEach(l => { if (!l.el.querySelector('.pay')) closeLayer(l.el); });
@@ -4451,26 +4467,28 @@ function lock() {
   const el = document.createElement('div'); el.className = 'lockscreen'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Kasse gesperrt');
   el.innerHTML = `<div class="lock-in">
     <div class="lock-time" id="lockTime">${clock()}</div>
-    <div class="lock-date">${esc(DATE_LONG)} · Kasse INN-K01 gesperrt</div>
-    <div class="lock-users">${STAFF.map(u => `<button class="lock-user" data-u="${u.id}" aria-pressed="${u.id === user.id}"><span class="avatar xl" style="--h:${u.hue}">${u.initials}</span>${u.name.split(' ')[0]}</button>`).join('')}</div>
+    <div class="lock-date">${esc(DATE_LONG)} · ${esc(CFG['kasse.name'])} ${esc(CFG['kasse.id'])} ${S.started ? 'gesperrt' : '· Anmeldung'}</div>
+    <div class="lock-users">${STAFF.map(u => `<button class="lock-user" data-u="${u.id}" aria-pressed="${u.id === user.id}"><span class="avatar xl" style="--h:${u.hue}">${u.initials}</span>${esc(u.name.split(' ')[0])}</button>`).join('')}</div>
     <div class="lock-card" id="lockCard"></div>
-    <div class="lock-foot"><span style="display:inline-flex;gap:6px;align-items:center">${ic('shield', 'i-xs')}RKSV aktiv</span><span>·</span><span>offline-fähig</span><span>·</span><span>Demo: jede PIN außer 0000</span></div></div>`;
+    <div class="lock-foot" id="lockFoot">${DESKTOP ? `<span style="display:inline-flex;gap:6px;align-items:center">${ic('shield', 'i-xs')}PIN-Anmeldung · lokal geprüft</span>` : `<span>Vorschau: jede PIN außer 0000</span>`}</div></div>`;
   document.body.appendChild(el);
+  if (DESKTOP) invoke('users_default_pins').then(l => { if (l.length && $('#lockFoot', el)) $('#lockFoot', el).insertAdjacentHTML('beforeend', `<span>·</span><span style="color:var(--warn)">Erst-PIN noch aktiv: ${esc(l.join(' · '))} – bitte unter Einstellungen → Benutzer ändern</span>`); }).catch(() => {});
   const card = $('#lockCard', el);
-  const renderCard = () => {
+  const renderCard = msg => {
     card.innerHTML = `<div style="text-align:center;font-size:13px;color:var(--text-2)">PIN für <b style="color:var(--text)">${esc(user.name)}</b> · ${esc(user.role)}</div>
-      <div class="pin-dots" id="lockDots" style="margin:14px 0 16px"><i></i><i></i><i></i><i></i></div>
-      <div class="keypad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-k="${n}">${n}</button>`).join('')}<span></span><button data-k="0">0</button><button class="fn" data-k="back" aria-label="Löschen">${ic('chevron-left')}</button></div>
-      <div class="or">oder anmelden mit</div>
-      <div class="auth-alt"><button class="btn btn-secondary" data-m="hello">${ic('faceid')}Windows Hello</button><button class="btn btn-secondary" data-m="fido">${ic('usbkey')}Sicherheitsschlüssel</button><button class="btn btn-secondary" data-m="nfc">${ic('idcard')}Mitarbeiterkarte</button><button class="btn btn-secondary" data-m="sso">${ic('building')}Entra ID · SSO</button></div>`;
+      <div class="pin-dots" id="lockDots" style="margin:14px 0 ${msg ? 6 : 16}px"><i></i><i></i><i></i><i></i></div>
+      ${msg ? `<div style="text-align:center;font-size:12.5px;color:var(--neg);margin-bottom:10px">${esc(msg)}</div>` : ''}
+      ${pinPad()}
+      ${DESKTOP ? '<div class="or" style="margin-top:14px">Windows Hello, Sicherheitsschlüssel und SSO folgen</div>' : `<div class="or">oder anmelden mit</div>
+      <div class="auth-alt"><button class="btn btn-secondary" data-m="hello">${ic('faceid')}Windows Hello</button><button class="btn btn-secondary" data-m="fido">${ic('usbkey')}Sicherheitsschlüssel</button><button class="btn btn-secondary" data-m="nfc">${ic('idcard')}Mitarbeiterkarte</button><button class="btn btn-secondary" data-m="sso">${ic('building')}Entra ID · SSO</button></div>`}`;
   };
   const dots = () => $$('#lockDots i', el).forEach((d, i) => d.classList.toggle('on', i < pin.length));
   const unlock = method => {
-    busy = true; S.user = user; S.locked = false;
-    Hooks.emit('auth.login', {benutzer: user.name, rolle: user.role, methode: method, kasse: 'INN-K01'});
+    busy = true; S.user = user; S.locked = false; S.started = true;
+    Hooks.emit('auth.login', {benutzer: user.name, rolle: user.role, methode: method, kasse: CFG['kasse.id']});
     el.classList.add('closing'); setTimeout(() => el.remove(), 320);
     renderMe(); renderTopbar(); if (S.view === 'dashboard') renderDashboard();
-    toast(`Willkommen zurück, ${user.name.split(' ')[0]}`, {t2: `Angemeldet per ${method}`, type: 'pos', icon: 'user'});
+    toast(`Willkommen, ${user.name.split(' ')[0]}`, {t2: `Angemeldet per ${method} · ${user.role}`, type: 'pos', icon: 'user'});
     setTimeout(() => S.view === 'kasse' && $('#posSearch')?.focus(), 340);
   };
   const waitFor = async (icon, msg, method) => {
@@ -4478,13 +4496,14 @@ function lock() {
     card.innerHTML = `<div class="authwait" style="padding:26px 0"><div class="ring">${ic(icon)}</div><p>${esc(msg)}</p></div>`;
     await wait(reduced() ? 200 : 1300); unlock(method);
   };
-  const key = k => {
+  const key = async k => {
     if (busy) return;
     if (k === 'back') pin = pin.slice(0, -1); else if (pin.length < 4) pin += k;
     dots();
     if (pin.length === 4) {
-      if (pin === '0000') { const d = $('#lockDots', el); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake'); pin = ''; setTimeout(dots, 260); Hooks.emit('auth.login.failed', {benutzer: user.name, methode: 'PIN'}); }
-      else setTimeout(() => unlock('PIN'), 140);
+      busy = true;
+      try { await checkPin(user, pin, 'anmeldung'); setTimeout(() => unlock('PIN'), 120); }
+      catch (e) { busy = false; pin = ''; renderCard(e.message); shakeEl($('#lockDots', el)); Hooks.emit('auth.login.failed', {benutzer: user.name, methode: 'PIN'}); }
     }
   };
   el.addEventListener('click', e => {
@@ -4496,9 +4515,754 @@ function lock() {
   });
   S.lockKey = e => { if (/^\d$/.test(e.key)) { key(e.key); e.preventDefault(); } else if (e.key === 'Backspace') { key('back'); e.preventDefault(); } };
   renderCard();
-  Hooks.emit('pos.locked', {kasse: 'INN-K01', benutzer: S.user.name});
+  Hooks.emit('pos.locked', {kasse: CFG['kasse.id'], benutzer: S.user.name});
 }
 
+/* ── Freigabe (Step-up) ── */
+function stepUp({title, text, rule, admin = false}) {
+  return new Promise((resolve, reject) => {
+    const approvers = STAFF.filter(u => admin ? u.roleKey === 'admin' : canApprove(u));
+    if (!approvers.length) { toast('Keine berechtigte Person', {t2: admin ? 'Es ist kein Administrator angelegt' : 'Es ist keine Filialleitung angelegt', type: 'warn'}); return reject(new Error('keine Berechtigten')); }
+    let done = false, pin = '', busy = false, ap = canApprove(S.user) && (!admin || S.user.roleKey === 'admin') ? S.user : approvers[0];
+    const el = openLayer(`<div class="modal" style="width:min(440px,100%)" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div id="suBox"></div></div>`, {onClose: () => { if (!done) reject(new Error('abgebrochen')); }});
+    const box = $('#suBox', el);
+    const render = msg => {
+      box.innerHTML = `<div class="m-head"><div class="m-ic" style="color:var(--warn)">${ic('shield')}</div><div><h2>${esc(title)}</h2><p>${esc(text)}</p></div></div>
+      <div class="m-body" id="suBody">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${approvers.map(u => `<button class="chip" data-ap="${u.id}" aria-pressed="${u.id === ap.id}" style="height:34px"><span class="avatar" style="--h:${u.hue};width:22px;height:22px;font-size:9.5px">${u.initials}</span>${esc(u.name)} · ${esc(u.role)}</button>`).join('')}</div>
+        <div class="pin-dots" id="suDots" aria-label="PIN-Eingabe"><i></i><i></i><i></i><i></i></div>
+        ${msg ? `<div style="text-align:center;font-size:12.5px;color:var(--neg);margin:-4px 0 10px">${esc(msg)}</div>` : ''}
+        ${pinPad().replace('<span></span>', '<button class="fn" data-close>Abbr.</button>')}
+        ${rule ? `<div class="prompt-hint" style="margin-top:14px">${ic('flow', 'i-xs')}${esc(rule)}</div>` : ''}
+      </div>`;
+    };
+    const dots = () => $$('#suDots i', el).forEach((d, i) => d.classList.toggle('on', i < pin.length));
+    const ok = async () => {
+      done = true;
+      box.innerHTML = `<div class="m-body"><div class="authwait"><div class="ok-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div><p><b style="color:var(--text)">Freigegeben</b> von ${esc(ap.name)} · PIN</p></div></div>`;
+      Hooks.emit('auth.stepup.granted', {von: ap.name, methode: 'PIN', regel: rule || null});
+      await wait(reduced() ? 100 : 650); closeLayer(el); resolve({by: ap, method: 'PIN'});
+    };
+    const key = async k => {
+      if (busy || done) return;
+      if (k === 'back') pin = pin.slice(0, -1); else if (pin.length < 4) pin += k;
+      dots();
+      if (pin.length === 4) {
+        busy = true;
+        try { await checkPin(ap, pin, 'freigabe'); ok(); }
+        catch (e) { busy = false; pin = ''; render(e.message); shakeEl($('#suDots', el)); Hooks.emit('auth.stepup.failed', {von: ap.name, methode: 'PIN'}); }
+      }
+    };
+    el.addEventListener('click', e => { const a = e.target.closest('[data-ap]'); if (a && !busy) { ap = approvers.find(u => u.id === a.dataset.ap); pin = ''; render(); return; } const b = e.target.closest('[data-k]'); if (b) key(b.dataset.k); });
+    el.addEventListener('keydown', e => { if (done) return; if (/^\d$/.test(e.key)) { key(e.key); e.preventDefault(); } else if (e.key === 'Backspace') { key('back'); e.preventDefault(); } });
+    render();
+  });
+}
+
+/* ── Einstellungen → Benutzer ── */
+function usersSectionHTML() {
+  return `<section class="set-sec" id="sec-benutzer"><h2>Benutzer & Anmeldung</h2><p>Jede Person meldet sich mit eigener PIN an. Freigaben (Rabatte, Stornos, Entnahmen, Punkte) erteilen nur Filialleitung und Administrator. Nach 5 Fehlversuchen ist die PIN 2 Minuten gesperrt.</p>
+    <div class="card" id="usrBox"></div></section>`;
+}
+function renderUsersBox() {
+  const box = $('#usrBox'); if (!box) return;
+  box.innerHTML = STAFF.map(u => `<div class="set-row"><div style="display:flex;align-items:center;gap:12px"><span class="avatar" style="--h:${u.hue}">${u.initials}</span><div><div class="set-l">${esc(u.name)}${u.id === S.user.id ? ' <span class="pill accent" style="height:18px">angemeldet</span>' : ''}</div><div class="set-h">${esc(u.role)} · Kennung ${esc(u.id)}</div></div></div>
+      <div class="set-c" style="gap:6px"><button class="btn btn-secondary btn-sm" data-usr="${u.id}">${ic('sliders', 'i-sm')}Bearbeiten</button></div></div>`).join('')
+    + `<div class="set-row"><div><div class="set-l">Neue Person</div><div class="set-h">${DESKTOP ? 'Name, Rolle und Erst-PIN festlegen' : 'In der Vorschau nicht verfügbar'}</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-usr="" ${DESKTOP ? '' : 'disabled'}>${ic('user-plus', 'i-sm')}Benutzer anlegen</button></div></div>`;
+}
+async function openUserEditor(u) {
+  if (!DESKTOP) return toast('Nur in der Desktop-App', {type: 'warn'});
+  let by; try { by = (await stepUp({title: 'Administrator-Freigabe', text: u ? `${u.name} bearbeiten` : 'Neue Person anlegen', admin: true})).by; } catch { return; }
+  const st = {name: u?.name || '', role: u?.roleKey || 'kasse', pin: '', pin2: ''};
+  const el = openLayer(`<div class="modal" style="width:min(480px,100%)" role="dialog" aria-modal="true" aria-label="Benutzer"><div id="ueBody"></div></div>`, {focus: '[data-uf="name"]'});
+  const box = $('#ueBody', el);
+  const render = () => {
+    box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('user')}</div><div><h2>${u ? esc(u.name) : 'Neue Person'}</h2><p>${u ? 'PIN leer lassen, um sie nicht zu ändern' : 'Die PIN gibt die Person beim ersten Mal selbst ein'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="m-body" style="display:grid;gap:14px">
+        <label class="field"><span>Name</span><input class="input" data-uf="name" value="${esc(st.name)}" autocomplete="off"></label>
+        <div><div class="field"><span>Rolle</span></div><div class="reasons" style="margin-top:6px">${Object.entries(ROLE_NAMES).map(([k, l]) => `<button class="chip" data-role="${k}" aria-pressed="${k === st.role}">${l}</button>`).join('')}</div>
+          <div class="prompt-hint">${ic('info', 'i-xs')}Kasse/Verkauf: verkaufen, retournieren bis zur Grenze · Filialleitung: Freigaben, Abschluss · Administrator: zusätzlich Benutzer, RKSV, Wiederherstellung</div></div>
+        <div class="ed-grid"><label class="field"><span>${u ? 'Neue PIN (4 Ziffern)' : 'PIN (4 Ziffern)'}</span><input class="input num" data-uf="pin" type="password" inputmode="numeric" maxlength="4" value="${esc(st.pin)}" autocomplete="new-password"></label>
+          <label class="field"><span>PIN wiederholen</span><input class="input num" data-uf="pin2" type="password" inputmode="numeric" maxlength="4" value="${esc(st.pin2)}" autocomplete="new-password"></label></div>
+      </div>
+      <div class="m-foot">${u ? `<button class="btn btn-danger" id="ueDel">${ic('trash', 'i-sm')}Deaktivieren</button>` : ''}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="ueSave">${ic('check', 'i-sm')}Speichern</button></div>`;
+  };
+  const collect = () => $$('[data-uf]', el).forEach(i => { st[i.dataset.uf] = i.value.trim(); });
+  el.addEventListener('click', async e => {
+    const r = e.target.closest('[data-role]'); if (r) { collect(); st.role = r.dataset.role; return render(); }
+    if (e.target.closest('#ueDel')) {
+      if (u.id === S.user.id) return toast('Eigenes Konto kann nicht deaktiviert werden', {type: 'warn'});
+      try { setUsers(await invoke('user_delete', {id: u.id, by: by.name})); } catch (err) { return toast('Nicht möglich', {t2: String(err), type: 'warn'}); }
+      closeLayer(el); renderUsersBox(); renderMe(); toast('Benutzer deaktiviert', {t2: u.name, icon: 'trash'}); return;
+    }
+    if (e.target.closest('#ueSave')) {
+      collect();
+      if (st.name.length < 2) return toast('Name fehlt', {type: 'warn'});
+      if ((st.pin || !u) && !/^\d{4}$/.test(st.pin)) return toast('PIN: genau 4 Ziffern', {type: 'warn'});
+      if (st.pin !== st.pin2) return toast('PINs stimmen nicht überein', {type: 'warn'});
+      try { setUsers(await invoke('user_save', {user: {id: u?.id || '', name: st.name, role: st.role, active: true}, pin: st.pin || null, by: by.name})); }
+      catch (err) { return toast('Speichern fehlgeschlagen', {t2: String(err), type: 'warn'}); }
+      closeLayer(el); renderUsersBox(); renderMe();
+      toast(u ? 'Benutzer gespeichert' : 'Benutzer angelegt', {t2: `${st.name} · ${ROLE_NAMES[st.role]}${st.pin ? ' · neue PIN aktiv' : ''}`, type: 'pos', icon: 'user'});
+    }
+  });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); $('#ueSave', el).click(); } });
+  render();
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   22 · KASSENBUCH, X-BERICHT, TAGESABSCHLUSS (Z-BERICHT)
+   ════════════════════════════════════════════════════════════════════ */
+const c2e = c => (c || 0) / 100;
+const MOVE_LBL = {anfang: 'Wechselgeld / Übertrag', einlage: 'Einlage', entnahme: 'Entnahme'};
+const DENOMS = [500, 200, 100, 50, 20, 10, 5, 2, 1, .5, .2, .1, .05, .02, .01];
+function desktopOnly(what) { if (DESKTOP) return false; toast(`${what} nur in der Desktop-App`, {t2: 'Braucht die lokale Datenbank', type: 'warn', icon: 'database'}); return true; }
+
+function reportBodyHTML(s, {closing} = {}) {
+  const row = (l, v, cls = '') => `<div class="trow ${cls}"><span>${l}</span><b class="num">${v}</b></div>`;
+  return `<div class="zr">
+    <div class="zr-sec"><div class="eyebrow">Zeitraum</div>${row('seit', s.from ? esc(fmtTs(s.from)) : 'Beginn der Aufzeichnung')}${row('Belege', s.first ? `${esc(s.first)} – ${esc(s.last)}` : 'keine')}</div>
+    <div class="zr-sec"><div class="eyebrow">Umsatz</div>${row(`Verkäufe (${num(s.counts.sales)})`, eur(c2e(s.gross_sales)))}${row(`Retouren & Stornos (${num(s.counts.returns + s.counts.stornos)})`, '− ' + eur(c2e(s.refunds)))}${row('darin Rabatte', eur(c2e(s.discounts)), 'disc')}${row('Gutscheine verkauft (0 %)', eur(c2e(s.vouchers_sold)))}<div class="tgrand" style="margin-top:6px"><span class="lbl">Umsatz</span><span class="val num" style="font-size:22px">${eur(c2e(s.revenue))}</span></div></div>
+    <div class="zr-sec"><div class="eyebrow">Steuern</div>${s.vat.length ? s.vat.map(v => row(`${v.rate} % · netto ${eur(c2e(v.net))}`, `${eur(c2e(v.tax))} von ${eur(c2e(v.gross))}`)).join('') : '<div class="muted" style="font-size:12.5px">keine</div>'}</div>
+    <div class="zr-sec"><div class="eyebrow">Zahlungsarten</div>${s.payments.length ? s.payments.map(p => row(`${esc(p.label || p.m)} (${p.count})`, eur(c2e(p.amount)))).join('') : '<div class="muted" style="font-size:12.5px">keine</div>'}</div>
+    <div class="zr-sec"><div class="eyebrow">Bargeld</div>${row('Wechselgeld / Übertrag', eur(c2e(s.cash.start)))}${row('Bareinnahmen (netto)', eur(c2e(s.cash.sales)))}${row('Einlagen', eur(c2e(s.cash.deposits)))}${row('Entnahmen', '− ' + eur(c2e(s.cash.withdrawals)))}
+      <div class="trow" style="font-weight:650;color:var(--text)"><span>Soll-Bestand Lade</span><b class="num">${eur(c2e(s.cash.expected))}</b></div>
+      ${closing ? `${row('gezählt', eur(c2e(s.counted)))}<div class="trow" style="font-weight:650;color:${s.diff === 0 ? 'var(--pos)' : 'var(--neg)'}"><span>Differenz</span><b class="num">${s.diff > 0 ? '+' : ''}${eur(c2e(s.diff))}</b></div>` : ''}</div>
+    <div class="zr-sec"><div class="eyebrow">Kassier:innen</div>${s.cashiers.length ? s.cashiers.map(c => row(`${esc(c.name || '–')} (${c.sales})`, eur(c2e(c.revenue)))).join('') : '<div class="muted" style="font-size:12.5px">keine</div>'}</div>
+  </div>`;
+}
+
+/* ── X-Bericht (Zwischenstand, ohne Abschluss) ── */
+async function xReport() {
+  if (!DESKTOP) return toast('X-Bericht', {t2: `${num(118 + Dash.session.bons)} Bons · ${eur0(periodData('heute').rev)} · ohne Abschluss`, icon: 'receipt'});
+  let s; try { s = await invoke('cash_status'); } catch (e) { return toast('X-Bericht nicht möglich', {t2: String(e), type: 'warn'}); }
+  const el = openLayer(`<div class="modal" style="width:min(620px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="X-Bericht">
+    <div class="m-head"><div class="m-ic">${ic('receipt')}</div><div><h2>X-Bericht · Zwischenstand</h2><p>Seit dem letzten Tagesabschluss · ändert nichts</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body" style="overflow:auto">${reportBodyHTML(s)}</div>
+    <div class="m-foot"><button class="btn btn-ghost" id="xPrint">${ic('printer', 'i-sm')}Drucken</button><span class="sp"></span><button class="btn btn-secondary" data-close>Schließen</button><button class="btn btn-primary" id="xClose">${ic('lock', 'i-sm')}Tagesabschluss …</button></div></div>`);
+  el.addEventListener('click', e => {
+    if (e.target.closest('#xPrint')) printOps(reportOps(s, 'X-BERICHT'), 'x-bericht');
+    if (e.target.closest('#xClose')) { closeLayer(el); setTimeout(openClosing, 80); }
+  });
+  Hooks.emit('pos.report.x', {umsatz: c2e(s.revenue), bons: s.counts.sales});
+}
+
+/* ── Kassenbuch ── */
+async function openCashBook() {
+  if (desktopOnly('Kassenbuch')) return;
+  let s; try { s = await invoke('cash_status'); } catch (e) { return toast('Kassenbuch nicht verfügbar', {t2: String(e), type: 'warn'}); }
+  const st = {kind: 'einlage', amt: '', reason: ''};
+  const REASONS = {einlage: ['Wechselgeld', 'Einlage Tresor', 'Korrektur'], entnahme: ['Bank', 'Tresor', 'Barauslage', 'Korrektur'], anfang: ['Wechselgeld Tagesbeginn']};
+  const el = openLayer(`<div class="modal" style="width:min(640px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="Kassenbuch"><div id="cbBody" style="display:flex;flex-direction:column;min-height:0"></div></div>`, {focus: '#cbAmt'});
+  const box = $('#cbBody', el);
+  const render = () => {
+    box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('cash')}</div><div><h2>Kassenbuch</h2><p>Soll-Bestand Lade: <b style="color:var(--text)">${eur(c2e(s.cash.expected))}</b> · seit ${s.from ? esc(fmtTs(s.from)) : 'Beginn'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="m-body" style="display:grid;gap:14px;overflow:auto">
+        <div class="seg" id="cbSeg" style="justify-self:start">${['einlage', 'entnahme', 'anfang'].map(k => `<button data-v="${k}" aria-pressed="${st.kind === k}">${MOVE_LBL[k]}</button>`).join('')}</div>
+        <div class="amt-field"><label for="cbAmt">Betrag</label><div class="amt-input"><span>€</span><input id="cbAmt" inputmode="decimal" value="${esc(st.amt)}" placeholder="0,00" autocomplete="off"></div></div>
+        <div><div class="field"><span>Grund</span></div><div class="reasons" style="margin-top:6px">${REASONS[st.kind].map(r => `<button class="chip" data-r="${esc(r)}" aria-pressed="${r === st.reason}">${esc(r)}</button>`).join('')}</div></div>
+        ${st.kind === 'entnahme' ? `<div class="rule-box">${ic('shield')}<div>Entnahmen erfordern eine Freigabe durch die Filialleitung.</div></div>` : ''}
+        <div><div class="eyebrow" style="margin-bottom:6px">Buchungen seit dem letzten Abschluss</div><div class="card" style="overflow:hidden">${s.moves.length ? s.moves.slice().reverse().map(m => `<div class="mv"><div><b>${esc(MOVE_LBL[m.kind] || m.kind)}</b> · ${esc(m.reason)}<br><small>${esc(fmtTs(m.ts))}${m.user ? ' · ' + esc(m.user) : ''}</small></div><div><div class="d ${m.amount > 0 ? 'p' : 'm'}">${m.amount > 0 ? '+' : ''}${eur(c2e(m.amount))}</div></div></div>`).join('') : '<div class="empty" style="padding:22px"><p>Noch keine Buchungen.</p></div>'}</div></div>
+      </div>
+      <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Schließen</button><button class="btn btn-primary" id="cbGo">${ic('check', 'i-sm')}Buchen<span class="kbd">↵</span></button></div>`;
+    initSeg($('#cbSeg', box), b => { st.kind = b.dataset.v; st.reason = REASONS[st.kind][0]; render(); $('#cbAmt', box).focus(); });
+  };
+  st.reason = REASONS.einlage[0];
+  const go2 = async () => {
+    st.amt = $('#cbAmt', box).value; const v = parseAmt(st.amt);
+    if (!(v > 0)) return shakeEl($('#cbAmt', box).closest('.amt-input'));
+    let by = null;
+    if (st.kind === 'entnahme') { try { by = (await stepUp({title: 'Entnahme freigeben', text: `${eur(v)} · ${st.reason}`})).by.name; } catch { return; } }
+    try { s = await invoke('cash_move', {kind: st.kind, amount: Math.round(v * 100), reason: st.reason, user: S.user.name, approvedBy: by}); }
+    catch (e) { return toast('Buchung nicht möglich', {t2: String(e), type: 'warn'}); }
+    toast(`${MOVE_LBL[st.kind]} gebucht`, {t2: `${eur(v)} · ${st.reason} · Soll-Bestand ${eur(c2e(s.cash.expected))}`, type: 'pos', icon: 'cash'});
+    Hooks.emit('cash.moved', {art: st.kind, betrag: v, grund: st.reason});
+    openDrawer(MOVE_LBL[st.kind], true);
+    st.amt = ''; render();
+  };
+  box.addEventListener('click', e => { const r = e.target.closest('[data-r]'); if (r) { st.amt = $('#cbAmt', box).value; st.reason = r.dataset.r; render(); } if (e.target.closest('#cbGo')) go2(); });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.target.closest('[data-close]')) { e.preventDefault(); go2(); } });
+  render();
+}
+
+/* ── Tagesabschluss mit Kassensturz ── */
+async function openClosing() {
+  if (desktopOnly('Tagesabschluss')) return;
+  let s, rk = null;
+  try { s = await invoke('cash_status'); rk = await invoke('rksv_status'); } catch (e) { return toast('Abschluss nicht möglich', {t2: String(e), type: 'warn'}); }
+  const now = new Date(), lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() === now.getDate();
+  // Jeder Monat endet mit einem Monatsbeleg: am Monatsende für diesen Monat, sonst (nachträglich) für den Vormonat
+  const idx = d => d.getFullYear() * 12 + d.getMonth(), lm = rk?.last_monthly ? new Date(rk.last_monthly) : null;
+  const needIdx = lastDay ? idx(now) : idx(now) - 1, needY = Math.floor(needIdx / 12), needM = needIdx % 12;
+  const monthMissing = !!rk?.active && needIdx >= idx(new Date(rk.started_at)) && (!lm || idx(lm) < needIdx);
+  const st = {count: Object.fromEntries(DENOMS.map(d => [d, ''])), total: '', mode: 'stueck', note: '', monthly: monthMissing};
+  const el = openLayer(`<div class="modal" style="width:min(860px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="Tagesabschluss"><div id="zBody" style="display:flex;flex-direction:column;min-height:0"></div></div>`, {closeOnScrim: false});
+  const box = $('#zBody', el);
+  const counted = () => st.mode === 'summe' ? (parseAmt(st.total) || 0) : r2(DENOMS.reduce((a, d) => a + d * (parseInt(st.count[d], 10) || 0), 0));
+  const update = () => {
+    const c = counted(), diff = r2(c - c2e(s.cash.expected));
+    $('#zCounted', box).textContent = eur(c);
+    const d = $('#zDiff', box); d.textContent = `${diff > 0 ? '+' : ''}${eur(diff)}`; d.style.color = Math.abs(diff) < .005 ? 'var(--pos)' : 'var(--neg)';
+    $('#zNoteReq', box).hidden = Math.abs(diff) < .005;
+  };
+  const render = () => {
+    box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('lock')}</div><div><h2>Tagesabschluss · Z-Bericht</h2><p>Kassensturz zählen, Differenz prüfen, Zeitraum festschreiben</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="m-body" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;overflow:auto">
+        <div>${reportBodyHTML(s)}</div>
+        <div style="display:grid;gap:12px;align-content:start">
+          <div class="seg" id="zSeg" style="justify-self:start"><button data-v="stueck" aria-pressed="${st.mode === 'stueck'}">Stückelung zählen</button><button data-v="summe" aria-pressed="${st.mode === 'summe'}">Summe eingeben</button></div>
+          ${st.mode === 'stueck' ? `<div class="denoms">${DENOMS.map(d => `<label><span>${d >= 1 ? num(d) + ' €' : num(d * 100) + ' ct'}</span><input class="input num" data-den="${d}" inputmode="numeric" value="${esc(st.count[d])}" placeholder="0"></label>`).join('')}</div>`
+            : `<div class="amt-field"><label for="zTotal">Gezählter Bargeldbestand</label><div class="amt-input"><span>€</span><input id="zTotal" inputmode="decimal" value="${esc(st.total)}" placeholder="0,00"></div></div>`}
+          <div class="preview-box"><span>Gezählt<br><span class="muted" style="font-size:12px">Soll ${eur(c2e(s.cash.expected))}</span></span><b class="num" id="zCounted"></b></div>
+          <div class="preview-box"><span>Differenz</span><b class="num" id="zDiff"></b></div>
+          <label class="field"><span>Notiz <span id="zNoteReq" class="muted">· bei Differenz bitte begründen</span></span><input class="input" id="zNote" value="${esc(st.note)}" placeholder="z. B. Wechselgeld falsch herausgegeben"></label>
+          ${rk?.active ? `<div class="set-row" style="padding:10px 12px;border:1px solid var(--line);border-radius:12px"><div><div class="set-l">RKSV-Monatsbeleg erstellen</div><div class="set-h">${monthMissing ? `<span style="color:var(--warn)">fällig für ${pad(needM + 1)}/${needY}</span>` : 'nicht fällig'}${monthMissing && needM === 11 ? ' · gilt als Jahresbeleg (prüfen und aufbewahren)' : ''}</div></div><div class="set-c" style="min-width:0"><button class="switch" role="switch" id="zMonthly" aria-checked="${st.monthly}" aria-label="Monatsbeleg"></button></div></div>` : ''}
+          <div class="prompt-hint">${ic('info', 'i-xs')}Der gezählte Betrag bleibt als Wechselgeld in der Lade (Übertrag). Geld für die Bank vorher im Kassenbuch als Entnahme buchen.</div>
+        </div>
+      </div>
+      <div class="m-foot"><button class="btn btn-ghost" id="zBook">${ic('cash', 'i-sm')}Kassenbuch</button><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="zGo">${ic('lock', 'i-sm')}Abschluss durchführen</button></div>`;
+    initSeg($('#zSeg', box), b => { st.mode = b.dataset.v; render(); });
+    update();
+  };
+  box.addEventListener('input', e => {
+    if (e.target.dataset.den) { st.count[e.target.dataset.den] = e.target.value.replace(/\D/g, ''); e.target.value = st.count[e.target.dataset.den]; }
+    if (e.target.id === 'zTotal') st.total = e.target.value;
+    if (e.target.id === 'zNote') st.note = e.target.value;
+    update();
+  });
+  box.addEventListener('click', async e => {
+    if (e.target.closest('#zMonthly')) { st.monthly = !st.monthly; e.target.closest('#zMonthly').setAttribute('aria-checked', st.monthly); return; }
+    if (e.target.closest('#zBook')) { closeLayer(el); return openCashBook(); }
+    if (!e.target.closest('#zGo')) return;
+    const c = counted(), diff = r2(c - c2e(s.cash.expected));
+    if (Math.abs(diff) >= .005 && st.note.trim().length < 3) { shakeEl($('#zNote', box)); return toast('Differenz bitte begründen', {type: 'warn', icon: 'alert'}); }
+    if (Math.abs(diff) >= .005) { try { await stepUp({title: 'Kassendifferenz freigeben', text: `Differenz ${eur(diff)} · ${st.note}`}); } catch { return; } }
+    let z;
+    try { z = await invoke('closing_create', {counted: Math.round(c * 100), note: st.note.trim(), user: S.user.name}); }
+    catch (err) { return toast('Abschluss fehlgeschlagen', {t2: String(err), type: 'warn', dur: 8000}); }
+    let mb = null;
+    if (st.monthly) { try { mb = await invoke('rksv_null', {label: `${needM === 11 ? 'Jahresbeleg' : 'Monatsbeleg'} ${needY}-${pad(needM + 1)}`, user: S.user.name}); } catch (err) { toast('Monatsbeleg fehlgeschlagen', {t2: String(err), type: 'warn'}); } }
+    Hooks.emit('cash.closing', {nr: z.no, umsatz: c2e(z.revenue), differenz: c2e(z.diff)});
+    statsInvalidate();
+    showZ(el, box, z, mb);
+  });
+  render();
+}
+function showZ(el, box, z, mb, viewOnly) {
+  box.innerHTML = `<div class="m-head"><div class="m-ic" style="color:var(--pos)">${ic('check')}</div><div><h2>Abschluss Nr. ${z.no} durchgeführt</h2><p>${esc(fmtTs(z.ts))} · ${esc(z.user || '')}${mb ? ` · ${esc(mb.data.label)} ${esc(mb.no)} signiert` : ''}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body" style="overflow:auto">${reportBodyHTML(z, {closing: true})}</div>
+    <div class="m-foot"><button class="btn btn-secondary" id="zPrint">${ic('printer', 'i-sm')}Z-Bericht drucken</button><span class="sp"></span><button class="btn btn-primary" data-close>Fertig</button></div>`;
+  $('#zPrint', box).onclick = () => printOps(reportOps(z, `Z-BERICHT NR. ${z.no}`), 'z-bericht');
+  if (!viewOnly && CFG['drucker.auto'] && CFG['drucker.art'] !== 'aus') printOps(reportOps(z, `Z-BERICHT NR. ${z.no}`), 'z-bericht', true);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   23 · RKSV — Testmodus, Null-/Monatsbelege, DEP-Export, QR-Codes
+   ════════════════════════════════════════════════════════════════════ */
+async function refreshRksv() {
+  if (!DESKTOP) return null;
+  try { S.rksv = await invoke('rksv_status'); } catch { S.rksv = null; }
+  renderStatus(); return S.rksv;
+}
+// Echte QR-Codes: jedes Element mit data-qr wird per Rust-Encoder (SVG) befüllt.
+const QR_CACHE = new Map();
+async function hydrateQR(root = document) {
+  if (!DESKTOP) return;
+  for (const el of $$('[data-qr]:not([data-qr-done])', root)) {
+    el.setAttribute('data-qr-done', '1');
+    const t = el.dataset.qr;
+    try { if (!QR_CACHE.has(t)) QR_CACHE.set(t, await invoke('qr_svg', {text: t})); el.innerHTML = QR_CACHE.get(t); }
+    catch (e) { el.textContent = 'QR nicht verfügbar'; }
+  }
+}
+new MutationObserver(() => { if ($('[data-qr]:not([data-qr-done])')) hydrateQR(); }).observe(document.body, {childList: true, subtree: true});
+
+function rksvBlockHTML(rec) {
+  if (rec.rksv?.qr) return `<div class="qrw" data-qr="${esc(rec.rksv.qr)}"></div><div class="sm c">RKSV · TESTMODUS (nicht registriert)<br>Kasse ${esc(rec.rksv.qr.split('_')[2] || '')} · Zert. ${esc(rec.rksv.qr.split('_')[11] || '')}</div>`;
+  if (DESKTOP) return `<div class="sm c" style="margin-top:6px">Ohne RKSV-Signatur – Testbetrieb unter Einstellungen → RKSV starten</div>`;
+  return `<div class="qrw">${pseudoQR('rksv|' + rec.no + '|' + rec.sig)}</div><div class="sm c">RKSV · Signatur ES256 · Zert. 3D1F8A20<br>Sig. …${(rec.sig || '').slice(-12)}${rec.offline ? '<br>Offline erfasst · Sync ausstehend' : ''}</div>`;
+}
+function zeroReceiptHTML(rec, tpl) {
+  const dt = rec.date, d = `${pad(dt.getDate())}.${pad(dt.getMonth() + 1)}.${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
+  return `<div class="receipt ${tpl}">${receiptHead(tpl)}<hr>
+    <div class="c" style="font-weight:700;letter-spacing:.08em">${esc((rec.label || kindLabel(rec)).toUpperCase())}</div><hr>
+    <div class="r"><span>Beleg ${rec.no}</span><span>Kasse ${esc(CFG['kasse.id'])}</span></div><div class="r sm"><span>${d}</span><span>${esc((rec.cashier || '').split(' ')[0])}</span></div><hr>
+    <div class="r tot"><span>SUMME EUR</span><span>0,00</span></div><hr>
+    ${rksvBlockHTML(rec)}<div class="sm c" style="margin-top:6px">${rec.kind === 'startbeleg' ? 'Startbeleg prüfen (z. B. BMF Belegcheck-App) und 7 Jahre aufbewahren' : rec.kind === 'monatsbeleg' ? 'Monatsbeleg – Dezember-Beleg = Jahresbeleg: prüfen und aufbewahren' : 'Nullbeleg'}</div></div>`;
+}
+
+function rksvSectionHTML() {
+  return `<section class="set-sec" id="sec-rksv"><h2>RKSV · Registrierkasse</h2><p>Signatur nach Registrierkassensicherheitsverordnung: Signaturkette, verschlüsselter Umsatzzähler, QR-Code auf jedem Beleg, Datenerfassungsprotokoll (DEP). Im <b>Testmodus</b> signiert ein lokaler Software-Schlüssel – technisch vollständig, aber nicht bei FinanzOnline registrierbar. Für den Echtbetrieb wird später nur die Signaturkarte bzw. der Online-Signaturdienst angeschlossen.</p>
+    <div class="card" id="rksvBox"><div style="padding:18px" class="thinking"><b>Lade …</b></div></div></section>`;
+}
+async function renderRksvBox() {
+  const box = $('#rksvBox'); if (!box) return;
+  if (!DESKTOP) { box.innerHTML = `<div class="set-row"><div><div class="set-l">Nur in der Desktop-App</div><div class="set-h">Die Browser-Vorschau zeigt Beispiel-Signaturen</div></div><div class="set-c"><span class="pill">Vorschau</span></div></div>`; return; }
+  const r = await refreshRksv(); if (!$('#rksvBox')) return;
+  const row = (l, h, v) => `<div class="set-row"><div><div class="set-l">${l}</div>${h ? `<div class="set-h">${h}</div>` : ''}</div><div class="set-c" style="min-width:0;gap:6px">${v}</div></div>`;
+  if (!r?.active) {
+    box.innerHTML = row('Status', 'Belege werden noch nicht signiert', '<span class="pill warn">nicht in Betrieb</span>')
+      + row('Testbetrieb starten', `Erzeugt Schlüssel und Startbeleg für Kassen-ID <b>${esc(CFG['kasse.id'])}</b>. Danach ist die Kassen-ID fest. Administrator-Freigabe nötig.`, `<button class="btn btn-primary btn-sm" id="rkStart">${ic('shield', 'i-sm')}Testbetrieb starten</button>`);
+    return;
+  }
+  const lm = r.last_monthly ? fmtTs(r.last_monthly) : 'noch keiner';
+  box.innerHTML = row('Status', `seit ${esc(fmtTs(r.started_at))} · ${num(r.receipts)} signierte Belege`, '<span class="pill pos">' + ic('check') + 'Testmodus aktiv</span>')
+    + row('Kassen-ID', 'fest seit dem Startbeleg', `<b class="mono">${esc(r.kassen_id)}</b>`)
+    + row('Signatur', 'ES256 · Software-Schlüssel (Testmodus)', `<span class="mono">${esc(r.serial)}</span>`)
+    + row('Umsatzzähler', 'Summe aller Belege · im Beleg AES-256-verschlüsselt', `<b class="num">${eur(r.turnover / 100)}</b>`)
+    + row('Monatsbeleg', `letzter: ${esc(lm)} · wird beim Tagesabschluss am Monatsende vorgeschlagen`, `<button class="btn btn-secondary btn-sm" data-rk="monat">Monatsbeleg</button><button class="btn btn-ghost btn-sm" data-rk="null">Nullbeleg</button>`)
+    + row('DEP-Export', 'Datenerfassungsprotokoll als JSON (z. B. für die Finanzprüfung)', `<button class="btn btn-secondary btn-sm" id="rkDep">${ic('download', 'i-sm')}Exportieren …</button>`);
+}
+async function rksvStart() {
+  const kid = String(CFG['kasse.id'] || '').trim();
+  if (!kid || kid.includes('_')) return toast('Kassen-ID ungültig', {t2: 'Unter Einstellungen → Kasse festlegen (ohne Unterstrich)', type: 'warn'});
+  try { await stepUp({title: 'RKSV-Testbetrieb starten', text: `Kassen-ID ${kid} wird festgelegt, Startbeleg wird signiert.`, admin: true}); } catch { return; }
+  let r; try { r = await invoke('rksv_init', {kassenId: kid, user: S.user.name}); } catch (e) { return toast('Start fehlgeschlagen', {t2: String(e), type: 'warn', dur: 8000}); }
+  POS.no = r.number + 1; Hooks.emit('rksv.started', {kasse: kid, startbeleg: r.no});
+  await renderRksvBox(); renderSettingsKasseLock();
+  showZeroReceipt(r, 'Startbeleg signiert');
+}
+async function rksvNull(kind) {
+  const now = new Date(), label = kind === 'monat' ? `${now.getMonth() === 11 ? 'Jahresbeleg' : 'Monatsbeleg'} ${now.getFullYear()}-${pad(now.getMonth() + 1)}` : 'Nullbeleg';
+  let r; try { r = await invoke('rksv_null', {label, user: S.user.name}); } catch (e) { return toast('Nicht möglich', {t2: String(e), type: 'warn'}); }
+  POS.no = r.number + 1; Hooks.emit('rksv.nullbeleg', {beleg: r.no, art: label});
+  renderRksvBox(); showZeroReceipt(r, `${label} signiert`);
+}
+function showZeroReceipt(r, title) {
+  const rec = recFromData(r.no, r.data);
+  const el = openLayer(`<div class="modal" style="width:min(460px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+    <div class="m-head"><div class="m-ic" style="color:var(--pos)">${ic('shield')}</div><div><h2>${esc(title)}</h2><p>Beleg ${esc(r.no)} · im DEP gespeichert</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body" style="overflow:auto;background:var(--surface-2)"><div class="receipt-wrap">${receiptHTML(rec, 'classic')}</div></div>
+    <div class="m-foot"><button class="btn btn-secondary" id="zrPrint">${ic('printer', 'i-sm')}Drucken</button><span class="sp"></span><button class="btn btn-primary" data-close>Fertig</button></div></div>`);
+  $('#zrPrint', el).onclick = () => printReceipt(rec);
+}
+async function depExport() {
+  if (!DESKTOP) { toast('DEP-Export erstellt', {t2: `RKSV-Datenerfassungsprotokoll (Vorschau)`, type: 'pos', icon: 'shield'}); return; }
+  try { const p = await invoke('dep_export'); if (p) { toast('DEP-Export gespeichert', {t2: p, type: 'pos', icon: 'shield', dur: 6000}); Hooks.emit('rksv.dep.exported', {datei: p}); } }
+  catch (e) { toast('DEP-Export nicht möglich', {t2: String(e), type: 'warn'}); }
+}
+function renderSettingsKasseLock() {
+  const inp = $('[data-key="kasse.id"]'); if (!inp) return;
+  if (S.rksv?.active) { inp.readOnly = true; inp.style.opacity = .6; inp.title = 'Seit dem RKSV-Startbeleg fest'; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   24 · BONDRUCKER & KASSENLADE (ESC/POS)
+   Netzwerkdrucker (IP, Port 9100) oder installierter Windows-Drucker.
+   Die Kassenlade hängt am Drucker und öffnet über dessen Impuls.
+   ════════════════════════════════════════════════════════════════════ */
+const printerOn = () => DESKTOP && CFG['drucker.art'] && CFG['drucker.art'] !== 'aus';
+const m2 = v => num(v, 2);
+async function printOps(ops, purpose, quiet) {
+  if (!DESKTOP) { if (!quiet) toast('Gedruckt (Vorschau)', {t2: 'In der Desktop-App an den Bondrucker', icon: 'printer'}); return true; }
+  if (!printerOn()) { if (!quiet) toast('Kein Bondrucker eingerichtet', {t2: 'Einstellungen → Drucker & Kassenlade', type: 'warn', icon: 'printer', action: {label: 'Einrichten', run: () => { go('einstellungen'); setTimeout(() => $('#sec-drucker')?.scrollIntoView({block: 'start'}), 150); }}}); return false; }
+  try { await invoke('printer_print', {ops, purpose}); if (!quiet) toast('Gedruckt', {t2: purpose, type: 'pos', icon: 'printer', dur: 1800}); return true; }
+  catch (e) { toast('Druck fehlgeschlagen', {t2: String(e), type: 'warn', icon: 'printer', dur: 7000}); return false; }
+}
+async function openDrawer(reason, auto) {
+  Hooks.emit('device.drawer.opened', {kasse: CFG['kasse.id'], benutzer: S.user.name, grund: reason});
+  if (!DESKTOP) return toast('Kassenlade geöffnet', {t2: 'Vorschau', icon: 'cash'});
+  if (!printerOn() || !CFG['drucker.lade']) { if (!auto) toast('Keine Kassenlade eingerichtet', {t2: 'Einstellungen → Drucker & Kassenlade', type: 'warn', icon: 'cash'}); return; }
+  try { await invoke('printer_print', {ops: [{t: 'drawer'}], purpose: 'lade: ' + reason}); if (!auto) toast('Kassenlade geöffnet', {t2: reason, icon: 'cash', dur: 1600}); }
+  catch (e) { toast('Kassenlade nicht erreichbar', {t2: String(e), type: 'warn', icon: 'cash'}); }
+}
+function headOps() {
+  return [{t: 'text', s: CFG['firma.marke'], a: 'c', b: true, big: true}, {t: 'text', s: CFG['firma.zusatz'], a: 'c'}, {t: 'text', s: `${CFG['firma.adresse']}\nUID ${CFG['firma.uid']} · Tel. ${CFG['firma.telefon']}`, a: 'c'}, {t: 'line'}];
+}
+function receiptOps(rec) {
+  const ops = headOps(), dt = rec.date;
+  const d = `${pad(dt.getDate())}.${pad(dt.getMonth() + 1)}.${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+  const kind = rec.kind || 'verkauf';
+  if (kind !== 'verkauf') ops.push({t: 'text', s: (rec.label || kindLabel(rec)).toUpperCase(), a: 'c', b: true, big: true}, ...(rec.ref ? [{t: 'text', s: `zu Bon ${rec.ref} · ${rec.reason || ''}`, a: 'c'}] : []));
+  if (rec.copy) ops.push({t: 'text', s: '*** KOPIE ***', a: 'c', b: true});
+  ops.push({t: 'lr', l: `Bon ${rec.no}`, r: `Kasse ${CFG['kasse.id']}`}, {t: 'lr', l: d, r: (rec.cashier || '').split(' ')[0]}, {t: 'line'});
+  const neg = kind === 'retoure' || kind === 'storno';
+  (rec.lines || []).forEach(l => {
+    const amount = neg ? -(l.refund || 0) / 100 : r2(l.unit * l.qty);
+    ops.push({t: 'lr', l: `${neg ? '-' : ''}${l.qty} x ${l.name}`, r: m2(amount)});
+    const v = l.service ? (l.meta || '') : `${COLORS[l.c]?.[0] || l.c || ''}${l.s && l.s !== 'Einheitsgröße' ? ' · ' + l.s : ''}`;
+    if (v) ops.push({t: 'text', s: '  ' + v});
+    if (!neg && l.disc) ops.push({t: 'lr', l: `  Rabatt ${l.disc.pct} %`, r: '-' + m2(r2(r2(l.unit * l.qty) * l.disc.pct / 100))});
+  });
+  if (!neg && rec.billDisc) ops.push({t: 'lr', l: `Bonrabatt ${rec.billDisc.pct} %`, r: '-' + m2(r2(rec.t.disc - (rec.lines || []).reduce((s, l) => s + (l.disc ? r2(r2(l.unit * l.qty) * l.disc.pct / 100) : 0), 0)))});
+  ops.push({t: 'line'}, {t: 'lr', l: neg ? 'ERSTATTUNG EUR' : 'SUMME EUR', r: m2(rec.t.total), b: true}, {t: 'line'});
+  (rec.parts || []).forEach(p => ops.push({t: 'lr', l: p.label + (p.code ? ' ' + p.code : ''), r: m2(p.given || p.amount)}));
+  if (rec.change > 0) ops.push({t: 'lr', l: 'Rückgeld', r: m2(rec.change)});
+  if ((rec.t.vat || []).length || rec.t.zero) {
+    ops.push({t: 'line'}, {t: 'lr', l: 'MwSt', r: 'Netto  Steuer  Brutto'});
+    (rec.t.vat || []).forEach(v => ops.push({t: 'lr', l: `${v.rate} %`, r: `${m2(v.net)}  ${m2(v.tax)}  ${m2(v.gross)}`}));
+    if (rec.t.zero) ops.push({t: 'lr', l: '0 %', r: `${m2(rec.t.zero)}  0,00  ${m2(rec.t.zero)}`});
+  }
+  if (rec.customer) ops.push({t: 'line'}, {t: 'text', s: `Kunde ${rec.customer.id}${neg ? '' : ` · +${rec.pointsEarned ?? rec.t.points} Punkte`}`, a: 'c'});
+  if (rec.rksv?.qr) ops.push({t: 'feed', n: 1}, {t: 'qr', d: rec.rksv.qr}, {t: 'text', s: 'RKSV Testmodus (nicht registriert)', a: 'c'});
+  if (neg) ops.push({t: 'feed', n: 2}, {t: 'text', s: 'Unterschrift: ______________________', a: 'c'});
+  else if (kind === 'verkauf') ops.push({t: 'line'}, {t: 'text', s: CFG['kasse.bonFuss'], a: 'c'});
+  ops.push({t: 'feed', n: 4}, {t: 'cut'});
+  return ops;
+}
+function reportOps(s, title) {
+  const ops = headOps(), e = c => m2((c || 0) / 100);
+  ops.push({t: 'text', s: title, a: 'c', b: true, big: true}, {t: 'lr', l: `Kasse ${CFG['kasse.id']}`, r: fmtTs(s.ts || new Date().toISOString())}, {t: 'lr', l: 'seit', r: s.from ? fmtTs(s.from) : 'Beginn'});
+  if (s.first) ops.push({t: 'lr', l: 'Belege', r: `${s.first} - ${s.last}`});
+  ops.push({t: 'line'}, {t: 'lr', l: `Verkäufe (${s.counts.sales})`, r: e(s.gross_sales)}, {t: 'lr', l: `Retouren/Stornos (${s.counts.returns + s.counts.stornos})`, r: '-' + e(s.refunds)}, {t: 'lr', l: 'darin Rabatte', r: e(s.discounts)}, {t: 'lr', l: 'UMSATZ', r: e(s.revenue), b: true}, {t: 'line'});
+  s.vat.forEach(v => ops.push({t: 'lr', l: `MwSt ${v.rate} %`, r: `${e(v.net)}  ${e(v.tax)}  ${e(v.gross)}`}));
+  ops.push({t: 'line'}); s.payments.forEach(p => ops.push({t: 'lr', l: `${p.label || p.m} (${p.count})`, r: e(p.amount)}));
+  ops.push({t: 'line'}, {t: 'lr', l: 'Wechselgeld/Übertrag', r: e(s.cash.start)}, {t: 'lr', l: 'Bareinnahmen', r: e(s.cash.sales)}, {t: 'lr', l: 'Einlagen', r: e(s.cash.deposits)}, {t: 'lr', l: 'Entnahmen', r: '-' + e(s.cash.withdrawals)}, {t: 'lr', l: 'SOLL-BESTAND', r: e(s.cash.expected), b: true});
+  if (s.counted != null) ops.push({t: 'lr', l: 'GEZÄHLT', r: e(s.counted), b: true}, {t: 'lr', l: 'DIFFERENZ', r: e(s.diff), b: true}, ...(s.note ? [{t: 'text', s: 'Notiz: ' + s.note}] : []));
+  ops.push({t: 'line'}); s.cashiers.forEach(c => ops.push({t: 'lr', l: `${c.name || '-'} (${c.sales})`, r: e(c.revenue)}));
+  if (s.rksv_turnover != null) ops.push({t: 'line'}, {t: 'lr', l: 'RKSV Umsatzzähler', r: e(s.rksv_turnover)});
+  ops.push({t: 'feed', n: 4}, {t: 'cut'});
+  return ops;
+}
+const printReceipt = (rec, opts = {}) => printOps(receiptOps({...rec, copy: !!opts.copy}), `${kindLabel(rec)} ${rec.no}${opts.copy ? ' (Kopie)' : ''}`, opts.quiet);
+
+/* ── Einstellungen → Drucker ── */
+function printerSectionHTML() {
+  return `<section class="set-sec" id="sec-drucker"><h2>Drucker & Kassenlade</h2><p>Bondrucker mit ESC/POS (z. B. Epson TM-T20/T88 und kompatible). Die Kassenlade wird am Drucker angesteckt und über ihn geöffnet. QR-Codes druckt der Drucker selbst.</p>
+    <div class="card" id="prnBox"></div></section>`;
+}
+async function renderPrinterBox() {
+  const box = $('#prnBox'); if (!box) return;
+  const art = CFG['drucker.art'] || 'aus';
+  const row = (l, h, v) => `<div class="set-row"><div><div class="set-l">${l}</div>${h ? `<div class="set-h">${h}</div>` : ''}</div><div class="set-c" style="min-width:0;gap:6px">${v}</div></div>`;
+  let printers = [];
+  if (DESKTOP && art === 'windows') { try { printers = await invoke('printer_list'); } catch { /* keine */ } }
+  if (!$('#prnBox')) return;
+  box.innerHTML = row('Anschluss', 'Netzwerk: Drucker mit eigener IP · Windows: per USB installierter Drucker (RAW)', `<div class="seg" id="prnSeg">${[['aus', 'Kein Drucker'], ['netz', 'Netzwerk'], ['windows', 'Windows-Drucker']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${art === k}">${l}</button>`).join('')}</div>`)
+    + (art === 'netz' ? field('drucker.adresse', 'IP-Adresse', 'z. B. 192.168.1.50 oder 192.168.1.50:9100') : '')
+    + (art === 'windows' ? row('Drucker', printers.length ? `${printers.length} installierte Drucker gefunden` : 'Keine Drucker gefunden – Treiber installieren und neu laden', `<select class="input select" data-key="drucker.name" style="max-width:280px"><option value="">bitte wählen</option>${printers.map(p => `<option ${p === CFG['drucker.name'] ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select><button class="btn btn-ghost btn-sm" id="prnReload">${ic('sync', 'i-sm')}</button>`) : '')
+    + (art !== 'aus' ? row('Papierbreite', '', `<div class="seg" id="prnWidth">${[[48, '80 mm'], [32, '58 mm']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${(+CFG['drucker.breite'] || 48) === k}">${l}</button>`).join('')}</div>`)
+      + field('drucker.auto', 'Beleg automatisch drucken', 'Nach jedem Verkauf, jeder Retoure und jedem Abschluss', 'switch')
+      + field('drucker.lade', 'Kassenlade am Drucker', 'Öffnet bei Barzahlung, Rückgeld und Kassenbuch', 'switch')
+      + row('Test', '', `<button class="btn btn-secondary btn-sm" id="prnTest">${ic('printer', 'i-sm')}Testdruck</button><button class="btn btn-secondary btn-sm" id="prnDrawer">${ic('cash', 'i-sm')}Lade öffnen</button>`) : '');
+  $$('.seg', box).forEach(sg => initSeg(sg, async b => {
+    if (sg.id === 'prnSeg') { await saveSettings({'drucker.art': b.dataset.v}, true); renderPrinterBox(); }
+    if (sg.id === 'prnWidth') saveSettings({'drucker.breite': +b.dataset.v}, true);
+  }));
+}
+function testOps() {
+  return [...headOps(), {t: 'text', s: 'TESTDRUCK', a: 'c', b: true, big: true}, {t: 'lr', l: 'Kasse', r: CFG['kasse.id']}, {t: 'lr', l: 'Umlaute', r: 'ÄÖÜ äöü ß €'}, {t: 'lr', l: 'Breite', r: `${+CFG['drucker.breite'] || 48} Zeichen`}, {t: 'line'}, {t: 'qr', d: 'Kontor Testdruck'}, {t: 'text', s: 'Wenn Sie das lesen können, passt alles.', a: 'c'}, {t: 'feed', n: 4}, {t: 'cut'}];
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   25 · EINKAUF — Lieferanten, Bestellungen, Wareneingang, Vorschläge
+   ════════════════════════════════════════════════════════════════════ */
+const SUPPLIERS = [];
+const EK = {tab: 'bestellungen', pos: [], sug: [], loaded: false};
+const PO_ST = {entwurf: ['Entwurf', ''], bestellt: ['Bestellt', 'info'], teilgeliefert: ['Teilgeliefert', 'warn'], geliefert: ['Geliefert', 'pos'], storniert: ['Storniert', 'neg']};
+const supName = id => SUPPLIERS.find(s => s.id === id)?.name || 'ohne Lieferant';
+const varById = vid => { for (const a of ART) { const v = a.variants.find(x => x.vid === vid); if (v) return {a, v}; } return null; };
+const colorName = c => COLORS[c]?.[0] || c;
+
+async function loadSuppliers() {
+  if (!DESKTOP) return;
+  try { const l = await invoke('suppliers_list'); SUPPLIERS.length = 0; SUPPLIERS.push(...l); } catch (e) { console.error(e); }
+}
+async function loadPurchasing() {
+  if (!DESKTOP) return;
+  try { [EK.pos, EK.sug] = await Promise.all([invoke('po_list'), invoke('po_suggest')]); await loadSuppliers(); EK.loaded = true; }
+  catch (e) { toast('Einkauf nicht verfügbar', {t2: String(e), type: 'warn'}); }
+}
+
+async function renderEinkauf() {
+  const v = $('#view-einkauf');
+  if (!DESKTOP) { v.innerHTML = `<div class="cv"><div class="card"><div class="empty" style="padding:64px 20px"><div class="empty-icon">${ic('truck')}</div><h3>Einkauf nur in der Desktop-App</h3><p>Bestellungen und Wareneingang brauchen die lokale Datenbank.</p></div></div></div>`; return; }
+  if (!EK.loaded) { v.innerHTML = '<div class="cv"><div class="card" style="padding:24px"><span class="thinking"><b>Lade Einkauf …</b></span></div></div>'; await loadPurchasing(); if (S.view !== 'einkauf') return; }
+  const open = EK.pos.filter(p => ['bestellt', 'teilgeliefert'].includes(p.status)), drafts = EK.pos.filter(p => p.status === 'entwurf');
+  v.innerHTML = `<div class="cv">
+    <div class="cv-head"><div><h2 class="h-title">Einkauf</h2><div class="dash-meta" style="margin-top:6px"><span>Bestellungen, Wareneingang und Nachschub · lokale Datenbank</span></div></div>
+      <button class="btn btn-primary" id="poNew">${ic('plus', 'i-sm')}Neue Bestellung</button></div>
+    <div class="kpis"><div class="card"><b class="num">${num(open.length)}</b><span>offene Bestellungen</span></div><div class="card"><b>${eur0(open.reduce((s, p) => s + p.value, 0) / 100)}</b><span>offener Bestellwert (EK)</span></div>
+      <div class="card"><b class="num">${num(drafts.length)}</b><span>Entwürfe</span></div><div class="card"><b class="num" style="color:${EK.sug.length ? 'var(--warn)' : 'inherit'}">${num(EK.sug.length)}</b><span>Varianten unter Mindestbestand</span></div><div class="card"><b class="num">${num(SUPPLIERS.length)}</b><span>Lieferanten</span></div></div>
+    <div class="cv-tools"><div class="seg" id="ekSeg">${[['bestellungen', 'Bestellungen'], ['vorschlag', `Bestellvorschlag${EK.sug.length ? ` (${EK.sug.length})` : ''}`], ['lieferanten', 'Lieferanten']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${EK.tab === k}">${l}</button>`).join('')}</div></div>
+    <div id="ekBody"></div></div>`;
+  initSeg($('#ekSeg', v), b => { EK.tab = b.dataset.v; renderEkBody(); });
+  renderEkBody();
+}
+function renderEkBody() {
+  const b = $('#ekBody'); if (!b) return;
+  if (EK.tab === 'bestellungen') {
+    b.innerHTML = `<div class="card">${EK.pos.length ? `<table class="tbl art-tbl"><thead><tr><th style="padding-left:16px">Bestellung</th><th>Lieferant</th><th>Status</th><th class="r">Positionen</th><th class="r">Geliefert</th><th class="r">Wert (EK)</th><th>Datum</th><th></th></tr></thead><tbody>${EK.pos.map(p => `<tr data-po="${p.id}"><td style="padding-left:16px"><b>${esc(p.no)}</b>${p.note ? `<div class="muted" style="font-size:12px">${esc(p.note)}</div>` : ''}</td><td>${esc(p.supplier)}</td><td><span class="pill ${PO_ST[p.status]?.[1] || ''}" style="height:20px">${PO_ST[p.status]?.[0] || p.status}</span></td><td class="r num">${p.lines}</td><td class="r num">${num(p.received)} / ${num(p.qty)}</td><td class="r"><b>${eur(p.value / 100)}</b></td><td class="muted">${esc(fmtTs(p.ordered_at || p.created_at))}</td><td class="r" style="padding-right:14px;color:var(--text-3)">${ic('chevron-right', 'i-sm')}</td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty" style="padding:56px 20px"><div class="empty-icon">${ic('truck')}</div><h3>Noch keine Bestellungen</h3><p>Neue Bestellung anlegen oder aus dem Bestellvorschlag übernehmen.</p></div>`}</div>`;
+  } else if (EK.tab === 'vorschlag') {
+    const groups = {}; EK.sug.forEach(s => (groups[s.supplier_id || ''] ||= []).push(s));
+    b.innerHTML = Object.keys(groups).length ? Object.entries(groups).map(([sid, rows]) => `<div class="card" style="margin-bottom:12px" data-sg="${esc(sid)}">
+      <div class="set-row"><div><div class="set-l">${esc(supName(sid))}</div><div class="set-h">${rows.length} Varianten · Vorschlag = Mindestbestand + Abverkauf der letzten 4 Wochen − Bestand − offene Bestellungen</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-sgo="${esc(sid)}" ${sid ? '' : 'disabled title="Lieferant im Artikel hinterlegen"'}>${ic('plus', 'i-sm')}Bestellung anlegen</button></div></div>
+      <table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:40px"></th><th>Artikel</th><th class="r">Bestand</th><th class="r">Min.</th><th class="r">offen bestellt</th><th class="r">verk. 4 Wo.</th><th class="r" style="padding-right:16px">Menge</th></tr></thead><tbody>${rows.map(r => `<tr><td style="padding-left:16px"><input type="checkbox" checked data-sv="${r.variant_id}"></td><td><b>${esc(r.name)}</b><div class="muted" style="font-size:12px">${esc(colorName(r.color))} · ${esc(r.size)}</div></td><td class="r num" style="color:${r.stock <= 0 ? 'var(--neg)' : 'inherit'}">${r.stock}</td><td class="r num">${r.min}</td><td class="r num">${r.open}</td><td class="r num">${r.sold28}</td><td class="r" style="padding-right:16px"><input class="input num" data-sq="${r.variant_id}" value="${r.qty}" inputmode="numeric" style="width:70px;height:32px;text-align:right"></td></tr>`).join('')}</tbody></table></div>`).join('')
+      : `<div class="card"><div class="empty" style="padding:56px 20px"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><h3>Kein Nachschub nötig</h3><p>Alle Varianten liegen über dem Mindestbestand (inkl. offener Bestellungen).</p></div></div>`;
+  } else {
+    b.innerHTML = `<div class="card"><table class="tbl art-tbl"><thead><tr><th style="padding-left:16px">Lieferant</th><th>Kontakt</th><th>Kundennr.</th><th class="r">Lieferzeit</th><th class="r">offene Bestellungen</th><th></th></tr></thead><tbody>${SUPPLIERS.map(s => `<tr data-sup="${esc(s.id)}"><td style="padding-left:16px"><b>${esc(s.name)}</b><div class="muted" style="font-size:12px">${esc(s.id)}${s.note ? ' · ' + esc(s.note) : ''}</div></td><td class="muted" style="font-size:12.5px">${esc(s.contact || '–')}${s.email ? `<br>${esc(s.email)}` : ''}${s.phone ? ` · ${esc(s.phone)}` : ''}</td><td>${esc(s.customer_no || '–')}</td><td class="r">${s.lead_days} Tage</td><td class="r num">${s.open_orders}</td><td class="r" style="padding-right:14px;color:var(--text-3)">${ic('chevron-right', 'i-sm')}</td></tr>`).join('')}
+      <tr data-sup=""><td colspan="6" style="padding-left:16px;color:var(--accent);font-weight:550">${ic('plus', 'i-sm')} Neuer Lieferant</td></tr></tbody></table></div>`;
+  }
+}
+
+function openSupplier(s) {
+  const st = {...{name: '', contact: '', email: '', phone: '', customer_no: '', lead_days: 7, note: ''}, ...(s || {})};
+  const el = openLayer(`<div class="modal" style="width:min(560px,100%)" role="dialog" aria-modal="true" aria-label="Lieferant">
+    <div class="m-head"><div class="m-ic">${ic('truck')}</div><div><h2>${s ? esc(s.name) : 'Neuer Lieferant'}</h2><p>${s ? esc(s.id) : 'Nummer wird vergeben'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body"><div class="ed-grid">
+      <label class="field full"><span>Name</span><input class="input" data-sf="name" value="${esc(st.name)}"></label>
+      <label class="field"><span>Ansprechperson</span><input class="input" data-sf="contact" value="${esc(st.contact)}"></label>
+      <label class="field"><span>Unsere Kundennummer</span><input class="input" data-sf="customer_no" value="${esc(st.customer_no)}"></label>
+      <label class="field"><span>E-Mail</span><input class="input" data-sf="email" value="${esc(st.email)}"></label>
+      <label class="field"><span>Telefon</span><input class="input" data-sf="phone" value="${esc(st.phone)}"></label>
+      <label class="field"><span>Lieferzeit (Tage)</span><input class="input num" data-sf="lead_days" inputmode="numeric" value="${esc(st.lead_days)}"></label>
+      <label class="field full"><span>Notiz</span><input class="input" data-sf="note" value="${esc(st.note)}"></label></div></div>
+    <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="sfSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {focus: '[data-sf="name"]'});
+  $('#sfSave', el).onclick = async () => {
+    $$('[data-sf]', el).forEach(i => { st[i.dataset.sf] = i.value; });
+    st.lead_days = parseInt(st.lead_days, 10) || 0;
+    try { const l = await invoke('supplier_save', {supplier: {...st, id: s?.id || ''}}); SUPPLIERS.length = 0; SUPPLIERS.push(...l); }
+    catch (e) { return toast('Speichern fehlgeschlagen', {t2: String(e), type: 'warn'}); }
+    closeLayer(el); toast('Lieferant gespeichert', {t2: st.name, type: 'pos', icon: 'truck'}); if (S.view === 'einkauf') renderEinkauf();
+  };
+}
+
+/* ── Bestellung ── */
+async function openPO(id, preset) {
+  let head = id ? EK.pos.find(p => p.id === id) : null, lines = [];
+  if (id) { try { lines = await invoke('po_lines', {id}); } catch (e) { return toast('Bestellung nicht verfügbar', {t2: String(e), type: 'warn'}); } }
+  else if (preset) lines = preset.lines;
+  const draft = !head || head.status === 'entwurf';
+  const st = {supplier: head?.supplier_id || preset?.supplier || SUPPLIERS[0]?.id || '', note: head?.note || '', lines: lines.map(l => ({...l, costE: l.cost != null ? num(l.cost / 100, 2) : ''})), q: ''};
+  const el = openLayer(`<div class="drawer-panel" style="width:min(760px,100%)" role="dialog" aria-modal="true" aria-label="Bestellung"><div id="poBody" style="display:flex;flex-direction:column;min-height:0;flex:1"></div></div>`, {cls: 'drawer'});
+  const box = $('#poBody', el);
+  const total = () => st.lines.reduce((s, l) => s + (parseAmt(l.costE) || 0) * (parseInt(l.qty, 10) || 0), 0);
+  const hits = () => { const toks = norm(st.q.trim()).split(/\s+/).filter(Boolean); if (!toks.length) return []; return ART.flatMap(a => a.variants.map(v => ({a, v}))).filter(({a, v}) => toks.every(t => a.hay.includes(t) || v.ean.startsWith(t) || norm(`${colorName(v.c)} ${v.s}`).includes(t))).slice(0, 8); };
+  const render = () => {
+    box.innerHTML = `<div class="m-head" style="padding-bottom:12px"><div class="m-ic">${ic('truck')}</div><div><h2>${head ? esc(head.no) : 'Neue Bestellung'}</h2><p>${head ? `${PO_ST[head.status][0]} · angelegt ${esc(fmtTs(head.created_at))}${head.user ? ' von ' + esc(head.user) : ''}` : 'Entwurf – wird erst mit „Bestellen“ verbindlich'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="drawer-body" style="display:grid;gap:14px;align-content:start">
+        <div class="ed-grid"><label class="field"><span>Lieferant</span><select class="input select" id="poSup" ${draft ? '' : 'disabled'}>${SUPPLIERS.map(s => `<option value="${esc(s.id)}" ${s.id === st.supplier ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>
+          <label class="field"><span>Notiz</span><input class="input" id="poNote" value="${esc(st.note)}" ${draft ? '' : 'readonly'} placeholder="z. B. Saisonvororder"></label></div>
+        ${draft ? `<div style="position:relative"><label class="search-field" style="height:42px">${ic('search')}<input id="poQ" placeholder="Artikel, Farbe, Größe oder EAN hinzufügen …" value="${esc(st.q)}" autocomplete="off"></label>
+          ${st.q ? `<div class="card" style="position:absolute;left:0;right:0;top:46px;z-index:5;overflow:hidden;box-shadow:var(--shadow-3)">${hits().map(({a, v}) => `<button class="pal-i" style="height:46px;border-radius:0" data-addv="${v.vid}"><span style="flex:1;text-align:left"><b>${esc(a.name)}</b> <span class="muted">· ${esc(colorName(v.c))} · ${esc(v.s)} · Bestand ${v.q}</span></span><span class="muted">${a.cost != null ? eur(a.cost) : ''}</span></button>`).join('') || '<div class="muted" style="padding:12px">Kein Treffer</div>'}</div>` : ''}</div>` : ''}
+        <div class="card" style="overflow:hidden">${st.lines.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:14px">Artikel</th><th class="r">Bestand</th><th class="r">${draft ? 'Menge' : 'geliefert / bestellt'}</th><th class="r">EK netto</th><th class="r" style="padding-right:14px">Summe</th>${draft ? '<th></th>' : ''}</tr></thead><tbody>${st.lines.map((l, i) => { const x = varById(l.variant_id); return `<tr><td style="padding-left:14px"><b>${esc(l.name || x?.a.name || '')}</b><div class="muted" style="font-size:12px">${esc(colorName(l.color || x?.v.c))} · ${esc(l.size || x?.v.s)}</div></td><td class="r num">${x ? x.v.q : l.stock ?? '–'}</td>
+            <td class="r">${draft ? `<input class="input num" data-lq="${i}" value="${esc(l.qty)}" inputmode="numeric" style="width:70px;height:32px;text-align:right">` : `<span class="num" style="color:${l.received >= l.qty ? 'var(--pos)' : 'inherit'}">${l.received} / ${l.qty}</span>`}</td>
+            <td class="r">${draft ? `<input class="input num" data-lc="${i}" value="${esc(l.costE)}" inputmode="decimal" placeholder="0,00" style="width:90px;height:32px;text-align:right">` : eur(parseAmt(l.costE) || 0)}</td>
+            <td class="r num" style="padding-right:14px">${eur((parseAmt(l.costE) || 0) * (parseInt(l.qty, 10) || 0))}</td>${draft ? `<td><button class="btn btn-ghost btn-icon btn-sm" data-rml="${i}" aria-label="Entfernen">${ic('x', 'i-sm')}</button></td>` : ''}</tr>`; }).join('')}</tbody></table>`
+          : '<div class="empty" style="padding:28px"><p>Noch keine Positionen – oben suchen und hinzufügen.</p></div>'}</div>
+        <div class="preview-box"><span>Bestellwert (EK netto)<br><span class="muted" style="font-size:12px">${st.lines.reduce((s, l) => s + (parseInt(l.qty, 10) || 0), 0)} Stück</span></span><b id="poTotal">${eur(total())}</b></div>
+      </div>
+      <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">
+        ${head && ['entwurf', 'bestellt'].includes(head.status) ? `<button class="btn btn-danger" id="poCancel">${ic('x', 'i-sm')}Stornieren</button>` : ''}
+        ${st.lines.length ? `<button class="btn btn-ghost" id="poCsv">${ic('download', 'i-sm')}CSV</button>` : ''}<span class="sp"></span>
+        ${draft ? `<button class="btn btn-secondary" id="poSave">${ic('check', 'i-sm')}Entwurf speichern</button><button class="btn btn-primary" id="poOrder">${ic('truck', 'i-sm')}Bestellen</button>`
+          : ['bestellt', 'teilgeliefert'].includes(head.status) ? `<button class="btn btn-primary" id="poRecv">${ic('boxes', 'i-sm')}Wareneingang buchen</button>` : '<button class="btn btn-secondary" data-close>Schließen</button>'}</div>`;
+    if (st.q) { const q = $('#poQ', box); q.focus(); q.setSelectionRange(st.q.length, st.q.length); }
+  };
+  const sync = () => { const s = $('#poSup', box), n = $('#poNote', box); if (s) st.supplier = s.value; if (n) st.note = n.value; };
+  const save = async () => {
+    sync();
+    if (!st.supplier) { toast('Lieferant wählen', {type: 'warn'}); return null; }
+    const ls = st.lines.map(l => ({variant_id: l.variant_id, qty: parseInt(l.qty, 10) || 0, cost: l.costE !== '' && isFinite(parseAmt(l.costE)) ? Math.round(parseAmt(l.costE) * 100) : null})).filter(l => l.qty > 0);
+    if (!ls.length) { toast('Mindestens eine Position mit Menge', {type: 'warn'}); return null; }
+    try { const nid = await invoke('po_save', {id: head?.id ?? null, supplier: st.supplier, note: st.note, lines: ls, user: S.user.name}); await loadPurchasing(); head = EK.pos.find(p => p.id === nid); return nid; }
+    catch (e) { toast('Speichern fehlgeschlagen', {t2: String(e), type: 'warn'}); return null; }
+  };
+  box.addEventListener('input', e => {
+    if (e.target.id === 'poQ') { st.q = e.target.value; render(); return; }
+    const q = e.target.dataset.lq, c = e.target.dataset.lc;
+    if (q != null) st.lines[q].qty = e.target.value.replace(/\D/g, '');
+    if (c != null) st.lines[c].costE = e.target.value;
+    if (q != null || c != null) $('#poTotal', box).textContent = eur(total());
+  });
+  box.addEventListener('click', async e => {
+    const add = e.target.closest('[data-addv]'); if (add) { sync(); const x = varById(+add.dataset.addv); const ex = st.lines.find(l => l.variant_id === x.v.vid); if (ex) ex.qty = String((parseInt(ex.qty, 10) || 0) + 1); else st.lines.push({variant_id: x.v.vid, name: x.a.name, color: x.v.c, size: x.v.s, qty: '1', costE: x.a.cost != null ? num(x.a.cost, 2) : ''}); st.q = ''; return render(); }
+    const rm = e.target.closest('[data-rml]'); if (rm) { sync(); st.lines.splice(+rm.dataset.rml, 1); return render(); }
+    if (e.target.closest('#poSave')) { if (await save()) { closeLayer(el); EK.tab = 'bestellungen'; toast('Entwurf gespeichert', {t2: head?.no, type: 'pos', icon: 'truck'}); renderEinkauf(); } return; }
+    if (e.target.closest('#poOrder')) {
+      const nid = await save(); if (!nid) return;
+      try { await invoke('po_status', {id: nid, status: 'bestellt', user: S.user.name}); } catch (err) { return toast('Nicht möglich', {t2: String(err), type: 'warn'}); }
+      await loadPurchasing(); EK.tab = 'bestellungen'; closeLayer(el); toast('Bestellt', {t2: `${head.no} · ${supName(st.supplier)} · ${eur(total())}`, type: 'pos', icon: 'truck'}); Hooks.emit('purchasing.order.placed', {bestellung: head.no}); renderEinkauf(); return;
+    }
+    if (e.target.closest('#poCancel')) {
+      try { await stepUp({title: 'Bestellung stornieren', text: head.no}); await invoke('po_status', {id: head.id, status: 'storniert', user: S.user.name}); } catch (err) { if (String(err).includes('abgebrochen')) return; return toast('Nicht möglich', {t2: String(err), type: 'warn'}); }
+      await loadPurchasing(); closeLayer(el); toast('Bestellung storniert', {t2: head.no, icon: 'x'}); renderEinkauf(); return;
+    }
+    if (e.target.closest('#poCsv')) {
+      const csv = ['Artikel;Farbe;Größe;EAN;Menge;EK netto'].concat(st.lines.map(l => { const x = varById(l.variant_id); return [l.name || x?.a.name, colorName(l.color || x?.v.c), l.size || x?.v.s, l.ean || x?.v.ean, l.qty, l.costE].join(';'); })).join('\r\n');
+      try { const p = await invoke('save_text', {name: `${head?.no || 'Bestellung'}_${supName(st.supplier).replace(/\W+/g, '-')}.csv`, content: csv, title: 'Bestellung exportieren'}); if (p) toast('Exportiert', {t2: p, type: 'pos', icon: 'download'}); } catch (err) { toast('Export fehlgeschlagen', {t2: String(err), type: 'warn'}); }
+      return;
+    }
+    if (e.target.closest('#poRecv')) { closeLayer(el); openReceive(head, st.lines); }
+  });
+  render();
+}
+function openReceive(head, lines) {
+  const open = lines.map(l => Math.max(0, l.qty - l.received));
+  const st = open.map(String);
+  const el = openLayer(`<div class="modal" style="width:min(640px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="Wareneingang">
+    <div class="m-head"><div class="m-ic">${ic('boxes')}</div><div><h2>Wareneingang · ${esc(head.no)}</h2><p>${esc(head.supplier)} · gelieferte Menge je Position prüfen</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body" style="overflow:auto"><table class="tbl" style="margin:0"><thead><tr><th>Artikel</th><th class="r">offen</th><th class="r">geliefert</th></tr></thead><tbody>${lines.map((l, i) => `<tr><td><b>${esc(l.name)}</b><div class="muted" style="font-size:12px">${esc(colorName(l.color))} · ${esc(l.size)} · EAN ${esc(l.ean)}</div></td><td class="r num">${open[i]}</td><td class="r"><input class="input num" data-rv="${i}" value="${st[i]}" inputmode="numeric" style="width:70px;height:32px;text-align:right" ${open[i] ? '' : 'disabled'}></td></tr>`).join('')}</tbody></table>
+      <div class="prompt-hint">${ic('info', 'i-xs')}Bestand wird sofort gebucht (Grund „Wareneingang“, Beleg ${esc(head.no)}). Teillieferungen sind möglich.</div></div>
+    <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="rvGo">${ic('check', 'i-sm')}Einbuchen</button></div></div>`);
+  el.addEventListener('input', e => { const i = e.target.dataset.rv; if (i != null) st[i] = e.target.value.replace(/\D/g, ''); });
+  $('#rvGo', el).onclick = async () => {
+    const items = lines.map((l, i) => ({line_id: l.id, qty: parseInt(st[i], 10) || 0})).filter(x => x.qty > 0);
+    if (!items.length) return toast('Keine Menge erfasst', {type: 'warn'});
+    let r; try { r = await invoke('po_receive', {id: head.id, items, user: S.user.name}); } catch (e) { return toast('Wareneingang fehlgeschlagen', {t2: String(e), type: 'warn', dur: 7000}); }
+    applyStocks(r); await loadPurchasing(); closeLayer(el);
+    toast('Wareneingang gebucht', {t2: `${head.no} · ${items.reduce((s, x) => s + x.qty, 0)} Stück`, type: 'pos', icon: 'boxes'});
+    Hooks.emit('purchasing.goods.received', {bestellung: head.no, stueck: items.reduce((s, x) => s + x.qty, 0)});
+    if (S.view === 'einkauf') renderEinkauf();
+  };
+}
+function bindPurchasing() {
+  const v = $('#view-einkauf');
+  v.addEventListener('click', async e => {
+    if (e.target.closest('#poNew')) return openPO(null);
+    const po = e.target.closest('[data-po]'); if (po) return openPO(+po.dataset.po);
+    const sp = e.target.closest('[data-sup]'); if (sp) return openSupplier(SUPPLIERS.find(s => s.id === sp.dataset.sup) || null);
+    const sg = e.target.closest('[data-sgo]');
+    if (sg) {
+      const card = sg.closest('[data-sg]'), sid = sg.dataset.sgo;
+      const lines = $$('[data-sv]', card).filter(c => c.checked).map(c => { const vid = +c.dataset.sv, r = EK.sug.find(s => s.variant_id === vid); return {variant_id: vid, name: r.name, color: r.color, size: r.size, qty: $(`[data-sq="${vid}"]`, card).value, cost: r.cost}; });
+      if (!lines.length) return toast('Keine Position ausgewählt', {type: 'warn'});
+      openPO(null, {supplier: sid, lines});
+    }
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   26 · BERICHTE — Auswertungen aus der Datenbank, CSV-Export (Excel)
+   ════════════════════════════════════════════════════════════════════ */
+const RP = {p: 'monat', from: '', to: '', tab: 'tage', data: null, closings: [], vouchers: []};
+const dIso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+function rpRange() {
+  const now = new Date(), sod = new Date(now.getFullYear(), now.getMonth(), now.getDate()), mon = addDays(sod, -((now.getDay() + 6) % 7));
+  const r = {
+    heute: [sod, addDays(sod, 1)], gestern: [addDays(sod, -1), sod], woche: [mon, addDays(mon, 7)], vorwoche: [addDays(mon, -7), mon],
+    monat: [new Date(now.getFullYear(), now.getMonth(), 1), new Date(now.getFullYear(), now.getMonth() + 1, 1)],
+    vormonat: [new Date(now.getFullYear(), now.getMonth() - 1, 1), new Date(now.getFullYear(), now.getMonth(), 1)],
+    jahr: [new Date(now.getFullYear(), 0, 1), new Date(now.getFullYear() + 1, 0, 1)],
+  }[RP.p];
+  if (r) return r;
+  const f = RP.from ? new Date(RP.from + 'T00:00:00') : sod, t = RP.to ? addDays(new Date(RP.to + 'T00:00:00'), 1) : addDays(sod, 1);
+  return [f, t];
+}
+const rpLabel = () => { const [f, t] = rpRange(); const e = addDays(t, -1); return dIso(f) === dIso(e) ? f.toLocaleDateString('de-AT') : `${f.toLocaleDateString('de-AT')} – ${e.toLocaleDateString('de-AT')}`; };
+
+async function loadReport() {
+  const [f, t] = rpRange();
+  try {
+    const [cur] = await invoke('stats', {ranges: [{from: isoL(f), to: isoL(t)}], detail: true});
+    RP.data = cur;
+    [RP.closings, RP.vouchers] = await Promise.all([invoke('closings_list'), invoke('voucher_list')]);
+  } catch (e) { RP.data = null; toast('Bericht nicht verfügbar', {t2: String(e), type: 'warn'}); }
+}
+async function renderBerichte() {
+  const v = $('#view-berichte');
+  if (!DESKTOP) { v.innerHTML = `<div class="cv"><div class="card"><div class="empty" style="padding:64px 20px"><div class="empty-icon">${ic('chart')}</div><h3>Berichte nur in der Desktop-App</h3><p>Auswertungen lesen die Belege aus der lokalen Datenbank.</p></div></div></div>`; return; }
+  v.innerHTML = `<div class="cv">
+    <div class="cv-head"><div><h2 class="h-title">Berichte</h2><div class="dash-meta" style="margin-top:6px"><span id="rpLbl">${esc(rpLabel())}</span><span>·</span><span>Retouren und Stornos abgezogen</span></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-secondary" id="rpX">${ic('receipt', 'i-sm')}X-Bericht</button><button class="btn btn-secondary" id="rpZ">${ic('lock', 'i-sm')}Tagesabschluss</button></div></div>
+    <div class="cv-tools"><div class="seg" id="rpSeg">${[['heute', 'Heute'], ['gestern', 'Gestern'], ['woche', 'Woche'], ['vorwoche', 'Vorwoche'], ['monat', 'Monat'], ['vormonat', 'Vormonat'], ['jahr', 'Jahr'], ['frei', 'Zeitraum']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${RP.p === k}">${l}</button>`).join('')}</div>
+      <span id="rpFree" style="display:${RP.p === 'frei' ? 'inline-flex' : 'none'};gap:6px;align-items:center"><input type="date" class="input" id="rpFrom" value="${RP.from}" style="height:36px"> – <input type="date" class="input" id="rpTo" value="${RP.to}" style="height:36px"></span></div>
+    <div id="rpBody"><div class="card" style="padding:24px"><span class="thinking"><b>Rechne …</b></span></div></div></div>`;
+  initSeg($('#rpSeg', v), async b => { RP.p = b.dataset.v; $('#rpFree').style.display = RP.p === 'frei' ? 'inline-flex' : 'none'; $('#rpLbl').textContent = rpLabel(); await loadReport(); renderRpBody(); });
+  await loadReport(); renderRpBody();
+}
+const TABS = [['tage', 'Tage'], ['gruppen', 'Warengruppen'], ['artikel', 'Artikel'], ['zahlung', 'Zahlungsarten'], ['steuer', 'Steuern'], ['kassier', 'Kassier:innen'], ['abschluesse', 'Tagesabschlüsse'], ['gutscheine', 'Gutscheine']];
+function rpTable() {
+  const d = RP.data, e = c => eur((c || 0) / 100);
+  const T = (head, rows, foot) => ({head, rows, foot});
+  switch (RP.tab) {
+    case 'tage': return T(['Tag', 'Bons', 'Retouren', 'Umsatz'], d.days.map(x => [new Date(x.day + 'T12:00').toLocaleDateString('de-AT', {weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric'}), x.sales, e(x.returns), e(x.revenue)]), ['Summe', d.sales, e(d.returns), e(d.revenue)]);
+    case 'gruppen': return T(['Warengruppe', 'Anteil', 'Umsatz'], d.cats.map(c => [catName(c.cat), d.cats.reduce((s, x) => s + Math.max(0, x.rev), 0) ? `${num(c.rev / d.cats.reduce((s, x) => s + Math.max(0, x.rev), 0) * 100, 1)} %` : '–', e(c.rev)]));
+    case 'artikel': return T(['Artikel', 'Nr.', 'Stück (netto)', 'Umsatz'], d.items.map(i => [i.name, i.sku, i.qty, e(i.rev)]));
+    case 'zahlung': return T(['Zahlungsart', 'Betrag'], d.pay.map(p => [p.label || p.m, e(p.amount)]), ['Summe', e(d.pay.reduce((s, p) => s + p.amount, 0))]);
+    case 'steuer': return T(['Steuersatz', 'Netto', 'Steuer', 'Brutto'], d.vat.map(v => [`${v.rate} %`, e(v.net), e(v.tax), e(v.gross)]), ['Summe', e(d.vat.reduce((s, v) => s + v.net, 0)), e(d.vat.reduce((s, v) => s + v.tax, 0)), e(d.vat.reduce((s, v) => s + v.gross, 0))]);
+    case 'kassier': return T(['Kassier:in', 'Bons', 'Umsatz'], d.cashiers.map(c => [c.name || '–', c.sales, e(c.revenue)]));
+    case 'abschluesse': return T(['Nr.', 'Zeitpunkt', 'Umsatz', 'Soll', 'Gezählt', 'Differenz', 'durch'], RP.closings.map(z => [z.no, fmtTs(z.ts), e(z.data?.revenue), e(z.expected), e(z.counted), e(z.diff), z.user || '']), null, true);
+    case 'gutscheine': { const act = RP.vouchers.filter(x => x.status === 'aktiv'); return T(['Code', 'Status', 'Ausgegeben', 'Restwert', 'gültig bis', 'Beleg'], RP.vouchers.map(x => [x.code, x.status, e(x.initial), e(x.balance), x.valid_until || '', x.sale_no || '']), ['offen', `${act.length} aktiv`, '', e(act.reduce((s, x) => s + x.balance, 0)), '', '']); }
+  }
+}
+function renderRpBody() {
+  const b = $('#rpBody'); if (!b) return;
+  const d = RP.data;
+  if (!d) { b.innerHTML = '<div class="card"><div class="empty"><p>Keine Daten.</p></div></div>'; return; }
+  const sales = d.rows.filter(r => r[2] === 'verkauf'), gross = sales.reduce((s, r) => s + r[1], 0);
+  const tax = d.vat.reduce((s, v) => s + v.tax, 0);
+  const t = rpTable();
+  b.innerHTML = `<div class="kpis"><div class="card"><b>${eur(d.revenue / 100)}</b><span>Umsatz (brutto)</span></div><div class="card"><b class="num">${num(d.sales)}</b><span>Bons</span></div><div class="card"><b>${d.sales ? eur(gross / 100 / sales.length) : '–'}</b><span>Ø Bon</span></div>
+      <div class="card"><b class="num">${num(d.sold)}</b><span>Artikel verkauft</span></div><div class="card"><b>${eur(d.returns / 100)}</b><span>Retouren & Stornos (${num(d.returned)} Stk.)</span></div><div class="card"><b>${eur(d.discounts / 100)}</b><span>Rabatte</span></div><div class="card"><b>${eur(tax / 100)}</b><span>enthaltene MwSt</span></div></div>
+    <div class="cv-tools"><div class="reasons">${TABS.map(([k, l]) => `<button class="chip" data-rt="${k}" aria-pressed="${RP.tab === k}">${l}</button>`).join('')}</div><button class="btn btn-secondary btn-sm" id="rpCsv" style="margin-left:auto">${ic('download', 'i-sm')}CSV für Excel</button></div>
+    <div class="card">${t.rows.length ? `<table class="tbl" style="margin:0"><thead><tr>${t.head.map((h, i) => `<th class="${i ? 'r' : ''}" style="${i ? '' : 'padding-left:16px'}">${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map((r, ri) => `<tr ${RP.tab === 'abschluesse' ? `data-z="${ri}" style="cursor:pointer"` : ''}>${r.map((c, i) => `<td class="${i ? 'r num' : ''}" style="${i ? '' : 'padding-left:16px;font-weight:550'}">${esc(c)}</td>`).join('')}</tr>`).join('')}
+      ${t.foot ? `<tr style="font-weight:650">${t.foot.map((c, i) => `<td class="${i ? 'r num' : ''}" style="${i ? '' : 'padding-left:16px'}">${esc(c)}</td>`).join('')}</tr>` : ''}</tbody></table>`
+      : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('chart')}</div><h3>Keine Daten im Zeitraum</h3><p>Zeitraum ändern oder erst verkaufen.</p></div>`}</div>`;
+}
+async function rpCsv() {
+  const t = rpTable(), q = c => /[;"\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : String(c);
+  const csv = [t.head, ...t.rows, ...(t.foot ? [t.foot] : [])].map(r => r.map(q).join(';')).join('\r\n');
+  const [f, to] = rpRange();
+  try { const p = await invoke('save_text', {name: `Kontor_${TABS.find(x => x[0] === RP.tab)[1].replace(/\W+/g, '')}_${dIso(f)}_${dIso(addDays(to, -1))}.csv`, content: csv, title: 'Bericht exportieren'}); if (p) toast('Exportiert', {t2: p, type: 'pos', icon: 'download'}); }
+  catch (e) { toast('Export fehlgeschlagen', {t2: String(e), type: 'warn'}); }
+}
+function showClosing(z) {
+  const s = {...z.data, no: z.no, ts: z.ts, counted: z.counted, diff: z.diff, user: z.user};
+  const el = openLayer(`<div class="modal" style="width:min(620px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="Z-Bericht"><div id="zvBody" style="display:flex;flex-direction:column;min-height:0"></div></div>`);
+  showZ(el, $('#zvBody', el), s, null, true);
+}
+function bindReports() {
+  const v = $('#view-berichte');
+  v.addEventListener('click', e => {
+    const t = e.target.closest('[data-rt]'); if (t) { RP.tab = t.dataset.rt; return renderRpBody(); }
+    if (e.target.closest('#rpCsv')) return rpCsv();
+    if (e.target.closest('#rpX')) return xReport();
+    if (e.target.closest('#rpZ')) return openClosing();
+    const z = e.target.closest('[data-z]'); if (z) showClosing(RP.closings[+z.dataset.z]);
+  });
+  v.addEventListener('change', async e => { if (e.target.id === 'rpFrom' || e.target.id === 'rpTo') { RP.from = $('#rpFrom').value; RP.to = $('#rpTo').value; $('#rpLbl').textContent = rpLabel(); await loadReport(); renderRpBody(); } });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   27 · VERBINDUNGEN — Gutschein-Zahlung, Einstellungs-Aktionen, Spanne
+   ════════════════════════════════════════════════════════════════════ */
+async function voucherPay(m, rem) {
+  const inp = $('#gsCode'); const code = (inp?.value || '').trim().toUpperCase();
+  const term = $('#term');
+  if (!code) { shakeEl(inp?.closest('.amt-input')); return; }
+  if (PAY.vcheck !== code) {
+    let v;
+    try { v = await invoke('voucher_get', {code}); }
+    catch (e) { term.innerHTML = `<div class="dev" style="color:var(--neg)">${ic('alert')}</div><h3>Gutschein unbekannt</h3><p>${esc(String(e))}</p>`; return; }
+    const usedHere = PAY.parts.filter(p => p.code === v.code).reduce((s, p) => s + p.amount, 0);
+    const bal = r2(v.balance / 100 - usedHere), use = Math.min(bal, rem);
+    if (v.status !== 'aktiv' || v.expired || bal <= 0) {
+      term.innerHTML = `<div class="dev" style="color:var(--warn)">${ic('gift')}</div><h3>Nicht einlösbar</h3><p>${esc(v.code)} · ${v.expired ? 'abgelaufen am ' + esc(v.valid_until) : v.status === 'aktiv' ? 'kein Restwert' : esc(v.status)}</p>`; return;
+    }
+    Object.assign(PAY, {vcheck: code, vcode: v.code, vuse: use, vbal: bal});
+    term.innerHTML = `<div class="dev" style="width:auto;height:auto;padding:16px 20px;border-radius:14px;text-align:left;display:block"><div class="eyebrow">Gutschein ${esc(v.code)}</div><div style="font-size:26px;font-weight:650;margin-top:4px">${eur(bal)}</div><div class="muted" style="font-size:12px">Restwert · gültig bis ${esc(v.valid_until ? new Date(v.valid_until).toLocaleDateString('de-AT') : '–')}</div></div><p>Einzulösen: <b style="color:var(--text)">${eur(use)}</b>${bal > use ? ` · Restwert danach ${eur(bal - use)}` : ''}</p>`;
+    $('#payGo').innerHTML = `${ic('check', 'i-sm')}${eur(use)} einlösen<span class="kbd">↵</span>`;
+    return;
+  }
+  const {vcode, vuse, vbal} = PAY; PAY.vcheck = null;
+  addPart(m, vuse, `${vcode}${vbal > vuse ? ` · Rest ${eur(vbal - vuse)}` : ''}`, {code: vcode});
+}
+
+function bindExtraSettings() {
+  const v = $('#view-einstellungen');
+  v.addEventListener('click', async e => {
+    const u = e.target.closest('[data-usr]'); if (u) return openUserEditor(u.dataset.usr ? STAFF.find(s => s.id === u.dataset.usr) : null);
+    if (e.target.closest('#rkStart')) return rksvStart();
+    const rk = e.target.closest('[data-rk]'); if (rk) { try { await stepUp({title: rk.dataset.rk === 'monat' ? 'Monatsbeleg erstellen' : 'Nullbeleg erstellen', text: 'Wird signiert und im DEP gespeichert'}); } catch { return; } return rksvNull(rk.dataset.rk); }
+    if (e.target.closest('#rkDep')) return depExport();
+    if (e.target.closest('#prnTest')) return printOps(testOps(), 'Testdruck');
+    if (e.target.closest('#prnDrawer')) return openDrawer('Test');
+    if (e.target.closest('#prnReload')) return renderPrinterBox();
+  });
+  // Spanne im Artikel-Editor live anzeigen
+  document.addEventListener('input', e => {
+    const f = e.target.dataset?.f; if (f !== 'cost' && f !== 'price') return;
+    const box = e.target.closest('.drawer-panel'); const out = box && $('#edMargin', box); if (!out) return;
+    const price = parseAmt($('[data-f="price"]', box)?.value), cost = parseAmt($('[data-f="cost"]', box)?.value), vat = +($('[data-f="vat"]', box)?.value || 20);
+    out.textContent = price > 0 && cost > 0 ? `· Spanne ${num((1 - cost / (price / (1 + vat / 100))) * 100, 1)} %` : '';
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   12 · ANMELDUNG — Sperrbildschirm mit PIN, Windows Hello, FIDO2, SSO
+   ════════════════════════════════════════════════════════════════════ */
 /* ════════════════════════════════════════════════════════════════════
    13 · SYSTEM — Inspektor, Updates, Backup, RKSV, Mitteilungen
    ════════════════════════════════════════════════════════════════════ */
@@ -4527,7 +5291,7 @@ function toggleInspector() {
   render();
 }
 Hooks.on('*', (p, e) => { S.inspector && S.inspector._push(e); const c = $('#sbHookCount'); if (c) c.textContent = Hooks.count; });
-Hooks.on('pos.sale.completed', p => setTimeout(() => Hooks.emit(S.online ? 'webhook.delivered' : 'webhook.queued', {ziel: BINDINGS[0].target, beleg: p.beleg, status: S.online ? 200 : 'Warteschlange', dauer: S.online ? '38 ms' : undefined}), 450));
+if (!DESKTOP) Hooks.on('pos.sale.completed', p => setTimeout(() => Hooks.emit(S.online ? 'webhook.delivered' : 'webhook.queued', {ziel: BINDINGS[0].target, beleg: p.beleg, status: S.online ? 200 : 'Warteschlange', dauer: S.online ? '38 ms' : undefined}), 450));
 Hooks.on('pos.sale.completed', () => refreshDashboard());
 Hooks.on('pos.line.added', p => {
   if (p.warengruppe === 'ski' && p.sku === 'A5001' && !POS.cart.some(l => l.key === 'svc|S04'))
@@ -4582,10 +5346,6 @@ function backupNow() {
   toast('Backup läuft …', {t2: 'Konsistenter Snapshot · Datenbank & Artikelbilder → NAS-01', icon: 'database', dur: 1700});
   Hooks.emit('backup.started', {ziel: '\\\\NAS-01\\kontor-backup', art: 'manuell'});
   setTimeout(() => { S.backupH = 0; renderStatus(); refreshDashboard(['ops.system']); toast('Backup abgeschlossen', {t2: '2,4 GB · AES-256 verschlüsselt · Integrität geprüft', type: 'pos', icon: 'database'}); Hooks.emit('backup.completed', {groesse: '2,4 GB', verschluesselung: 'AES-256', integritaet: 'ok'}); }, reduced() ? 50 : 1700);
-}
-function depExport() {
-  toast('DEP-Export erstellt', {t2: `RKSV-Datenerfassungsprotokoll INN-K01 · ${NOW.toLocaleDateString('de-AT', {month: 'long', year: 'numeric'})} · lokal gespeichert`, type: 'pos', icon: 'shield'});
-  Hooks.emit('rksv.dep.exported', {kasse: 'INN-K01', format: 'DEP7 (JSON)'});
 }
 function openNotifications(anchor) {
   const items = [
@@ -4833,11 +5593,14 @@ async function init() {
   await loadSettings();
   await loadCatalog();
   await loadCustomers();
+  await loadUsers();
+  if (DESKTOP) { await refreshRksv(); await loadSuppliers(); }
   if (DESKTOP) { await refreshInfo(); Hooks.on('*', (p, e) => { if (!e.evt.startsWith('config.settings')) invoke('audit_append', {event: e.evt, payload: e.payload ?? {}}).catch(() => {}); }); }
   $('#palKbd').innerHTML = `<span class="kbd">${MOD}</span><span class="kbd">K</span>`;
   renderNav(); renderMe(); renderStore(); renderStatus();
-  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers();
+  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings();
   go(location.hash.slice(1) || 'dashboard');
+  if (DESKTOP) lock();   // Anmeldung mit PIN beim Start
   if (DESKTOP) { Hooks.emit('desktop.ready', {version: S.appVersion, datenbank: S.info?.db_path}); setTimeout(autoBackupCheck, 4000); setInterval(autoBackupCheck, 36e5); }
   Hooks.emit('system.ready', {version: S.appVersion, kanal: 'stable', server: 'KONTOR-SRV01', modus: DESKTOP ? 'desktop' : 'vorschau'});
 }

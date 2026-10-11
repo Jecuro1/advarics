@@ -149,7 +149,7 @@ function realRegistersHTML() {
   return `<div style="flex:1;min-height:0;overflow:auto">
     <div class="reg"><span class="reg-ic">${ic('register', 'i-sm')}</span><div class="wl-main"><div class="wl-t">${esc(CFG['kasse.name'])} · ${esc(CFG['kasse.id'])}</div><div class="wl-s">${esc(S.user.name)} · heute ${d ? num(d.bons) : '…'} Bons · ${d ? eur0(d.rev) : '…'}</div></div>${statusPill(['Diese Kasse', 'pos'])}</div>
     <div class="reg" style="opacity:.6"><span class="reg-ic">${ic('server', 'i-sm')}</span><div class="wl-main"><div class="wl-t">Weitere Kassen</div><div class="wl-s">erscheinen mit dem Filial-Server</div></div>${statusPill(['Geplant', ''])}</div>
-  </div><div class="note" style="margin-top:10px">${ic('shield')}<span>RKSV-Signatureinheit noch nicht angebunden – kommt mit dem RKSV-Paket (Testmodus zuerst).</span></div>`;
+  </div><div class="note" style="margin-top:10px">${ic('shield')}<span>${S.rksv?.active ? `RKSV-Testmodus aktiv · Kassen-ID ${esc(S.rksv.kassen_id)} · Software-Schlüssel (nicht registrierbar)` : 'RKSV nicht in Betrieb – Einstellungen → RKSV → Testbetrieb starten'}</span>${S.rksv?.active ? `<button class="btn btn-secondary btn-sm" data-act="dep" style="margin-left:auto;flex:none">DEP-Export</button>` : ''}</div>`;
 }
 function realSystemHTML() {
   const i = S.info || {};
@@ -159,13 +159,4 @@ function realSystemHTML() {
     <div class="ops-row">${ic('server', 'i-sm')}<div class="k"><b>Einzelplatz</b>${esc(i.data_dir || 'lokales Datenverzeichnis')}</div></div>
     <div class="ops-row" style="opacity:.6">${ic('sparkle', 'i-sm')}<div class="k"><b>KI lokal</b>Vorschau – Modell wird in einem späteren Paket angebunden</div></div>
   </div><div class="wl-foot" style="margin-top:6px">${ic('info', 'i-xs')} Backups liegen in Ihrer Verantwortung – Kontor stellt die Werkzeuge.</div>`;
-}
-function xReport() {
-  if (!DESKTOP) return toast('X-Bericht', {t2: `${num(118 + Dash.session.bons)} Bons · ${eur0(periodData('heute').rev)} · ohne Abschluss`, icon: 'receipt'});
-  const sp = periodSpec('heute');
-  invoke('stats', {ranges: [{from: isoL(sp.cur[0]), to: isoL(sp.cur[1])}], detail: true}).then(([a]) => {
-    const s = sums(a.rows);
-    toast(`X-Bericht · ${new Date().toLocaleDateString('de-AT')}`, {t2: `${num(s.bons)} Bons · Umsatz ${eur(s.rev)} · Retouren ${eur(s.ret)} · ${(a.pay || []).map(p => `${p.label} ${eur(p.amount / 100)}`).join(' · ') || 'keine Zahlungen'} · ohne Abschluss`, icon: 'receipt', dur: 9000});
-    Hooks.emit('pos.report.x', {bons: s.bons, umsatz: s.rev});
-  }).catch(e => toast('X-Bericht nicht möglich', {t2: String(e), type: 'warn'}));
 }
