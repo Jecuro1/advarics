@@ -13,7 +13,8 @@ Desktop-Programm für Windows (Tauri). Aktuell: Programm-Hülle mit UI-Vorschau 
 nächsten Start. Vorher wird automatisch gesichert. Updates sind signiert; manipulierte Pakete werden abgelehnt.
 
 **Neue Version veröffentlichen (Entwicklung):** Version in `desktop/src-tauri/tauri.conf.json`,
-`desktop/src-tauri/Cargo.toml` und `desktop/package.json` erhöhen, `desktop/RELEASE_NOTES.md` anpassen,
+`desktop/src-tauri/Cargo.toml`, `desktop/package.json` und `desktop/ui/src/c1-core.js` (appVersion) erhöhen,
+`desktop/RELEASE_NOTES.md` anpassen (erscheint im Programm unter „Was ist neu“),
 pushen. GitHub Actions baut, signiert und veröffentlicht. Benötigte Repository-Secrets:
 `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
 
@@ -22,24 +23,32 @@ pushen. GitHub Actions baut, signiert und veröffentlicht. Benötigte Repository
 ### Entwickeln
 
 ```bash
+desktop/ui/build.sh   # baut die Oberfläche aus desktop/ui/src nach ui-preview/index.html
 cd desktop
 npm install
 npm run dev      # startet Kontor als Programm-Fenster
 npm run build    # baut den Installer lokal (unter Windows)
+cd src-tauri && cargo test   # Tests: Retoure, Storno, Punkte, Datenbank-Migration
 ```
 
 Voraussetzungen zum Selberbauen: Node.js 22, Rust (stable), unter Windows zusätzlich die
 „Microsoft C++ Build Tools“. Nur zum Benutzen ist nichts davon nötig – nur der Installer.
 
-Stand 0.5.0:
+Stand 0.6.0:
 - **Echt:** lokale Datenbank, Einstellungen, Anzeigegröße, Datensicherung mit Wiederherstellung, Protokoll;
   **Artikel** (anlegen/bearbeiten, Varianten aus Farben × Größen, automatische EAN, eigene Felder,
   Kassen-Pflichtfelder), **Bestand** (Matrix je Artikel, Zugang/Abgang/Inventur mit Grund, Bewegungsjournal),
   **Kasse** verkauft aus der Datenbank (Belegnummer, Beleg gespeichert, Bestand wird abgebucht), **Belegliste**
   mit Bonansicht (Kasse → Mehr → Belege).
+- **Kunden:** anlegen (auch an der Kasse: F3 → Neu anlegen), eigene Felder, Vereinsrabatt, Newsletter-Einwilligung,
+  **Bonuspunkte** (1 Punkt je 10 €, Verlauf, Korrektur mit Freigabe), Kaufhistorie.
+- **Retoure / Umtausch und Storno:** Kasse → Mehr → Retoure, oder in der Belegliste. Erstattung bar oder per
+  Rückbuchung, Bestand und Punkte werden zurückgebucht; Stornos und hohe Erstattungen nur mit Freigabe.
+- **Dashboard** mit echten Zahlen: Umsatz, Bons, Ø Bon, Retourenquote, Verlauf mit Vorperiode, Topseller,
+  Warengruppen, Kundenfrequenz, Bestandswarnungen; X-Bericht mit Tageszahlen.
 - **Update-Dienst:** signierte Updates im Programm mit Freigabe, Zeitfenster und Sicherung vorher.
-- **Noch Testdaten / Vorschau:** Kunden, Dashboard-Zahlen, KI, andere Filialen. RKSV-Signatur und Hardware
-  (Drucker, Terminal) folgen.
+- **Noch Vorschau** (im Dashboard als „Vorschau“ markiert): KI-Hinweise, Erweiterungs-Widgets, weitere Filialen.
+  RKSV-Signatur und Hardware (Drucker, Terminal) folgen.
 
 Datenbank: `%APPDATA%\at.kontor.desktop\kontor.db` · Sicherungen standardmäßig: `Dokumente\Kontor-Sicherungen`.
 Updates per neuem Installer behalten Datenbank und Einstellungen.

@@ -4,7 +4,9 @@
 
 mod backup;
 mod catalog;
+mod customers;
 mod db;
+mod sales;
 mod updates;
 
 use serde::Serialize;
@@ -290,8 +292,81 @@ fn sale_commit(db: State<db::Db>, lines: Vec<catalog::SaleLine>, total: i64, cas
 }
 
 #[tauri::command]
-fn sales_list(db: State<db::Db>, limit: Option<i64>) -> Res<Vec<Value>> {
-    catalog::sales(&db.conn.lock().unwrap(), limit.unwrap_or(100)).map_err(err)
+fn sales_list(db: State<db::Db>, limit: Option<i64>, customer: Option<String>) -> Res<Vec<Value>> {
+    catalog::sales(&db.conn.lock().unwrap(), limit.unwrap_or(100), customer.as_deref()).map_err(err)
+}
+
+#[tauri::command]
+fn sale_get(db: State<db::Db>, no: String) -> Res<Value> {
+    sales::sale_get(&db.conn.lock().unwrap(), no.trim())
+}
+
+/// Retoure (einzelne Positionen) oder Storno (ganzer Beleg).
+#[tauri::command]
+fn return_commit(db: State<db::Db>, no: String, lines: Vec<sales::ReturnLine>, storno: bool, reason: String, method: Value, cashier: String, approved_by: Option<String>) -> Res<Value> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let r = sales::commit_return(&tx, no.trim(), &lines, storno, &reason, &method, &cashier)?;
+    db::audit_append(&tx, if storno { "pos.sale.voided" } else { "pos.return.completed" }, &json!({ "beleg": r["no"], "zu": no, "betrag": r["total"], "grund": reason, "kassier": cashier, "freigabe": approved_by })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    Ok(r)
+}
+
+#[tauri::command]
+fn stats(db: State<db::Db>, ranges: Vec<sales::Range>, detail: Option<bool>) -> Res<Vec<Value>> {
+    let c = db.conn.lock().unwrap();
+    ranges.iter().enumerate().map(|(i, r)| sales::stats(&c, r, detail.unwrap_or(true) && i == 0)).collect()
+}
+
+/* ── Kunden ── */
+
+#[tauri::command]
+fn customer_list(db: State<db::Db>) -> Res<Vec<customers::Customer>> {
+    customers::list(&db.conn.lock().unwrap()).map_err(err)
+}
+
+#[tauri::command]
+fn customer_seed(db: State<db::Db>, list: Vec<customers::Customer>) -> Res<usize> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let n = customers::seed(&tx, &list)?;
+    tx.commit().map_err(err)?;
+    Ok(n)
+}
+
+#[tauri::command]
+fn customer_save(db: State<db::Db>, customer: customers::Customer, user: Option<String>) -> Res<customers::Customer> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let id = customers::save(&tx, &customer)?;
+    db::audit_append(&tx, "customer.saved", &json!({ "kunde": id, "neu": customer.id.is_empty(), "benutzer": user })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    customers::get(&c, &id).map_err(err)?.ok_or_else(|| "Kunde nicht gefunden".into())
+}
+
+#[tauri::command]
+fn customer_delete(db: State<db::Db>, id: String, user: Option<String>) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    customers::deactivate(&c, &id).map_err(err)?;
+    db::audit_append(&c, "customer.deactivated", &json!({ "kunde": id, "benutzer": user })).map_err(err)?;
+    Ok(())
+}
+
+#[tauri::command]
+fn customer_detail(db: State<db::Db>, id: String) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    let k = customers::get(&c, &id).map_err(err)?.ok_or("Kunde nicht gefunden")?;
+    Ok(json!({ "customer": k, "sales": catalog::sales(&c, 200, Some(&id)).map_err(err)?, "points": customers::points_log(&c, &id, 100).map_err(err)? }))
+}
+
+#[tauri::command]
+fn customer_points(db: State<db::Db>, id: String, delta: i64, reason: String, user: Option<String>, approved_by: Option<String>) -> Res<i64> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let (real, balance) = customers::book_points(&tx, &id, delta, &reason, None, user.as_deref())?;
+    db::audit_append(&tx, "loyalty.points.adjusted", &json!({ "kunde": id, "punkte": real, "stand": balance, "grund": reason, "freigabe": approved_by })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    Ok(balance)
 }
 
 /// Vollbild / Kassen-Kiosk ein- oder ausschalten.
@@ -328,6 +403,17 @@ fn main() {
             let conn = db::open(&path).map_err(|e| format!("Datenbank konnte nicht geöffnet werden: {e}"))?;
             let _ = db::audit_append(&conn, "system.started", &json!({ "version": app.package_info().version.to_string() }));
             app.manage(db::Db { conn: Mutex::new(conn), path });
+            // Nur Entwicklungs-Builds: automatisierte Oberflächentests (Skript wird nach dem Start im Fenster ausgeführt).
+            #[cfg(debug_assertions)]
+            if let Ok(p) = std::env::var("KONTOR_TEST_SCRIPT") {
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    if let (Ok(js), Some(w)) = (std::fs::read_to_string(&p), handle.get_webview_window("main")) {
+                        let _ = w.eval(&js);
+                    }
+                });
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -353,6 +439,15 @@ fn main() {
             beleg_peek,
             sale_commit,
             sales_list,
+            sale_get,
+            return_commit,
+            stats,
+            customer_list,
+            customer_seed,
+            customer_save,
+            customer_delete,
+            customer_detail,
+            customer_points,
             updates::update_check,
             updates::update_install
         ])

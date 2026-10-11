@@ -93,6 +93,42 @@ const MIGRATIONS: &[&str] = &[
     CREATE TABLE counters (name TEXT PRIMARY KEY, value INTEGER NOT NULL);
     INSERT INTO counters(name, value) VALUES ('beleg', 4717);
     "#,
+    // 3 · Kunden, Bonuspunkte, Retouren und Stornos
+    r#"
+    CREATE TABLE customers (
+        id          TEXT PRIMARY KEY,
+        name        TEXT NOT NULL,
+        email       TEXT NOT NULL DEFAULT '',
+        phone       TEXT NOT NULL DEFAULT '',
+        tier        TEXT NOT NULL DEFAULT 'Kunde',
+        points      INTEGER NOT NULL DEFAULT 0,
+        club_name   TEXT,
+        club_pct    INTEGER,
+        fields      TEXT NOT NULL DEFAULT '{}',
+        consent     INTEGER NOT NULL DEFAULT 0,
+        note        TEXT NOT NULL DEFAULT '',
+        active      INTEGER NOT NULL DEFAULT 1,
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+    );
+    CREATE TABLE points_log (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts          TEXT NOT NULL,
+        customer_id TEXT NOT NULL REFERENCES customers(id),
+        delta       INTEGER NOT NULL,
+        balance     INTEGER NOT NULL,
+        reason      TEXT NOT NULL,
+        ref         TEXT,
+        user        TEXT
+    );
+    CREATE INDEX points_log_customer ON points_log(customer_id, id);
+    INSERT INTO counters(name, value) VALUES ('kunde', 11600);
+    ALTER TABLE sales ADD COLUMN kind TEXT NOT NULL DEFAULT 'verkauf';
+    ALTER TABLE sales ADD COLUMN ref_no TEXT;
+    ALTER TABLE sales ADD COLUMN voided INTEGER NOT NULL DEFAULT 0;
+    CREATE INDEX sales_customer ON sales(customer_id, id);
+    CREATE INDEX sales_ref ON sales(ref_no);
+    "#,
 ];
 
 pub fn schema_version() -> i64 {
@@ -160,4 +196,26 @@ pub fn audit_append(c: &Connection, event: &str, payload: &Value) -> rusqlite::R
 pub fn count(c: &Connection, table: &str) -> i64 {
     // nur interne, feste Tabellennamen
     c.query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |r| r.get(0)).unwrap_or(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Bestehende Datenbank aus 0.5.0 (Schema 2, mit Belegen) wird verlustfrei auf den neuesten Stand gebracht.
+    #[test]
+    fn migration_von_schema_2() {
+        let c = Connection::open_in_memory().unwrap();
+        for m in &MIGRATIONS[..2] {
+            c.execute_batch(m).unwrap();
+        }
+        c.pragma_update(None, "user_version", 2).unwrap();
+        c.execute("INSERT INTO sales(beleg_no, ts, total, cashier, customer_id, data) VALUES ('2026-004718', '2026-10-11T10:00:00+02:00', 4490, 'Lena', 'K-10234', '{}')", []).unwrap();
+        migrate(&c).unwrap();
+        let v: i64 = c.pragma_query_value(None, "user_version", |r| r.get(0)).unwrap();
+        assert_eq!(v, schema_version());
+        let (kind, voided): (String, i64) = c.query_row("SELECT kind, voided FROM sales", [], |r| Ok((r.get(0)?, r.get(1)?))).unwrap();
+        assert_eq!((kind.as_str(), voided), ("verkauf", 0));
+        assert_eq!(count(&c, "customers"), 0);
+    }
 }

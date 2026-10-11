@@ -1316,6 +1316,7 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
       <section class="view" id="view-einstellungen" aria-label="Einstellungen"></section>
       <section class="view" id="view-artikel" aria-label="Artikel"></section>
       <section class="view" id="view-bestand" aria-label="Bestand"></section>
+      <section class="view" id="view-kunden" aria-label="Kunden"></section>
       <section class="view" id="view-ph" aria-live="polite"></section>
     </main>
   </div>
@@ -1516,7 +1517,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.5.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.6.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1638,7 +1639,7 @@ const NAV = [
   {id: 'einstellungen', label: 'Einstellungen', icon: 'sliders'},
 ];
 const TITLES = {dashboard: 'Dashboard', kasse: 'Kasse', artikel: 'Artikel', bestand: 'Bestand', einkauf: 'Einkauf', kunden: 'Kunden', berichte: 'Berichte', erweiterungen: 'Erweiterungen', designsystem: 'Designsystem', einstellungen: 'Einstellungen'};
-const PH_VIEWS = ['einkauf', 'kunden', 'berichte', 'erweiterungen'];
+const PH_VIEWS = ['einkauf', 'berichte', 'erweiterungen'];
 
 function renderNav() {
   $('#nav').innerHTML = NAV.map(n => n.g ? `<div class="nav-group">${n.g}</div>` :
@@ -1674,6 +1675,7 @@ function go(view) {
   else if (view === 'einstellungen') renderSettings();
   else if (view === 'artikel') renderArtikel();
   else if (view === 'bestand') renderBestand();
+  else if (view === 'kunden') renderKunden();
   else renderPlaceholder(view);
   const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
   $$('.nav-item').forEach(n => n.dataset.view === view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
@@ -1690,7 +1692,7 @@ function renderTopbar() {
     L.innerHTML = `<div class="tb-title"><h1>${esc(CFG['kasse.name'])}</h1><span class="tb-sub">${esc(CFG['kasse.id'])} · Bon ${belegNo()} · ${esc(S.user.name)}</span></div><div class="parked" id="parked"></div>`;
     renderParked();
   } else {
-    const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster', einstellungen: DESKTOP ? 'Lokale Datenbank' : 'Vorschau', artikel: `${ART.length} Artikel · ${DESKTOP ? 'Datenbank' : 'Vorschau, nicht gespeichert'}`, bestand: `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`}[S.view] || 'In Vorbereitung';
+    const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster', einstellungen: DESKTOP ? 'Lokale Datenbank' : 'Vorschau', artikel: `${ART.length} Artikel · ${DESKTOP ? 'Datenbank' : 'Vorschau, nicht gespeichert'}`, bestand: `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, kunden: `${num(CUSTOMERS.length)} Kund:innen · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`}[S.view] || 'In Vorbereitung';
     L.innerHTML = `<div class="tb-title"><h1>${TITLES[S.view]}</h1><span class="tb-sub">${esc(sub)}</span></div>`;
   }
 }
@@ -1698,15 +1700,17 @@ function renderTopbar() {
 function renderStatus() {
   const off = !S.online;
   $('#statusbar').innerHTML = `
-    <button class="sbi ${off ? 'off' : 'ok'}" id="sbConn" data-tip="${off ? 'Klicken: Verbindung wiederherstellen' : 'Klicken: Offline-Modus simulieren'}"><span class="dot ${off ? '' : 'live'}"></span>${off ? 'Server nicht erreichbar · lokaler Betrieb' : 'KONTOR-SRV01 · lokal · 4 ms'}</button>
+    ${DESKTOP ? `<span class="sbi ok"><span class="dot live"></span>Einzelplatz · lokale Datenbank</span>
+    <span class="sb-sep"></span>
+    <span class="sbi hide-sm" data-tip="Kommt mit dem RKSV-Paket (zuerst Testmodus)">${ic('shield')}RKSV-Signatur noch nicht aktiv</span>` : `<button class="sbi ${off ? 'off' : 'ok'}" id="sbConn" data-tip="${off ? 'Klicken: Verbindung wiederherstellen' : 'Klicken: Offline-Modus simulieren'}"><span class="dot ${off ? '' : 'live'}"></span>${off ? 'Server nicht erreichbar · lokaler Betrieb' : 'KONTOR-SRV01 · lokal · 4 ms'}</button>
     <span class="sb-sep"></span>
     <span class="sbi ${S.queue ? 'accent' : ''}">${ic('sync')}${S.queue ? `${S.queue} Beleg${S.queue > 1 ? 'e' : ''} in Warteschlange` : 'Synchron'}</span>
-    <span class="sbi hide-sm">${ic('shield')}RKSV · Signatureinheit aktiv</span>
+    <span class="sbi hide-sm">${ic('shield')}RKSV · Signatureinheit aktiv</span>`}
     <button class="sbi hide-sm ${S.backupH === Infinity || S.backupH >= 48 ? 'off' : ''}" id="sbBackup" data-tip="${DESKTOP ? 'Klicken: Datensicherung öffnen' : 'Backup-Werkzeuge'}">${ic('database')}${backupLabel()}${DESKTOP ? '' : ' · NAS-01'}</button>
     <button class="sbi ${!DESKTOP || UPD.state === 'available' ? 'accent' : ''} hide-sm" id="sbUpdate">${ic('download')}${esc(updLabel())}</button>
     <span class="sb-spacer"></span>
     <button class="sbi" id="sbHooks" data-tip="Ereignis-Inspektor · Hooks & Webhooks" data-tip-pos="up-left">${ic('braces')}Ereignisse <b class="num" id="sbHookCount" style="font-weight:600;color:var(--text-2)">${Hooks.count}</b></button>
-    <span class="sbi hide-md">${ic('sparkle')}KI lokal · bereit</span>
+    ${DESKTOP ? '' : `<span class="sbi hide-md">${ic('sparkle')}KI lokal · bereit</span>`}
     <span class="sbi hide-md">${DESKTOP ? `Desktop-App v${S.appVersion}` : 'Vorschau im Browser'}</span>
     <span class="sbi num" id="sbClock">${clock()}</span>`;
 }
@@ -1730,6 +1734,8 @@ function cmdList() {
     c('Navigation', 'Einstellungen', 'sliders', () => go('einstellungen')),
     c('Kasse', 'Neuer Verkauf', 'plus', () => { go('kasse'); newSale(); }),
     c('Kasse', 'Belege anzeigen', 'receipt', () => openReceipts(), {kw: 'bon beleg journal kopie'}),
+    c('Kasse', 'Retoure / Umtausch', 'undo', () => { go('kasse'); setTimeout(openReturnStart, 80); }, {kw: 'rückgabe storno erstattung umtausch'}),
+    c('Kunden', 'Neuer Kunde', 'user-plus', () => { go('kunden'); setTimeout(() => openCustomerEditor(null, {onSaved: c => openCustomerDetail(c)}), 80); }, {kw: 'kundin anlegen kundenkarte'}),
     c('Sortiment', 'Neuer Artikel', 'tag', () => { go('artikel'); setTimeout(() => openEditor(null), 80); }, {kw: 'anlegen artikel'}),
     c('Sortiment', 'Bestand buchen', 'boxes', () => go('bestand'), {kw: 'wareneingang inventur'}),
     c('Kasse', 'Bezahlen', 'card', () => { go('kasse'); openPayment(); }, {keys: ['F9'], hint: () => POS.cart.length ? eur(totals().total) : 'Warenkorb leer'}),
@@ -1793,7 +1799,7 @@ function openPalette(prefill = '') {
       ART.filter(a => toks.every(t => a.hay.includes(t)) || a.variants.some(v => v.ean.startsWith(nq))).slice(0, 5)
         .forEach(a => res.push({group: 'Artikel', label: a.name, sub: `${a.brand} · ${eur(a.sale || a.price)}`, art: a, hint: 'zur Kasse', run: () => { go('kasse'); setTimeout(() => openArticle(a), 80); }}));
       CUSTOMERS.filter(c => toks.every(t => norm(`${c.name} ${c.id} ${c.email}`).includes(t))).slice(0, 3)
-        .forEach(c => res.push({group: 'Kunden', label: c.name, sub: c.tier, cust: c, hint: 'zum Bon', run: () => { go('kasse'); attachCustomer(c); }}));
+        .forEach(c => res.push({group: 'Kunden', label: c.name, sub: `${c.tier} · ${num(c.points)} Punkte`, cust: c, hint: 'Kundenkarte', run: () => { go('kunden'); setTimeout(() => openCustomerDetail(c), 80); }}));
       if (!q.startsWith('?')) res.push({group: 'KI · lokal', label: `Fragen: „${ask}“`, icon: 'sparkle', ai: true, run: () => askAI(ask)});
     }
     items = res; sel = 0; render();
@@ -1878,6 +1884,7 @@ function cumulSeries(vals, upto, frac, extra, fcMul = 1.02) {
 }
 function prevSeries(vals) { const p = [{x: 0, y: 0}]; let a = 0; vals.forEach((v, i) => { a += v; p.push({x: i + 1, y: a}); }); return p; }
 function periodData(p) {
+  if (DESKTOP) return realPeriodData(p);
   const F = storeFactor(), sess = Dash.session.rev, dayFrac = clamp((DEMO_H - 9) / 10, 0, 1);
   let d;
   if (p === 'heute') {
@@ -1921,7 +1928,7 @@ function periodData(p) {
   return d;
 }
 function sparkVals(seed, prev, cur) { const r = rng(seed); const v = Array.from({length: 11}, () => prev * (.86 + r() * .26)); v.push(cur); return v; }
-const sparkHTML = vals => { const mx = Math.max(...vals); return `<span class="spark" aria-hidden="true">${vals.map(v => `<i style="height:${Math.max(12, v / mx * 100)}%"></i>`).join('')}</span>`; };
+const sparkHTML = vals => { const mx = Math.max(...vals) || 1; return `<span class="spark" aria-hidden="true">${vals.map(v => `<i style="height:${Math.max(12, v / mx * 100)}%"></i>`).join('')}</span>`; };
 function axisFmt(v) {
   if (v === 0) return '0';
   if (v >= 1e6) return `${num(v / 1e6, v % 1e6 ? 1 : 0)} Mio.`;
@@ -1929,6 +1936,7 @@ function axisFmt(v) {
   return num(v);
 }
 function niceScale(max, count = 4) {
+  if (!(max > 0)) return {top: 100, step: 25};
   const raw = max / count, e = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / e;
   const step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e;
   return {top: Math.ceil(max * 1.04 / step) * step, step};
@@ -2018,8 +2026,8 @@ function lineChart(host, d) {
 
 /* ── Widget-Bausteine ── */
 function kpiHTML({label, value, delta, goodDown = false, cmp, spark, hero}) {
-  const good = Math.abs(delta) < .05 ? 'flat' : (delta > 0) !== goodDown ? 'up' : 'down';
-  return `<div class="kpi ${hero ? 'hero' : ''}"><div class="kpi-top"><span class="kpi-label">${esc(label)}</span><span class="delta ${good}" style="margin-left:auto" title="Veränderung zur Vorperiode">${ic(delta >= 0 ? 'up' : 'down')}${pct(delta)}</span></div>
+  const fin = Number.isFinite(delta), good = !fin || Math.abs(delta) < .05 ? 'flat' : (delta > 0) !== goodDown ? 'up' : 'down';
+  return `<div class="kpi ${hero ? 'hero' : ''}"><div class="kpi-top"><span class="kpi-label">${esc(label)}</span><span class="delta ${good}" style="margin-left:auto" title="Veränderung zur Vorperiode">${fin ? ic(delta >= 0 ? 'up' : 'down') + pct(delta) : 'kein Vergleich'}</span></div>
     <div class="kpi-val">${value}</div><div class="kpi-foot"><span class="kpi-cmp">${esc(cmp)}</span>${spark || ''}</div></div>`;
 }
 const LOW = [
@@ -2074,16 +2082,16 @@ const extRows = rows => rows.map(r => `<div class="wl-row"><div class="wl-main">
 
 const W = {
   'sales.revenue': {title: 'Umsatz', cat: 'Verkauf', icon: 'chart', desc: 'Umsatz im Zeitraum, Vergleich zur Vorperiode und 12-Perioden-Trend.', sizes: ['m', 's'], bare: true,
-    body: (it, d) => kpiHTML({label: `Umsatz ${PLBL[d.p]}`, value: eur0(d.rev), delta: (d.rev / d.prevRev - 1) * 100, hero: it.s === 'm', cmp: it.s === 'm' ? `vs. ${eur0(d.prevRev)} ${d.cmpLbl} ${d.since}` : `${d.cmpLbl}: ${eur0(d.prevRev)}`, spark: sparkHTML(sparkVals(3, d.prevRev, d.rev))})},
+    body: (it, d) => kpiHTML({label: `Umsatz ${PLBL[d.p]}`, value: eur0(d.rev), delta: (d.rev / d.prevRev - 1) * 100, hero: it.s === 'm', cmp: it.s === 'm' ? `vs. ${eur0(d.prevRev)} ${d.cmpLbl} ${d.since}` : `${d.cmpLbl}: ${eur0(d.prevRev)}`, spark: sparkHTML(d.sparks?.rev || sparkVals(3, d.prevRev, d.rev))})},
   'sales.receipts': {title: 'Bons', cat: 'Verkauf', icon: 'receipt', desc: 'Anzahl Verkaufsbelege inkl. Vergleich.', sizes: ['s', 'm'], bare: true,
-    body: (it, d) => kpiHTML({label: `Bons ${PLBL[d.p]}`, value: num(d.bons), delta: (d.bons / d.prevBons - 1) * 100, cmp: `${d.cmpLbl}: ${num(d.prevBons)}`, spark: sparkHTML(sparkVals(5, d.prevBons, d.bons))})},
+    body: (it, d) => kpiHTML({label: `Bons ${PLBL[d.p]}`, value: num(d.bons), delta: (d.bons / d.prevBons - 1) * 100, cmp: `${d.cmpLbl}: ${num(d.prevBons)}`, spark: sparkHTML(d.sparks?.bons || sparkVals(5, d.prevBons, d.bons))})},
   'sales.basket': {title: 'Ø Bon', cat: 'Verkauf', icon: 'bag', desc: 'Durchschnittlicher Bonwert.', sizes: ['s', 'm'], bare: true,
-    body: (it, d) => kpiHTML({label: 'Ø Bonwert', value: eur(d.basket), delta: (d.basket / d.prevBasket - 1) * 100, cmp: `${d.cmpLbl}: ${eur(d.prevBasket)}`, spark: sparkHTML(sparkVals(9, d.prevBasket, d.basket))})},
+    body: (it, d) => kpiHTML({label: 'Ø Bonwert', value: eur(d.basket), delta: (d.basket / d.prevBasket - 1) * 100, cmp: `${d.cmpLbl}: ${eur(d.prevBasket)}`, spark: sparkHTML(d.sparks?.basket || sparkVals(9, d.prevBasket, d.basket))})},
   'sales.returns': {title: 'Retourenquote', cat: 'Verkauf', icon: 'return', desc: 'Anteil retournierter Positionen – weniger ist besser.', sizes: ['s', 'm'], bare: true,
-    body: (it, d) => kpiHTML({label: 'Retourenquote', value: `${num(d.ret, 1)} %`, delta: (d.ret / d.prevRet - 1) * 100, goodDown: true, cmp: `${d.cmpLbl}: ${num(d.prevRet, 1)} %`, spark: sparkHTML(sparkVals(13, d.prevRet, d.ret))})},
+    body: (it, d) => kpiHTML({label: 'Retourenquote', value: `${num(d.ret, 1)} %`, delta: (d.ret / d.prevRet - 1) * 100, goodDown: true, cmp: `${d.cmpLbl}: ${num(d.prevRet, 1)} %`, spark: d.real ? '' : sparkHTML(sparkVals(13, d.prevRet, d.ret))})},
   'sales.goal': {title: 'Tagesziel', cat: 'Verkauf', icon: 'target', desc: 'Fortschritt zum Ziel mit Soll-Markierung und Prognose.', sizes: ['m', 's'], bare: true,
     body: (it, d) => {
-      const p = d.rev / d.goal, soll = clamp(d.p === 'heute' ? (DEMO_H - 9) / 10 * 1.02 : .55, 0, 1), reach = d.end >= d.goal;
+      const p = d.goal ? d.rev / d.goal : 0, soll = d.sollFrac ?? clamp(d.p === 'heute' ? (DEMO_H - 9) / 10 * 1.02 : .55, 0, 1), reach = d.end >= d.goal;
       return `<div class="kpi"><div class="kpi-top"><span class="kpi-label">Ziel ${PLBL[d.p]}</span><span class="pill ${reach ? 'pos' : 'warn'}" style="margin-left:auto;height:20px">${ic(reach ? 'check' : 'alert')}${reach ? 'wird erreicht' : 'gefährdet'}</span></div>
         <div class="kpi-val">${Math.round(p * 100)} %<span style="font-size:14px;color:var(--text-3);font-weight:500;letter-spacing:0;margin-left:8px">${eur0(d.rev)} von ${eur0(d.goal)}</span></div>
         <div style="margin-top:12px;position:relative"><div class="meter"><i style="width:${clamp(p, 0, 1) * 100}%"></i></div><span style="position:absolute;top:-4px;bottom:-4px;width:2px;border-radius:1px;background:var(--text-2);left:${soll * 100}%" title="Soll zum jetzigen Zeitpunkt"></span></div>
@@ -2096,25 +2104,29 @@ const W = {
     mount: (el, it, d) => mountChart($('.chart', el), () => lineChart($('.chart', el), d))},
   'sales.top': {title: 'Topseller', cat: 'Verkauf', icon: 'star', desc: 'Meistverkaufte Artikel nach Umsatz.', sizes: ['tall', 'wide'],
     sub: d => `nach Umsatz · ${PLBL[d.p]}`,
-    body: (it, d) => `<div class="wl">${listRows(topRows(d), 5)}</div>`},
+    body: (it, d) => { const rows = d.real ? d.top : topRows(d); return rows.length ? `<div class="wl">${listRows(rows, 5)}</div>` : emptyW('star', d.loading ? 'Lade …' : 'Noch keine Verkäufe', `Topseller ${PLBL[d.p]} erscheinen nach den ersten Verkäufen.`); }},
   'sales.stores': {title: 'Filialvergleich', cat: 'Verkauf', icon: 'store', desc: 'Umsatz je Filiale mit Zielmarke.', sizes: ['tall', 'wide'],
-    sub: () => 'Strich = Ziel',
-    tools: () => `<div class="legend"><span><i class="lk box" style="background:var(--accent)"></i>${S.store === 'ALL' ? 'Alle' : 'Ihre Filiale'}</span>${S.store === 'ALL' ? '' : '<span><i class="lk box" style="background:var(--chart-muted)"></i>Andere</span>'}</div>`,
-    body: (it, d) => { const base = d.rev / d.F; const r = rng(77); const rows = STORES.map(s => ({id: s.id, name: s.name, v: base * s.f, goal: base * s.f / (.86 + r() * .24)})).sort((a, b) => b.v - a.v); return hbars(rows, x => S.store === 'ALL' || x.id === S.store, eur0, x => `${Math.round(x.v / x.goal * 100)} % v. Ziel`); }},
+    sub: () => DESKTOP ? 'Strich = Tagesziel × Zeitraum' : 'Strich = Ziel',
+    tools: () => DESKTOP ? '' : `<div class="legend"><span><i class="lk box" style="background:var(--accent)"></i>${S.store === 'ALL' ? 'Alle' : 'Ihre Filiale'}</span>${S.store === 'ALL' ? '' : '<span><i class="lk box" style="background:var(--chart-muted)"></i>Andere</span>'}</div>`,
+    demo: true,
+    body: (it, d) => { if (d.real) return hbars([{id: S.store, name: `${CFG['kasse.name']} (diese Kasse)`, v: Math.max(0, d.rev), goal: d.goal}], () => true, eur0, x => x.goal ? `${Math.round(x.v / x.goal * 100)} % v. Ziel` : '') + `<div class="wl-foot">${ic('server', 'i-xs')} Weitere Filialen erscheinen mit dem Filial-Server</div>`;
+      const base = d.rev / d.F; const r = rng(77); const rows = STORES.map(s => ({id: s.id, name: s.name, v: base * s.f, goal: base * s.f / (.86 + r() * .24)})).sort((a, b) => b.v - a.v); return hbars(rows, x => S.store === 'ALL' || x.id === S.store, eur0, x => `${Math.round(x.v / x.goal * 100)} % v. Ziel`); }},
   'sales.categories': {title: 'Warengruppen', cat: 'Verkauf', icon: 'tag', desc: 'Umsatzanteile nach Warengruppe.', sizes: ['wide', 'tall'],
     sub: d => `Anteil am Umsatz ${PLBL[d.p]}`,
-    body: (it, d) => { const sh = [['Jacken & Westen', .31], ['Schuhe', .22], ['Hosen', .14], ['Ski & Touren', .13], ['Shirts & Layer', .09], ['Rucksäcke', .06], ['Accessoires', .05]]; return hbars(sh.map(([name, s]) => ({name, v: d.rev * s, s})), () => true, eur0, x => `${Math.round(x.s * 100)} %`); }},
+    body: (it, d) => { if (d.real) return d.cats.length ? hbars(d.cats, () => true, eur0, x => `${Math.round(x.s * 100)} %`) : emptyW('tag', d.loading ? 'Lade …' : 'Noch keine Verkäufe', 'Anteile je Warengruppe nach den ersten Verkäufen.');
+      const sh = [['Jacken & Westen', .31], ['Schuhe', .22], ['Hosen', .14], ['Ski & Touren', .13], ['Shirts & Layer', .09], ['Rucksäcke', .06], ['Accessoires', .05]]; return hbars(sh.map(([name, s]) => ({name, v: d.rev * s, s})), () => true, eur0, x => `${Math.round(x.s * 100)} %`); }},
   'sales.heatmap': {title: 'Kundenfrequenz', cat: 'Verkauf', icon: 'users', desc: 'Besuche nach Wochentag und Stunde.', sizes: ['l', 'xl', 'wide'],
-    sub: () => 'Wochentag × Stunde', body: () => heatHTML()},
+    sub: () => DESKTOP ? 'Bons · letzte 4 Wochen' : 'Wochentag × Stunde', body: () => DESKTOP ? realHeatHTML() : heatHTML()},
   'stock.low': {title: 'Bestandswarnungen', cat: 'Bestand', icon: 'boxes', desc: 'Varianten mit knapper Reichweite und Vorschlag der lokalen KI.', sizes: ['tall', 'wide'],
-    sub: () => 'Reichweite < 7 Tage',
-    tools: () => '<span class="ai-chip">' + ic('sparkle', 'i-xs') + 'KI</span>',
+    sub: () => DESKTOP ? '2 Stück oder weniger' : 'Reichweite < 7 Tage',
+    tools: () => DESKTOP ? '' : '<span class="ai-chip">' + ic('sparkle', 'i-xs') + 'KI</span>',
     body: (it) => {
+      if (DESKTOP) return realLowHTML(it);
       const rows = LOW.filter(l => artById(l.id) && !Dash.accepted.has(l.id + l.c + l.s));
       if (!rows.length) return `<div class="empty" style="flex:1"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><h3>Alles im grünen Bereich</h3><p>Keine Variante unter 7 Tagen Reichweite.</p></div>`;
       return `<div class="wl">${rows.slice(0, 4).map(l => { const a = artById(l.id), v = variant(a, l.c, l.s); return `<div class="wl-row" data-low="${l.id + l.c + l.s}"><span class="thumb" style="--c:${COLORS[l.c][1]}">${glyph(a.g, COLORS[l.c][1])}</span><div class="wl-main"><div class="wl-t">${esc(a.name)}</div><div class="wl-s">${COLORS[l.c][0]}${l.s !== 'Einheitsgröße' ? ' · ' + esc(l.s) : ''} · Bestand ${v.q} · <span style="color:${l.days <= 4 ? 'var(--warn)' : 'inherit'}">${l.days} Tage</span></div></div><button class="btn btn-secondary btn-sm" data-act="low" data-key="${l.id + l.c + l.s}" title="${esc(l.sug)}">${ic(l.icon, 'i-sm')}${it.s === 'wide' ? esc(l.sug) : esc(l.sug.match(/\d+/)[0])}</button></div>`; }).join('')}</div><div class="wl-foot">${ic('server', 'i-xs')} Vorschläge lokal berechnet · Lieferzeiten berücksichtigt</div>`;
     }},
-  'ai.insights': {title: 'KI-Hinweise', cat: 'KI', icon: 'sparkle', desc: 'Anomalien, Prognosen und nächste Schritte – lokal berechnet.', sizes: ['tall', 'wide'],
+  'ai.insights': {title: 'KI-Hinweise', cat: 'KI', icon: 'sparkle', desc: 'Anomalien, Prognosen und nächste Schritte – lokal berechnet.', sizes: ['tall', 'wide'], demo: true,
     tools: () => `<span class="ai-chip"><span class="dot live"></span>lokal</span>`,
     body: () => {
       const rows = INSIGHTS.filter(x => !Dash.dismissed.has(x.id));
@@ -2122,8 +2134,9 @@ const W = {
       return `<div class="ins">${rows.map(x => `<div class="in" data-in="${x.id}"><div class="in-h"><span style="color:var(--${x.tone})">${ic(x.icon)}</span>${esc(x.t)}<span class="conf">${x.conf} % sicher</span></div><p>${esc(x.p)}</p><div class="in-a"><button class="btn btn-secondary btn-sm" data-act="ins" data-id="${x.id}">${esc(x.a)}</button><button class="btn btn-ghost btn-sm" data-act="ins-x" data-id="${x.id}">Verwerfen</button></div></div>`).join('')}</div>`;
     }},
   'ops.registers': {title: 'Kassen & RKSV', cat: 'Betrieb', icon: 'register', desc: 'Kassenstatus, Offline-Warteschlangen und RKSV-Fristen.', sizes: ['tall', 'wide'],
-    sub: () => '3 Kassen · Filiale',
+    sub: () => DESKTOP ? 'diese Kasse' : '3 Kassen · Filiale',
     body: () => {
+      if (DESKTOP) return realRegistersHTML();
       const k1 = S.online ? statusPill(['Online', 'pos']) : statusPill(['Offline', 'warn']);
       return `<div style="flex:1;min-height:0;overflow:auto">
         <div class="reg"><span class="reg-ic">${ic('register', 'i-sm')}</span><div class="wl-main"><div class="wl-t">Kasse 1 · INN-K01</div><div class="wl-s">${esc(S.user.name)} · ${num(118 + Dash.session.bons)} Bons${S.queue ? ` · ${S.queue} in Warteschlange` : ''}</div></div>${k1}</div>
@@ -2132,22 +2145,23 @@ const W = {
       </div><div class="note" style="margin-top:10px">${ic('shield')}<span>Monatsbeleg Oktober fällig am 31.10. · Signatureinheiten gültig bis 03/2029.</span><button class="btn btn-secondary btn-sm" data-act="dep" style="margin-left:auto;flex:none">DEP-Export</button></div>`;
     }},
   'ops.system': {title: 'Betrieb', cat: 'Betrieb', icon: 'server', desc: 'Server, Backup-Status und Updates – On-Premise-Werkzeuge.', sizes: ['tall', 'wide'],
-    sub: () => 'KONTOR-SRV01 · Ihre Infrastruktur',
-    body: () => `<div class="res"><div><b>18 %</b><div class="meter neutral"><i style="width:18%"></i></div><span style="display:block;margin-top:5px">CPU</span></div><div><b>41 %</b><div class="meter neutral"><i style="width:41%"></i></div><span style="display:block;margin-top:5px">RAM</span></div><div><b>62 %</b><div class="meter neutral"><i style="width:62%"></i></div><span style="display:block;margin-top:5px">Speicher</span></div></div>
+    sub: () => DESKTOP ? 'Ihr Rechner' : 'KONTOR-SRV01 · Ihre Infrastruktur',
+    body: () => DESKTOP ? realSystemHTML() : `<div class="res"><div><b>18 %</b><div class="meter neutral"><i style="width:18%"></i></div><span style="display:block;margin-top:5px">CPU</span></div><div><b>41 %</b><div class="meter neutral"><i style="width:41%"></i></div><span style="display:block;margin-top:5px">RAM</span></div><div><b>62 %</b><div class="meter neutral"><i style="width:62%"></i></div><span style="display:block;margin-top:5px">Speicher</span></div></div>
       <div style="flex:1;min-height:0;overflow:auto">
       <div class="ops-row">${ic('database', 'i-sm')}<div class="k"><b>${esc(backupLabel())}</b>${DESKTOP ? 'Lokale Datenbank · Prüfsumme & Integrität geprüft' : 'NAS-01 · Integrität geprüft'}</div><button class="btn btn-secondary btn-sm" data-act="backup">Jetzt sichern</button></div>
       ${updWidgetRow()}
       <div class="ops-row">${ic('sparkle', 'i-sm')}<div class="k"><b>KI-Modell bereit</b>lokal · GPU 0 · keine Daten verlassen das Haus</div></div>
       </div><div class="wl-foot" style="margin-top:6px">${ic('info', 'i-xs')} Backups liegen in Ihrer Verantwortung – Kontor stellt die Werkzeuge.</div>`},
-  'ext.repairs': {title: 'Reparaturaufträge', cat: 'Erweiterungen', icon: 'wrench', desc: 'Eigene Entität aus der Erweiterung „Werkstatt & Service“.', sizes: ['tall', 'wide'], plugin: 'Werkstatt & Service 1.2',
+  'ext.repairs': {title: 'Reparaturaufträge', cat: 'Erweiterungen', icon: 'wrench', desc: 'Eigene Entität aus der Erweiterung „Werkstatt & Service“.', sizes: ['tall', 'wide'], plugin: 'Werkstatt & Service 1.2', demo: true,
     tools: () => `<span class="w-src">${ic('puzzle', 'i-xs')}Erweiterung</span>`,
     body: () => `<div class="wl">${extRows(REPAIRS)}</div><div class="wl-foot">${ic('puzzle', 'i-xs')} Eigene Entität · 7 Felder · 2 Workflows</div>`},
-  'ext.rental': {title: 'Verleih · Rückgaben heute', cat: 'Erweiterungen', icon: 'snow', desc: 'Rückgaben und Überfälliges aus „Verleih Pro“.', sizes: ['wide', 'tall'], plugin: 'Verleih Pro 2.0',
+  'ext.rental': {title: 'Verleih · Rückgaben heute', cat: 'Erweiterungen', icon: 'snow', desc: 'Rückgaben und Überfälliges aus „Verleih Pro“.', sizes: ['wide', 'tall'], plugin: 'Verleih Pro 2.0', demo: true,
     tools: () => `<span class="w-src">${ic('puzzle', 'i-xs')}Erweiterung</span>`,
     body: () => `<div class="wl">${extRows(RENTALS)}</div><div class="wl-foot">${ic('puzzle', 'i-xs')} Verleih Pro 2.0 · Partner-Erweiterung</div>`},
 };
 
 /* ── Rendern ── */
+const emptyW = (icon, h, p) => `<div class="empty" style="flex:1"><div class="empty-icon">${ic(icon)}</div><h3>${esc(h)}</h3><p>${esc(p)}</p></div>`;
 function greeting() { const h = NOW.getHours(); return h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend'; }
 function renderDashboard() {
   const v = $('#view-dashboard');
@@ -2155,7 +2169,7 @@ function renderDashboard() {
   v.innerHTML = `<div class="dash ${Dash.editing ? 'editing' : ''}" id="dash">
     <div class="dash-head">
       <div class="dash-greet"><h2 class="h-title">${greeting()}, ${esc(S.user.name.split(' ')[0])}</h2>
-        <div class="dash-meta"><span>${esc(DATE_LONG)}</span><span>·</span><span>${esc(st.name)}</span><span>·</span><span class="pill pos"><span class="dot live"></span>Live · Stand ${hhmm(DEMO_H)}</span></div></div>
+        <div class="dash-meta"><span>${esc(DATE_LONG)}</span><span>·</span><span>${esc(st.name)}</span><span>·</span>${DESKTOP ? `<span class="pill pos"><span class="dot live"></span>Stand ${clock()} · lokale Datenbank</span>` : `<span class="pill pos"><span class="dot live"></span>Live · Stand ${hhmm(DEMO_H)}</span>`}</div></div>
       <div class="dash-controls">
         <div class="seg" id="periodSeg" role="group" aria-label="Zeitraum">${Object.keys(PNAME).map(p => `<button data-p="${p}" aria-pressed="${p === Dash.period}">${PNAME[p]}</button>`).join('')}</div>
         <button class="select-btn" id="dashStore" aria-haspopup="menu">${ic('store', 'i-sm')}${esc(st.name)}${ic('chevron-down', 'i-sm')}</button>
@@ -2180,14 +2194,15 @@ function widgetInner(it, d) {
   const def = W[it.t];
   const sizes = def.sizes.length > 1 ? SIZE_ORDER.filter(s => def.sizes.includes(s)).map(s => `<button data-size="${s}" aria-pressed="${s === it.s}" title="Breite ${SIZE_LBL[s]}${['tall', 'wide', 'l', 'xl'].includes(s) ? ' · doppelte Höhe' : ''}" aria-label="Breite ${SIZE_LBL[s]}">${SIZE_LBL[s]}</button>`).join('') : '';
   const edit = `<div class="w-edit">${sizes}<button class="rm" data-rm title="Entfernen" aria-label="Widget entfernen">${ic('x', 'i-xs')}</button></div>`;
-  const head = def.bare ? '' : `<header class="w-head"><span class="w-title">${esc(def.title)}</span>${def.sub ? `<span class="w-sub">${esc(def.sub(d))}</span>` : ''}<div class="w-tools">${def.tools ? def.tools(d) : ''}</div></header>`;
+  const demo = DESKTOP && def.demo && !(it.t === 'sales.stores') ? `<span class="pill warn" style="height:20px" title="Beispieldaten – Funktion folgt in einem späteren Paket">Vorschau</span>` : '';
+  const head = def.bare ? '' : `<header class="w-head"><span class="w-title">${esc(def.title)}</span>${def.sub ? `<span class="w-sub">${esc(def.sub(d))}</span>` : ''}<div class="w-tools">${demo}${def.tools ? def.tools(d) : ''}</div></header>`;
   return `${edit}${head}<div class="w-body">${def.body(it, d)}</div>`;
 }
 function renderWidgets(animate, dim) {
   const g = $('#dgrid'); if (!g) return;
-  const d = periodData(Dash.period);
   Dash.noAnim = !animate && !dim;
   const build = () => {
+    const d = periodData(Dash.period);   // erst beim Zeichnen lesen – Daten können inzwischen geladen sein
     g.innerHTML = Dash.layout.filter(it => W[it.t]).map((it, i) => `<article class="w ${it.s} ${animate ? 'enter' : ''}" style="animation-delay:${i * 40}ms" data-uid="${it.id}" tabindex="${Dash.editing ? 0 : -1}" aria-label="${esc(W[it.t].title)}">${widgetInner(it, d)}</article>`).join('')
       + `<button class="add-tile" id="addTile">${ic('plus')}Widget hinzufügen</button>`;
     Dash.layout.forEach(it => { const def = W[it.t]; if (def && def.mount) def.mount($(`.w[data-uid="${it.id}"]`, g), it, d); });
@@ -2298,6 +2313,7 @@ function bindDashboard() {
     }
     if (a === 'ins') { const x = INSIGHTS.find(i => i.id === act.dataset.id); toast(x.a, {t2: 'Aktion vorbereitet · Entwurf im Bereich Einkauf', type: 'accent', icon: 'sparkle'}); Hooks.emit('ai.insight.action', {hinweis: x.t}); }
     if (a === 'ins-x') { const card = act.closest('.in'); Dash.dismissed.add(act.dataset.id); card.classList.add('gone'); setTimeout(() => { const w = card.closest('.w'); w && rerenderWidget(w.dataset.uid); }, 220); toast('Hinweis verworfen', {t2: 'Das Modell lernt lokal aus Ihrer Rückmeldung', icon: 'sparkle'}); }
+    if (a === 'book') { for (const x of ART) { const v = x.variants.find(q => q.ean === act.dataset.ean); if (v) { openBooking(x, v); break; } } return; }
     if (a === 'backup') backupNow();
     if (a === 'update') DESKTOP && UPD.state !== 'available' ? checkUpdates(true) : openUpdate();
     if (a === 'dep') depExport();
@@ -2710,11 +2726,11 @@ function openCustomers() {
   const el = openLayer(`<div class="modal" style="width:min(560px,100%)" role="dialog" aria-modal="true" aria-label="Kunde zuordnen">
     <div class="m-head"><div class="m-ic">${ic('users')}</div><div><h2>Kunde zuordnen</h2><p>Name, Kundennummer, E-Mail – oder Kundenkarte scannen</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
     <div class="m-body" style="padding-bottom:6px"><input class="input" id="custQ" placeholder="Suchen …" autocomplete="off" style="height:44px" role="combobox" aria-controls="custList" aria-expanded="true"><div id="custList" role="listbox" style="margin:10px -8px 0;max-height:min(360px,48vh);overflow:auto"></div></div>
-    <div class="m-foot"><button class="btn btn-ghost" id="custNew">${ic('user-plus', 'i-sm')}Neu anlegen</button><span class="sp"></span><span class="muted" style="font-size:12px">${CUSTOMERS.length} von 18.402 Kund:innen · lokal</span></div></div>`, {focus: '#custQ'});
+    <div class="m-foot"><button class="btn btn-ghost" id="custNew">${ic('user-plus', 'i-sm')}Neu anlegen</button><span class="sp"></span><span class="muted" style="font-size:12px">${num(CUSTOMERS.length)} Kund:innen · ${DESKTOP ? 'lokale Datenbank' : 'Vorschau'}</span></div></div>`, {focus: '#custQ'});
   let sel = 0, list = [];
   const render = () => {
-    const q = norm($('#custQ', el).value.trim());
-    list = CUSTOMERS.filter(c => !q || norm(`${c.name} ${c.id} ${c.email}`).includes(q)); sel = clamp(sel, 0, Math.max(0, list.length - 1));
+    const toks = norm($('#custQ', el).value.trim()).split(/\s+/).filter(Boolean);
+    list = CUSTOMERS.filter(c => custMatches(c, toks)).slice(0, 60); sel = clamp(sel, 0, Math.max(0, list.length - 1));
     $('#custList', el).innerHTML = list.map((c, i) => `<button class="pal-i" style="height:58px" role="option" data-i="${i}" aria-selected="${i === sel}"><span class="avatar" style="--h:${c.hue}">${initials(c.name)}</span><span style="min-width:0;flex:1"><span style="display:block;color:var(--text);font-weight:550">${esc(c.name)}</span><span style="display:block;font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.id)} · ${esc(c.email)} · zuletzt ${esc(c.last)}</span></span><span class="hint">${c.club ? `<span class="pill accent" style="height:20px">${ic('flow')}Regel</span>` : ''}<span class="pill" style="height:20px">${esc(c.tier)}</span></span></button>`).join('')
       || `<div class="empty"><p>Kein Treffer – <b>Neu anlegen</b> übernimmt die Eingabe.</p></div>`;
   };
@@ -2723,10 +2739,10 @@ function openCustomers() {
   $('#custQ', el).addEventListener('keydown', e => {
     if (e.key === 'ArrowDown') { sel = Math.min(list.length - 1, sel + 1); render(); e.preventDefault(); }
     else if (e.key === 'ArrowUp') { sel = Math.max(0, sel - 1); render(); e.preventDefault(); }
-    else if (e.key === 'Enter') { e.preventDefault(); pick(sel); }
+    else if (e.key === 'Enter') { e.preventDefault(); list.length ? pick(sel) : $('#custNew', el).click(); }
   });
   $('#custList', el).addEventListener('click', e => { const b = e.target.closest('[data-i]'); b && pick(+b.dataset.i); });
-  $('#custNew', el).onclick = () => { closeLayer(el); toast('Kundenanlage', {t2: 'Formular inkl. benutzerdefinierter Felder & DSGVO-Einwilligung folgt', icon: 'user-plus'}); };
+  $('#custNew', el).onclick = () => { const q = $('#custQ', el).value; closeLayer(el); setTimeout(() => openCustomerEditor(null, {prefill: q, onSaved: attachCustomer}), 60); };
   render();
 }
 function attachCustomer(c) {
@@ -2889,12 +2905,12 @@ function openFlow() {
   });
 }
 function openMore(anchor) {
-  const el = openPopover(anchor, `<button class="pop-i" data-m="gs">${ic('gift')}Gutschein verkaufen</button><button class="pop-i" data-m="rcpts">${ic('receipt')}Belege<span class="r muted" style="font-size:11.5px">${DESKTOP ? 'gespeichert' : 'Sitzung'}</span></button><button class="pop-i" data-m="copy">${ic('printer')}Belegkopie drucken</button><button class="pop-i" data-m="drawer">${ic('cash')}Lade öffnen<span class="r muted" style="font-size:11.5px">protokolliert</span></button><button class="pop-i" data-m="x">${ic('receipt')}X-Bericht (Zwischenstand)</button><div class="pop-sep"></div><button class="pop-i" data-m="net">${ic(S.online ? 'wifi-off' : 'wifi')}${S.online ? 'Offline-Modus simulieren' : 'Verbindung wiederherstellen'}</button><button class="pop-i" data-m="flow">${ic('flow')}Kassenablauf bearbeiten</button>`, {align: 'right', width: 260});
+  const el = openPopover(anchor, `<button class="pop-i" data-m="gs">${ic('gift')}Gutschein verkaufen</button><button class="pop-i" data-m="ret">${ic('undo')}Retoure / Umtausch<span class="r muted" style="font-size:11.5px">mit Beleg</span></button><button class="pop-i" data-m="rcpts">${ic('receipt')}Belege<span class="r muted" style="font-size:11.5px">${DESKTOP ? 'gespeichert' : 'Sitzung'}</span></button><button class="pop-i" data-m="copy">${ic('printer')}Belegkopie drucken</button><button class="pop-i" data-m="drawer">${ic('cash')}Lade öffnen<span class="r muted" style="font-size:11.5px">protokolliert</span></button><button class="pop-i" data-m="x">${ic('receipt')}X-Bericht (Zwischenstand)</button><div class="pop-sep"></div><button class="pop-i" data-m="net">${ic(S.online ? 'wifi-off' : 'wifi')}${S.online ? 'Offline-Modus simulieren' : 'Verbindung wiederherstellen'}</button><button class="pop-i" data-m="flow">${ic('flow')}Kassenablauf bearbeiten</button>`, {align: 'right', width: 260});
   if (!el) return;
   el.addEventListener('click', e => {
     const b = e.target.closest('[data-m]'); if (!b) return; closePopover();
-    ({gs: openVoucherSale, rcpts: openReceipts, copy: reprint, drawer: () => { toast('Kassenlade geöffnet', {t2: 'Ereignis im Audit-Log gespeichert', icon: 'cash'}); Hooks.emit('device.drawer.opened', {kasse: 'INN-K01', benutzer: S.user.name, grund: 'manuell'}); },
-      x: () => toast('X-Bericht', {t2: `${num(118 + Dash.session.bons)} Bons · ${eur0(periodData('heute').rev)} · ohne Abschluss`, icon: 'receipt'}), net: () => setOnline(!S.online), flow: openFlow})[b.dataset.m]();
+    ({gs: openVoucherSale, ret: openReturnStart, rcpts: () => openReceipts(), copy: reprint, drawer: () => { toast('Kassenlade geöffnet', {t2: 'Ereignis im Audit-Log gespeichert', icon: 'cash'}); Hooks.emit('device.drawer.opened', {kasse: 'INN-K01', benutzer: S.user.name, grund: 'manuell'}); },
+      x: xReport, net: () => setOnline(!S.online), flow: openFlow})[b.dataset.m]();
   });
 }
 function reprint() {
@@ -3074,7 +3090,14 @@ async function finalizePayment() {
   // Festschreiben: Belegnummer, Beleg und Bestandsabbuchung in einer Transaktion
   try {
     const r = await commitSale(rec);
-    if (r) { rec.no = r.no; POS.no = r.number; }
+    if (r) {
+      rec.no = r.no; POS.no = r.number;
+      if (rec.customer) {
+        if (r.points?.balance != null) { rec.pointsAfter = r.points.balance; rec.pointsEarned = r.points.earned; rec.customer.points = r.points.balance; }
+        rec.customer.visits = (rec.customer.visits || 0) + 1; rec.customer.revenue = r2((rec.customer.revenue || 0) + t.total); rec.customer.lastVisit = new Date(); custFinish(rec.customer);
+      }
+    } else if (rec.customer) { rec.pointsEarned = t.points; rec.pointsAfter = rec.customer.points + t.points; rec.customer.points = rec.pointsAfter; }
+    statsInvalidate();
   } catch (e) {
     PAY.busy = false; PAY.done = false;
     L.innerHTML = `<div style="flex:1;display:grid;place-items:center;text-align:center"><div class="authwait"><div class="ring" style="color:var(--neg)">${ic('alert')}</div><p><b style="color:var(--text)">Beleg konnte nicht gespeichert werden</b><br>${esc(String(e))}</p><button class="btn btn-primary" id="payRetry">Erneut versuchen</button></div></div>`;
@@ -3098,7 +3121,7 @@ function showDone(rec) {
     <div class="done-sub">Bon ${rec.no} · ${rec.lines.reduce((s, l) => s + l.qty, 0)} Artikel · RKSV-signiert ${clock(true)}${rec.offline ? ' · offline erfasst, Sync folgt' : ''}</div>
     <div class="pay-parts" style="margin-top:18px">${rec.parts.map(x => `<div class="ppart"><span class="reg-ic">${ic(METHODS.find(m => m.id === x.m).icon, 'i-sm')}</span><span><span style="display:block;font-weight:550">${esc(x.label)}</span><span class="muted" style="font-size:11.5px">${esc(x.ref)}</span></span><b>${eur(x.given || x.amount)}</b></div>`).join('')}</div>
     ${rec.change > 0 ? `<div class="change-big"><div class="l">Rückgeld</div><div class="v">${eur(rec.change)}</div></div>` : ''}
-    ${rec.customer ? `<div class="note" style="margin-top:16px">${ic('star')}<span><b style="color:var(--text)">+${rec.t.points} Gipfel-Punkte</b> für ${esc(rec.customer.name)} · neuer Stand ${num(rec.customer.points + rec.t.points)}</span></div>` : ''}
+    ${rec.customer ? `<div class="note" style="margin-top:16px">${ic('star')}<span><b style="color:var(--text)">+${num(rec.pointsEarned ?? rec.t.points)} Gipfel-Punkte</b> für ${esc(rec.customer.name)} · neuer Stand ${num(rec.pointsAfter ?? rec.customer.points)}</span></div>` : ''}
     <div class="eyebrow" style="margin-top:26px">Beleg übergeben</div>
     <div class="rcpt-opts"><button class="btn btn-secondary" data-r="print">${ic('printer')}Drucken</button><button class="btn btn-secondary" data-r="qr">${ic('qr')}Digital (QR)</button><button class="btn btn-secondary" data-r="mail">${ic('mail')}E-Mail</button></div>
     <div class="note" style="margin-top:12px">${ic('shield')}<span>Belegerteilungspflicht: Ausgabe als Papier- oder digitaler Beleg. Signatur im DEP gespeichert${rec.offline ? ', Übertragung folgt nach Sync' : ''}.</span></div>
@@ -3132,7 +3155,13 @@ function pseudoQR(seed, N = 25) {
   let d = ''; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (m[y][x]) d += `M${x} ${y}h1v1h-1z`;
   return `<svg viewBox="-1 -1 ${N + 2} ${N + 2}" shape-rendering="crispEdges" aria-label="Maschinenlesbarer Code (Vorschau)"><rect x="-1" y="-1" width="${N + 2}" height="${N + 2}" fill="#fff"/><path d="${d}" fill="#141414"/></svg>`;
 }
+function receiptHead(tpl) {
+  return tpl === 'modern' ? `<div class="band"></div><div class="logo"><span class="mk"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.5v15"/><path d="M18 4.5 10.5 12 18 19.5"/></svg></span><b>${esc(CFG['firma.marke'])} ${esc(CFG['firma.zusatz'].split(' ')[0])}</b><span class="sm">${esc(CFG['firma.adresse'])}</span></div>`
+    : tpl === 'minimal' ? `<div class="logo"><b>${esc(CFG['firma.marke'].toUpperCase())}</b><span class="sm">${esc(CFG['firma.adresse'].split(',').pop().trim())}</span></div>`
+    : `<div class="logo"><b>${esc(CFG['firma.marke'].toUpperCase())}</b><span>${esc(CFG['firma.zusatz'])}</span><span class="sm">${esc(CFG['firma.adresse'])}<br>UID ${esc(CFG['firma.uid'])} · Tel. ${esc(CFG['firma.telefon'])}</span></div>`;
+}
 function receiptHTML(rec, tpl) {
+  if (rec.kind === 'retoure' || rec.kind === 'storno') return returnReceiptHTML(rec, tpl);
   const dt = rec.date, d = `${pad(dt.getDate())}.${pad(dt.getMonth() + 1)}.${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
   const money = v => num(v, 2);
   const lines = rec.lines.map(l => {
@@ -3141,9 +3170,7 @@ function receiptHTML(rec, tpl) {
     return `<div class="r"><span>${l.qty} × ${esc(l.name)}</span><span>${money(g)}</span></div>${vtxt ? `<div class="sm">&nbsp;&nbsp;${esc(vtxt)}${l.vat === 0 ? ' · 0 %' : ''}</div>` : ''}${l.vals ? `<div class="sm">&nbsp;&nbsp;${Object.entries(l.vals).filter(([, v]) => v).map(([k, v]) => `${k === 'z' ? 'Z-Wert' : 'SN'} ${esc(v)}`).join(' · ')}</div>` : ''}${dd ? `<div class="r sm"><span>&nbsp;&nbsp;Rabatt ${l.disc.pct} % (${esc(l.disc.reason || '')})</span><span>−${money(dd)}</span></div>` : ''}`;
   }).join('');
   const lineDisc = rec.lines.reduce((s, l) => s + (l.disc ? r2(r2(l.unit * l.qty) * l.disc.pct / 100) : 0), 0), billDisc = r2(rec.t.disc - lineDisc);
-  const head = tpl === 'modern' ? `<div class="band"></div><div class="logo"><span class="mk"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.5v15"/><path d="M18 4.5 10.5 12 18 19.5"/></svg></span><b>${esc(CFG['firma.marke'])} ${esc(CFG['firma.zusatz'].split(' ')[0])}</b><span class="sm">${esc(CFG['firma.adresse'])}</span></div>`
-    : tpl === 'minimal' ? `<div class="logo"><b>${esc(CFG['firma.marke'].toUpperCase())}</b><span class="sm">${esc(CFG['firma.adresse'].split(',').pop().trim())}</span></div>`
-    : `<div class="logo"><b>${esc(CFG['firma.marke'].toUpperCase())}</b><span>${esc(CFG['firma.zusatz'])}</span><span class="sm">${esc(CFG['firma.adresse'])}<br>UID ${esc(CFG['firma.uid'])} · Tel. ${esc(CFG['firma.telefon'])}</span></div>`;
+  const head = receiptHead(tpl);
   return `<div class="receipt ${tpl}">${head}<hr>
     <div class="r"><span>Bon ${rec.no}</span><span>Kasse ${esc(CFG['kasse.id'])}</span></div><div class="r sm"><span>${d}</span><span>${esc(rec.cashier.split(' ')[0])}</span></div><hr>
     ${lines}
@@ -3239,7 +3266,7 @@ const DEFAULTS = {
   'firma.name': 'Alpenlicht Sport GmbH', 'firma.marke': 'Alpenlicht', 'firma.zusatz': 'Sport & Mode',
   'firma.adresse': 'Maria-Theresien-Str. 18, 6020 Innsbruck', 'firma.uid': 'ATU00000000', 'firma.telefon': '0512 000000',
   'kasse.id': 'INN-K01', 'kasse.name': 'Kasse 1', 'kasse.freigabe': true, 'kasse.rabattGrenze': 20,
-  'kasse.vereinsregel': true, 'kasse.pflichtfelder': true, 'kasse.bonFuss': 'Danke für Ihren Einkauf! Umtausch innerhalb von 30 Tagen mit Beleg.',
+  'kasse.vereinsregel': true, 'kasse.retoureGrenze': 100, 'ziel.tag': 2500, 'kasse.pflichtfelder': true, 'kasse.bonFuss': 'Danke für Ihren Einkauf! Umtausch innerhalb von 30 Tagen mit Beleg.',
   'anzeige.zoom': 1, 'backup.dir': '', 'backup.auto': true, 'backup.keep': 14, 'update.kanal': 'stable', 'update.auto': true, 'update.freigabe': null,
 };
 const CFG = {...DEFAULTS};
@@ -3337,6 +3364,8 @@ function renderSettings() {
         ${field('kasse.id', 'Kassen-ID (RKSV)', 'Eindeutige Kennung je Registrierkasse – wird mit der RKSV-Registrierung verbindlich')}
         ${field('kasse.freigabe', 'Rabatte freigeben lassen', 'Rabatte über der Grenze erfordern Filialleitung (Step-up)', 'switch')}
         ${field('kasse.rabattGrenze', 'Rabattgrenze ohne Freigabe (%)', '', 'number', 'min="0" max="100" step="1" style="max-width:120px"')}
+        ${field('kasse.retoureGrenze', 'Erstattung ohne Freigabe bis (€)', 'Retouren darüber und alle Stornos erfordern die Filialleitung (Step-up)', 'number', 'min="0" max="10000" step="10" style="max-width:120px"')}
+        ${field('ziel.tag', 'Umsatzziel je Verkaufstag (€)', 'Grundlage für Tages-, Wochen- und Monatsziel im Dashboard', 'number', 'min="0" step="100" style="max-width:140px"')}
         ${field('kasse.vereinsregel', 'Vereinsrabatt automatisch', 'Regel greift beim Zuordnen von Vereinsmitgliedern', 'switch')}
         ${field('kasse.pflichtfelder', 'Pflichtfelder je Warengruppe', 'z. B. Z-Wert und Seriennummer beim Skiverkauf', 'switch')}
         ${field('kasse.bonFuss', 'Text am Bonende', '', 'textarea')}
@@ -3418,6 +3447,7 @@ function bindSettings() {
     const val = e.target.type === 'number' ? Number(e.target.value) : e.target.value;
     if (e.target.type === 'number' && !isFinite(val)) return;
     saveSettings({[k]: val});
+    if (k === 'ziel.tag') ST.cache = {};
   });
   v.addEventListener('input', e => { if (e.target.id === 'setAccCustom') { prefs.custom = hexToHS(e.target.value); prefs.accent = 'custom'; applyPrefs(); } });
   v.addEventListener('click', async e => {
@@ -3672,34 +3702,11 @@ function openBooking(a, v) {
     try { await bookStock(a, v, value, st.mode === 'inv', st.reason); } catch (e) { return toast('Buchung fehlgeschlagen', {t2: String(e), type: 'warn'}); }
     closeLayer(el); toast('Gebucht', {t2: `${a.name} · ${COLORS[v.c]?.[0] || v.c} ${v.s} · neuer Bestand ${v.q}`, type: 'pos', icon: 'boxes'});
     if (S.view === 'bestand') { renderInvList(); renderMoves(); const cell = $(`[data-vk="${CSS.escape(v.ean)}"]`); cell?.classList.add('flash'); renderTopbar(); }
+    if (S.view === 'dashboard') refreshDashboard(['stock.low']);
   };
   box.addEventListener('input', e => { if (e.target.id === 'bkQty') { st.qty = e.target.value.replace(/\D/g, ''); const pos = e.target.selectionStart; render(); const i = $('#bkQty', box); i.focus(); i.setSelectionRange(pos, pos); } });
   box.addEventListener('click', e => { const r = e.target.closest('[data-r]'); if (r) { st.reason = r.dataset.r; render(); } if (e.target.closest('#bkGo')) go2(); });
   el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go2(); } });
-  render();
-}
-
-/* ── Belege ── */
-async function openReceipts() {
-  let list = MEM.sales;
-  if (DESKTOP) { try { list = await invoke('sales_list', {limit: 300}); } catch (e) { return toast('Belege nicht verfügbar', {t2: String(e), type: 'warn'}); } }
-  let sel = 0, q = '';
-  const el = openLayer(`<div class="modal rcpts" role="dialog" aria-modal="true" aria-label="Belege"><div class="rcpts-l">
-      <div class="m-head" style="padding-bottom:12px"><div class="m-ic">${ic('receipt')}</div><div><h2>Belege</h2><p>${list.length} ${list.length === 1 ? 'Beleg' : 'Belege'} · ${DESKTOP ? 'gespeichert in der Datenbank' : 'nur diese Sitzung (Vorschau)'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
-      <div style="padding:0 22px 10px"><input class="input" id="rcQ" placeholder="Belegnummer, Artikel oder Kassier:in …" autocomplete="off"></div>
-      <div class="rcpts-list" id="rcList"></div></div>
-    <div class="done-r"><div class="done-r-head"><span class="eyebrow">Beleg</span><button class="btn btn-secondary btn-sm" id="rcCopy" style="margin-left:auto">${ic('printer', 'i-sm')}Kopie drucken</button></div><div class="done-r-body"><div id="rcView"></div></div></div></div>`, {focus: '#rcQ'});
-  const filtered = () => { const n = norm(q); return list.filter(s => !n || norm(`${s.no} ${s.cashier || ''} ${(s.data?.lines || []).map(l => l.name).join(' ')}`).includes(n)); };
-  const render = () => {
-    const f = filtered(); sel = clamp(sel, 0, Math.max(0, f.length - 1));
-    $('#rcList', el).innerHTML = f.length ? f.map((s, i) => `<button class="pal-i" style="height:58px" data-i="${i}" aria-selected="${i === sel}"><span class="reg-ic" style="width:32px;height:32px">${ic('receipt', 'i-sm')}</span><span style="flex:1;min-width:0"><span style="display:block;color:var(--text);font-weight:550">Bon ${esc(s.no)}</span><span style="display:block;font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(fmtTs(s.ts))} · ${(s.data?.lines || []).reduce((n, l) => n + l.qty, 0)} Artikel · ${esc((s.data?.parts || []).map(p => p.label).join(' + '))} · ${esc(s.cashier || '')}</span></span><span class="hint"><b style="color:var(--text);font-size:13.5px" class="num">${eur(s.total / 100)}</b></span></button>`).join('')
-      : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('receipt')}</div><h3>${list.length ? 'Kein Treffer' : 'Noch keine Belege'}</h3><p>${list.length ? 'Suche anpassen.' : 'Abgeschlossene Verkäufe erscheinen hier.'}</p></div>`;
-    const s = f[sel]; $('#rcView', el).innerHTML = s ? `<div class="receipt-wrap">${receiptHTML(recFromData(s.no, s.data), prefs.tpl || 'classic')}</div>` : '';
-    $('[aria-selected="true"]', el)?.scrollIntoView({block: 'nearest'});
-  };
-  $('#rcQ', el).addEventListener('input', e => { q = e.target.value; sel = 0; render(); });
-  $('#rcQ', el).addEventListener('keydown', e => { if (e.key === 'ArrowDown') { sel++; render(); e.preventDefault(); } if (e.key === 'ArrowUp') { sel = Math.max(0, sel - 1); render(); e.preventDefault(); } });
-  el.addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (b) { sel = +b.dataset.i; render(); } if (e.target.closest('#rcCopy')) { const s = filtered()[sel]; if (s) { toast(`Belegkopie ${s.no}`, {t2: 'Als „KOPIE“ gekennzeichnet', icon: 'printer'}); Hooks.emit('pos.receipt.copy', {beleg: s.no}); } } });
   render();
 }
 
@@ -3850,6 +3857,587 @@ function bindUpdates() {
   if (!DESKTOP) return;
   setTimeout(() => CFG['update.auto'] !== false || CFG['update.freigabe'] ? checkUpdates(false) : null, 6000);
   setInterval(() => CFG['update.auto'] !== false && checkUpdates(false), 6 * 36e5);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   18 · KUNDEN — Stammdaten, Bonuspunkte, Kaufhistorie.
+   Desktop: lokale Datenbank · Browser: nur im Speicher (Vorschau).
+   ════════════════════════════════════════════════════════════════════ */
+const TIERS = ['Kunde', 'Gipfel-Club', 'Gipfel-Club Silber', 'Gipfel-Club Gold', 'Mitarbeiter:in'];
+const KV = {q: '', f: 'alle'};
+const shortDate = d => d ? `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.` : '–';
+
+function custFinish(c) {
+  c.hue = hash(c.id) % 360;
+  c.last = c.lastVisit ? shortDate(c.lastVisit) : (c.last || '–');
+  c.fields ||= {};
+  return c;
+}
+function custFromDb(d) {
+  return custFinish({id: d.id, name: d.name, email: d.email || '', phone: d.phone || '', tier: d.tier || 'Kunde', points: d.points || 0,
+    club: d.club_name ? {name: d.club_name, pct: d.club_pct || 0} : null, fields: d.fields && typeof d.fields === 'object' ? d.fields : {},
+    consent: !!d.consent, note: d.note || '', visits: d.visits || 0, revenue: (d.revenue || 0) / 100,
+    lastVisit: d.last_visit ? new Date(d.last_visit) : null, created: d.created_at ? new Date(d.created_at) : null});
+}
+const custToDb = c => ({id: c.id || '', name: c.name, email: c.email || '', phone: c.phone || '', tier: c.tier || 'Kunde', points: c.points || 0,
+  club_name: c.club?.name || null, club_pct: c.club ? +c.club.pct || 0 : null, fields: c.fields || {}, consent: !!c.consent, note: c.note || ''});
+function replaceCustomers(list) { CUSTOMERS.length = 0; list.forEach(d => CUSTOMERS.push(custFromDb(d))); }
+const custById = id => CUSTOMERS.find(c => c.id === id);
+
+async function loadCustomers() {
+  if (!DESKTOP) { CUSTOMERS.forEach(c => { c.consent ??= c.fields?.Newsletter === 'ja'; c.visits ??= 0; c.revenue ??= 0; custFinish(c); }); return; }
+  try {
+    let list = await invoke('customer_list');
+    if (!list.length) {
+      // Startdaten übernehmen (Vereinsrabatt als echte Kundendaten statt Testfeld)
+      await invoke('customer_seed', {list: CUSTOMERS.map(c => custToDb({...c, consent: c.fields?.Newsletter === 'ja',
+        fields: Object.fromEntries(Object.entries(c.fields || {}).filter(([k]) => !['Newsletter', 'Verein', 'Vereinsrabatt'].includes(k)))}))});
+      list = await invoke('customer_list');
+    }
+    replaceCustomers(list);
+  } catch (e) { toast('Kunden konnten nicht geladen werden', {t2: String(e), type: 'warn', dur: 8000}); }
+}
+async function reloadCustomers() { if (DESKTOP) { try { replaceCustomers(await invoke('customer_list')); } catch (e) { console.error(e); } } }
+
+/* ── Liste ── */
+function renderKunden() {
+  const v = $('#view-kunden');
+  const n = CUSTOMERS.length, consent = CUSTOMERS.filter(c => c.consent).length, pts = CUSTOMERS.reduce((s, c) => s + c.points, 0);
+  const rev = CUSTOMERS.reduce((s, c) => s + (c.revenue || 0), 0), buyers = CUSTOMERS.filter(c => c.visits > 0).length;
+  v.innerHTML = `<div class="cv">
+    <div class="cv-head"><div><h2 class="h-title">Kunden</h2><div class="dash-meta" style="margin-top:6px"><span id="kuCount"></span>${DESKTOP ? '' : '<span>·</span><span class="pill warn" style="height:20px">Vorschau – Änderungen werden nicht gespeichert</span>'}</div></div>
+      <button class="btn btn-primary" id="kuNew">${ic('user-plus', 'i-sm')}Neuer Kunde</button></div>
+    <div class="kpis"><div class="card"><b class="num">${num(n)}</b><span>Kund:innen</span></div><div class="card"><b class="num">${num(consent)}</b><span>mit Newsletter-Einwilligung</span></div>
+      <div class="card"><b class="num">${num(pts)}</b><span>offene Bonuspunkte</span></div><div class="card"><b>${eur0(rev)}</b><span>Umsatz mit Kundenkarte</span></div>
+      <div class="card"><b>${buyers ? eur(rev / buyers) : '–'}</b><span>Ø je kaufende:r Kund:in</span></div></div>
+    <div class="cv-tools"><label class="search-field">${ic('search')}<input id="kuQ" placeholder="Name, Kundennummer, E-Mail oder Telefon …" value="${esc(KV.q)}" autocomplete="off"></label>
+      <div class="seg" id="kuSeg">${[['alle', 'Alle'], ['club', 'Gipfel-Club'], ['verein', 'Verein'], ['news', 'Newsletter']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${KV.f === k}">${l}</button>`).join('')}</div></div>
+    <div class="card" id="kuTable"></div></div>`;
+  initSeg($('#kuSeg', v), b => { KV.f = b.dataset.v; renderKuTable(); });
+  renderKuTable();
+}
+function custMatches(c, toks) { const hay = norm(`${c.name} ${c.id} ${c.email} ${c.phone} ${c.tier} ${c.club?.name || ''}`); return toks.every(t => hay.includes(t)); }
+function renderKuTable() {
+  const toks = norm(KV.q.trim()).split(/\s+/).filter(Boolean);
+  const list = CUSTOMERS.filter(c => custMatches(c, toks) && (KV.f === 'alle' || (KV.f === 'club' && /club/i.test(c.tier)) || (KV.f === 'verein' && c.club) || (KV.f === 'news' && c.consent)));
+  $('#kuCount').textContent = `${list.length} von ${CUSTOMERS.length} Kund:innen · ${DESKTOP ? 'lokale Datenbank' : 'Vorschau'}`;
+  $('#kuTable').innerHTML = list.length ? `<table class="tbl art-tbl"><thead><tr><th style="padding-left:16px;width:52px"></th><th>Kunde</th><th>Kontakt</th><th>Stufe</th><th class="r">Punkte</th><th class="r">Einkäufe</th><th class="r">Umsatz</th><th>Zuletzt</th><th></th></tr></thead><tbody>${list.map(c => `
+    <tr data-cust="${esc(c.id)}"><td style="padding-left:16px"><span class="avatar" style="--h:${c.hue}">${initials(c.name)}</span></td>
+      <td><div style="font-weight:600">${esc(c.name)}</div><div class="muted" style="font-size:12px">${esc(c.id)}${c.consent ? " · Newsletter" : ""}</div></td>
+      <td class="muted" style="font-size:12.5px">${esc(c.email || '–')}${c.phone ? `<br>${esc(c.phone)}` : ''}</td>
+      <td><span class="pill ${/gold/i.test(c.tier) ? 'accent' : ''}" style="height:20px">${esc(c.tier)}</span>${c.club ? ` <span class="pill info" style="height:20px">${ic('flow')}−${c.club.pct} %</span>` : ''}</td>
+      <td class="r num"><b>${num(c.points)}</b></td><td class="r num">${num(c.visits || 0)}</td><td class="r"><b>${eur(c.revenue || 0)}</b></td>
+      <td class="muted">${esc(c.last)}</td><td class="r" style="padding-right:14px;color:var(--text-3)">${ic('chevron-right', 'i-sm')}</td></tr>`).join('')}</tbody></table>`
+    : `<div class="empty" style="padding:56px 20px"><div class="empty-icon">${ic('users')}</div><h3>${CUSTOMERS.length ? 'Kein Treffer' : 'Noch keine Kund:innen'}</h3><p>${CUSTOMERS.length ? 'Suche oder Filter anpassen.' : 'Kund:innen hier oder direkt an der Kasse (F3 → Neu anlegen) erfassen.'}</p></div>`;
+}
+
+/* ── Anlegen / Bearbeiten ── */
+function openCustomerEditor(c, {prefill = '', onSaved} = {}) {
+  const isNew = !c;
+  const pre = prefill.trim(), preMail = pre.includes('@');
+  const st = c ? {name: c.name, email: c.email, phone: c.phone, tier: c.tier, clubName: c.club?.name || '', clubPct: c.club ? String(c.club.pct) : '', consent: c.consent, note: c.note || '', fields: Object.entries(c.fields || {})}
+    : {name: preMail ? '' : pre, email: preMail ? pre : '', phone: '', tier: 'Kunde', clubName: '', clubPct: '', consent: false, note: '', fields: []};
+  const el = openLayer(`<div class="drawer-panel" style="width:min(580px,100%)" role="dialog" aria-modal="true" aria-label="${isNew ? 'Neuer Kunde' : 'Kunde bearbeiten'}"><div id="ceHead"></div><div class="drawer-body" id="ceBody"></div>
+    <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">${isNew ? '' : `<button class="btn btn-danger" id="ceDel">${ic('trash', 'i-sm')}Deaktivieren</button>`}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="ceSave">${ic('check', 'i-sm')}${isNew && onSaved ? 'Anlegen & zuordnen' : 'Speichern'}</button></div></div>`, {cls: 'drawer', focus: st.name ? '[data-f="email"]' : '[data-f="name"]'});
+  const collect = () => {
+    $$('[data-f]', el).forEach(i => { st[i.dataset.f] = i.value; });
+    st.fields = $$('.frow', el).map(r => [$('[data-fk]', r).value.trim(), $('[data-fv]', r).value.trim()]);
+  };
+  const tiers = TIERS.includes(st.tier) ? TIERS : [st.tier, ...TIERS];
+  const render = () => {
+    $('#ceHead', el).innerHTML = `<div class="m-head" style="padding-bottom:14px"><span class="avatar lg" style="--h:${c ? c.hue : 26}">${st.name.trim() ? initials(st.name) : ic('user-plus', 'i-sm')}</span><div><h2>${isNew ? 'Neue:r Kund:in' : esc(st.name)}</h2><p>${isNew ? 'Kundennummer wird beim Speichern vergeben' : `${esc(c.id)} · ${num(c.points)} Punkte · ${num(c.visits || 0)} Einkäufe`}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>`;
+    $('#ceBody', el).innerHTML = `
+      <div class="ed-grid">
+        <label class="field full"><span>Name <b class="req">*</b></span><input class="input" data-f="name" value="${esc(st.name)}" placeholder="Vor- und Nachname" autocomplete="off"></label>
+        <label class="field"><span>E-Mail</span><input class="input" data-f="email" type="email" value="${esc(st.email)}" placeholder="für digitale Belege" autocomplete="off"></label>
+        <label class="field"><span>Telefon</span><input class="input" data-f="phone" value="${esc(st.phone)}" autocomplete="off"></label>
+        <label class="field"><span>Kundenstufe</span><select class="input select" data-f="tier">${tiers.map(t => `<option ${t === st.tier ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
+        <div></div>
+        <label class="field"><span>Verein</span><input class="input" data-f="clubName" value="${esc(st.clubName)}" placeholder="z. B. SV Inntal"></label>
+        <label class="field"><span>Vereinsrabatt %</span><input class="input num" data-f="clubPct" inputmode="numeric" value="${esc(st.clubPct)}" placeholder="0"></label>
+        <label class="field full"><span>Notiz</span><textarea class="input" data-f="note" rows="2" style="height:auto;padding-top:9px;resize:vertical">${esc(st.note)}</textarea></label>
+      </div>
+      <div class="ed-sec"><div class="set-row" style="padding:12px 14px;border:1px solid var(--line);border-radius:12px"><div><div class="set-l">Newsletter & Angebote (Einwilligung)</div><div class="set-h">DSGVO: nur mit ausdrücklicher Zustimmung · jederzeit widerrufbar</div></div><div class="set-c" style="min-width:0"><button type="button" class="switch" role="switch" id="ceConsent" aria-checked="${st.consent}" aria-label="Einwilligung Newsletter"></button></div></div></div>
+      <div class="ed-sec"><div class="lab">Eigene Felder <button type="button" class="btn btn-ghost btn-sm" id="ceAddF">${ic('plus', 'i-sm')}Feld</button></div>
+        <div>${st.fields.map(([k, val]) => `<div class="frow"><input class="input" data-fk value="${esc(k)}" placeholder="Feld, z. B. Schuhgröße"><input class="input" data-fv value="${esc(val)}" placeholder="Wert"><button type="button" class="btn btn-ghost btn-icon" data-rmf aria-label="Feld entfernen">${ic('x', 'i-sm')}</button></div>`).join('') || '<div class="muted" style="font-size:12.5px">z. B. Schuhgröße, Skilänge, Konfektion – erscheinen an der Kasse beim Zuordnen.</div>'}</div></div>`;
+  };
+  el.addEventListener('click', async e => {
+    const t = e.target;
+    if (t.closest('#ceAddF')) { collect(); st.fields.push(['', '']); render(); $$('[data-fk]', el).pop()?.focus(); return; }
+    const rmf = t.closest('[data-rmf]'); if (rmf) { collect(); st.fields.splice($$('.frow', el).indexOf(rmf.closest('.frow')), 1); return render(); }
+    if (t.closest('#ceConsent')) { st.consent = !st.consent; $('#ceConsent', el).setAttribute('aria-checked', st.consent); return; }
+    if (t.closest('#ceDel')) {
+      try { await stepUp({title: 'Kund:in deaktivieren', text: `${c.name} wird aus Suche und Kasse entfernt. Belege bleiben aus rechtlichen Gründen erhalten.`}); } catch { return; }
+      try { if (DESKTOP) await invoke('customer_delete', {id: c.id, user: S.user.name}); } catch (err) { return toast('Fehler', {t2: String(err), type: 'warn'}); }
+      CUSTOMERS.splice(CUSTOMERS.indexOf(c), 1); if (POS.customer === c) detachCustomer();
+      closeLayer(el); $$('.layer').forEach(l => l.querySelector('[data-cdetail]') && closeLayer(l));
+      if (S.view === 'kunden') renderKunden();
+      toast('Kund:in deaktiviert', {t2: c.name, icon: 'trash'}); Hooks.emit('customer.deactivated', {kunde: c.id}); return;
+    }
+    if (t.closest('#ceSave')) {
+      collect();
+      const fail = msg => toast(msg, {type: 'warn', icon: 'alert'});
+      if (st.name.trim().length < 2) return fail('Name fehlt');
+      if (st.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(st.email.trim())) return fail('E-Mail-Adresse ist ungültig');
+      const pct = st.clubName.trim() ? parseInt(st.clubPct || '0', 10) : null;
+      if (st.clubName.trim() && !(pct >= 0 && pct <= 50)) return fail('Vereinsrabatt: 0 bis 50 %');
+      const data = {id: c?.id || '', name: st.name.trim(), email: st.email.trim(), phone: st.phone.trim(), tier: st.tier, points: c?.points || 0,
+        club: st.clubName.trim() ? {name: st.clubName.trim(), pct} : null, consent: st.consent, note: st.note.trim(), fields: Object.fromEntries(st.fields.filter(([k]) => k))};
+      const btn = $('#ceSave', el); btn.disabled = true;
+      let saved;
+      try {
+        if (DESKTOP) saved = custFromDb(await invoke('customer_save', {customer: custToDb(data), user: S.user.name}));
+        else saved = custFinish({...(c || {visits: 0, revenue: 0}), ...data, id: c?.id || `K-${11600 + CUSTOMERS.length + 1}`});
+      } catch (err) { btn.disabled = false; return fail(String(err)); }
+      if (c) { Object.assign(c, saved); saved = c; } else CUSTOMERS.unshift(saved);
+      closeLayer(el);
+      if (S.view === 'kunden') renderKunden();
+      if (POS.customer === saved) renderCart();
+      toast(isNew ? 'Kund:in angelegt' : 'Gespeichert', {t2: `${saved.name} · ${saved.id}`, type: 'pos', icon: 'user'});
+      Hooks.emit('customer.saved', {kunde: saved.id, neu: isNew});
+      onSaved && onSaved(saved);
+    }
+  });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); $('#ceSave', el).click(); } });
+  render();
+}
+
+/* ── Detail: Kaufhistorie & Punkte ── */
+async function openCustomerDetail(c) {
+  const el = openLayer(`<div class="drawer-panel" style="width:min(660px,100%)" role="dialog" aria-modal="true" aria-label="${esc(c.name)}" data-cdetail><div id="cdBody" style="display:flex;flex-direction:column;min-height:0;flex:1"></div></div>`, {cls: 'drawer'});
+  let detail = {sales: MEM.sales.filter(s => s.data?.customer?.id === c.id), points: []};
+  const load = async () => {
+    if (DESKTOP) {
+      try {
+        const d = await invoke('customer_detail', {id: c.id});
+        Object.assign(c, custFromDb(d.customer)); detail = d;
+      } catch (e) { toast('Kundendaten nicht verfügbar', {t2: String(e), type: 'warn'}); }
+    }
+  };
+  const render = () => {
+    const box = $('#cdBody', el); if (!box) return;
+    const fields = Object.entries(c.fields || {});
+    box.innerHTML = `<div class="m-head" style="padding-bottom:12px"><span class="avatar lg" style="--h:${c.hue}">${initials(c.name)}</span><div><h2>${esc(c.name)}</h2><p>${esc(c.id)} · ${esc(c.tier)}${c.club ? ` · ${esc(c.club.name)} −${c.club.pct} %` : ''}${c.created ? ` · seit ${esc(c.created.toLocaleDateString('de-AT'))}` : ''}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="drawer-body" style="display:grid;gap:16px;align-content:start">
+        <div class="kpis" style="margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))"><div class="card" style="min-width:0"><b class="num">${num(c.points)}</b><span>Bonuspunkte</span></div><div class="card"><b class="num">${num(c.visits || 0)}</b><span>Einkäufe</span></div><div class="card"><b>${eur(c.revenue || 0)}</b><span>Umsatz gesamt</span></div><div class="card"><b>${esc(c.last)}</b><span>zuletzt</span></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="cdPos">${ic('register', 'i-sm')}An die Kasse</button><button class="btn btn-secondary" id="cdEdit">${ic('sliders', 'i-sm')}Bearbeiten</button><button class="btn btn-secondary" id="cdPts">${ic('star', 'i-sm')}Punkte korrigieren</button></div>
+        <div class="card" style="padding:12px 16px;font-size:13px;display:grid;gap:6px">
+          <div><span class="muted">E-Mail</span> &nbsp;${esc(c.email || '–')} &nbsp; <span class="muted">Telefon</span> &nbsp;${esc(c.phone || '–')}</div>
+          <div><span class="muted">Newsletter</span> &nbsp;${c.consent ? '<span class="pill pos" style="height:20px">Einwilligung erteilt</span>' : '<span class="pill" style="height:20px">keine Einwilligung</span>'}</div>
+          ${fields.length ? `<div class="cf" style="display:flex;gap:6px;flex-wrap:wrap">${fields.map(([k, v]) => `<span class="pill plain" style="height:22px">${esc(k)} <b style="color:var(--text)">${esc(v)}</b></span>`).join('')}</div>` : ''}
+          ${c.note ? `<div class="muted" style="white-space:pre-line">${esc(c.note)}</div>` : ''}
+        </div>
+        <div><div class="eyebrow" style="margin-bottom:8px">Kaufhistorie</div><div class="card" style="overflow:hidden">${detail.sales.length ? detail.sales.map(s => `<button class="pal-i" style="height:54px;border-radius:0;border-bottom:1px solid var(--line)" data-sale="${esc(s.no)}"><span class="reg-ic" style="width:30px;height:30px">${ic(s.kind && s.kind !== 'verkauf' ? 'undo' : 'receipt', 'i-sm')}</span><span style="flex:1;min-width:0;text-align:left"><span style="display:block;color:var(--text);font-weight:550">${kindLabel(s)} ${esc(s.no)}${s.voided ? ' <span class="pill neg" style="height:18px">storniert</span>' : ''}</span><span style="display:block;font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(fmtTs(s.ts))} · ${esc((s.data?.lines || []).map(l => l.name).join(', '))}</span></span><b class="num" style="color:${s.total < 0 ? 'var(--neg)' : 'var(--text)'}">${eur(s.total / 100)}</b></button>`).join('')
+          : '<div class="empty" style="padding:28px 16px"><p>Noch keine Einkäufe mit Kundenkarte.</p></div>'}</div></div>
+        <div><div class="eyebrow" style="margin-bottom:8px">Punkteverlauf</div><div class="card" style="overflow:hidden">${detail.points.length ? detail.points.map(p => `<div class="mv"><div><b>${esc(p.reason)}</b>${p.ref ? ` <span class="muted">· Bon ${esc(p.ref)}</span>` : ''}<br><small>${esc(fmtTs(p.ts))}${p.user ? ' · ' + esc(p.user) : ''}</small></div><div><div class="d ${p.delta > 0 ? 'p' : 'm'}">${p.delta > 0 ? '+' : ''}${num(p.delta)}</div><small>Stand ${num(p.balance)}</small></div></div>`).join('')
+          : `<div class="empty" style="padding:28px 16px"><p>${DESKTOP ? 'Noch keine Punktebewegungen.' : 'Punkteverlauf nur in der Desktop-App.'}</p></div>`}</div>
+          <div class="prompt-hint">${ic('info', 'i-xs')}1 Punkt je volle 10 € Einkauf · Retouren und Stornos ziehen die Punkte anteilig wieder ab.</div></div>
+      </div>`;
+  };
+  el.addEventListener('click', async e => {
+    if (e.target.closest('#cdPos')) { closeLayer(el); go('kasse'); attachCustomer(c); return; }
+    if (e.target.closest('#cdEdit')) return openCustomerEditor(c, {onSaved: () => render()});
+    if (e.target.closest('#cdPts')) return openPointsAdjust(c, async () => { await load(); render(); if (S.view === 'kunden') renderKuTable(); });
+    const s = e.target.closest('[data-sale]'); if (s) openSaleView(s.dataset.sale);
+  });
+  render(); await load(); render();
+}
+function openPointsAdjust(c, done) {
+  if (!DESKTOP) return toast('Nur in der Desktop-App', {t2: 'Punkte werden in der lokalen Datenbank geführt', type: 'warn', icon: 'star'});
+  const st = {sign: 1, qty: '', reason: 'Kulanz'};
+  const el = openLayer(`<div class="modal" style="width:min(460px,100%)" role="dialog" aria-modal="true" aria-label="Punkte korrigieren"><div id="ptBody"></div></div>`, {focus: '#ptQty'});
+  const box = $('#ptBody', el);
+  const render = () => {
+    const n = parseInt(st.qty, 10) || 0, after = Math.max(0, c.points + st.sign * n);
+    box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('star')}</div><div><h2>Punkte korrigieren</h2><p>${esc(c.name)} · Stand ${num(c.points)}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="m-body" style="display:grid;gap:16px">
+        <div class="seg" id="ptSeg" style="justify-self:start"><button data-v="1" aria-pressed="${st.sign === 1}">Gutschreiben</button><button data-v="-1" aria-pressed="${st.sign === -1}">Abziehen</button></div>
+        <div class="amt-field"><label for="ptQty">Punkte</label><div class="amt-input"><span>${st.sign > 0 ? '+' : '−'}</span><input id="ptQty" inputmode="numeric" value="${esc(st.qty)}" placeholder="0" autocomplete="off"></div></div>
+        <div><div class="field"><span>Grund · wird protokolliert</span></div><div class="reasons" style="margin-top:6px">${['Kulanz', 'Aktion', 'Nachtrag Einkauf', 'Einlösung', 'Korrektur'].map(r => `<button class="chip" data-r="${r}" aria-pressed="${r === st.reason}">${r}</button>`).join('')}</div></div>
+        <div class="preview-box"><span>Neuer Stand</span><b class="num">${num(c.points)} → ${num(after)}</b></div>
+        <div class="prompt-hint">${ic('shield', 'i-xs')}Manuelle Korrekturen erfordern eine Freigabe durch die Filialleitung.</div>
+      </div>
+      <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="ptGo" ${n > 0 ? '' : 'disabled'}>${ic('shield', 'i-sm')}Freigeben & buchen</button></div>`;
+    initSeg($('#ptSeg', box), b => { st.sign = +b.dataset.v; render(); $('#ptQty', box).focus(); });
+  };
+  const go2 = async () => {
+    const n = parseInt(st.qty, 10); if (!(n > 0)) return;
+    let ok; try { ok = await stepUp({title: 'Punkte korrigieren', text: `${st.sign > 0 ? '+' : '−'}${n} Punkte für ${c.name} (${st.reason})`}); } catch { return; }
+    try { c.points = await invoke('customer_points', {id: c.id, delta: st.sign * n, reason: st.reason, user: S.user.name, approvedBy: ok.by.name}); }
+    catch (e) { return toast('Buchung fehlgeschlagen', {t2: String(e), type: 'warn'}); }
+    closeLayer(el); toast('Punkte gebucht', {t2: `${c.name} · neuer Stand ${num(c.points)}`, type: 'pos', icon: 'star'});
+    Hooks.emit('loyalty.points.adjusted', {kunde: c.id, punkte: st.sign * n, grund: st.reason});
+    done && done();
+  };
+  box.addEventListener('input', e => { if (e.target.id === 'ptQty') { st.qty = e.target.value.replace(/\D/g, '').slice(0, 6); render(); const i = $('#ptQty', box); i.focus(); i.setSelectionRange(st.qty.length, st.qty.length); } });
+  box.addEventListener('click', e => { const r = e.target.closest('[data-r]'); if (r) { st.reason = r.dataset.r; render(); } if (e.target.closest('#ptGo')) go2(); });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go2(); } });
+  render();
+}
+
+function bindCustomers() {
+  const v = $('#view-kunden');
+  v.addEventListener('input', e => { if (e.target.id === 'kuQ') { KV.q = e.target.value; renderKuTable(); } });
+  v.addEventListener('click', e => {
+    if (e.target.closest('#kuNew')) return openCustomerEditor(null, {onSaved: c => openCustomerDetail(c)});
+    const r = e.target.closest('[data-cust]'); if (r) { const c = custById(r.dataset.cust); c && openCustomerDetail(c); }
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   19 · BELEGE, RETOUREN, STORNO
+   Erstattungsbeträge rechnet die Datenbank aus dem Originalbeleg; die
+   Oberfläche wählt nur Positionen und Stückzahlen. Jede Retoure ist ein
+   eigener Beleg mit negativem Betrag und Verweis auf das Original.
+   ════════════════════════════════════════════════════════════════════ */
+const RETURN_REASONS = ['Größe passt nicht', 'Gefällt nicht', 'Defekt / Reklamation', 'Falscher Artikel', 'Kulanz'];
+const kindLabel = s => ({retoure: 'Retoure', storno: 'Storno'})[s.kind || s.data?.kind] || 'Bon';
+const normBeleg = raw => {
+  const s = String(raw).trim().replace(/\s/g, '');
+  let m = /^(\d{4})-(\d{1,6})$/.exec(s); if (m) return `${m[1]}-${pad(+m[2], 6)}`;
+  m = /^(\d{1,6})$/.exec(s); if (m) return `${YEAR}-${pad(+m[1], 6)}`;
+  return s;
+};
+function applyStocks(stocks) { (stocks || []).forEach(({ean, stock}) => { for (const a of ART) { const v = a.variants.find(x => x.ean === ean); if (v) { v.q = stock; finishArt(a); } } }); }
+
+/* ── Belegliste ── */
+async function openReceipts(opts = {}) {
+  let list = MEM.sales;
+  const load = async () => { if (DESKTOP) list = await invoke('sales_list', {limit: 500}); };
+  try { await load(); } catch (e) { return toast('Belege nicht verfügbar', {t2: String(e), type: 'warn'}); }
+  let sel = 0, q = opts.q || '';
+  const el = openLayer(`<div class="modal rcpts" role="dialog" aria-modal="true" aria-label="Belege"><div class="rcpts-l">
+      <div class="m-head" style="padding-bottom:12px"><div class="m-ic">${ic('receipt')}</div><div><h2>Belege</h2><p id="rcSub"></p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div style="padding:0 22px 10px"><input class="input" id="rcQ" placeholder="Belegnummer, Artikel, Kunde oder Kassier:in …" autocomplete="off" value="${esc(q)}"></div>
+      <div class="rcpts-list" id="rcList"></div></div>
+    <div class="done-r"><div class="done-r-head" id="rcActs"></div><div class="done-r-body"><div id="rcView"></div></div></div></div>`, {focus: '#rcQ'});
+  const filtered = () => { const n = norm(q); return list.filter(s => !n || norm(`${s.no} ${s.cashier || ''} ${kindLabel(s)} ${s.data?.customer?.name || ''} ${s.data?.ref || ''} ${(s.data?.lines || []).map(l => l.name).join(' ')}`).includes(n)); };
+  const render = () => {
+    const f = filtered(); sel = clamp(sel, 0, Math.max(0, f.length - 1));
+    $('#rcSub', el).textContent = `${list.length} ${list.length === 1 ? 'Beleg' : 'Belege'} · ${DESKTOP ? 'gespeichert in der Datenbank' : 'nur diese Sitzung (Vorschau)'}`;
+    $('#rcList', el).innerHTML = f.length ? f.map((s, i) => {
+      const k = s.kind || 'verkauf';
+      return `<button class="pal-i" style="height:58px" data-i="${i}" aria-selected="${i === sel}"><span class="reg-ic" style="width:32px;height:32px;${k !== 'verkauf' ? 'color:var(--neg)' : ''}">${ic(k !== 'verkauf' ? 'undo' : 'receipt', 'i-sm')}</span><span style="flex:1;min-width:0"><span style="display:block;color:var(--text);font-weight:550">${kindLabel(s)} ${esc(s.no)}${s.voided ? ' <span class="pill neg" style="height:18px">storniert</span>' : ''}${k !== 'verkauf' && s.ref_no ? ` <span class="muted" style="font-weight:400">zu ${esc(s.ref_no)}</span>` : ''}</span><span style="display:block;font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(fmtTs(s.ts))} · ${(s.data?.lines || []).reduce((n, l) => n + l.qty, 0)} Artikel · ${esc((s.data?.parts || []).map(p => p.label).join(' + '))}${s.data?.customer ? ' · ' + esc(s.data.customer.name) : ''} · ${esc(s.cashier || '')}</span></span><span class="hint"><b style="color:${s.total < 0 ? 'var(--neg)' : 'var(--text)'};font-size:13.5px" class="num">${eur(s.total / 100)}</b></span></button>`;
+    }).join('')
+      : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('receipt')}</div><h3>${list.length ? 'Kein Treffer' : 'Noch keine Belege'}</h3><p>${list.length ? 'Suche anpassen.' : 'Abgeschlossene Verkäufe erscheinen hier.'}</p></div>`;
+    const s = f[sel];
+    const can = s && DESKTOP && (s.kind || 'verkauf') === 'verkauf' && !s.voided;
+    $('#rcActs', el).innerHTML = `<span class="eyebrow">${s ? kindLabel(s) : 'Beleg'}</span><span style="margin-left:auto;display:flex;gap:6px">${can ? `<button class="btn btn-secondary btn-sm" id="rcRet">${ic('undo', 'i-sm')}Retoure</button><button class="btn btn-secondary btn-sm" id="rcVoid">${ic('x', 'i-sm')}Storno</button>` : ''}<button class="btn btn-secondary btn-sm" id="rcCopy" ${s ? '' : 'disabled'}>${ic('printer', 'i-sm')}Kopie</button></span>`;
+    $('#rcView', el).innerHTML = s ? `<div class="receipt-wrap">${receiptHTML(recFromData(s.no, {...s.data, kind: s.kind || s.data?.kind}), prefs.tpl || 'classic')}</div>` : '';
+    $('[aria-selected="true"]', el)?.scrollIntoView({block: 'nearest'});
+  };
+  const after = async () => { try { await load(); } catch { /* Liste bleibt */ } if (document.contains(el)) render(); };
+  $('#rcQ', el).addEventListener('input', e => { q = e.target.value; sel = 0; render(); });
+  $('#rcQ', el).addEventListener('keydown', e => { if (e.key === 'ArrowDown') { sel++; render(); e.preventDefault(); } if (e.key === 'ArrowUp') { sel = Math.max(0, sel - 1); render(); e.preventDefault(); } });
+  el.addEventListener('click', e => {
+    const b = e.target.closest('[data-i]'); if (b) { sel = +b.dataset.i; render(); }
+    const s = filtered()[sel];
+    if (e.target.closest('#rcCopy') && s) { toast(`Belegkopie ${s.no}`, {t2: 'Als „KOPIE“ gekennzeichnet', icon: 'printer'}); Hooks.emit('pos.receipt.copy', {beleg: s.no}); }
+    if (e.target.closest('#rcRet') && s) openReturn(s.no, {onDone: after});
+    if (e.target.closest('#rcVoid') && s) openReturn(s.no, {storno: true, onDone: after});
+  });
+  render();
+}
+const openSaleView = no => openReceipts({q: no});
+
+/* ── Retoure starten: Beleg suchen ── */
+function openReturnStart() {
+  if (!DESKTOP) return toast('Retouren nur in der Desktop-App', {t2: 'Erstattungen werden aus dem gespeicherten Originalbeleg gerechnet', type: 'warn', icon: 'undo'});
+  const el = openLayer(`<div class="modal" style="width:min(520px,100%)" role="dialog" aria-modal="true" aria-label="Retoure"><div class="m-head"><div class="m-ic">${ic('undo')}</div><div><h2>Retoure / Umtausch</h2><p>Belegnummer eingeben oder vom Bon scannen</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body"><div class="amt-field"><label for="rtNo">Belegnummer</label><div class="amt-input" style="font-size:20px"><span>${ic('receipt', 'i-sm')}</span><input id="rtNo" placeholder="${YEAR}-004718 oder 4718" autocomplete="off"></div></div>
+      <div class="eyebrow" style="margin:16px 0 6px">Letzte Verkäufe</div><div id="rtRecent" style="margin:0 -8px;max-height:260px;overflow:auto"><div class="muted" style="padding:8px">Lade …</div></div>
+      <div class="prompt-hint">${ic('info', 'i-xs')}Umtausch = Retoure buchen, danach den neuen Artikel normal verkaufen.</div></div>
+    <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="rtGo">Weiter<span class="kbd">↵</span></button></div></div>`, {focus: '#rtNo'});
+  invoke('sales_list', {limit: 40}).then(list => {
+    const box = $('#rtRecent', el); if (!box) return;
+    const ok = list.filter(s => (s.kind || 'verkauf') === 'verkauf' && !s.voided).slice(0, 12);
+    box.innerHTML = ok.length ? ok.map(s => `<button class="pal-i" style="height:50px" data-no="${esc(s.no)}"><span style="flex:1;min-width:0"><span style="display:block;color:var(--text);font-weight:550">Bon ${esc(s.no)}</span><span style="display:block;font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(fmtTs(s.ts))} · ${esc((s.data?.lines || []).map(l => l.name).join(', '))}</span></span><b class="num">${eur(s.total / 100)}</b></button>`).join('')
+      : '<div class="muted" style="padding:8px">Noch keine Verkäufe.</div>';
+  }).catch(() => {});
+  const go2 = no => { if (!no) return; closeLayer(el); setTimeout(() => openReturn(normBeleg(no)), 60); };
+  el.addEventListener('click', e => { const b = e.target.closest('[data-no]'); if (b) go2(b.dataset.no); if (e.target.closest('#rtGo')) go2($('#rtNo', el).value); });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'rtNo') { e.preventDefault(); go2(e.target.value); } });
+}
+
+/* ── Retoure / Storno ── */
+async function openReturn(no, {storno = false, onDone} = {}) {
+  if (!DESKTOP) return openReturnStart();
+  let info;
+  try { info = await invoke('sale_get', {no}); } catch (e) { return toast('Beleg nicht gefunden', {t2: String(e), type: 'warn', icon: 'receipt'}); }
+  const sale = info.sale, d = sale.data || {};
+  if ((sale.kind || 'verkauf') !== 'verkauf') return toast(`${kindLabel(sale)} ${sale.no} kann nicht retourniert werden`, {t2: 'Bitte den ursprünglichen Verkaufsbeleg verwenden', type: 'warn'});
+  if (sale.voided) return toast(`Bon ${sale.no} ist bereits storniert`, {type: 'warn', icon: 'receipt'});
+  const lines = d.lines || [];
+  const open = lines.map((l, i) => l.qty - (info.returned[i] || 0));
+  if (!open.some(n => n > 0)) return toast(`Bon ${sale.no} ist vollständig retourniert`, {type: 'warn', icon: 'undo'});
+  if (storno && Object.keys(info.returned).length) { toast('Storno nicht mehr möglich', {t2: 'Zu diesem Bon gibt es bereits Retouren – restliche Positionen per Retoure', type: 'warn'}); storno = false; }
+  const unitEff = lines.map((l, i) => info.effective[i] / Math.max(1, l.qty));
+  const methods = [{m: 'bar', label: 'Bar'}];
+  (d.parts || []).forEach(p => { if (p.m !== 'bar' && ['bankomat', 'kredit', 'apple', 'google'].includes(p.m) && !methods.some(x => x.m === p.m)) methods.push({m: p.m, label: p.label}); });
+  const st = {mode: storno ? 'storno' : 'retoure', qty: lines.map((l, i) => storno ? open[i] : (open.length === 1 || lines.length === 1 ? open[i] : 0)), reason: storno ? 'Fehlbon' : RETURN_REASONS[0], method: methods[methods.length > 1 && (d.parts || []).length === 1 ? 1 : 0], busy: false};
+  const limit = +CFG['kasse.retoureGrenze'] || 100;
+  const el = openLayer(`<div class="modal" style="width:min(720px,100%)" role="dialog" aria-modal="true" aria-label="Retoure"><div id="rtBody" style="display:flex;flex-direction:column;min-height:0;max-height:calc(100dvh - 48px)"></div></div>`, {closeOnScrim: false});
+  const box = $('#rtBody', el);
+  const refund = () => st.mode === 'storno' ? sale.total / 100 : r2(lines.reduce((s, l, i) => s + unitEff[i] * st.qty[i], 0) / 100);
+  const render = () => {
+    const sum = refund(), n = st.qty.reduce((a, b) => a + b, 0), needs = st.mode === 'storno' || sum > limit;
+    box.innerHTML = `<div class="m-head"><div class="m-ic" style="color:${st.mode === 'storno' ? 'var(--neg)' : 'var(--accent)'}">${ic(st.mode === 'storno' ? 'x' : 'undo')}</div><div><h2>${st.mode === 'storno' ? 'Bon stornieren' : 'Retoure'} · Bon ${esc(sale.no)}</h2><p>${esc(fmtTs(sale.ts))} · ${eur(sale.total / 100)}${d.customer ? ' · ' + esc(d.customer.name) : ''}${info.refunded ? ` · bereits erstattet ${eur(info.refunded / 100)}` : ''}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="m-body" style="display:grid;gap:16px;overflow:auto">
+        ${Object.keys(info.returned).length ? '' : `<div class="seg" id="rtSeg" style="justify-self:start"><button data-v="retoure" aria-pressed="${st.mode === 'retoure'}">Retoure (einzelne Positionen)</button><button data-v="storno" aria-pressed="${st.mode === 'storno'}">Storno (ganzer Bon)</button></div>`}
+        <div class="card" style="overflow:hidden">${lines.map((l, i) => {
+          const c = l.c ? COLORS[l.c]?.[1] || 'var(--text-3)' : 'var(--text-3)', done = info.returned[i] || 0;
+          return `<div class="wl-row" style="padding:10px 14px;border-bottom:1px solid var(--line);${open[i] <= 0 ? 'opacity:.5' : ''}"><span class="thumb" style="--c:${c}">${l.service ? ic(l.icon || 'bag', 'i-sm') : glyph(l.glyph || 'shirt', c)}</span>
+            <div class="wl-main"><div class="wl-t">${esc(l.name)}</div><div class="wl-s">${l.service ? esc(l.meta || 'Dienstleistung') : `${esc(COLORS[l.c]?.[0] || l.c || '')}${l.s && l.s !== 'Einheitsgröße' ? ' · ' + esc(l.s) : ''}`} · ${l.qty} verkauft${done ? ` · ${done} bereits retour` : ''} · ${eur(unitEff[i] / 100)}/Stk.</div></div>
+            ${st.mode === 'storno' ? `<b class="num">${l.qty} ×</b>` : open[i] > 0 ? `<div class="qty"><button data-rq="${i}" data-d="-1" aria-label="weniger">${ic('minus', 'i-xs')}</button><span>${st.qty[i]}</span><button data-rq="${i}" data-d="1" aria-label="mehr">${ic('plus', 'i-xs')}</button></div>` : '<span class="pill" style="height:20px">retour</span>'}</div>`;
+        }).join('')}</div>
+        <div><div class="field"><span>Grund · erscheint auf dem Beleg und in der Auswertung</span></div><div class="reasons" style="margin-top:6px">${(st.mode === 'storno' ? ['Fehlbon', 'Falsche Zahlart', 'Kunde verzichtet', 'Test'] : RETURN_REASONS).map(r => `<button class="chip" data-r="${esc(r)}" aria-pressed="${r === st.reason}">${esc(r)}</button>`).join('')}</div></div>
+        <div><div class="field"><span>Erstattung über</span></div><div class="reasons" style="margin-top:6px">${methods.map((m, i) => `<button class="chip" data-m="${i}" aria-pressed="${m === st.method}">${ic(m.m === 'bar' ? 'cash' : 'card', 'i-xs')}${esc(m.label)}${m.m === 'bar' ? '' : ' (Rückbuchung)'}</button>`).join('')}</div></div>
+        <div class="preview-box"><span>${st.mode === 'storno' ? 'Erstattung' : `${n} Artikel retour`}<br><span class="muted" style="font-size:12px">${st.method.m === 'bar' ? 'aus Lade 1 auszahlen' : 'auf das Zahlungsmittel zurückbuchen'}${d.customer ? ' · Punkte werden anteilig abgezogen' : ''}</span></span><b style="color:var(--neg)">− ${eur(sum)}</b></div>
+        ${needs ? `<div class="rule-box">${ic('shield')}<div>${st.mode === 'storno' ? 'Stornos' : `Erstattungen über ${eur0(limit)}`} erfordern eine Freigabe durch die Filialleitung.</div></div>` : ''}
+      </div>
+      <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn ${st.mode === 'storno' ? 'btn-danger' : 'btn-primary'}" id="rtGo" ${sum > 0 && !st.busy ? '' : 'disabled'}>${needs ? ic('shield', 'i-sm') : ic('check', 'i-sm')}${st.mode === 'storno' ? 'Stornieren' : 'Retoure buchen'} · ${eur(sum)}</button></div>`;
+    initSeg($('#rtSeg', box), b => { st.mode = b.dataset.v; st.qty = lines.map((l, i) => st.mode === 'storno' ? open[i] : 0); st.reason = st.mode === 'storno' ? 'Fehlbon' : RETURN_REASONS[0]; render(); });
+  };
+  const commit = async () => {
+    const sum = refund(); if (!(sum > 0) || st.busy) return;
+    let by = null;
+    if (st.mode === 'storno' || sum > limit) {
+      try { by = (await stepUp({title: 'Freigabe erforderlich', text: `${st.mode === 'storno' ? 'Storno' : 'Retoure'} Bon ${sale.no} · ${eur(sum)} (${st.reason})`, rule: st.mode === 'storno' ? 'Stornos immer mit Freigabe' : `Erstattung über ${eur0(limit)}`})).by.name; } catch { return; }
+    }
+    st.busy = true; render();
+    let r;
+    try {
+      r = await invoke('return_commit', {no: sale.no, lines: st.qty.map((q, idx) => ({idx, qty: q})).filter(x => x.qty > 0), storno: st.mode === 'storno', reason: st.reason, method: st.method, cashier: S.user.name, approvedBy: by});
+    } catch (e) { st.busy = false; render(); return toast('Retoure nicht möglich', {t2: String(e), type: 'warn', dur: 7000}); }
+    applyStocks(r.stocks);
+    const cust = d.customer && custById(d.customer.id); if (cust && r.points?.balance != null) cust.points = r.points.balance;
+    if (cust) { cust.revenue = r2((cust.revenue || 0) + r.total / 100); if (st.mode === 'storno') cust.visits = Math.max(0, (cust.visits || 0) - 1); }
+    POS.no = r.number + 1; if (S.view === 'kasse') { renderTopbar(); renderGrid(); }
+    statsInvalidate();
+    Hooks.emit(st.mode === 'storno' ? 'pos.sale.voided' : 'pos.return.completed', {beleg: r.no, zu: sale.no, betrag: r.total / 100, grund: st.reason, erstattung: st.method.m, freigabe: by});
+    showReturnDone(el, box, r, sale);
+    onDone && onDone(r);
+  };
+  box.addEventListener('click', e => {
+    const q = e.target.closest('[data-rq]'); if (q) { const i = +q.dataset.rq; st.qty[i] = clamp(st.qty[i] + +q.dataset.d, 0, open[i]); return render(); }
+    const r = e.target.closest('[data-r]'); if (r) { st.reason = r.dataset.r; return render(); }
+    const m = e.target.closest('[data-m]'); if (m) { st.method = methods[+m.dataset.m]; return render(); }
+    if (e.target.closest('#rtGo')) commit();
+  });
+  render();
+}
+function showReturnDone(el, box, r, sale) {
+  const rec = recFromData(r.no, {...r.data, kind: r.data.kind});
+  const cash = r.data.parts?.[0]?.m === 'bar';
+  box.parentElement.className = 'modal pay-done'; box.parentElement.style.width = '';
+  box.parentElement.innerHTML = `<div class="done-l">
+    <div class="ok-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
+    <div class="done-title">${r.data.kind === 'storno' ? 'Storniert' : 'Retoure gebucht'} · ${eur(-r.total / 100)}</div>
+    <div class="done-sub">Beleg ${esc(r.no)} zu Bon ${esc(sale.no)} · ${esc(r.data.reason)} · Bestand zurückgebucht</div>
+    <div class="change-big"><div class="l">${cash ? 'Bar auszahlen' : `Rückbuchung ${esc(r.data.parts?.[0]?.label || '')}`}</div><div class="v">${eur(-r.total / 100)}</div></div>
+    ${r.points?.delta ? `<div class="note" style="margin-top:16px">${ic('star')}<span><b style="color:var(--text)">${num(r.points.delta)} Punkte</b> abgezogen · neuer Stand ${num(r.points.balance)}</span></div>` : ''}
+    <div class="eyebrow" style="margin-top:26px">Beleg übergeben</div>
+    <div class="rcpt-opts"><button class="btn btn-secondary" data-rp>${ic('printer')}Drucken</button></div>
+    <div style="margin-top:auto;display:flex;gap:8px;padding-top:22px"><button class="btn btn-primary btn-lg" data-close style="flex:1">Fertig<span class="kbd">↵</span></button></div>
+  </div>
+  <div class="done-r"><div class="done-r-head"><span class="eyebrow">Beleg ${esc(r.no)}</span></div><div class="done-r-body"><div class="receipt-wrap">${receiptHTML(rec, prefs.tpl || 'classic')}</div></div></div>`;
+  const pnl = el.querySelector('.pay-done');
+  pnl.addEventListener('click', e => { if (e.target.closest('[data-rp]')) { toast('Beleg gedruckt', {t2: `${kindLabel(r.data)} ${r.no}`, type: 'pos', icon: 'printer'}); Hooks.emit('device.printer.receipt', {beleg: r.no}); } });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.target.closest('[data-rp]')) { e.preventDefault(); closeLayer(el); } });
+  requestAnimationFrame(() => pnl.querySelector('[data-close]')?.focus());
+}
+
+/* Bon einer Retoure / eines Stornos */
+function returnReceiptHTML(rec, tpl) {
+  const dt = rec.date, d = `${pad(dt.getDate())}.${pad(dt.getMonth() + 1)}.${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
+  const money = v => num(v, 2);
+  const lines = rec.lines.map(l => {
+    const vtxt = l.service ? '' : `${COLORS[l.c]?.[0] || l.c || ''}${l.s && l.s !== 'Einheitsgröße' ? ' · ' + l.s : ''}`;
+    return `<div class="r"><span>−${l.qty} × ${esc(l.name)}</span><span>−${money((l.refund || 0) / 100)}</span></div>${vtxt ? `<div class="sm">&nbsp;&nbsp;${esc(vtxt)}</div>` : ''}`;
+  }).join('');
+  return `<div class="receipt ${tpl}">${receiptHead(tpl)}<hr>
+    <div class="c" style="font-weight:700;letter-spacing:.08em">${rec.kind === 'storno' ? 'STORNO' : 'RETOURE'}</div><div class="sm c">zu Bon ${esc(rec.ref || '')} · ${esc(rec.reason || '')}</div><hr>
+    <div class="r"><span>Beleg ${rec.no}</span><span>Kasse ${esc(CFG['kasse.id'])}</span></div><div class="r sm"><span>${d}</span><span>${esc((rec.cashier || '').split(' ')[0])}</span></div><hr>
+    ${lines}
+    <hr><div class="r tot"><span>ERSTATTUNG EUR</span><span>${money(rec.t.total)}</span></div><hr>
+    ${(rec.parts || []).map(p => `<div class="r"><span>${esc(p.label)}${p.m === 'bar' ? '' : ' (Rückbuchung)'}</span><span>${money(p.amount)}</span></div>`).join('')}<hr>
+    <div class="r sm"><span>MwSt</span><span>Netto · Steuer · Brutto</span></div>
+    ${(rec.t.vat || []).map(v => `<div class="r sm"><span>${v.rate} %</span><span>${money(v.net)} · ${money(v.tax)} · ${money(v.gross)}</span></div>`).join('')}
+    ${rec.t.zero ? `<div class="r sm"><span>0 %</span><span>${money(rec.t.zero)} · 0,00 · ${money(rec.t.zero)}</span></div>` : ''}
+    ${rec.customer ? `<hr><div class="sm c">Kunde ${esc(rec.customer.id)}${rec.points?.delta ? ` · ${rec.points.delta} Punkte` : ''}</div>` : ''}
+    <div class="qrw">${pseudoQR('rksv|' + rec.no + '|' + (rec.sig || ''))}</div>
+    <div class="sm c">RKSV-Signatur folgt mit der Signatureinheit<br>Unterschrift Kund:in: ____________________</div></div>`;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   20 · AUSWERTUNGEN — echte Zahlen aus der lokalen Datenbank.
+   Die Desktop-App ersetzt die Testdaten des Dashboards: Umsatz, Bons,
+   Ø Bon, Retourenquote, Verlauf mit Vorperiode, Topseller, Warengruppen,
+   Kundenfrequenz und Bestandswarnungen. Prognose = Verlauf der Vorperiode,
+   skaliert auf den bisherigen Stand (keine Fantasiewerte).
+   ════════════════════════════════════════════════════════════════════ */
+const ST = {cache: {}, pending: {}, d28: null, d28p: null};
+function statsInvalidate() { ST.cache = {}; ST.d28 = null; if (S.view === 'dashboard' && !Dash.editing) setTimeout(() => renderWidgets(false), 50); }
+const isoL = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+if (DESKTOP) { PNAME.saison = 'Jahr'; PLBL.saison = 'dieses Jahr'; }
+
+function periodSpec(p) {
+  const now = new Date(), sod = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const DN = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'], MN = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+  if (p === 'heute') {
+    const xOf = (ts, base) => (new Date(ts) - base) / 36e5;
+    return {cur: [sod, addDays(sod, 1)], prev: [addDays(sod, -7), addDays(sod, -6)], xOf, step: .25, nowX: xOf(now, sod), xMax: 24, cmpLbl: 'Vorwoche', nowLbl: 'Heute',
+      fx: x => `${pad(Math.round(x))}:00`, fxTip: x => `${hhmm(x)} Uhr`, ticks: (a, b) => { const out = [], st = b - a > 10 ? 3 : 2; for (let x = Math.ceil(a / st) * st; x <= b; x += st) out.push(x); return out; }, goalDays: 1};
+  }
+  if (p === 'woche') {
+    const mon = addDays(sod, -((now.getDay() + 6) % 7)), xOf = (ts, base) => (new Date(ts) - base) / 864e5;
+    return {cur: [mon, addDays(mon, 7)], prev: [addDays(mon, -7), mon], xOf, step: 1 / 8, nowX: xOf(now, mon), xMin: 0, xMax: 7, cmpLbl: 'Vorwoche', nowLbl: 'Diese Woche',
+      fx: x => DN[Math.floor(x)], fxTip: x => x === 0 ? 'Wochenbeginn' : `${DN[Math.min(6, Math.ceil(x) - 1)]}${x % 1 ? ' ' + hhmm((x % 1) * 24) : ' · Tagesende'}`, ticks: () => DN.map((_, i) => i + .5), goalDays: 6};
+  }
+  if (p === 'monat') {
+    const first = new Date(now.getFullYear(), now.getMonth(), 1), next = new Date(now.getFullYear(), now.getMonth() + 1, 1), prevFirst = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const dim = Math.round((next - first) / 864e5), xOf = (ts, base) => (new Date(ts) - base) / 864e5;
+    const work = Array.from({length: dim}, (_, i) => new Date(now.getFullYear(), now.getMonth(), i + 1).getDay()).filter(d => d !== 0).length;
+    const mName = now.toLocaleDateString('de-AT', {month: 'short'});
+    return {cur: [first, next], prev: [prevFirst, first], xOf, step: .25, nowX: xOf(now, first), xMin: 0, xMax: dim, cmpLbl: 'Vormonat', nowLbl: 'Dieser Monat',
+      fx: x => `${Math.round(x + .5)}.`, fxTip: x => x === 0 ? 'Monatsbeginn' : `${Math.ceil(x)}. ${mName}`, ticks: () => [1, 5, 10, 15, 20, 25, dim].map(x => x - .5), goalDays: work};
+  }
+  const jan = new Date(now.getFullYear(), 0, 1), nextJan = new Date(now.getFullYear() + 1, 0, 1), prevJan = new Date(now.getFullYear() - 1, 0, 1);
+  const xOf = (ts, base) => { const d = new Date(ts), y0 = base.getFullYear(); const m = (d.getFullYear() - y0) * 12 + d.getMonth(); const dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); return m + (d.getDate() - 1 + d.getHours() / 24) / dim; };
+  return {cur: [jan, nextJan], prev: [prevJan, jan], xOf, step: 1 / 4, nowX: xOf(now, jan), xMin: 0, xMax: 12, cmpLbl: 'Vorjahr', nowLbl: `Jahr ${now.getFullYear()}`,
+    fx: x => MN[Math.floor(x)], fxTip: x => x === 0 ? 'Jahresbeginn' : `${MN[Math.min(11, Math.ceil(x) - 1)]}${x % 1 ? ' (laufend)' : ''}`, ticks: () => MN.map((_, i) => i + .5).filter((_, i) => i % 2 === 0), goalDays: 306};
+}
+
+function fetchPeriod(p) {
+  if (ST.pending[p]) return;
+  const sp = periodSpec(p);
+  ST.pending[p] = invoke('stats', {ranges: [{from: isoL(sp.cur[0]), to: isoL(sp.cur[1])}, {from: isoL(sp.prev[0]), to: isoL(sp.prev[1])}], detail: true})
+    .then(([a, b]) => { ST.cache[p] = buildPeriod(p, sp, a, b); })
+    .catch(e => { ST.cache[p] = {...emptyPeriod(p, sp), error: String(e)}; })
+    .finally(() => { delete ST.pending[p]; if (S.view === 'dashboard' && !Dash.editing && Dash.period === p) renderWidgets(false); });
+}
+function fetch28() {
+  if (ST.d28p) return;
+  const end = addDays(new Date(), 1), start = addDays(end, -29);
+  ST.d28p = invoke('stats', {ranges: [{from: isoL(start), to: isoL(end)}], detail: true})
+    .then(([a]) => { ST.d28 = a; }).catch(() => { ST.d28 = {rows: [], items: []}; })
+    .finally(() => { ST.d28p = null; refreshDashboard(['sales.heatmap', 'stock.low']); });
+}
+
+/* Kumulierte Reihe aus Belegzeilen, gebündelt in Schritte */
+function cumPoints(rows, xOf, base, from, to, step) {
+  const pts = [{x: from, y: 0}]; let acc = 0, i = 0;
+  const sorted = rows.map(r => ({x: xOf(r[0], base), v: r[1] / 100})).sort((a, b) => a.x - b.x);
+  const pre = sorted.filter(r => r.x < from).reduce((s, r) => s + r.v, 0); acc = pre; pts[0].y = acc;
+  while (i < sorted.length && sorted[i].x < from) i++;
+  for (let x = from + step; x < to + 1e-9; x += step) {
+    while (i < sorted.length && sorted[i].x <= x) acc += sorted[i++].v;
+    pts.push({x: Math.min(x, to), y: acc});
+  }
+  if (pts[pts.length - 1].x < to - 1e-9) { while (i < sorted.length && sorted[i].x <= to) acc += sorted[i++].v; pts.push({x: to, y: acc}); }
+  return pts;
+}
+const countUntil = (rows, xOf, base, x) => rows.filter(r => xOf(r[0], base) <= x);
+function sums(rows) {
+  let sale = 0, ret = 0, n = 0, storno = 0;
+  rows.forEach(([, t, k]) => { if (k === 'verkauf') { sale += t; n++; } else { ret += -t; if (k === 'storno') storno++; } });
+  return {sale: sale / 100, ret: ret / 100, bons: n - storno, rev: (sale - ret) / 100};
+}
+function emptyPeriod(p, sp) {
+  return {p, F: 1, real: true, loading: false, xMin: sp.xMin ?? 8, xMax: sp.xMax === 24 ? 20 : sp.xMax, xTicks: sp.ticks(sp.xMin ?? 8, sp.xMax === 24 ? 20 : sp.xMax), fx: sp.fx, fxTip: sp.fxTip,
+    actual: [{x: sp.xMin ?? 8, y: 0}, {x: Math.max(sp.xMin ?? 8, sp.nowX), y: 0}], fc: [], prev: [{x: sp.xMin ?? 8, y: 0}], rev: 0, prevRev: 0, end: 0,
+    goal: (+CFG['ziel.tag'] || 2500) * sp.goalDays, since: 'bis jetzt', cmpLbl: sp.cmpLbl, nowLbl: sp.nowLbl, basket: 0, prevBasket: 0, ret: 0, prevRet: 0, bons: 0, prevBons: 0,
+    top: [], cats: [], sparks: {rev: [0], bons: [0], basket: [0], ret: [0]}, sollFrac: .5};
+}
+function buildPeriod(p, sp, a, b) {
+  const base = sp.cur[0], pbase = sp.prev[0], nowX = sp.nowX;
+  let xMin = sp.xMin, xMax = sp.xMax;
+  if (p === 'heute') {
+    // Achse = Öffnungszeit, erweitert um tatsächliche Belegzeiten und „jetzt“
+    const xs = [...a.rows.map(r => sp.xOf(r[0], base)), ...b.rows.map(r => sp.xOf(r[0], pbase))];
+    xMin = Math.max(0, Math.floor(Math.min(8, ...xs))); xMax = Math.min(24, Math.ceil(Math.max(20, nowX, ...xs.map(x => x + .01))));
+  }
+  const cur = cumPoints(a.rows, sp.xOf, base, xMin, Math.min(xMax, Math.max(xMin, nowX)), sp.step);
+  const prev = cumPoints(b.rows, sp.xOf, pbase, xMin, xMax, sp.step);
+  const curNow = cur[cur.length - 1].y, prevNow = interpPts(prev, Math.min(nowX, xMax)) ?? 0, prevEnd = prev[prev.length - 1].y;
+  const scale = prevNow > 0 ? clamp(curNow / prevNow, .3, 3) : 1;
+  const fc = [{x: Math.max(xMin, nowX), y: curNow}];
+  if (prevEnd > prevNow && nowX < xMax) prev.filter(q => q.x > nowX).forEach(q => fc.push({x: q.x, y: curNow + (q.y - prevNow) * scale}));
+  const end = fc[fc.length - 1].y;
+  const A = sums(a.rows), B = sums(countUntil(b.rows, sp.xOf, pbase, nowX));
+  // Sparklines: 12 Abschnitte des bisherigen Zeitraums
+  const bins = 12, span = Math.max(.001, Math.min(nowX, xMax) - xMin);
+  const sp12 = key => { const v = Array(bins).fill(0), c = Array(bins).fill(0); a.rows.forEach(r => { const i = clamp(Math.floor((sp.xOf(r[0], base) - xMin) / span * bins), 0, bins - 1); if (key === 'rev') v[i] += r[1] / 100; else if (r[2] === 'verkauf') { v[i] += r[1] / 100; c[i]++; } }); return key === 'bons' ? c : key === 'basket' ? v.map((x, i) => c[i] ? x / c[i] : 0) : v; };
+  const top = (a.items || []).filter(i => i.qty > 0 || i.rev > 0).map(i => {
+    const art = artById(i.sku) || {name: i.name, g: 'shirt', colors: [COLOR_KEYS[0]]};
+    return {a: {...art, name: art.name || i.name}, units: i.qty, rev: i.rev / 100};
+  });
+  const totalCat = (a.cats || []).reduce((s, c) => s + Math.max(0, c.rev), 0) || 1;
+  return {p, F: 1, real: true, xMin, xMax, xTicks: sp.ticks(xMin, xMax), fx: sp.fx, fxTip: sp.fxTip, actual: cur, fc, prev,
+    rev: A.rev, prevRev: B.rev, end, goal: (+CFG['ziel.tag'] || 2500) * sp.goalDays, since: 'bis jetzt', cmpLbl: sp.cmpLbl, nowLbl: sp.nowLbl,
+    bons: A.bons, prevBons: B.bons, basket: A.bons ? (A.sale - (a.rows.filter(r => r[2] === 'storno').reduce((s, r) => s - r[1], 0)) / 100) / A.bons : 0,
+    prevBasket: B.bons ? B.sale / B.bons : 0, ret: A.sale ? A.ret / A.sale * 100 : 0, prevRet: B.sale ? B.ret / B.sale * 100 : 0,
+    top, cats: (a.cats || []).filter(c => c.rev > 0).map(c => ({name: catName(c.cat), v: c.rev / 100, s: c.rev / totalCat})),
+    pay: a.pay || [], sold: a.sold, returned: a.returned, sparks: {rev: sp12('rev'), bons: sp12('bons'), basket: sp12('basket')},
+    sollFrac: clamp((nowX - xMin) / Math.max(.001, xMax - xMin), 0, 1)};
+}
+function realPeriodData(p) {
+  const c = ST.cache[p]; if (c) return c;
+  fetchPeriod(p);
+  return {...emptyPeriod(p, periodSpec(p)), loading: true};
+}
+
+/* ── Echte Widget-Inhalte ── */
+function realHeatHTML() {
+  if (!ST.d28) { fetch28(); return '<div class="empty" style="flex:1"><p class="thinking"><b>Lade Frequenz …</b></p></div>'; }
+  const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'], cnt = days.map(() => Array(24).fill(0));
+  ST.d28.rows.forEach(r => { if (r[2] !== 'verkauf') return; const d = new Date(r[0]); cnt[(d.getDay() + 6) % 7][d.getHours()]++; });
+  if (!ST.d28.rows.length) return `<div class="empty" style="flex:1"><div class="empty-icon">${ic('users')}</div><h3>Noch keine Verkäufe</h3><p>Die Frequenz ergibt sich aus den Belegen der letzten 4 Wochen.</p></div>`;
+  const used = cnt.flatMap(d => d.map((v, h) => v ? h : null)).filter(h => h != null);
+  let h0 = Math.min(9, ...used); h0 = Math.min(h0, 24 - 10); const hrs = Array.from({length: 10}, (_, i) => h0 + i);
+  const showDays = cnt[6].some(Boolean) ? days : days.slice(0, 6);
+  const max = Math.max(1, ...showDays.flatMap((_, i) => hrs.map(h => cnt[i][h])));
+  let h = '<div class="heat" role="img" aria-label="Verkäufe nach Wochentag und Stunde, letzte 4 Wochen">';
+  showDays.forEach((dn, i) => { h += `<span class="hl">${dn}</span>`; hrs.forEach(hr => { const v = cnt[i][hr], p = v / max; h += `<span class="hc" style="--v:${Math.round(6 + p * 86)}%" data-tip="${dn} ${hr}–${hr + 1} Uhr · ${v} ${v === 1 ? 'Bon' : 'Bons'}"></span>`; }); });
+  h += '<span></span>' + hrs.map(hr => `<span class="hx">${hr}</span>`).join('') + '</div>';
+  return h + `<div class="legend" style="margin-top:10px"><span>wenig</span><span style="width:84px;height:6px;border-radius:3px;background:linear-gradient(90deg,color-mix(in oklab,var(--accent) 6%,var(--surface-2)),var(--accent))"></span><span>viel</span><span class="muted" style="margin-left:auto">Bons der letzten 4 Wochen · lokale Datenbank</span></div>`;
+}
+function realLowRows() {
+  const sold = {}; (ST.d28?.items || []).forEach(i => { sold[i.sku] = i.qty; });
+  return ART.flatMap(a => a.variants.filter(v => v.q <= 2).map(v => ({a, v, s: sold[a.id] || 0})))
+    .sort((x, y) => (y.s - x.s) || (x.v.q - y.v.q) || (y.a.pop || 0) - (x.a.pop || 0));
+}
+function realLowHTML(it) {
+  if (!ST.d28) fetch28();
+  const rows = realLowRows();
+  if (!rows.length) return `<div class="empty" style="flex:1"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><h3>Alles im grünen Bereich</h3><p>Keine Variante mit 2 Stück oder weniger.</p></div>`;
+  return `<div class="wl">${rows.slice(0, it.s === 'wide' ? 4 : 5).map(({a, v, s}) => { const c = COLORS[v.c]?.[1] || '#888'; return `<div class="wl-row"><span class="thumb" style="--c:${c}">${glyph(a.g, c)}</span><div class="wl-main"><div class="wl-t">${esc(a.name)}</div><div class="wl-s">${esc(COLORS[v.c]?.[0] || v.c)}${v.s !== 'Einheitsgröße' ? ' · ' + esc(v.s) : ''} · <span style="color:${v.q <= 0 ? 'var(--neg)' : 'var(--warn)'}">${v.q <= 0 ? 'ausverkauft' : `noch ${v.q}`}</span>${s ? ` · ${s} verk. in 4 Wo.` : ''}</div></div><button class="btn btn-secondary btn-sm" data-act="book" data-ean="${esc(v.ean)}">${ic('boxes', 'i-sm')}${it.s === 'wide' ? 'Zugang buchen' : 'Buchen'}</button></div>`; }).join('')}</div><div class="wl-foot">${ic('database', 'i-xs')} ${rows.length} Varianten knapp · sortiert nach Abverkauf der letzten 4 Wochen</div>`;
+}
+function realRegistersHTML() {
+  const d = ST.cache.heute;
+  return `<div style="flex:1;min-height:0;overflow:auto">
+    <div class="reg"><span class="reg-ic">${ic('register', 'i-sm')}</span><div class="wl-main"><div class="wl-t">${esc(CFG['kasse.name'])} · ${esc(CFG['kasse.id'])}</div><div class="wl-s">${esc(S.user.name)} · heute ${d ? num(d.bons) : '…'} Bons · ${d ? eur0(d.rev) : '…'}</div></div>${statusPill(['Diese Kasse', 'pos'])}</div>
+    <div class="reg" style="opacity:.6"><span class="reg-ic">${ic('server', 'i-sm')}</span><div class="wl-main"><div class="wl-t">Weitere Kassen</div><div class="wl-s">erscheinen mit dem Filial-Server</div></div>${statusPill(['Geplant', ''])}</div>
+  </div><div class="note" style="margin-top:10px">${ic('shield')}<span>RKSV-Signatureinheit noch nicht angebunden – kommt mit dem RKSV-Paket (Testmodus zuerst).</span></div>`;
+}
+function realSystemHTML() {
+  const i = S.info || {};
+  return `<div style="flex:1;min-height:0;overflow:auto">
+    <div class="ops-row">${ic('database', 'i-sm')}<div class="k"><b>${esc(backupLabel())}</b>Datenbank ${i.db_bytes ? fmtBytes(i.db_bytes) : ''} · Prüfsumme & Integrität bei jeder Sicherung</div><button class="btn btn-secondary btn-sm" data-act="backup">Jetzt sichern</button></div>
+    ${updWidgetRow()}
+    <div class="ops-row">${ic('server', 'i-sm')}<div class="k"><b>Einzelplatz</b>${esc(i.data_dir || 'lokales Datenverzeichnis')}</div></div>
+    <div class="ops-row" style="opacity:.6">${ic('sparkle', 'i-sm')}<div class="k"><b>KI lokal</b>Vorschau – Modell wird in einem späteren Paket angebunden</div></div>
+  </div><div class="wl-foot" style="margin-top:6px">${ic('info', 'i-xs')} Backups liegen in Ihrer Verantwortung – Kontor stellt die Werkzeuge.</div>`;
+}
+function xReport() {
+  if (!DESKTOP) return toast('X-Bericht', {t2: `${num(118 + Dash.session.bons)} Bons · ${eur0(periodData('heute').rev)} · ohne Abschluss`, icon: 'receipt'});
+  const sp = periodSpec('heute');
+  invoke('stats', {ranges: [{from: isoL(sp.cur[0]), to: isoL(sp.cur[1])}], detail: true}).then(([a]) => {
+    const s = sums(a.rows);
+    toast(`X-Bericht · ${new Date().toLocaleDateString('de-AT')}`, {t2: `${num(s.bons)} Bons · Umsatz ${eur(s.rev)} · Retouren ${eur(s.ret)} · ${(a.pay || []).map(p => `${p.label} ${eur(p.amount / 100)}`).join(' · ') || 'keine Zahlungen'} · ohne Abschluss`, icon: 'receipt', dur: 9000});
+    Hooks.emit('pos.report.x', {bons: s.bons, umsatz: s.rev});
+  }).catch(e => toast('X-Bericht nicht möglich', {t2: String(e), type: 'warn'}));
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -4244,10 +4832,11 @@ async function init() {
   applyPrefs();
   await loadSettings();
   await loadCatalog();
+  await loadCustomers();
   if (DESKTOP) { await refreshInfo(); Hooks.on('*', (p, e) => { if (!e.evt.startsWith('config.settings')) invoke('audit_append', {event: e.evt, payload: e.payload ?? {}}).catch(() => {}); }); }
   $('#palKbd').innerHTML = `<span class="kbd">${MOD}</span><span class="kbd">K</span>`;
   renderNav(); renderMe(); renderStore(); renderStatus();
-  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates();
+  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers();
   go(location.hash.slice(1) || 'dashboard');
   if (DESKTOP) { Hooks.emit('desktop.ready', {version: S.appVersion, datenbank: S.info?.db_path}); setTimeout(autoBackupCheck, 4000); setInterval(autoBackupCheck, 36e5); }
   Hooks.emit('system.ready', {version: S.appVersion, kanal: 'stable', server: 'KONTOR-SRV01', modus: DESKTOP ? 'desktop' : 'vorschau'});

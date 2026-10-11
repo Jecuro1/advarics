@@ -51,6 +51,7 @@ jobs:
           echo "version=$(node -p "require('./src-tauri/tauri.conf.json').version")" >> "$GITHUB_OUTPUT"
           if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then echo "signed=true" >> "$GITHUB_OUTPUT"; else echo "signed=false" >> "$GITHUB_OUTPUT"; fi
           if git ls-remote --exit-code --tags origin "refs/tags/v$(node -p "require('./src-tauri/tauri.conf.json').version")" >/dev/null; then echo "released=true" >> "$GITHUB_OUTPUT"; else echo "released=false" >> "$GITHUB_OUTPUT"; fi
+          { echo "notes<<KONTOR_NOTES_EOF"; cat RELEASE_NOTES.md; echo; echo "KONTOR_NOTES_EOF"; } >> "$GITHUB_OUTPUT"
 
       - name: Bauen, signieren und als Update veröffentlichen
         if: steps.meta.outputs.signed == 'true' && steps.meta.outputs.released == 'false'
@@ -62,7 +63,8 @@ jobs:
           tauriScript: npx tauri
           tagName: v__VERSION__
           releaseName: Kontor __VERSION__
-          releaseBodyPath: desktop/RELEASE_NOTES.md
+          # Text auch für „Was ist neu“ im Programm (latest.json)
+          releaseBody: ${{ steps.meta.outputs.notes }}
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true

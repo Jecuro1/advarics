@@ -237,17 +237,32 @@ pub fn commit_sale(tx: &Transaction, lines: &[SaleLine], total: i64, cashier: &s
             }
         }
     }
-    Ok(json!({ "no": no, "number": n, "stocks": stocks }))
+    // Bonuspunkte: 1 Punkt je volle 10 €
+    let mut points = Value::Null;
+    if let Some(cid) = customer {
+        let exists: bool = tx.query_row("SELECT 1 FROM customers WHERE id = ?1", [cid], |_| Ok(true)).optional().map_err(|e| e.to_string())?.unwrap_or(false);
+        if exists {
+            let earned = if total > 0 { total / crate::customers::CENTS_PER_POINT } else { 0 };
+            let (delta, balance) = crate::customers::book_points(tx, cid, earned, "Einkauf", Some(&no), Some(cashier))?;
+            points = json!({ "earned": delta, "balance": balance });
+        }
+    }
+    Ok(json!({ "no": no, "number": n, "stocks": stocks, "points": points }))
 }
 
-pub fn sales(c: &Connection, limit: i64) -> rusqlite::Result<Vec<Value>> {
-    let mut st = c.prepare("SELECT beleg_no, ts, total, cashier, data FROM sales ORDER BY id DESC LIMIT ?1")?;
-    let rows = st.query_map([limit], |r| {
-        Ok(json!({
-            "no": r.get::<_, String>(0)?, "ts": r.get::<_, String>(1)?, "total": r.get::<_, i64>(2)?,
-            "cashier": r.get::<_, Option<String>>(3)?,
-            "data": serde_json::from_str::<Value>(&r.get::<_, String>(4)?).unwrap_or(Value::Null)
-        }))
-    })?;
+pub fn sale_row(r: &rusqlite::Row) -> rusqlite::Result<Value> {
+    Ok(json!({
+        "no": r.get::<_, String>(0)?, "ts": r.get::<_, String>(1)?, "total": r.get::<_, i64>(2)?,
+        "cashier": r.get::<_, Option<String>>(3)?,
+        "data": serde_json::from_str::<Value>(&r.get::<_, String>(4)?).unwrap_or(Value::Null),
+        "kind": r.get::<_, String>(5)?, "ref_no": r.get::<_, Option<String>>(6)?, "voided": r.get::<_, i64>(7)? != 0,
+        "customer_id": r.get::<_, Option<String>>(8)?
+    }))
+}
+pub const SALE_COLS: &str = "beleg_no, ts, total, cashier, data, kind, ref_no, voided, customer_id";
+
+pub fn sales(c: &Connection, limit: i64, customer: Option<&str>) -> rusqlite::Result<Vec<Value>> {
+    let mut st = c.prepare(&format!("SELECT {SALE_COLS} FROM sales WHERE (?2 IS NULL OR customer_id = ?2) ORDER BY id DESC LIMIT ?1"))?;
+    let rows = st.query_map(params![limit, customer], sale_row)?;
     rows.collect()
 }
