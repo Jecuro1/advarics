@@ -75,7 +75,7 @@ function openSupplier(s) {
       if (id && cfDefs('lieferant').length) { await invoke('supplier_fields_set', {id, fields: cfv}); CF.sup[id] = cfv; }
     }
     catch (e) { return toast('Speichern fehlgeschlagen', {t2: String(e), type: 'warn'}); }
-    closeLayer(el); toast('Lieferant gespeichert', {t2: st.name, type: 'pos', icon: 'truck'}); if (S.view === 'einkauf') renderEinkauf();
+    closeLayer(el); toast('Lieferant gespeichert', {t2: st.name, type: 'pos', icon: 'truck'}); if (S.view === 'einkauf') renderEinkauf(); if (S.view === 'lieferanten') PAGES.lieferanten.render();
   };
 }
 

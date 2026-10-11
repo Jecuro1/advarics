@@ -34,7 +34,7 @@ cd src-tauri && cargo test   # Tests: Retoure, Storno, Punkte, Gutscheine, RKSV,
 Voraussetzungen zum Selberbauen: Node.js 22, Rust (stable), unter Windows zusätzlich die
 „Microsoft C++ Build Tools“. Nur zum Benutzen ist nichts davon nötig – nur der Installer.
 
-Stand 0.9.0 – alles mit lokaler Datenbank, ohne Server:
+Stand 0.10.0 – alles mit lokaler Datenbank, ohne Server:
 - **Anmeldung & Rechte:** persönliche PIN (Erst-PINs Lena 1111 · David 2222 (Admin) · Miriam 3333 – sofort ändern),
   optional Zwei-Faktor mit Authenticator-App (TOTP), Rollen Kasse/Verkauf/Filialleitung/Administrator mit anpassbarer
   Rechte-Matrix, Freigaben per PIN durch berechtigte Personen, Sperre nach Fehlversuchen.
@@ -53,6 +53,10 @@ Stand 0.9.0 – alles mit lokaler Datenbank, ohne Server:
   mit Begründung, Auffälligkeiten (Retouren, Stornos, Inventur, Preis < EK, Ladenhüter), Fragen in normaler Sprache;
   optional lokales Sprachmodell (Ollama) für freie Fragen und Artikeltexte.
 - **Buchhaltung:** Buchungsjournal (CSV) und DATEV-Export (EXTF Buchungsstapel), Konten einstellbar.
+- **Oberfläche:** helles Standard-Design, Menü mit aufklappbaren Bereichen und eigenen Seiten für Belege, Kassenbuch,
+  Gutscheine, Lieferanten, Wareneingang, Etiketten, Buchhaltung, KI-Analyse, Benutzer & Rechte, Protokoll, Hilfe.
+- **Import:** Artikel, Kunden und Bestände aus CSV/Excel mit Spaltenzuordnung, Vorschau und Prüfung.
+- **Kundendisplay** auf zweitem Bildschirm · **Handy-App** im Browser (`http://<PC>:8787/mobil`) für Lager und Inventur.
 - **Anpassen:** eigene Felder mit Typ/Pflicht/Auswahl (Artikel, Kunden, Lieferanten), eigene Objekte mit Menüpunkt
   (z. B. Reparaturaufträge), Regeln (Wenn → Dann), Skripte in einer Sandbox, Webhooks (HMAC-signiert, mit Wiederholung),
   lokale REST-API mit Schlüsseln und eigenen Endpunkten (OpenAPI unter `/api/v1/openapi.json`), Export/Import als Paket.

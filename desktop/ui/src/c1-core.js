@@ -73,19 +73,22 @@ const BINDINGS = [
    3 · DARSTELLUNG — Benutzer-Ebene der Token-Kaskade
    ════════════════════════════════════════════════════════════════════ */
 const ACCENTS = {
+  ozean: {h: 214, s: 74, name: 'Ozean'},
   kupfer: {h: 26, s: 52, name: 'Kupfer'},
   amber: {h: 37, s: 70, name: 'Amber'},
   salbei: {h: 150, s: 20, name: 'Salbei'},
   gletscher: {h: 205, s: 42, name: 'Gletscher'},
   graphit: {h: 240, s: 4, name: 'Graphit'},
 };
-const prefs = Object.assign({theme: 'dark', accent: 'kupfer', custom: null, density: 'comfort', radius: 'soft', motion: 'full', sidebar: false, tiles: 'media', tpl: 'classic'}, persist.get('prefs', {}));
+const prefs = Object.assign({theme: 'light', accent: 'ozean', custom: null, density: 'comfort', radius: 'soft', motion: 'full', sidebar: false, tiles: 'media', tpl: 'classic'}, persist.get('prefs', {}));
+// 0.10: neues helles Standard-Design einmalig übernehmen (danach gilt wieder die eigene Wahl)
+if ((prefs.v || 1) < 2) { prefs.theme = 'light'; prefs.accent = 'ozean'; prefs.v = 2; }
 const resolvedTheme = () => prefs.theme === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : prefs.theme;
 function applyPrefs(animate) {
   const run = () => {
     const r = document.documentElement;
     r.dataset.theme = resolvedTheme(); r.dataset.density = prefs.density; r.dataset.radius = prefs.radius; r.dataset.motion = prefs.motion;
-    const a = prefs.accent === 'custom' && prefs.custom ? prefs.custom : (ACCENTS[prefs.accent] || ACCENTS.kupfer);
+    const a = prefs.accent === 'custom' && prefs.custom ? prefs.custom : (ACCENTS[prefs.accent] || ACCENTS.ozean);
     r.style.setProperty('--ah', a.h); r.style.setProperty('--as', a.s + '%');
     const tb = $('#themeBtn use'); if (tb) tb.setAttribute('href', resolvedTheme() === 'dark' ? '#i-sun' : '#i-moon');
     persist.set('prefs', prefs);
@@ -190,7 +193,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.9.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.10.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -299,27 +302,59 @@ const NAV = [
   {g: 'Verkauf'},
   {id: 'dashboard', label: 'Dashboard', icon: 'dashboard'},
   {id: 'kasse', label: 'Kasse', icon: 'register', cart: true},
+  {id: 'belege', label: 'Belege', icon: 'receipt'},
+  {id: 'kassenbuch', label: 'Kassenbuch & Abschluss', icon: 'cash'},
   {g: 'Sortiment'},
   {id: 'artikel', label: 'Artikel', icon: 'tag'},
   {id: 'bestand', label: 'Bestand', icon: 'boxes'},
   {id: 'inventur', label: 'Inventur', icon: 'layers'},
   {id: 'aktionen', label: 'Preisaktionen', icon: 'percent'},
-  {id: 'einkauf', label: 'Einkauf', icon: 'truck'},
-  {g: 'Kunden & Analyse'},
+  {id: 'etiketten', label: 'Etiketten', icon: 'barcode'},
+  {g: 'Einkauf'},
+  {id: 'einkauf', label: 'Bestellungen', icon: 'truck'},
+  {id: 'wareneingang', label: 'Wareneingang', icon: 'download'},
+  {id: 'lieferanten', label: 'Lieferanten', icon: 'building'},
+  {g: 'Kunden'},
   {id: 'kunden', label: 'Kunden', icon: 'users'},
+  {id: 'gutscheine', label: 'Gutscheine', icon: 'gift'},
+  {g: 'Auswertung'},
   {id: 'berichte', label: 'Berichte', icon: 'chart'},
+  {id: 'buchhaltung', label: 'Buchhaltung', icon: 'receipt'},
+  {id: 'ki', label: 'KI-Analyse', icon: 'sparkle'},
   {g: 'System'},
   {id: 'anpassen', label: 'Anpassen', icon: 'puzzle'},
-  {id: 'designsystem', label: 'Designsystem', icon: 'palette'},
+  {id: 'benutzer', label: 'Benutzer & Rechte', icon: 'shield'},
+  {id: 'datensicherung', label: 'Datensicherung', icon: 'database'},
+  {id: 'protokoll', label: 'Protokoll', icon: 'history'},
   {id: 'einstellungen', label: 'Einstellungen', icon: 'sliders'},
+  {id: 'hilfe', label: 'Hilfe & Info', icon: 'info'},
 ];
-const TITLES = {dashboard: 'Dashboard', kasse: 'Kasse', artikel: 'Artikel', bestand: 'Bestand', inventur: 'Inventur', aktionen: 'Preisaktionen', einkauf: 'Einkauf', kunden: 'Kunden', berichte: 'Berichte', anpassen: 'Anpassen', erweiterungen: 'Erweiterungen', designsystem: 'Designsystem', einstellungen: 'Einstellungen'};
+const TITLES = {dashboard: 'Dashboard', kasse: 'Kasse', artikel: 'Artikel', bestand: 'Bestand', inventur: 'Inventur', aktionen: 'Preisaktionen', einkauf: 'Bestellungen', kunden: 'Kunden', berichte: 'Berichte', anpassen: 'Anpassen', erweiterungen: 'Erweiterungen', designsystem: 'Designsystem', einstellungen: 'Einstellungen'};
 const PH_VIEWS = ['erweiterungen'];
+/** Seiten-Register: Module melden eigene Ansichten an (Titel, Untertitel, Darstellung). */
+const PAGES = {};
+function registerPage(id, def) {
+  PAGES[id] = def; TITLES[id] = def.title;
+  if (!document.getElementById('view-' + id)) document.getElementById('views')?.insertAdjacentHTML('beforeend', `<section class="view" id="view-${id}" aria-label="${def.title}"></section>`);
+}
+const navClosed = new Set(persist.get('navClosed', []));
+const navGroupOf = id => { let g = null; for (const n of NAV) { if (n.g) g = n.g; else if (n.id === id) return g; } return null; };
 
 function renderNav() {
-  $('#nav').innerHTML = NAV.map(n => n.g ? `<div class="nav-group">${n.g}</div>` :
-    `<button class="nav-item" data-view="${n.id}" data-tip="${n.label}" data-tip-pos="right">${ic(n.icon)}<span class="nav-label fade-label">${n.label}</span>${n.cart ? '<span class="nav-badge accent" id="navCart" hidden></span>' : ''}${n.count ? `<span class="nav-badge">${n.count}</span>` : ''}</button>`).join('');
+  let html = '', open = false;
+  NAV.forEach(n => {
+    if (n.g) {
+      if (open) html += '</div>';
+      html += `<div class="nav-sec" data-sec="${esc(n.g)}" ${navClosed.has(n.g) ? 'data-closed' : ''}><button class="nav-group" data-grp="${esc(n.g)}" aria-expanded="${!navClosed.has(n.g)}">${esc(n.g)}${ic('chevron-down', 'i-xs chev')}</button>`;
+      open = true; return;
+    }
+    html += `<button class="nav-item" data-view="${n.id}" data-tip="${esc(n.label)}" data-tip-pos="right">${ic(n.icon)}<span class="nav-label fade-label">${esc(n.label)}</span>${n.cart ? '<span class="nav-badge accent" id="navCart" hidden></span>' : ''}${n.count ? `<span class="nav-badge">${n.count}</span>` : ''}<span class="nav-badge" data-nb="${n.id}" hidden></span></button>`;
+  });
+  if (open) html += '</div>';
+  $('#nav').innerHTML = html;
 }
+/** Zähler an Menüpunkten (z. B. offene Bestellungen) */
+function navBadge(id, n) { const b = $(`[data-nb="${id}"]`); if (!b) return; b.hidden = !n; b.textContent = n > 99 ? '99+' : n; }
 function renderMe() {
   $('#meBtn').innerHTML = `<span class="avatar" style="--h:${S.user.hue}">${S.user.initials}</span><span class="meta fade-label" style="min-width:0"><span class="t1" style="display:block">${esc(S.user.name)}</span><span class="t2" style="display:block">${esc(S.user.role)} · Kasse 1</span></span>`;
 }
@@ -357,6 +392,7 @@ function go(view) {
   else if (view === 'aktionen') renderAktionen();
   else if (view === 'berichte') renderBerichte();
   else if (view === 'anpassen') renderAnpassen();
+  else if (PAGES[view]) PAGES[view].render();
   else if (view.startsWith('obj-')) renderObj(view.slice(4));
   else renderPlaceholder(view);
   const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : view.startsWith('obj-') ? $('#view-obj') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
@@ -375,7 +411,8 @@ function renderTopbar() {
     renderParked();
   } else {
     const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster', einstellungen: DESKTOP ? 'Lokale Datenbank' : 'Vorschau', artikel: `${ART.length} Artikel · ${DESKTOP ? 'Datenbank' : 'Vorschau, nicht gespeichert'}`, bestand: `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, kunden: `${num(CUSTOMERS.length)} Kund:innen · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, einkauf: 'Bestellungen & Wareneingang', berichte: 'Auswertungen & Abschlüsse', inventur: 'Zählen & Differenzen buchen', aktionen: 'Zeitlich begrenzte Nachlässe', anpassen: 'Felder · Objekte · Regeln · Webhooks · API'}[S.view] || (S.view.startsWith('obj-') ? 'Eigenes Objekt' : 'In Vorbereitung');
-    L.innerHTML = `<div class="tb-title"><h1>${TITLES[S.view]}</h1><span class="tb-sub">${esc(sub)}</span></div>`;
+    const grp = navGroupOf(S.view), sub2 = PAGES[S.view]?.sub ? PAGES[S.view].sub() : sub;
+    L.innerHTML = `<div class="tb-title">${grp ? `<span class="tb-sub" style="font-size:13px">${esc(grp)}</span><span class="tb-sub" style="opacity:.5">/</span>` : ''}<h1>${esc(TITLES[S.view])}</h1><span class="tb-sub">${esc(sub2)}</span></div>`;
   }
 }
 

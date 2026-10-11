@@ -135,7 +135,7 @@ function stepUp({title, text, rule, admin = false, roles = null, purpose = 'frei
 /* ── Einstellungen → Benutzer ── */
 function usersSectionHTML() {
   return `<section class="set-sec" id="sec-benutzer"><h2>Benutzer & Anmeldung</h2><p>Jede Person meldet sich mit eigener PIN an – auf Wunsch zusätzlich mit Code aus einer Authenticator-App (2FA). Was eine Rolle darf, steht unter „Rechte je Rolle“; fehlt ein Recht, gibt eine berechtigte Person per PIN frei. Rabatt- und Storno-Freigaben erteilen Filialleitung und Administrator. Nach 5 Fehlversuchen ist die PIN 2 Minuten gesperrt.</p>
-    <div class="card" id="usrBox"></div></section>`;
+    <div class="card"><div class="set-row" style="border-bottom:0"><div><div class="set-l">Benutzer, PINs, Zwei-Faktor und Rechte</div><div class="set-h">Eigene Seite: System → Benutzer & Rechte</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-goto="benutzer">${ic('shield', 'i-sm')}Öffnen</button></div></div></div></section>`;
 }
 function renderUsersBox() {
   const box = $('#usrBox'); if (!box) return;

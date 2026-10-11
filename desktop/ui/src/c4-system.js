@@ -307,7 +307,11 @@ document.addEventListener('keydown', e => {
 });
 
 function bindShell() {
-  $('#nav').addEventListener('click', e => { const b = e.target.closest('[data-view]'); b && go(b.dataset.view); });
+  $('#nav').addEventListener('click', e => {
+    const g = e.target.closest('[data-grp]');
+    if (g) { const k = g.dataset.grp, sec = g.parentElement; navClosed.has(k) ? navClosed.delete(k) : navClosed.add(k); sec.toggleAttribute('data-closed', navClosed.has(k)); g.setAttribute('aria-expanded', !navClosed.has(k)); persist.set('navClosed', [...navClosed]); return; }
+    const b = e.target.closest('[data-view]'); b && go(b.dataset.view);
+  });
   $('#paletteBtn').onclick = () => openPalette();
   $('#aiBtn').onclick = () => openPalette('? ');
   $('#themeBtn').onclick = toggleTheme;
@@ -328,6 +332,7 @@ function bindShell() {
 }
 
 async function init() {
+  if (window.__KONTOR_DISPLAY__) return runDisplay();   // zweites Fenster: nur Kundendisplay
   applyPrefs();
   await loadSettings();
   await loadCatalog();
@@ -338,9 +343,10 @@ async function init() {
   if (DESKTOP) { await refreshInfo(); Hooks.on('*', (p, e) => { if (!e.evt.startsWith('config.settings')) invoke('audit_append', {event: e.evt, payload: e.payload ?? {}}).catch(() => {}); }); }
   $('#palKbd').innerHTML = `<span class="kbd">${MOD}</span><span class="kbd">K</span>`;
   renderNav(); permNav(); renderMe(); renderStore(); renderStatus();
-  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings(); bindStockViews(); bindP5(); bindCustom(); bindAutomation(); bindSecurity(); bindAiFibu();
+  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings(); bindStockViews(); bindP5(); bindCustom(); bindAutomation(); bindSecurity(); bindAiFibu(); bindPages(); bindImportDisplay();
   go(location.hash.slice(1) || 'dashboard');
   if (DESKTOP) lock();   // Anmeldung mit PIN beim Start
+  if (DESKTOP) { loadPurchasing().then(() => navBadge('wareneingang', EK.pos.filter(p => ['bestellt', 'teilgeliefert'].includes(p.status)).length)).catch(() => {}); if (CFG['display.auto']) setTimeout(() => toggleDisplay(true), 1500); }
   if (DESKTOP) { Hooks.emit('desktop.ready', {version: S.appVersion, datenbank: S.info?.db_path}); setTimeout(autoBackupCheck, 4000); setInterval(autoBackupCheck, 36e5); }
   Hooks.emit('system.ready', {version: S.appVersion, kanal: 'stable', server: 'KONTOR-SRV01', modus: DESKTOP ? 'desktop' : 'vorschau'});
 }

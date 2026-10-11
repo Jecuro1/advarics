@@ -11,6 +11,7 @@ mod catalog;
 mod custom;
 mod security;
 mod zvt;
+mod mobile;
 mod closing;
 mod customers;
 mod db;
@@ -30,7 +31,7 @@ use serde::Serialize;
 use serde_json::{json, Map, Value};
 use std::path::PathBuf;
 use std::sync::Mutex;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_dialog::DialogExt;
 
 type Res<T> = Result<T, String>;
@@ -1195,6 +1196,117 @@ async fn terminal_admin(app: AppHandle, action: String, receipt: Option<String>)
     r
 }
 
+/* ── Paket 7: Protokoll-Suche, Import, Kassenbuch, Kundendisplay, Handy ── */
+
+#[tauri::command]
+fn audit_query(db: State<db::Db>, q: Option<String>, prefix: Option<String>, before: Option<i64>, limit: Option<i64>) -> Res<Vec<Value>> {
+    let c = db.conn.lock().unwrap();
+    let like = q.filter(|s| !s.trim().is_empty()).map(|s| format!("%{}%", s.trim().to_lowercase()));
+    let pre = prefix.filter(|s| !s.is_empty()).map(|s| format!("{s}%"));
+    let mut st = c
+        .prepare("SELECT id, ts, event, payload FROM audit_log WHERE (?1 IS NULL OR lower(event || ' ' || payload) LIKE ?1) AND (?2 IS NULL OR event LIKE ?2) AND (?3 IS NULL OR id < ?3) AND event NOT LIKE 'test.%' ORDER BY id DESC LIMIT ?4")
+        .map_err(err)?;
+    let rows = st
+        .query_map(rusqlite::params![like, pre, before, limit.unwrap_or(200).clamp(1, 2000)], |r| {
+            let p: String = r.get(3)?;
+            Ok(json!({ "id": r.get::<_, i64>(0)?, "ts": r.get::<_, String>(1)?, "event": r.get::<_, String>(2)?, "payload": serde_json::from_str::<Value>(&p).unwrap_or(Value::Null) }))
+        })
+        .map_err(err)?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(err)
+}
+
+/// Artikel (mit Varianten) und optional Bestände in einem Schritt importieren – alles oder nichts.
+#[tauri::command]
+fn articles_import(db: State<db::Db>, articles: Vec<catalog::Article>, stock: Vec<(String, i64)>, user: Option<String>) -> Res<Value> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    for a in &articles {
+        catalog::save(&tx, a).map_err(|e| format!("Artikel {}: {e}", a.id))?;
+    }
+    let mut booked = 0;
+    for (ean, q) in &stock {
+        let vid: i64 = tx.query_row("SELECT id FROM variants WHERE ean = ?1 AND active = 1", [ean.trim()], |r| r.get(0)).map_err(|_| format!("EAN {ean} unbekannt"))?;
+        catalog::book(&tx, vid, *q, true, "Import", None, user.as_deref())?;
+        booked += 1;
+    }
+    db::audit_append(&tx, "catalog.imported", &json!({ "artikel": articles.len(), "bestaende": booked, "benutzer": user })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    Ok(json!({ "artikel": articles.len(), "bestaende": booked, "list": catalog::list(&c).map_err(err)? }))
+}
+
+#[tauri::command]
+fn customers_import(db: State<db::Db>, list: Vec<customers::Customer>, user: Option<String>) -> Res<Value> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    for (i, k) in list.iter().enumerate() {
+        customers::save(&tx, k).map_err(|e| format!("Zeile {}: {e}", i + 2))?;
+    }
+    db::audit_append(&tx, "customer.imported", &json!({ "anzahl": list.len(), "benutzer": user })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    Ok(json!({ "anzahl": list.len(), "list": customers::list(&c).map_err(err)? }))
+}
+
+#[tauri::command]
+fn cash_moves_list(db: State<db::Db>, limit: Option<i64>) -> Res<Vec<Value>> {
+    let c = db.conn.lock().unwrap();
+    let mut st = c.prepare("SELECT id, ts, kind, amount, reason, user, closing_id FROM cash_moves ORDER BY id DESC LIMIT ?1").map_err(err)?;
+    let rows = st
+        .query_map([limit.unwrap_or(300)], |r| {
+            Ok(json!({ "id": r.get::<_, i64>(0)?, "ts": r.get::<_, String>(1)?, "kind": r.get::<_, String>(2)?, "amount": r.get::<_, i64>(3)?, "reason": r.get::<_, String>(4)?, "user": r.get::<_, Option<String>>(5)?, "closing_id": r.get::<_, Option<i64>>(6)? }))
+        })
+        .map_err(err)?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(err)
+}
+
+/// Kundendisplay: zweites Fenster (auf dem zweiten Bildschirm im Vollbild, falls vorhanden)
+#[tauri::command]
+async fn display_open(app: AppHandle) -> Res<bool> {
+    if let Some(w) = app.get_webview_window("kundendisplay") {
+        let _ = w.set_focus();
+        return Ok(false);
+    }
+    let w = tauri::WebviewWindowBuilder::new(&app, "kundendisplay", tauri::WebviewUrl::App("index.html".into()))
+        .title("Kontor · Kundendisplay")
+        .inner_size(1024.0, 640.0)
+        .initialization_script("window.__KONTOR_DISPLAY__ = true;")
+        .build()
+        .map_err(err)?;
+    let primary = app.primary_monitor().ok().flatten();
+    let second = app.available_monitors().unwrap_or_default().into_iter().find(|m| primary.as_ref().map(|p| p.position() != m.position()).unwrap_or(false));
+    if let Some(m) = second {
+        let p = m.position();
+        let _ = w.set_position(tauri::PhysicalPosition::new(p.x + 20, p.y + 20));
+        let _ = w.set_fullscreen(true);
+        return Ok(true);
+    }
+    Ok(false)
+}
+#[tauri::command]
+fn display_close(app: AppHandle) {
+    if let Some(w) = app.get_webview_window("kundendisplay") {
+        let _ = w.close();
+    }
+}
+#[tauri::command]
+fn display_push(app: AppHandle, payload: Value) {
+    if app.get_webview_window("kundendisplay").is_some() {
+        let _ = app.emit_to("kundendisplay", "kd", payload);
+    }
+}
+#[tauri::command]
+fn display_status(app: AppHandle) -> bool {
+    app.get_webview_window("kundendisplay").is_some()
+}
+
+#[tauri::command]
+fn mobile_info(app: AppHandle) -> Value {
+    let db = app.state::<db::Db>();
+    let c = db.conn.lock().unwrap();
+    let g = |k: &str| db::setting_get(&c, k);
+    json!({ "ips": mobile::local_ips(), "running": api::running(&app.state::<api::ApiState>()),
+        "lan": g("api.lan").and_then(|v| v.as_bool()).unwrap_or(false), "port": g("api.port").and_then(|v| v.as_u64()).unwrap_or(8787) })
+}
+
 /// Vollbild / Kassen-Kiosk ein- oder ausschalten.
 #[tauri::command]
 fn set_fullscreen(window: tauri::WebviewWindow, on: bool) -> Res<bool> {
@@ -1256,6 +1368,15 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            audit_query,
+            articles_import,
+            customers_import,
+            cash_moves_list,
+            display_open,
+            display_close,
+            display_push,
+            display_status,
+            mobile_info,
             app_info,
             settings_get,
             settings_set,

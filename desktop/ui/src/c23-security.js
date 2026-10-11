@@ -93,13 +93,17 @@ function bindSecurity() {
   $('#view-einstellungen').addEventListener('click', async e => {
     const tb = e.target.closest('[data-totp]'); if (tb) { e.stopPropagation(); return openTotp(STAFF.find(s => s.id === tb.dataset.totp)); }
     const pm = e.target.closest('[data-perm]'); if (!pm) return;
-    e.stopPropagation();
+    e.stopPropagation(); permToggle(pm);
+  }, true);
+}
+async function permToggle(pm) {
+  {
     const allowed = pm.getAttribute('aria-checked') !== 'true';
     let by; try { by = (await stepUp({title: 'Rechte ändern', text: `${ROLE_NAMES[pm.dataset.role]}: „${permLabel(pm.dataset.perm)}“ ${allowed ? 'erlauben' : 'entziehen'}`, admin: true})).by; } catch { return; }
     try { const m = await invoke('permission_set', {role: pm.dataset.role, perm: pm.dataset.perm, allowed, by: by.name}); SEC.roles = m.roles; } catch (err) { return toast('Nicht geändert', {t2: String(err), type: 'warn'}); }
     pm.setAttribute('aria-checked', allowed); permNav();
     toast('Recht geändert', {t2: `${ROLE_NAMES[pm.dataset.role]} · ${permLabel(pm.dataset.perm)}: ${allowed ? 'erlaubt' : 'nicht erlaubt'}`, type: 'pos', icon: 'shield'});
-  }, true);
+  }
 }
 
 /* ── Rechte an den Einstiegspunkten ── */

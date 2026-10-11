@@ -70,19 +70,19 @@
 }
 [data-theme="light"]{
   color-scheme:light;
-  --al:41%; --al2:34%; --al-soft:.10;
-  --frame:#E8E6E1; --panel:#F7F6F3; --surface:#FFFFFF; --surface-2:#F8F7F4; --surface-3:#EFEDE9;
-  --line:rgba(28,24,18,.075); --line-2:rgba(28,24,18,.115); --line-3:rgba(28,24,18,.19);
-  --text:#18171A; --text-2:#5B5A60; --text-3:#8B8990; --text-4:#B9B7BB;
-  --accent-ink:#FFFAF5;
-  --pos:#2E8A5E; --neg:#C24A36; --warn:#A87510; --info:#3F6FB5;
-  --shadow-1:0 1px 2px rgba(28,24,18,.05);
-  --shadow-2:0 1px 2px rgba(28,24,18,.05),0 14px 30px -14px rgba(28,24,18,.2);
-  --shadow-3:0 0 0 1px rgba(28,24,18,.06),0 30px 70px -20px rgba(28,24,18,.32),0 10px 20px -8px rgba(28,24,18,.12);
-  --media-bg:#F1EFEB; --media-spot:#FFFFFF;
-  --scrim:rgba(30,26,20,.26);
+  --al:44%; --al2:36%; --al-soft:.09;
+  --frame:#EFF2F6; --panel:#FFFFFF; --surface:#FFFFFF; --surface-2:#F6F8FA; --surface-3:#ECEFF3;
+  --line:rgba(16,24,40,.07); --line-2:rgba(16,24,40,.11); --line-3:rgba(16,24,40,.18);
+  --text:#101828; --text-2:#475467; --text-3:#7A8496; --text-4:#A9B1BE;
+  --accent-ink:#FFFFFF;
+  --pos:#12805C; --neg:#C4320A; --warn:#B54708; --info:#1F6FD1;
+  --shadow-1:0 1px 2px rgba(16,24,40,.05);
+  --shadow-2:0 1px 2px rgba(16,24,40,.05),0 12px 28px -14px rgba(16,24,40,.18);
+  --shadow-3:0 0 0 1px rgba(16,24,40,.05),0 28px 64px -20px rgba(16,24,40,.28),0 10px 20px -8px rgba(16,24,40,.10);
+  --media-bg:#F2F4F7; --media-spot:#FFFFFF;
+  --scrim:rgba(16,24,40,.30);
   --paper:#FFFFFF; --paper-ink:#1D1C1A;
-  --chart-muted:#92959B;
+  --chart-muted:#98A2B3;
 }
 :root{
   --accent:hsl(var(--ah) var(--as) var(--al));
@@ -257,14 +257,25 @@ a{color:inherit}
 .sb-collapsed .store-switch .meta,.sb-collapsed .store-switch .chev{display:none}
 
 .nav{display:flex;flex-direction:column;gap:1px;margin-top:6px;overflow-y:auto;overflow-x:hidden;min-height:0;scrollbar-width:none}
+.nav-sec{display:flex;flex-direction:column;gap:1px}
+.nav-sec[data-closed] .nav-item:not([aria-current="page"]){display:none}
+button.nav-group{display:flex;align-items:center;width:100%;text-align:left;cursor:pointer;border-radius:6px}
+button.nav-group:hover{color:var(--text-2)}
+button.nav-group .chev{margin-left:auto;transition:transform var(--d-2);opacity:.7}
+.nav-sec[data-closed] button.nav-group .chev{transform:rotate(-90deg)}
+.sb-collapsed button.nav-group .chev{display:none}
+.sb-collapsed .nav-sec[data-closed] .nav-item{display:flex}
 .nav-group{font-size:10.5px;font-weight:650;color:var(--text-4);text-transform:uppercase;letter-spacing:.08em;padding:16px 10px 6px;white-space:nowrap;transition:color var(--d-2)}
 .sb-collapsed .nav-group{color:transparent;padding:12px 6px 6px;height:24px;position:relative}
 .sb-collapsed .nav-group::after{content:"";position:absolute;left:14px;right:14px;top:16px;height:1px;background:var(--line-2)}
-.nav-item{position:relative;display:flex;align-items:center;gap:11px;height:35px;padding:0 11px;border-radius:var(--r-sm);color:var(--text-2);font-size:13.5px;font-weight:500;white-space:nowrap;transition:background var(--d-1),color var(--d-1)}
+.nav-item{position:relative;display:flex;align-items:center;gap:11px;height:34px;padding:0 11px;border-radius:var(--r-sm);color:var(--text-2);font-size:13.5px;font-weight:500;white-space:nowrap;transition:background var(--d-1),color var(--d-1)}
 .nav-item:hover{background:var(--surface-2);color:var(--text)}
 .nav-item .i{color:var(--text-3);transition:color var(--d-1)}
 .nav-item:hover .i{color:var(--text-2)}
 .nav-item[aria-current="page"]{background:var(--surface);color:var(--text);box-shadow:var(--shadow-1),inset 0 0 0 1px var(--line)}
+[data-theme="light"] .nav-item[aria-current="page"]{background:var(--accent-soft);color:var(--accent-strong);box-shadow:none;font-weight:600}
+[data-theme="light"] .nav-item:hover{background:rgba(16,24,40,.045)}
+[data-theme="light"] .nav-item .nav-badge{background:rgba(16,24,40,.06)}
 .nav-item[aria-current="page"] .i{color:var(--accent)}
 .nav-item[aria-current="page"]::before{content:"";position:absolute;left:-10px;top:10px;bottom:10px;width:2.5px;border-radius:0 3px 3px 0;background:var(--accent)}
 .nav-item .nav-badge{margin-left:auto;font-size:10.5px;font-weight:650;color:var(--text-3);padding:1px 6px;border-radius:999px;background:var(--surface-3)}
@@ -927,6 +938,33 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
 
 /* Sperrbildschirm */
 .layer.over-lock{z-index:300}
+.pg-split{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:16px;align-items:start}
+.pg-split>.card:last-child{position:sticky;top:0}
+@media (max-width:1200px){.pg-split{grid-template-columns:1fr}.pg-split>.card:last-child{position:static}}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filters .input{height:34px}
+.tbl tr.sel td{background:var(--accent-soft)}
+.check-list{display:grid;gap:2px}
+.check-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.check-row:last-child{border-bottom:0}
+.check-row .ck{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--surface-3);color:var(--text-3)}
+.check-row.done .ck{background:var(--pos-soft);color:var(--pos)}
+.check-row .m{flex:1;min-width:0}.check-row .t1{font-weight:600;font-size:13.5px}.check-row .t2{color:var(--text-3);font-size:12.5px}
+.hero-card{display:flex;gap:18px;align-items:center;padding:20px 22px;border-radius:var(--r-lg);background:linear-gradient(120deg,var(--accent-soft),transparent 70%),var(--surface);border:1px solid var(--line)}
+.spark{display:block}
+.qr-box{background:#fff;border-radius:12px;padding:8px;line-height:0;display:inline-block;border:1px solid var(--line)}
+.kd{position:fixed;inset:0;display:grid;grid-template-columns:1.25fr 1fr;background:var(--frame);color:var(--text);font-size:18px}
+.kd-l{padding:48px 56px;display:flex;flex-direction:column;gap:20px;min-height:0}
+.kd-r{background:var(--panel);border-left:1px solid var(--line);padding:48px 44px;display:flex;flex-direction:column;justify-content:center;gap:16px}
+.kd-brand{display:flex;align-items:center;gap:16px}.kd-brand img{max-height:64px;max-width:240px}
+.kd-brand b{font-size:30px;letter-spacing:-.02em}
+.kd-lines{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:10px}
+.kd-line{display:flex;gap:14px;align-items:center;padding:14px 18px;background:var(--surface);border:1px solid var(--line);border-radius:14px;animation:fadeIn var(--d-2)}
+.kd-line .n{flex:1;min-width:0}.kd-line .n b{display:block;font-size:19px}.kd-line .n span{color:var(--text-3);font-size:15px}
+.kd-line .p{font-size:20px;font-weight:650}
+.kd-total{font-size:64px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.kd-msg{font-size:38px;font-weight:650;letter-spacing:-.02em;line-height:1.15}
+
 .nav-item.nav-locked{opacity:.55}
 .nav-item.nav-locked::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--warn);margin-left:auto;flex:none}
 .lockscreen{position:fixed;inset:0;z-index:250;display:grid;place-items:center;background:color-mix(in srgb,var(--frame) 80%,transparent);backdrop-filter:blur(26px) saturate(120%);-webkit-backdrop-filter:blur(26px) saturate(120%);animation:fadeIn var(--d-3)}
@@ -1436,19 +1474,22 @@ const BINDINGS = [
    3 · DARSTELLUNG — Benutzer-Ebene der Token-Kaskade
    ════════════════════════════════════════════════════════════════════ */
 const ACCENTS = {
+  ozean: {h: 214, s: 74, name: 'Ozean'},
   kupfer: {h: 26, s: 52, name: 'Kupfer'},
   amber: {h: 37, s: 70, name: 'Amber'},
   salbei: {h: 150, s: 20, name: 'Salbei'},
   gletscher: {h: 205, s: 42, name: 'Gletscher'},
   graphit: {h: 240, s: 4, name: 'Graphit'},
 };
-const prefs = Object.assign({theme: 'dark', accent: 'kupfer', custom: null, density: 'comfort', radius: 'soft', motion: 'full', sidebar: false, tiles: 'media', tpl: 'classic'}, persist.get('prefs', {}));
+const prefs = Object.assign({theme: 'light', accent: 'ozean', custom: null, density: 'comfort', radius: 'soft', motion: 'full', sidebar: false, tiles: 'media', tpl: 'classic'}, persist.get('prefs', {}));
+// 0.10: neues helles Standard-Design einmalig übernehmen (danach gilt wieder die eigene Wahl)
+if ((prefs.v || 1) < 2) { prefs.theme = 'light'; prefs.accent = 'ozean'; prefs.v = 2; }
 const resolvedTheme = () => prefs.theme === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : prefs.theme;
 function applyPrefs(animate) {
   const run = () => {
     const r = document.documentElement;
     r.dataset.theme = resolvedTheme(); r.dataset.density = prefs.density; r.dataset.radius = prefs.radius; r.dataset.motion = prefs.motion;
-    const a = prefs.accent === 'custom' && prefs.custom ? prefs.custom : (ACCENTS[prefs.accent] || ACCENTS.kupfer);
+    const a = prefs.accent === 'custom' && prefs.custom ? prefs.custom : (ACCENTS[prefs.accent] || ACCENTS.ozean);
     r.style.setProperty('--ah', a.h); r.style.setProperty('--as', a.s + '%');
     const tb = $('#themeBtn use'); if (tb) tb.setAttribute('href', resolvedTheme() === 'dark' ? '#i-sun' : '#i-moon');
     persist.set('prefs', prefs);
@@ -1553,7 +1594,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.9.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.10.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1662,27 +1703,59 @@ const NAV = [
   {g: 'Verkauf'},
   {id: 'dashboard', label: 'Dashboard', icon: 'dashboard'},
   {id: 'kasse', label: 'Kasse', icon: 'register', cart: true},
+  {id: 'belege', label: 'Belege', icon: 'receipt'},
+  {id: 'kassenbuch', label: 'Kassenbuch & Abschluss', icon: 'cash'},
   {g: 'Sortiment'},
   {id: 'artikel', label: 'Artikel', icon: 'tag'},
   {id: 'bestand', label: 'Bestand', icon: 'boxes'},
   {id: 'inventur', label: 'Inventur', icon: 'layers'},
   {id: 'aktionen', label: 'Preisaktionen', icon: 'percent'},
-  {id: 'einkauf', label: 'Einkauf', icon: 'truck'},
-  {g: 'Kunden & Analyse'},
+  {id: 'etiketten', label: 'Etiketten', icon: 'barcode'},
+  {g: 'Einkauf'},
+  {id: 'einkauf', label: 'Bestellungen', icon: 'truck'},
+  {id: 'wareneingang', label: 'Wareneingang', icon: 'download'},
+  {id: 'lieferanten', label: 'Lieferanten', icon: 'building'},
+  {g: 'Kunden'},
   {id: 'kunden', label: 'Kunden', icon: 'users'},
+  {id: 'gutscheine', label: 'Gutscheine', icon: 'gift'},
+  {g: 'Auswertung'},
   {id: 'berichte', label: 'Berichte', icon: 'chart'},
+  {id: 'buchhaltung', label: 'Buchhaltung', icon: 'receipt'},
+  {id: 'ki', label: 'KI-Analyse', icon: 'sparkle'},
   {g: 'System'},
   {id: 'anpassen', label: 'Anpassen', icon: 'puzzle'},
-  {id: 'designsystem', label: 'Designsystem', icon: 'palette'},
+  {id: 'benutzer', label: 'Benutzer & Rechte', icon: 'shield'},
+  {id: 'datensicherung', label: 'Datensicherung', icon: 'database'},
+  {id: 'protokoll', label: 'Protokoll', icon: 'history'},
   {id: 'einstellungen', label: 'Einstellungen', icon: 'sliders'},
+  {id: 'hilfe', label: 'Hilfe & Info', icon: 'info'},
 ];
-const TITLES = {dashboard: 'Dashboard', kasse: 'Kasse', artikel: 'Artikel', bestand: 'Bestand', inventur: 'Inventur', aktionen: 'Preisaktionen', einkauf: 'Einkauf', kunden: 'Kunden', berichte: 'Berichte', anpassen: 'Anpassen', erweiterungen: 'Erweiterungen', designsystem: 'Designsystem', einstellungen: 'Einstellungen'};
+const TITLES = {dashboard: 'Dashboard', kasse: 'Kasse', artikel: 'Artikel', bestand: 'Bestand', inventur: 'Inventur', aktionen: 'Preisaktionen', einkauf: 'Bestellungen', kunden: 'Kunden', berichte: 'Berichte', anpassen: 'Anpassen', erweiterungen: 'Erweiterungen', designsystem: 'Designsystem', einstellungen: 'Einstellungen'};
 const PH_VIEWS = ['erweiterungen'];
+/** Seiten-Register: Module melden eigene Ansichten an (Titel, Untertitel, Darstellung). */
+const PAGES = {};
+function registerPage(id, def) {
+  PAGES[id] = def; TITLES[id] = def.title;
+  if (!document.getElementById('view-' + id)) document.getElementById('views')?.insertAdjacentHTML('beforeend', `<section class="view" id="view-${id}" aria-label="${def.title}"></section>`);
+}
+const navClosed = new Set(persist.get('navClosed', []));
+const navGroupOf = id => { let g = null; for (const n of NAV) { if (n.g) g = n.g; else if (n.id === id) return g; } return null; };
 
 function renderNav() {
-  $('#nav').innerHTML = NAV.map(n => n.g ? `<div class="nav-group">${n.g}</div>` :
-    `<button class="nav-item" data-view="${n.id}" data-tip="${n.label}" data-tip-pos="right">${ic(n.icon)}<span class="nav-label fade-label">${n.label}</span>${n.cart ? '<span class="nav-badge accent" id="navCart" hidden></span>' : ''}${n.count ? `<span class="nav-badge">${n.count}</span>` : ''}</button>`).join('');
+  let html = '', open = false;
+  NAV.forEach(n => {
+    if (n.g) {
+      if (open) html += '</div>';
+      html += `<div class="nav-sec" data-sec="${esc(n.g)}" ${navClosed.has(n.g) ? 'data-closed' : ''}><button class="nav-group" data-grp="${esc(n.g)}" aria-expanded="${!navClosed.has(n.g)}">${esc(n.g)}${ic('chevron-down', 'i-xs chev')}</button>`;
+      open = true; return;
+    }
+    html += `<button class="nav-item" data-view="${n.id}" data-tip="${esc(n.label)}" data-tip-pos="right">${ic(n.icon)}<span class="nav-label fade-label">${esc(n.label)}</span>${n.cart ? '<span class="nav-badge accent" id="navCart" hidden></span>' : ''}${n.count ? `<span class="nav-badge">${n.count}</span>` : ''}<span class="nav-badge" data-nb="${n.id}" hidden></span></button>`;
+  });
+  if (open) html += '</div>';
+  $('#nav').innerHTML = html;
 }
+/** Zähler an Menüpunkten (z. B. offene Bestellungen) */
+function navBadge(id, n) { const b = $(`[data-nb="${id}"]`); if (!b) return; b.hidden = !n; b.textContent = n > 99 ? '99+' : n; }
 function renderMe() {
   $('#meBtn').innerHTML = `<span class="avatar" style="--h:${S.user.hue}">${S.user.initials}</span><span class="meta fade-label" style="min-width:0"><span class="t1" style="display:block">${esc(S.user.name)}</span><span class="t2" style="display:block">${esc(S.user.role)} · Kasse 1</span></span>`;
 }
@@ -1720,6 +1793,7 @@ function go(view) {
   else if (view === 'aktionen') renderAktionen();
   else if (view === 'berichte') renderBerichte();
   else if (view === 'anpassen') renderAnpassen();
+  else if (PAGES[view]) PAGES[view].render();
   else if (view.startsWith('obj-')) renderObj(view.slice(4));
   else renderPlaceholder(view);
   const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : view.startsWith('obj-') ? $('#view-obj') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
@@ -1738,7 +1812,8 @@ function renderTopbar() {
     renderParked();
   } else {
     const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster', einstellungen: DESKTOP ? 'Lokale Datenbank' : 'Vorschau', artikel: `${ART.length} Artikel · ${DESKTOP ? 'Datenbank' : 'Vorschau, nicht gespeichert'}`, bestand: `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, kunden: `${num(CUSTOMERS.length)} Kund:innen · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, einkauf: 'Bestellungen & Wareneingang', berichte: 'Auswertungen & Abschlüsse', inventur: 'Zählen & Differenzen buchen', aktionen: 'Zeitlich begrenzte Nachlässe', anpassen: 'Felder · Objekte · Regeln · Webhooks · API'}[S.view] || (S.view.startsWith('obj-') ? 'Eigenes Objekt' : 'In Vorbereitung');
-    L.innerHTML = `<div class="tb-title"><h1>${TITLES[S.view]}</h1><span class="tb-sub">${esc(sub)}</span></div>`;
+    const grp = navGroupOf(S.view), sub2 = PAGES[S.view]?.sub ? PAGES[S.view].sub() : sub;
+    L.innerHTML = `<div class="tb-title">${grp ? `<span class="tb-sub" style="font-size:13px">${esc(grp)}</span><span class="tb-sub" style="opacity:.5">/</span>` : ''}<h1>${esc(TITLES[S.view])}</h1><span class="tb-sub">${esc(sub2)}</span></div>`;
   }
 }
 
@@ -4632,7 +4707,7 @@ function stepUp({title, text, rule, admin = false, roles = null, purpose = 'frei
 /* ── Einstellungen → Benutzer ── */
 function usersSectionHTML() {
   return `<section class="set-sec" id="sec-benutzer"><h2>Benutzer & Anmeldung</h2><p>Jede Person meldet sich mit eigener PIN an – auf Wunsch zusätzlich mit Code aus einer Authenticator-App (2FA). Was eine Rolle darf, steht unter „Rechte je Rolle“; fehlt ein Recht, gibt eine berechtigte Person per PIN frei. Rabatt- und Storno-Freigaben erteilen Filialleitung und Administrator. Nach 5 Fehlversuchen ist die PIN 2 Minuten gesperrt.</p>
-    <div class="card" id="usrBox"></div></section>`;
+    <div class="card"><div class="set-row" style="border-bottom:0"><div><div class="set-l">Benutzer, PINs, Zwei-Faktor und Rechte</div><div class="set-h">Eigene Seite: System → Benutzer & Rechte</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-goto="benutzer">${ic('shield', 'i-sm')}Öffnen</button></div></div></div></section>`;
 }
 function renderUsersBox() {
   const box = $('#usrBox'); if (!box) return;
@@ -5092,7 +5167,7 @@ function openSupplier(s) {
       if (id && cfDefs('lieferant').length) { await invoke('supplier_fields_set', {id, fields: cfv}); CF.sup[id] = cfv; }
     }
     catch (e) { return toast('Speichern fehlgeschlagen', {t2: String(e), type: 'warn'}); }
-    closeLayer(el); toast('Lieferant gespeichert', {t2: st.name, type: 'pos', icon: 'truck'}); if (S.view === 'einkauf') renderEinkauf();
+    closeLayer(el); toast('Lieferant gespeichert', {t2: st.name, type: 'pos', icon: 'truck'}); if (S.view === 'einkauf') renderEinkauf(); if (S.view === 'lieferanten') PAGES.lieferanten.render();
   };
 }
 
@@ -6711,13 +6786,17 @@ function bindSecurity() {
   $('#view-einstellungen').addEventListener('click', async e => {
     const tb = e.target.closest('[data-totp]'); if (tb) { e.stopPropagation(); return openTotp(STAFF.find(s => s.id === tb.dataset.totp)); }
     const pm = e.target.closest('[data-perm]'); if (!pm) return;
-    e.stopPropagation();
+    e.stopPropagation(); permToggle(pm);
+  }, true);
+}
+async function permToggle(pm) {
+  {
     const allowed = pm.getAttribute('aria-checked') !== 'true';
     let by; try { by = (await stepUp({title: 'Rechte ändern', text: `${ROLE_NAMES[pm.dataset.role]}: „${permLabel(pm.dataset.perm)}“ ${allowed ? 'erlauben' : 'entziehen'}`, admin: true})).by; } catch { return; }
     try { const m = await invoke('permission_set', {role: pm.dataset.role, perm: pm.dataset.perm, allowed, by: by.name}); SEC.roles = m.roles; } catch (err) { return toast('Nicht geändert', {t2: String(err), type: 'warn'}); }
     pm.setAttribute('aria-checked', allowed); permNav();
     toast('Recht geändert', {t2: `${ROLE_NAMES[pm.dataset.role]} · ${permLabel(pm.dataset.perm)}: ${allowed ? 'erlaubt' : 'nicht erlaubt'}`, type: 'pos', icon: 'shield'});
-  }, true);
+  }
 }
 
 /* ── Rechte an den Einstiegspunkten ── */
@@ -7042,6 +7121,652 @@ function bindAiFibu() {
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   35 · EIGENE SEITEN — Belege, Kassenbuch, Gutscheine, Lieferanten,
+   Wareneingang, Etiketten, Buchhaltung, KI-Analyse, Benutzer & Rechte,
+   Protokoll, Hilfe. Jede Seite ist ein eigener Menüpunkt.
+   ════════════════════════════════════════════════════════════════════ */
+Object.assign(VIEW_PERM, {kassenbuch: 'kasse.kassenbuch', wareneingang: 'einkauf', lieferanten: 'einkauf', buchhaltung: 'berichte', ki: 'berichte', benutzer: 'system', protokoll: 'system', datensicherung: 'system'});
+const pageHead = (title, sub, actions = '') => `<div class="cv-head"><div><h2 class="h-title">${esc(title)}</h2><div class="dash-meta" style="margin-top:6px"><span>${sub}</span></div></div>${actions ? `<div style="display:flex;gap:8px;flex-wrap:wrap">${actions}</div>` : ''}</div>`;
+const kpiCards = list => `<div class="kpis">${list.map(([v, l, tone]) => `<div class="card"><b ${tone ? `style="color:var(--${tone})"` : ''}>${v}</b><span>${esc(l)}</span></div>`).join('')}</div>`;
+const desktopEmpty = (icon, t) => `<div class="cv"><div class="card"><div class="empty" style="padding:64px 20px"><div class="empty-icon">${ic(icon)}</div><h3>${esc(t)} nur in der Desktop-App</h3><p>Diese Seite liest die lokale Datenbank.</p></div></div></div>`;
+const loadingCard = t => `<div class="card" style="padding:22px"><span class="thinking"><b>${esc(t)} …</b></span></div>`;
+const dayStart = (n = 0) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - n); return d; };
+const payLabels = d => [...new Set((d?.parts || []).map(p => p.label || p.m))].join(', ');
+
+/* ── Belege ── */
+const BL = {list: [], q: '', kind: 'alle', range: '7', sel: null};
+registerPage('belege', {title: 'Belege', sub: () => 'Journal aller Bons, Retouren und Stornos', render: renderBelege});
+async function renderBelege() {
+  const v = $('#view-belege');
+  v.innerHTML = `<div class="cv">${pageHead('Belege', 'Bons suchen, Kopie drucken, per E-Mail senden, Rechnung erstellen, Retoure oder Storno buchen',
+    `<button class="btn btn-secondary" data-bl="ret">${ic('undo', 'i-sm')}Retoure starten</button><button class="btn btn-secondary" data-bl="x">${ic('receipt', 'i-sm')}X-Bericht</button>`)}
+    <div id="blKpi"></div>
+    <div class="filters"><input class="input" id="blQ" placeholder="Belegnummer, Artikel, Kunde, Kassier:in …" value="${esc(BL.q)}" style="flex:1;min-width:240px;max-width:420px">
+      <div class="seg" id="blKind">${[['alle', 'Alle'], ['verkauf', 'Verkäufe'], ['retoure', 'Retouren'], ['storno', 'Stornos']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${BL.kind === k}">${l}</button>`).join('')}</div>
+      <div class="seg" id="blRange">${[['0', 'Heute'], ['7', '7 Tage'], ['30', '30 Tage'], ['alle', 'Alle']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${BL.range === k}">${l}</button>`).join('')}</div></div>
+    <div class="pg-split"><div class="card" id="blList">${loadingCard('Lade Belege')}</div><div class="card" id="blView"></div></div></div>`;
+  initSeg($('#blKind', v), b => { BL.kind = b.dataset.v; renderBlList(); });
+  initSeg($('#blRange', v), b => { BL.range = b.dataset.v; renderBlList(); });
+  try { BL.list = DESKTOP ? await invoke('sales_list', {limit: 3000}) : MEM.sales.map(s => ({...s, ts: s.ts || new Date().toISOString()})); } catch (e) { BL.list = []; toast('Belege nicht verfügbar', {t2: String(e), type: 'warn'}); }
+  renderBlList();
+}
+function blFiltered() {
+  const n = norm(BL.q), from = BL.range === 'alle' ? null : dayStart(+BL.range);
+  return BL.list.filter(s => (BL.kind === 'alle' || (s.kind || 'verkauf') === BL.kind) && (!from || new Date(s.ts) >= from)
+    && (!n || norm(`${s.no} ${s.cashier || ''} ${s.data?.customer?.name || ''} ${(s.data?.lines || []).map(l => l.name).join(' ')}`).includes(n)));
+}
+function renderBlList() {
+  const box = $('#blList'); if (!box) return;
+  const f = blFiltered(), sales = f.filter(s => (s.kind || 'verkauf') === 'verkauf'), sum = f.reduce((a, s) => a + (s.total || 0), 0) / 100;
+  $('#blKpi').innerHTML = kpiCards([[num(f.length), 'Belege im Filter'], [eur(sum), 'Summe (netto nach Retouren)'], [sales.length ? eur(sales.reduce((a, s) => a + s.total, 0) / 100 / sales.length) : '–', 'Ø Bon'], [num(f.length - sales.length), 'Retouren & Stornos', f.length - sales.length ? 'warn' : '']]);
+  if (!f.some(s => s.no === BL.sel)) BL.sel = f[0]?.no || null;
+  box.innerHTML = f.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Beleg</th><th>Zeit</th><th>Art</th><th>Kassier:in</th><th>Kunde</th><th>Zahlung</th><th class="r" style="padding-right:16px">Betrag</th></tr></thead><tbody>${f.slice(0, 400).map(s => { const k = s.kind || 'verkauf'; return `<tr data-bln="${esc(s.no)}" class="${s.no === BL.sel ? 'sel' : ''}" style="cursor:pointer"><td style="padding-left:16px" class="mono">${esc(s.no)}</td><td class="muted num">${esc(fmtTs(s.ts))}</td><td>${k === 'verkauf' ? (s.voided ? '<span class="pill neg">storniert</span>' : 'Verkauf') : `<span class="pill ${k === 'storno' ? 'neg' : 'warn'}">${esc(kindLabel(s))}</span>`}</td><td>${esc(s.cashier || '–')}</td><td>${esc(s.data?.customer?.name || '')}</td><td class="muted" style="font-size:12.5px">${esc(payLabels(s.data))}</td><td class="r num" style="padding-right:16px;font-weight:600;${s.total < 0 ? 'color:var(--neg)' : ''}">${eur(s.total / 100)}</td></tr>`; }).join('')}</tbody></table>${f.length > 400 ? `<div class="muted" style="padding:10px 16px;font-size:12px">${num(f.length - 400)} weitere – Filter eingrenzen</div>` : ''}`
+    : `<div class="empty" style="padding:56px 20px"><div class="empty-icon">${ic('receipt')}</div><h3>Keine Belege</h3><p>Zeitraum oder Suche anpassen.</p></div>`;
+  renderBlView();
+}
+function renderBlView() {
+  const box = $('#blView'); if (!box) return;
+  const s = BL.list.find(x => x.no === BL.sel);
+  if (!s) { box.innerHTML = `<div class="empty" style="padding:40px"><p>Beleg auswählen</p></div>`; return; }
+  const k = s.kind || 'verkauf', can = DESKTOP && k === 'verkauf' && !s.voided;
+  box.innerHTML = `<div class="set-row"><div><div class="set-l">${esc(kindLabel(s))} ${esc(s.no)}</div><div class="set-h">${esc(fmtTs(s.ts))} · ${esc(s.cashier || '')}${s.ref_no ? ` · zu ${esc(s.ref_no)}` : ''}</div></div></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line)"><button class="btn btn-secondary btn-sm" data-bl="copy">${ic('printer', 'i-sm')}Kopie</button>${DESKTOP ? `<button class="btn btn-secondary btn-sm" data-bl="mail">${ic('mail', 'i-sm')}E-Mail</button>` : ''}${DESKTOP && k === 'verkauf' ? `<button class="btn btn-secondary btn-sm" data-bl="rechnung">${ic('receipt', 'i-sm')}Rechnung</button><button class="btn btn-secondary btn-sm" data-bl="lieferschein">${ic('truck', 'i-sm')}Lieferschein</button>` : ''}${can ? `<button class="btn btn-secondary btn-sm" data-bl="retoure">${ic('undo', 'i-sm')}Retoure</button><button class="btn btn-ghost btn-sm" data-bl="storno" style="color:var(--neg)">${ic('x', 'i-sm')}Storno</button>` : ''}</div>
+    <div style="padding:14px;max-height:calc(100dvh - 330px);overflow:auto"><div class="receipt-wrap" style="padding:0">${receiptHTML(recFromData(s.no, {...s.data, kind: k}), prefs.tpl || 'classic')}</div></div>`;
+}
+async function blAction(a) {
+  if (a === 'ret') return openReturnStart();
+  if (a === 'x') return xReport();
+  const s = BL.list.find(x => x.no === BL.sel); if (!s) return;
+  const rec = recFromData(s.no, {...s.data, kind: s.kind || s.data?.kind});
+  const after = () => { if (S.view === 'belege') renderBelege(); };
+  if (a === 'copy') { Hooks.emit('pos.receipt.copy', {beleg: s.no}); if (DESKTOP) printReceipt(rec, {copy: true}); else toast(`Belegkopie ${s.no}`, {icon: 'printer'}); }
+  else if (a === 'mail') mailReceipt(rec);
+  else if (a === 'rechnung' || a === 'lieferschein') printInvoice(rec, a);
+  else if (a === 'retoure') openReturn(s.no, {onDone: after});
+  else if (a === 'storno') openReturn(s.no, {storno: true, onDone: after});
+}
+
+/* ── Kassenbuch & Abschluss ── */
+registerPage('kassenbuch', {title: 'Kassenbuch & Abschluss', sub: () => 'Bargeld, Einlagen, Entnahmen, Tagesabschlüsse', render: renderKassenbuch});
+const KB_MOVE_LBL = {einlage: 'Einlage', entnahme: 'Entnahme', anfang: 'Anfangsbestand', uebertrag: 'Übertrag'};
+async function renderKassenbuch() {
+  const v = $('#view-kassenbuch');
+  if (!DESKTOP) { v.innerHTML = desktopEmpty('cash', 'Kassenbuch'); return; }
+  v.innerHTML = `<div class="cv">${pageHead('Kassenbuch & Abschluss', 'Laufender Zeitraum seit dem letzten Tagesabschluss', `<button class="btn btn-secondary" data-kb="move">${ic('cash', 'i-sm')}Einlage / Entnahme</button><button class="btn btn-secondary" data-kb="x">${ic('receipt', 'i-sm')}X-Bericht</button><button class="btn btn-primary" data-kb="z">${ic('lock', 'i-sm')}Tagesabschluss</button>`)}<div id="kbBody">${loadingCard('Lade Kassenbuch')}</div></div>`;
+  let s, moves, zs;
+  try { [s, moves, zs] = await Promise.all([invoke('cash_status'), invoke('cash_moves_list', {limit: 300}), invoke('closings_list')]); } catch (e) { $('#kbBody').innerHTML = `<div class="card" style="padding:18px">${esc(String(e))}</div>`; return; }
+  const e2 = c => eur((c || 0) / 100);
+  $('#kbBody').innerHTML = kpiCards([[e2(s.cash.expected), 'Bargeld laut Kassenbuch'], [e2(s.revenue), 'Umsatz seit letztem Abschluss'], [num(s.counts.sales), 'Bons'], [e2(s.cash.deposits), 'Einlagen'], [e2(s.cash.withdrawals), 'Entnahmen']])
+    + `<div class="ds-grid" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start">
+      <div class="card"><div class="set-row"><div><div class="set-l">Kassenbuch</div><div class="set-h">Alle Bargeldbewegungen außerhalb von Verkäufen</div></div></div>${moves.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Zeit</th><th>Art</th><th>Grund</th><th class="r" style="padding-right:16px">Betrag</th></tr></thead><tbody>${moves.map(m => { const neg = m.amount < 0; return `<tr><td style="padding-left:16px" class="muted num">${esc(fmtTs(m.ts))}</td><td>${esc(KB_MOVE_LBL[m.kind] || m.kind)}${m.closing_id ? '' : ' <span class="pill accent" style="height:18px">offen</span>'}</td><td>${esc(m.reason)}<div class="muted" style="font-size:11.5px">${esc(m.user || '')}</div></td><td class="r num" style="padding-right:16px;font-weight:600;color:var(--${neg ? 'neg' : 'pos'})">${neg ? '−' : '+'}${e2(Math.abs(m.amount))}</td></tr>`; }).join('')}</tbody></table>` : '<div class="empty" style="padding:30px"><p>Noch keine Einlagen oder Entnahmen.</p></div>'}</div>
+      <div class="card"><div class="set-row"><div><div class="set-l">Tagesabschlüsse (Z-Berichte)</div><div class="set-h">Klick öffnet den Bericht · Druck jederzeit möglich</div></div></div>${zs.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Nr.</th><th>Zeitpunkt</th><th class="r">Umsatz</th><th class="r">Gezählt</th><th class="r" style="padding-right:16px">Differenz</th></tr></thead><tbody>${zs.map((z, i) => `<tr data-kbz="${i}" style="cursor:pointer"><td style="padding-left:16px"><b>${esc(z.no)}</b></td><td class="muted num">${esc(fmtTs(z.ts))}</td><td class="r num">${e2(z.data?.revenue)}</td><td class="r num">${e2(z.counted)}</td><td class="r num" style="padding-right:16px;color:${z.diff ? 'var(--warn)' : 'inherit'}">${e2(z.diff)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:30px"><p>Noch kein Tagesabschluss.</p></div>'}</div></div>`;
+  $('#kbBody')._z = zs;
+}
+Hooks.on('cash.moved', () => S.view === 'kassenbuch' && setTimeout(renderKassenbuch, 300));
+Hooks.on('cash.closing', () => S.view === 'kassenbuch' && setTimeout(renderKassenbuch, 300));
+
+/* ── Gutscheine ── */
+const GS = {list: [], f: 'aktiv', q: ''};
+registerPage('gutscheine', {title: 'Gutscheine', sub: () => 'Ausgegebene Gutscheine, Restwerte, Ablauf', render: renderGutscheine});
+const gsState = g => g.status !== 'aktiv' ? 'eingelöst' : (g.valid_until && g.valid_until < today()) ? 'abgelaufen' : g.balance <= 0 ? 'eingelöst' : 'aktiv';
+async function renderGutscheine() {
+  const v = $('#view-gutscheine');
+  if (!DESKTOP) { v.innerHTML = desktopEmpty('gift', 'Gutscheine'); return; }
+  try { GS.list = await invoke('voucher_list'); } catch (e) { GS.list = []; }
+  const act = GS.list.filter(g => gsState(g) === 'aktiv'), sum = act.reduce((a, g) => a + g.balance, 0);
+  v.innerHTML = `<div class="cv">${pageHead('Gutscheine', 'Jeder Gutschein hat einen eigenen Code und Restwert – einlösbar an der Kasse', `<button class="btn btn-primary" data-gs="neu">${ic('gift', 'i-sm')}Gutschein verkaufen</button>`)}
+    ${kpiCards([[num(act.length), 'aktive Gutscheine'], [eur(sum / 100), 'offener Wert (Verbindlichkeit)'], [eur(GS.list.reduce((a, g) => a + g.initial, 0) / 100), 'insgesamt ausgegeben'], [eur(GS.list.reduce((a, g) => a + (g.initial - g.balance), 0) / 100), 'eingelöst']])}
+    <div class="filters"><input class="input" id="gsQ" placeholder="Code suchen …" value="${esc(GS.q)}" style="max-width:280px"><div class="seg" id="gsSeg">${[['aktiv', 'Aktiv'], ['eingelöst', 'Eingelöst'], ['abgelaufen', 'Abgelaufen'], ['alle', 'Alle']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${GS.f === k}">${l}</button>`).join('')}</div></div>
+    <div class="card" id="gsList"></div></div>`;
+  initSeg($('#gsSeg', v), b => { GS.f = b.dataset.v; renderGsList(); });
+  renderGsList();
+}
+function renderGsList() {
+  const box = $('#gsList'); if (!box) return;
+  const l = GS.list.filter(g => (GS.f === 'alle' || gsState(g) === GS.f) && (!GS.q || g.code.toLowerCase().includes(GS.q.toLowerCase())));
+  const tone = {aktiv: 'pos', eingelöst: '', abgelaufen: 'warn'};
+  box.innerHTML = l.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Code</th><th>Status</th><th class="r">Wert</th><th class="r">Restwert</th><th>gültig bis</th><th>Verkauft mit</th><th>Ausgegeben</th></tr></thead><tbody>${l.map(g => `<tr><td style="padding-left:16px" class="mono"><b>${esc(g.code)}</b></td><td><span class="pill ${tone[gsState(g)]}">${gsState(g)}</span></td><td class="r num">${eur(g.initial / 100)}</td><td class="r num" style="font-weight:600">${eur(g.balance / 100)}</td><td class="num">${g.valid_until ? esc(new Date(g.valid_until).toLocaleDateString('de-AT')) : '–'}</td><td>${g.sale_no ? `<button class="btn btn-ghost btn-sm" data-gssale="${esc(g.sale_no)}">${esc(g.sale_no)}</button>` : '–'}</td><td class="muted">${esc(fmtTs(g.created_at))}</td></tr>`).join('')}</tbody></table>`
+    : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('gift')}</div><h3>Keine Gutscheine</h3><p>Gutscheine verkaufen Sie an der Kasse („Gutschein verkaufen“).</p></div>`;
+}
+
+/* ── Lieferanten ── */
+registerPage('lieferanten', {title: 'Lieferanten', sub: () => `${SUPPLIERS.length} Lieferanten`, render: renderLieferanten});
+async function renderLieferanten() {
+  const v = $('#view-lieferanten');
+  if (!DESKTOP) { v.innerHTML = desktopEmpty('building', 'Lieferanten'); return; }
+  if (!EK.loaded) { v.innerHTML = `<div class="cv">${loadingCard('Lade Lieferanten')}</div>`; await loadPurchasing(); }
+  const cfs = cfDefs('lieferant').slice(0, 3);
+  const openPos = id => EK.pos.filter(p => p.supplier_id === id && ['bestellt', 'teilgeliefert'].includes(p.status));
+  v.innerHTML = `<div class="cv">${pageHead('Lieferanten', 'Kontakte, Lieferzeiten, Sortiment und offene Bestellungen', `<button class="btn btn-secondary" data-lf="po">${ic('truck', 'i-sm')}Neue Bestellung</button><button class="btn btn-primary" data-lf="neu">${ic('plus', 'i-sm')}Neuer Lieferant</button>`)}
+    ${kpiCards([[num(SUPPLIERS.length), 'Lieferanten'], [num(EK.pos.filter(p => ['bestellt', 'teilgeliefert'].includes(p.status)).length), 'offene Bestellungen'], [eur0(EK.pos.filter(p => ['bestellt', 'teilgeliefert'].includes(p.status)).reduce((a, p) => a + p.value, 0) / 100), 'offener Bestellwert (EK)'], [num(ART.filter(a => !a.supplierId).length), 'Artikel ohne Lieferant', ART.some(a => !a.supplierId) ? 'warn' : '']])}
+    <div class="card">${SUPPLIERS.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Lieferant</th><th>Kontakt</th><th>Kundennr.</th><th class="r">Lieferzeit</th><th class="r">Artikel</th><th class="r">offen</th>${cfs.map(d => `<th>${esc(d.label)}</th>`).join('')}</tr></thead><tbody>${SUPPLIERS.map(s => `<tr data-lfs="${esc(s.id)}" style="cursor:pointer"><td style="padding-left:16px"><b>${esc(s.name)}</b><div class="muted" style="font-size:11.5px">${esc(s.id)}</div></td><td>${esc(s.contact || '')}<div class="muted" style="font-size:12px">${esc([s.email, s.phone].filter(Boolean).join(' · '))}</div></td><td>${esc(s.customer_no || '–')}</td><td class="r num">${num(s.lead_days || 0)} T</td><td class="r num">${num(ART.filter(a => a.supplierId === s.id).length)}</td><td class="r num">${num(openPos(s.id).length)}</td>${cfs.map(d => `<td>${esc(cfShow(d, CF.sup[s.id]?.[d.key]))}</td>`).join('')}</tr>`).join('')}</tbody></table>`
+      : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('building')}</div><h3>Noch keine Lieferanten</h3><p>Lieferanten im Artikel hinterlegen – dann funktionieren Bestellvorschlag und KI-Nachbestellung je Lieferant.</p></div>`}</div></div>`;
+}
+
+/* ── Wareneingang ── */
+const WE = {log: []};
+registerPage('wareneingang', {title: 'Wareneingang', sub: () => 'Lieferungen einbuchen', render: renderWareneingang});
+async function renderWareneingang() {
+  const v = $('#view-wareneingang');
+  if (!DESKTOP) { v.innerHTML = desktopEmpty('download', 'Wareneingang'); return; }
+  await loadPurchasing();
+  const open = EK.pos.filter(p => ['bestellt', 'teilgeliefert'].includes(p.status));
+  navBadge('wareneingang', open.length);
+  v.innerHTML = `<div class="cv">${pageHead('Wareneingang', 'Bestellte Ware einbuchen oder Zugang ohne Bestellung per Scan', `<button class="btn btn-secondary" data-we="etiketten">${ic('barcode', 'i-sm')}Etiketten drucken</button>`)}
+    <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start">
+      <div class="card"><div class="set-row"><div><div class="set-l">Offene Bestellungen</div><div class="set-h">${open.length ? `${open.length} Bestellungen warten auf Lieferung` : 'Keine offenen Bestellungen'}</div></div></div>
+        ${open.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Bestellung</th><th>Lieferant</th><th>bestellt</th><th class="r">geliefert</th><th></th></tr></thead><tbody>${open.map(p => `<tr><td style="padding-left:16px"><b>${esc(p.no)}</b><div class="muted" style="font-size:11.5px">${eur(p.value / 100)} EK</div></td><td>${esc(p.supplier)}</td><td class="muted">${esc(p.ordered_at ? fmtTs(p.ordered_at) : '–')}</td><td class="r num">${num(p.received)} / ${num(p.qty)}</td><td class="r" style="padding-right:12px"><button class="btn btn-primary btn-sm" data-wepo="${p.id}">${ic('download', 'i-sm')}Einbuchen</button></td></tr>`).join('')}</tbody></table>` : `<div class="empty" style="padding:36px"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><p>Alles geliefert.</p></div>`}</div>
+      <div class="card"><div class="set-row"><div><div class="set-l">Zugang ohne Bestellung</div><div class="set-h">EAN scannen, Menge prüfen, Enter – bucht sofort</div></div></div>
+        <div style="padding:14px 16px;display:grid;gap:10px"><input class="input" id="weEan" placeholder="EAN scannen oder eingeben" autocomplete="off"><div style="display:flex;gap:8px"><input class="input num" id="weQty" value="1" inputmode="numeric" style="width:90px"><input class="input" id="weReason" placeholder="Grund, z. B. Nachlieferung" style="flex:1"><button class="btn btn-primary" data-we="book">${ic('check', 'i-sm')}Buchen</button></div><div id="weHit" class="muted" style="font-size:12.5px;min-height:18px"></div></div>
+        <div id="weLog">${weLogHTML()}</div></div></div></div>`;
+  setTimeout(() => $('#weEan')?.focus(), 80);
+}
+const weLogHTML = () => WE.log.length ? `<table class="tbl" style="margin:0"><tbody>${WE.log.slice(0, 15).map(x => `<tr><td style="padding-left:16px"><b>${esc(x.name)}</b><div class="muted" style="font-size:11.5px">${esc(x.var)} · ${esc(x.ean)}</div></td><td class="r num" style="color:var(--pos)">+${x.qty}</td><td class="r num" style="padding-right:16px">→ ${x.after}</td></tr>`).join('')}</tbody></table>` : '';
+const findEan = ean => { for (const a of ART) { const v = a.variants.find(x => x.ean === ean.trim()); if (v) return {a, v}; } return null; };
+async function weBook() {
+  const ean = $('#weEan').value.trim(), qty = parseInt($('#weQty').value, 10) || 0, hit = findEan(ean);
+  if (!hit) { shakeEl($('#weEan')); $('#weHit').textContent = ean ? `EAN ${ean} unbekannt` : ''; return; }
+  if (!(qty > 0)) return shakeEl($('#weQty'));
+  try { await needPerm('bestand.buchen', 'Bestand buchen'); } catch { return; }
+  try {
+    const after = await invoke('stock_book', {variantId: hit.v.vid, value: qty, set: false, reason: `Wareneingang${$('#weReason').value.trim() ? ': ' + $('#weReason').value.trim() : ''}`, user: S.user.name});
+    hit.v.q = after; finishArt(hit.a);
+    WE.log.unshift({name: hit.a.name, var: `${colorName(hit.v.c)} · ${hit.v.s}`, ean, qty, after});
+    Hooks.emit('inventory.booked', {sku: hit.a.id, variante: `${colorName(hit.v.c)} / ${hit.v.s}`, menge: qty, bestand: after, grund: 'Wareneingang'});
+    $('#weLog').innerHTML = weLogHTML(); $('#weEan').value = ''; $('#weQty').value = '1'; $('#weHit').textContent = `${hit.a.name} · Bestand jetzt ${after}`; $('#weEan').focus();
+  } catch (e) { toast('Nicht gebucht', {t2: String(e), type: 'warn'}); }
+}
+Hooks.on('purchasing.goods.received', () => S.view === 'wareneingang' && setTimeout(renderWareneingang, 400));
+
+/* ── Etiketten ── */
+const ET = {q: '', items: []};
+registerPage('etiketten', {title: 'Etiketten', sub: () => 'Preis- und Barcode-Etiketten drucken', render: renderEtiketten});
+function renderEtiketten() {
+  const v = $('#view-etiketten');
+  v.innerHTML = `<div class="cv">${pageHead('Etiketten', `Druck auf ${CFG['etikett.art'] === 'a4' || !CFG['etikett.art'] ? 'A4-Bögen' : 'dem Etikettendrucker (ZPL)'} · Einstellungen → Etiketten`, `<button class="btn btn-secondary" data-et="clear" ${ET.items.length ? '' : 'disabled'}>${ic('trash', 'i-sm')}Liste leeren</button><button class="btn btn-primary" data-et="print" ${ET.items.length ? '' : 'disabled'}>${ic('printer', 'i-sm')}${num(ET.items.reduce((a, x) => a + x.n, 0))} Etiketten drucken</button>`)}
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start">
+      <div class="card"><div style="padding:14px 16px"><input class="input" id="etQ" placeholder="Artikel suchen oder EAN scannen …" value="${esc(ET.q)}" autocomplete="off"></div><div id="etRes"></div></div>
+      <div class="card"><div class="set-row"><div><div class="set-l">Druckliste</div><div class="set-h">Menge je Etikett anpassen</div></div></div><div id="etList"></div></div></div></div>`;
+  renderEtRes(); renderEtList();
+}
+function renderEtRes() {
+  const box = $('#etRes'); if (!box) return;
+  const n = norm(ET.q), hits = n ? ART.filter(a => a.hay.includes(n) || a.variants.some(v => v.ean === ET.q.trim())).slice(0, 12) : ART.slice(0, 8);
+  box.innerHTML = hits.map(a => `<div style="border-top:1px solid var(--line);padding:10px 16px"><div style="display:flex;align-items:center;gap:10px"><span class="thumb" style="--c:${COLORS[a.colors[0]]?.[1] || '#888'};width:34px;height:34px;border-radius:8px">${artVisual(a, COLORS[a.colors[0]]?.[1] || '#888')}</span><div style="flex:1;min-width:0"><b>${esc(a.name)}</b><div class="muted" style="font-size:12px">${esc(a.id)} · ${eur(a.sale || a.price)} · ${a.variants.length} Varianten</div></div><button class="btn btn-ghost btn-sm" data-etall="${esc(a.id)}">Alle</button><button class="btn btn-ghost btn-sm" data-etstock="${esc(a.id)}">= Bestand</button></div>
+    <div class="reasons" style="margin-top:8px">${a.variants.map(v => `<button class="chip" data-etv="${esc(v.ean)}" style="height:28px;font-size:12px">${esc(colorName(v.c))} · ${esc(v.s)}</button>`).join('')}</div></div>`).join('') || '<div class="empty" style="padding:24px"><p>Kein Artikel gefunden.</p></div>';
+}
+function renderEtList() {
+  const box = $('#etList'); if (!box) return;
+  box.innerHTML = ET.items.length ? `<table class="tbl" style="margin:0"><tbody>${ET.items.map((x, i) => `<tr><td style="padding-left:16px"><b>${esc(x.a.name)}</b><div class="muted" style="font-size:11.5px">${esc(colorName(x.v.c))} · ${esc(x.v.s)} · ${esc(x.v.ean)}</div></td><td class="r"><input class="input num" data-etn="${i}" value="${x.n}" style="width:70px;height:30px;text-align:right"></td><td class="r" style="padding-right:12px"><button class="btn btn-ghost btn-sm btn-icon" data-etrm="${i}" aria-label="Entfernen">${ic('x', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
+    : `<div class="empty" style="padding:36px"><div class="empty-icon">${ic('barcode')}</div><p>Links Varianten antippen – oder „Alle“ bzw. „= Bestand“ für ganze Artikel.</p></div>`;
+  const pb = $('[data-et="print"]'); if (pb) { pb.disabled = !ET.items.length; pb.innerHTML = `${ic('printer', 'i-sm')}${num(ET.items.reduce((a, x) => a + x.n, 0))} Etiketten drucken`; }
+  const cb = $('[data-et="clear"]'); if (cb) cb.disabled = !ET.items.length;
+}
+function etAdd(a, v, n = 1) { const ex = ET.items.find(x => x.v.ean === v.ean); if (ex) ex.n += n; else ET.items.push({a, v, n}); }
+
+/* ── Buchhaltung ── */
+const FB = {p: 'monat', von: '', bis: '', rows: []};
+registerPage('buchhaltung', {title: 'Buchhaltung', sub: () => 'Buchungsjournal und DATEV-Export', render: renderBuchhaltung});
+function fbRange() {
+  const n = new Date(), y = n.getFullYear(), m = n.getMonth();
+  const r = {monat: [new Date(y, m, 1), new Date(y, m + 1, 0)], vormonat: [new Date(y, m - 1, 1), new Date(y, m, 0)], quartal: [new Date(y, Math.floor(m / 3) * 3, 1), new Date(y, Math.floor(m / 3) * 3 + 3, 0)], jahr: [new Date(y, 0, 1), new Date(y, 11, 31)]}[FB.p];
+  return r ? r.map(dIso) : [FB.von || today(), FB.bis || today()];
+}
+async function renderBuchhaltung() {
+  const v = $('#view-buchhaltung');
+  if (!DESKTOP) { v.innerHTML = desktopEmpty('receipt', 'Buchhaltung'); return; }
+  const [von, bis] = fbRange();
+  v.innerHTML = `<div class="cv">${pageHead('Buchhaltung', `${new Date(von + 'T12:00').toLocaleDateString('de-AT')} – ${new Date(bis + 'T12:00').toLocaleDateString('de-AT')} · tagesweise verdichtet`, `<button class="btn btn-ghost" data-fb="konten">${ic('sliders', 'i-sm')}Konten</button><button class="btn btn-secondary" data-fb="journal">${ic('download', 'i-sm')}Buchungsjournal (CSV)</button><button class="btn btn-primary" data-fb="datev">${ic('download', 'i-sm')}DATEV-Export</button>`)}
+    <div class="filters"><div class="seg" id="fbSeg">${[['monat', 'Monat'], ['vormonat', 'Vormonat'], ['quartal', 'Quartal'], ['jahr', 'Jahr'], ['frei', 'Zeitraum']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${FB.p === k}">${l}</button>`).join('')}</div>${FB.p === 'frei' ? `<input type="date" class="input" id="fbVon" value="${von}"> – <input type="date" class="input" id="fbBis" value="${bis}">` : ''}</div>
+    <div id="fbBody">${loadingCard('Rechne Buchungen')}</div></div>`;
+  initSeg($('#fbSeg', v), b => { FB.p = b.dataset.v; renderBuchhaltung(); });
+  try { FB.rows = await invoke('fibu_preview', {von, bis}); } catch (e) { FB.rows = []; toast('Buchungen nicht verfügbar', {t2: String(e), type: 'warn'}); }
+  const rows = FB.rows, acc = {};
+  rows.forEach(r => { (acc[r.soll] ||= {s: 0, h: 0}).s += r.betrag; (acc[r.haben] ||= {s: 0, h: 0}).h += r.betrag; });
+  const sum = rows.reduce((a, r) => a + r.betrag, 0), tax = rows.reduce((a, r) => a + (r.steuer || 0), 0);
+  const accName = k => ({[CFG['fibu.kasse']]: 'Kasse', [CFG['fibu.transit']]: 'Geldtransit', [CFG['fibu.bank']]: 'Bank', [CFG['fibu.gutschein']]: 'Gutscheine', [CFG['fibu.erloes20']]: 'Erlöse 20 %', [CFG['fibu.erloes13']]: 'Erlöse 13 %', [CFG['fibu.erloes10']]: 'Erlöse 10 %', [CFG['fibu.erloes0']]: 'Erlöse 0 %'})[k] || '';
+  $('#fbBody').innerHTML = kpiCards([[num(rows.length), 'Buchungszeilen'], [eur(sum / 100), 'Summe Buchungen'], [eur(tax / 100), 'davon Umsatzsteuer'], [num(new Set(rows.map(r => r.datum)).size), 'Buchungstage']])
+    + `<div style="display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start"><div class="card">${rows.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Datum</th><th>Beleg</th><th>Soll</th><th>Haben</th><th class="r">Betrag</th><th class="r">USt</th><th>Buchungstext</th></tr></thead><tbody>${rows.slice(0, 500).map(r => `<tr><td style="padding-left:16px" class="num">${esc(new Date(r.datum + 'T12:00').toLocaleDateString('de-AT'))}</td><td class="mono" style="font-size:12px">${esc(r.beleg)}</td><td class="mono">${esc(r.soll)}</td><td class="mono">${esc(r.haben)}</td><td class="r num">${eur(r.betrag / 100)}</td><td class="r num">${r.ust ? r.ust + ' %' : '–'}</td><td style="font-size:12.5px">${esc(r.text)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty" style="padding:48px"><div class="empty-icon">${ic('receipt')}</div><p>Keine Buchungen im Zeitraum.</p></div>`}</div>
+      <div class="card"><div class="set-row"><div><div class="set-l">Konten im Zeitraum</div></div></div><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Konto</th><th class="r">Soll</th><th class="r" style="padding-right:16px">Haben</th></tr></thead><tbody>${Object.entries(acc).sort().map(([k, x]) => `<tr><td style="padding-left:16px"><span class="mono">${esc(k)}</span> <span class="muted" style="font-size:12px">${esc(accName(k))}</span></td><td class="r num">${x.s ? eur(x.s / 100) : ''}</td><td class="r num" style="padding-right:16px">${x.h ? eur(x.h / 100) : ''}</td></tr>`).join('')}</tbody></table></div></div>
+    <div class="prompt-hint blk" style="margin-top:10px">${ic('info', 'i-xs')}DATEV-Format „Buchungsstapel“ (EXTF 700), Journal als CSV für BMD, RZL und Excel. Vor der ersten Übergabe Kontenrahmen mit der Steuerberatung abstimmen.</div>`;
+}
+
+/* ── KI-Analyse ── */
+registerPage('ki', {title: 'KI-Analyse', sub: () => llmReady() ? `Statistik + Sprachmodell ${CFG['ki.modell']}` : 'Lokal berechnet aus Ihren Belegen', render: renderKi});
+const sparkSVG = (xs, w = 120, h = 28) => { const m = Math.max(1, ...xs); const pts = xs.map((x, i) => `${(i / Math.max(1, xs.length - 1) * w).toFixed(1)},${(h - 2 - x / m * (h - 4)).toFixed(1)}`).join(' '); return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>`; };
+async function renderKi() {
+  const v = $('#view-ki');
+  if (!DESKTOP) { v.innerHTML = desktopEmpty('sparkle', 'KI-Analyse'); return; }
+  v.innerHTML = `<div class="cv">${pageHead('KI-Analyse', 'Prognosen, Nachbestellung und Auffälligkeiten – ohne Internet, aus Ihren eigenen Belegen', `<button class="btn btn-secondary" data-ki="ek">${ic('truck', 'i-sm')}Nachbestellvorschlag</button>`)}
+    <div class="hero-card" style="margin-bottom:16px"><span class="reg-ic" style="color:var(--accent)">${ic('sparkle')}</span><form id="kiForm" style="flex:1;display:flex;gap:8px"><input class="input" id="kiQ" placeholder="Frage stellen, z. B. „Top-Artikel letzten Monat“" style="flex:1"><button class="btn btn-primary">Fragen</button></form></div>
+    <div class="reasons" style="margin:-6px 0 14px">${['Was muss ich nachbestellen?', 'Umsatz diese Woche', 'Top-Artikel diesen Monat', 'Prognose nächste Wochen', 'Auffälligkeiten', 'Beste Kunden'].map(q => `<button class="chip" data-kiq="${esc(q)}">${esc(q)}</button>`).join('')}</div>
+    <div id="kiAns"></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start">
+      <div class="card"><div class="set-row"><div><div class="set-l">Absatzprognose · nächste 4 Wochen</div><div class="set-h">Holt-Verfahren auf Wochenabsätzen der letzten 12 Wochen</div></div></div><div id="kiFc">${loadingCard('Berechne Prognose')}</div></div>
+      <div class="card"><div class="set-row"><div><div class="set-l">Hinweise</div><div class="set-h">Auffälligkeiten mit Handlungsvorschlag</div></div></div><div id="kiIns">${loadingCard('Werte aus')}</div></div></div></div>`;
+  const [fc] = await Promise.all([invoke('ai_forecast').catch(() => []), loadInsights(true)]);
+  if (!$('#kiFc')) return;
+  $('#kiFc').innerHTML = fc.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Artikel</th><th>12 Wochen</th><th class="r">Erwartet</th><th class="r">Trend</th><th class="r">Bestand</th><th class="r" style="padding-right:16px">Reichweite</th></tr></thead><tbody>${fc.slice(0, 15).map(r => `<tr><td style="padding-left:16px"><b>${esc(r.name)}</b></td><td>${sparkSVG(r.weeks || [])}</td><td class="r num">${num(r.next4, 1)}</td><td class="r num" style="color:var(--${r.trend > 5 ? 'pos' : r.trend < -5 ? 'neg' : 'text-3'})">${pct(r.trend, 0)}</td><td class="r num">${num(r.stock)}</td><td class="r num" style="padding-right:16px;${r.cover_days < 14 ? 'color:var(--warn);font-weight:600' : ''}">${r.cover_days >= 9999 ? '–' : num(r.cover_days) + ' T'}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:30px"><p>Für eine Prognose fehlen noch Verkäufe.</p></div>';
+  const ins = (AI.ins || []);
+  $('#kiIns').innerHTML = ins.length ? ins.map(x => `<div style="padding:12px 16px;border-top:1px solid var(--line)"><div style="display:flex;gap:8px;align-items:center;font-weight:600"><span style="color:var(--${x.tone})">${ic(x.icon, 'i-sm')}</span>${esc(x.title)}<span class="muted" style="margin-left:auto;font-weight:500;font-size:12px">${Math.round(x.confidence)} %</span></div><p style="margin:6px 0 8px;font-size:13px;color:var(--text-2)">${esc(x.text)}</p>${x.action ? `<button class="btn btn-secondary btn-sm" data-kiins="${esc(x.id)}">${esc(x.action.label)}</button>` : ''}</div>`).join('') : `<div class="empty" style="padding:30px"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><p>Keine Auffälligkeiten.</p></div>`;
+}
+async function kiAsk(q) {
+  const box = $('#kiAns'); if (!box || !q.trim()) return;
+  $('#kiQ').value = q;
+  box.innerHTML = `<div class="card" style="margin-bottom:16px">${loadingCard('Werte aus')}</div>`;
+  let a; try { a = await realAnswer(q); } catch (e) { a = {title: 'Keine Antwort', text: String(e.message || e)}; }
+  Hooks.emit('ai.query', {frage: q, modell: a.model || 'Kontor-Statistik (lokal)'});
+  box.innerHTML = `<div class="card" style="margin-bottom:16px"><div class="set-row"><div><div class="set-l">${ic('sparkle', 'i-xs')} ${esc(a.title)}</div><div class="set-h" style="white-space:pre-wrap">${esc(a.text)}</div></div>${a.act ? `<div class="set-c"><button class="btn btn-secondary btn-sm" id="kiAct">${esc(a.act.label)}</button></div>` : ''}</div>
+    ${a.rows?.length ? `<table class="tbl" style="margin:0"><thead><tr>${a.cols.map((c, i) => `<th class="${a.num?.includes(i) ? 'r' : ''}" style="${i ? '' : 'padding-left:16px'}">${esc(c)}</th>`).join('')}</tr></thead><tbody>${a.rows.map(r => `<tr>${r.map((c, i) => `<td class="${a.num?.includes(i) ? 'r num' : ''}" style="${i ? '' : 'padding-left:16px;font-weight:550'}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>` : ''}
+    ${a.sql ? `<div class="prompt-hint blk" style="padding:0 16px 12px">${ic('code', 'i-xs')}${esc(a.sql)}</div>` : ''}</div>`;
+  const b = $('#kiAct'); if (b) b.onclick = () => a.act.run();
+}
+
+/* ── Benutzer & Rechte ── */
+registerPage('benutzer', {title: 'Benutzer & Rechte', sub: () => `${STAFF.length} Personen`, render: renderBenutzer});
+async function renderBenutzer() {
+  const v = $('#view-benutzer');
+  v.innerHTML = `<div class="cv">${pageHead('Benutzer & Rechte', 'Personen, PINs, Zwei-Faktor-Anmeldung und was jede Rolle darf')}
+    <div id="usrWarn"></div><div class="card" id="usrBox"></div>
+    <div class="card" style="margin-top:12px"><div class="set-row"><div><div class="set-l">Anmeldemethoden</div><div class="set-h">PIN (4 Ziffern, gesalzen gespeichert, Sperre nach 5 Fehlversuchen) · zusätzlich Authenticator-App (2FA) je Person · Handy-App mit derselben PIN · Freigaben per PIN einer berechtigten Person</div></div></div></div></div>`;
+  renderUsersBox();
+  if (DESKTOP) invoke('users_default_pins').then(l => { if (l.length && $('#usrWarn')) $('#usrWarn').innerHTML = `<div class="rule-box" style="margin-bottom:12px;background:var(--warn-soft);border-color:transparent">${ic('alert')}<div><b style="color:var(--text)">Erst-PIN noch aktiv:</b> ${esc(l.join(' · '))} – bitte jetzt ändern („Bearbeiten“).</div></div>`; }).catch(() => {});
+}
+
+/* ── Protokoll ── */
+const PR = {cat: '', q: '', rows: [], more: true};
+const PR_CATS = [['', 'Alle'], ['pos.', 'Kasse'], ['auth.', 'Anmeldung'], ['inventory.', 'Bestand'], ['catalog.', 'Artikel'], ['customer.', 'Kunden'], ['cash.', 'Kassenbuch'], ['purchasing.', 'Einkauf'], ['config.', 'Einstellungen'], ['rksv.', 'RKSV'], ['backup.', 'Sicherung'], ['objekt.', 'Objekte'], ['rule.', 'Regeln']];
+registerPage('protokoll', {title: 'Protokoll', sub: () => 'Lückenlose Aufzeichnung aller Aktionen', render: renderProtokoll});
+async function renderProtokoll() {
+  const v = $('#view-protokoll');
+  v.innerHTML = `<div class="cv">${pageHead('Protokoll', 'Jede Kassenaktion, Anmeldung, Buchung und Einstellungsänderung – nur lesbar, nicht änderbar', `<button class="btn btn-secondary" data-pr="csv">${ic('download', 'i-sm')}CSV</button>`)}
+    <div class="filters"><input class="input" id="prQ" placeholder="Suchen, z. B. Belegnummer, Benutzer, EAN …" value="${esc(PR.q)}" style="flex:1;min-width:240px;max-width:420px"><div class="reasons">${PR_CATS.map(([k, l]) => `<button class="chip" data-prc="${k}" aria-pressed="${PR.cat === k}">${l}</button>`).join('')}</div></div>
+    <div class="card" id="prList">${loadingCard('Lade Protokoll')}</div></div>`;
+  PR.rows = []; PR.more = true; await prLoad();
+}
+const prText = p => p && typeof p === 'object' ? Object.entries(p).filter(([, x]) => x != null && x !== '').map(([k, x]) => `${k}: ${typeof x === 'object' ? JSON.stringify(x) : x}`).join(' · ') : String(p ?? '');
+async function prLoad() {
+  let l = [];
+  if (DESKTOP) { try { l = await invoke('audit_query', {q: PR.q || null, prefix: PR.cat || null, before: PR.rows.at(-1)?.id ?? null, limit: 200}); } catch (e) { toast('Protokoll nicht verfügbar', {t2: String(e), type: 'warn'}); } }
+  else l = Hooks.log.filter(e => (!PR.cat || e.evt.startsWith(PR.cat)) && (!PR.q || norm(e.evt + JSON.stringify(e.payload)).includes(norm(PR.q)))).map((e, i) => ({id: i, ts: e.t.toISOString(), event: e.evt, payload: e.payload}));
+  PR.rows.push(...l); PR.more = DESKTOP && l.length === 200;
+  const box = $('#prList'); if (!box) return;
+  box.innerHTML = PR.rows.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:170px">Zeit</th><th style="width:230px">Ereignis</th><th>Details</th></tr></thead><tbody>${PR.rows.map(r => `<tr><td style="padding-left:16px" class="muted num">${esc(fmtTs(r.ts))}</td><td><span class="mono n ${evClass(r.event)}" style="font-size:12px">${esc(r.event)}</span></td><td style="font-size:12.5px;color:var(--text-2)">${esc(prText(r.payload)).slice(0, 400)}</td></tr>`).join('')}</tbody></table>${PR.more ? `<div style="padding:12px;text-align:center"><button class="btn btn-secondary btn-sm" data-pr="more">Weitere laden</button></div>` : ''}`
+    : '<div class="empty" style="padding:40px"><p>Keine Einträge.</p></div>';
+}
+
+/* ── Hilfe & Info, Einrichtung ── */
+registerPage('hilfe', {title: 'Hilfe & Info', sub: () => `Kontor ${S.appVersion}`, render: renderHilfe});
+async function setupChecks() {
+  let pins = [], pw = false;
+  if (DESKTOP) { try { pins = await invoke('users_default_pins'); pw = await invoke('backup_password_status'); } catch { /* */ } }
+  return [
+    {id: 'firma', t: 'Firmendaten eintragen', d: 'Name, Adresse und UID erscheinen auf jedem Beleg', ok: CFG['firma.uid'] !== DEFAULTS['firma.uid'] || CFG['firma.name'] !== DEFAULTS['firma.name'], go: () => setGo('allgemein')},
+    {id: 'pins', t: 'Erst-PINs ändern', d: pins.length ? `Noch aktiv: ${pins.join(', ')}` : 'Alle Personen haben eigene PINs', ok: !pins.length, go: () => go('benutzer')},
+    {id: '2fa', t: 'Zwei-Faktor für Administratoren', d: 'Authenticator-App als zweiter Schutz', ok: STAFF.some(u => u.roleKey === 'admin' && SEC.totp.has(u.id)), go: () => go('benutzer')},
+    {id: 'sortiment', t: 'Eigenes Sortiment', d: 'Artikel anlegen oder per CSV importieren', ok: ART.some(a => !RAW.some(r => r.id === a.id)), go: () => openImport('artikel')},
+    {id: 'drucker', t: 'Bondrucker einrichten', d: 'Netzwerk- oder Windows-Drucker, Kassenlade', ok: CFG['drucker.art'] !== 'aus', go: () => setGo('drucker')},
+    {id: 'sicherung', t: 'Datensicherung verschlüsseln', d: 'Tägliche Sicherung mit Passwort, möglichst auf NAS', ok: !!CFG['backup.auto'] && pw, go: () => setGo('sicherung')},
+    {id: 'rksv', t: 'RKSV in Betrieb nehmen', d: 'Startbeleg erstellen (derzeit Testmodus)', ok: !!S.rksv?.active, go: () => setGo('rksv')},
+    {id: 'mail', t: 'E-Mail-Versand', d: 'Belege und Bestellungen per E-Mail', ok: !!mailReady(), go: () => setGo('mail')},
+  ];
+}
+function setGo(sec) { go('einstellungen'); setTimeout(() => $('#sec-' + sec)?.scrollIntoView({block: 'start'}), 160); }
+async function renderHilfe() {
+  const v = $('#view-hilfe'), checks = await setupChecks(), done = checks.filter(c => c.ok).length;
+  v.innerHTML = `<div class="cv">${pageHead('Hilfe & Info', `Kontor ${esc(S.appVersion)} · ${DESKTOP ? 'Desktop-App' : 'Vorschau im Browser'} · Daten bleiben auf Ihrem Rechner`)}
+    <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start">
+      <div class="card"><div class="set-row"><div><div class="set-l">Einrichtung · ${done} von ${checks.length} erledigt</div><div class="set-h">Schritt für Schritt zum Echtbetrieb</div></div><div class="set-c" style="min-width:140px"><div class="meter" style="width:140px"><i style="width:${done / checks.length * 100}%"></i></div></div></div>
+        <div class="check-list">${checks.map((c, i) => `<div class="check-row ${c.ok ? 'done' : ''}"><span class="ck">${ic(c.ok ? 'check' : 'clock', 'i-xs')}</span><div class="m"><div class="t1">${esc(c.t)}</div><div class="t2">${esc(c.d)}</div></div>${c.ok ? '' : `<button class="btn btn-secondary btn-sm" data-hc="${i}">Erledigen</button>`}</div>`).join('')}</div></div>
+      <div style="display:grid;gap:16px">
+        <div class="card"><div class="set-row"><div><div class="set-l">Schnellzugriff</div></div></div>
+          ${[['import', 'upload', 'Artikel, Kunden oder Bestand importieren (CSV/Excel)'], ['handy', 'phone-pay', 'Handy als Scanner & Lager-App'], ['display', 'layout', 'Kundendisplay öffnen'], ['keys', 'keyboard', 'Tastenkürzel'], ['palette', 'command', 'Befehlspalette (Strg K)'], ['design', 'palette', 'Designsystem'], ['update', 'download', 'Nach Updates suchen']].map(([k, i, l]) => `<button class="pop-i" data-hq="${k}" style="width:100%;padding:10px 16px;border-top:1px solid var(--line);border-radius:0">${ic(i === 'upload' ? 'download' : i)}${esc(l)}</button>`).join('')}</div>
+        <div class="card"><div class="set-row"><div><div class="set-l">Neu in ${esc(S.appVersion)}</div></div></div><ul style="margin:0;padding:10px 16px 14px 34px;font-size:13px;color:var(--text-2);line-height:1.7"><li>Helles, aufgeräumtes Design und neue Menüstruktur mit aufklappbaren Bereichen</li><li>Eigene Seiten: Belege, Kassenbuch, Gutscheine, Lieferanten, Wareneingang, Etiketten, Buchhaltung, KI-Analyse, Benutzer & Rechte, Protokoll</li><li>Import von Artikeln, Kunden und Beständen aus CSV/Excel</li><li>Kundendisplay auf zweitem Bildschirm</li><li>Handy-App für Lager und Inventur (im Browser, ohne App-Store)</li></ul></div>
+        <div class="card"><div class="set-row" style="border-bottom:0"><div><div class="set-l">Ihre Daten</div><div class="set-h">Alles liegt lokal: Datenbank, Bilder, Sicherungen. Kein Cloud-Zwang, keine Weitergabe.${S.info ? `<br><span class="mono" style="font-size:11.5px">${esc(S.info.db_path)}</span>` : ''}</div></div>${S.info ? `<div class="set-c"><button class="btn btn-secondary btn-sm" data-hq="folder">${ic('boxes', 'i-sm')}Ordner</button></div>` : ''}</div></div>
+      </div></div></div>`;
+  v._checks = checks;
+}
+
+/* ── Startseiten-Hinweis „Einrichtung abschließen“ ── */
+{
+  const _rd = renderDashboard;
+  renderDashboard = function (...a) {
+    const r = _rd.apply(this, a);
+    if (DESKTOP && !persist.get('setupHidden', false) && canApprove(S.user)) setupChecks().then(cs => {
+      const open = cs.filter(c => !c.ok); const anchor = $('#askChips'); if (!open.length || !anchor || $('#setupBanner')) return;
+      anchor.insertAdjacentHTML('afterend', `<div class="hero-card" id="setupBanner" style="margin:14px 0 4px"><span class="reg-ic" style="color:var(--accent)">${ic('check')}</span><div style="flex:1"><b>Einrichtung: ${cs.length - open.length} von ${cs.length} erledigt</b><div class="muted" style="font-size:12.5px">Als Nächstes: ${esc(open[0].t)} – ${esc(open[0].d)}</div></div><button class="btn btn-primary btn-sm" data-sb="go">Weiter</button><button class="btn btn-ghost btn-sm btn-icon" data-sb="x" aria-label="Ausblenden">${ic('x', 'i-sm')}</button></div>`);
+      $('#setupBanner').onclick = e => { const b = e.target.closest('[data-sb]'); if (!b) return; if (b.dataset.sb === 'x') { persist.set('setupHidden', true); $('#setupBanner').remove(); } else go('hilfe'); };
+    });
+    return r;
+  };
+}
+
+/* ── Datensicherung: eigener Menüpunkt, Inhalt in den Einstellungen ── */
+{
+  const _go0 = go;
+  go = function (view) {
+    if (view === 'datensicherung') {
+      _go0('einstellungen');
+      setTimeout(() => { $('#sec-sicherung')?.scrollIntoView({block: 'start'}); $$('.nav-item').forEach(n => n.dataset.view === 'datensicherung' ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current')); }, 160);
+      return;
+    }
+    return _go0(view);
+  };
+}
+
+function bindPages() {
+  const on = (id, fn) => $('#view-' + id)?.addEventListener('click', fn);
+  on('belege', e => { const b = e.target.closest('[data-bl]'); if (b) return blAction(b.dataset.bl); const r = e.target.closest('[data-bln]'); if (r) { BL.sel = r.dataset.bln; $$('#blList tr.sel').forEach(x => x.classList.remove('sel')); r.classList.add('sel'); renderBlView(); } });
+  $('#view-belege').addEventListener('input', e => { if (e.target.id === 'blQ') { BL.q = e.target.value; renderBlList(); } });
+  on('kassenbuch', e => { const b = e.target.closest('[data-kb]'); if (b) return ({move: openCashBook, x: xReport, z: openClosing})[b.dataset.kb](); const z = e.target.closest('[data-kbz]'); if (z) showClosing($('#kbBody')._z[+z.dataset.kbz]); });
+  on('gutscheine', e => { if (e.target.closest('[data-gs="neu"]')) { go('kasse'); return setTimeout(openVoucherSale, 120); } const s = e.target.closest('[data-gssale]'); if (s) openSaleView(s.dataset.gssale); });
+  $('#view-gutscheine').addEventListener('input', e => { if (e.target.id === 'gsQ') { GS.q = e.target.value; renderGsList(); } });
+  on('lieferanten', e => { const b = e.target.closest('[data-lf]'); if (b) return b.dataset.lf === 'neu' ? openSupplier(null) : (go('einkauf'), setTimeout(() => openPO(null), 150)); const r = e.target.closest('[data-lfs]'); if (r) openSupplier(SUPPLIERS.find(s => s.id === r.dataset.lfs)); });
+  on('wareneingang', async e => {
+    const p = e.target.closest('[data-wepo]');
+    if (p) { const head = EK.pos.find(x => x.id === +p.dataset.wepo); try { await needPerm('einkauf', 'Wareneingang'); const lines = await invoke('po_lines', {id: head.id}); openReceive(head, lines); } catch (err) { if (err?.message !== 'abgebrochen') toast('Nicht möglich', {t2: String(err), type: 'warn'}); } return; }
+    const b = e.target.closest('[data-we]'); if (!b) return; if (b.dataset.we === 'book') return weBook(); if (b.dataset.we === 'etiketten') { ET.items = []; WE.log.forEach(x => { const h = findEan(x.ean); if (h) etAdd(h.a, h.v, x.qty); }); go('etiketten'); }
+  });
+  $('#view-wareneingang').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.target.id === 'weEan' || e.target.id === 'weQty')) { e.preventDefault(); if (e.target.id === 'weEan' && findEan(e.target.value)) { const h = findEan(e.target.value); $('#weHit').textContent = `${h.a.name} · ${colorName(h.v.c)} · ${h.v.s} · Bestand ${h.v.q}`; } weBook(); } });
+  on('etiketten', e => {
+    const t = e.target;
+    const vb = t.closest('[data-etv]'); if (vb) { const h = findEan(vb.dataset.etv); if (h) { etAdd(h.a, h.v); renderEtList(); } return; }
+    const al = t.closest('[data-etall]'); if (al) { const a = artById(al.dataset.etall); a.variants.forEach(v => etAdd(a, v)); return renderEtList(); }
+    const as = t.closest('[data-etstock]'); if (as) { const a = artById(as.dataset.etstock); a.variants.filter(v => v.q > 0).forEach(v => etAdd(a, v, v.q)); return renderEtList(); }
+    const rm = t.closest('[data-etrm]'); if (rm) { ET.items.splice(+rm.dataset.etrm, 1); return renderEtList(); }
+    const b = t.closest('[data-et]'); if (b?.dataset.et === 'clear') { ET.items = []; return renderEtList(); } if (b?.dataset.et === 'print' && ET.items.length) openLabels(ET.items.map(x => ({...x})));
+  });
+  $('#view-etiketten').addEventListener('input', e => { if (e.target.id === 'etQ') { ET.q = e.target.value; renderEtRes(); } });
+  $('#view-etiketten').addEventListener('change', e => { const i = e.target.dataset.etn; if (i != null) { ET.items[+i].n = Math.max(1, parseInt(e.target.value, 10) || 1); renderEtList(); } });
+  $('#view-etiketten').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'etQ') { const h = findEan(e.target.value); if (h) { etAdd(h.a, h.v); e.target.value = ''; ET.q = ''; renderEtList(); renderEtRes(); } } });
+  on('buchhaltung', async e => {
+    const b = e.target.closest('[data-fb]'); if (!b) return; if (b.dataset.fb === 'konten') return setGo('buchhaltung');
+    const [von, bis] = fbRange();
+    try { const p = await invoke('fibu_export', {von, bis, format: b.dataset.fb}); if (p) toast(b.dataset.fb === 'datev' ? 'DATEV-Export gespeichert' : 'Buchungsjournal gespeichert', {t2: p, type: 'pos', icon: 'download'}); } catch (err) { toast('Export nicht möglich', {t2: String(err), type: 'warn'}); }
+  });
+  $('#view-buchhaltung').addEventListener('change', e => { if (e.target.id === 'fbVon' || e.target.id === 'fbBis') { FB[e.target.id === 'fbVon' ? 'von' : 'bis'] = e.target.value; renderBuchhaltung(); } });
+  on('ki', e => { const q = e.target.closest('[data-kiq]'); if (q) return kiAsk(q.dataset.kiq); const i = e.target.closest('[data-kiins]'); if (i) { const x = INSIGHTS.find(y => y.id === i.dataset.kiins); if (x) insightAction(x); } if (e.target.closest('[data-ki="ek"]')) { EK.tab = 'ki'; go('einkauf'); } });
+  $('#view-ki').addEventListener('submit', e => { if (e.target.id === 'kiForm') { e.preventDefault(); kiAsk($('#kiQ').value); } });
+  on('benutzer', e => { const u = e.target.closest('[data-usr]'); if (u) return openUserEditor(u.dataset.usr ? STAFF.find(s => s.id === u.dataset.usr) : null); const tb = e.target.closest('[data-totp]'); if (tb) return openTotp(STAFF.find(s => s.id === tb.dataset.totp)); const pm = e.target.closest('[data-perm]'); if (pm) permToggle(pm); });
+  on('protokoll', async e => {
+    const c = e.target.closest('[data-prc]'); if (c) { PR.cat = c.dataset.prc; return renderProtokoll(); }
+    const b = e.target.closest('[data-pr]'); if (!b) return;
+    if (b.dataset.pr === 'more') return prLoad();
+    const q = s => `"${String(s ?? '').replace(/"/g, '""')}"`;
+    const csv = ['Zeit;Ereignis;Details', ...PR.rows.map(r => [fmtTs(r.ts), r.event, prText(r.payload)].map(q).join(';'))].join('\r\n');
+    try { const p = await invoke('save_text', {name: `Kontor_Protokoll_${today()}.csv`, content: '﻿' + csv, title: 'Protokoll exportieren'}); if (p) toast('Exportiert', {t2: p, type: 'pos', icon: 'download'}); } catch (err) { toast('Export nicht möglich', {t2: String(err), type: 'warn'}); }
+  });
+  let prT; $('#view-protokoll').addEventListener('input', e => { if (e.target.id === 'prQ') { PR.q = e.target.value.trim(); clearTimeout(prT); prT = setTimeout(() => { PR.rows = []; prLoad(); }, 250); } });
+  on('hilfe', e => {
+    const c = e.target.closest('[data-hc]'); if (c) return $('#view-hilfe')._checks[+c.dataset.hc].go();
+    const q = e.target.closest('[data-hq]'); if (!q) return;
+    ({import: () => openImport(), handy: () => setGo('handy'), display: () => toggleDisplay(true), keys: openShortcuts, palette: () => openPalette(), design: () => go('designsystem'), update: openUpdate, folder: () => invoke('open_folder', {path: S.info.data_dir}).catch(() => {})})[q.dataset.hq]?.();
+  });
+  document.addEventListener('click', e => { const g = e.target.closest('[data-goto]'); if (g) go(g.dataset.goto); });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   36 · IMPORT, KUNDENDISPLAY, HANDY-APP
+   Import: CSV aus Excel/Warenwirtschaft mit Spaltenzuordnung, Vorschau
+   und Prüfung – Artikel (eine Zeile je Variante), Kunden, Bestände.
+   Kundendisplay: zweites Fenster, das Warenkorb und Summe zeigt.
+   Handy-App: Lager & Inventur im Browser des Handys (über die API).
+   ════════════════════════════════════════════════════════════════════ */
+const COLOR_WORDS = {schwarz: '#22252B', weiss: '#EDEDEA', grau: '#8A8F98', anthrazit: '#3B3F46', silber: '#BFC3C8', dunkelblau: '#24345E', navy: '#22325A', hellblau: '#8DB7E0', blau: '#3567B5', tuerkis: '#2B9E9A', petrol: '#2F6668', gruen: '#4E7D4A', oliv: '#6B6B3A', khaki: '#9A8F62', gelb: '#E2B93B', senf: '#C99B2F', orange: '#E07A2E', rot: '#C4412F', bordeaux: '#6E2335', weinrot: '#7A2638', rosa: '#E6A3B4', pink: '#D9568A', lila: '#7B5AA6', violett: '#6E4FA0', braun: '#7A5338', cognac: '#9A5B2E', beige: '#D8C4A2', sand: '#C4A67E', creme: '#EDE3CC', natur: '#DCCFB4', gold: '#C9A24A', bunt: '#B05AA0'};
+const colorFor = name => { const n = norm(name).replace(/ß/g, 'ss').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue'); const w = Object.keys(COLOR_WORDS).find(k => n.includes(k)); return w ? COLOR_WORDS[w] : `hsl(${hash(name) % 360} 32% 52%)`; };
+/** Farbe aus freiem Namen: bekannte Farbe (Schlüssel oder Bezeichnung) oder neu anlegen */
+function ensureColor(name) {
+  name = String(name || '').trim() || 'Standard';
+  if (COLORS[name]) return name;
+  const n = norm(name), hit = Object.entries(COLORS).find(([k, v]) => k === n || norm(v[0]) === n);
+  if (hit) return hit[0];
+  COLORS[name] = [name, colorFor(name)]; return name;
+}
+function ensureCat(name) {
+  name = String(name || '').trim(); if (!name) return 'acc';
+  const n = norm(name), hit = CATS.find(c => c.id === name || norm(c.name) === n || c.id === n);
+  if (hit) return hit.id;
+  CATS.push({id: name, name}); return name;
+}
+// Gespeicherte Artikel mit eigenen Farben/Warengruppen (z. B. aus dem Import) anzeigbar machen
+{
+  const _afd = artFromDb;
+  artFromDb = function (d) { (d.colors || []).forEach(c => { if (!COLORS[c]) COLORS[c] = [c, colorFor(c)]; }); if (d.category && !CATS.some(c => c.id === d.category)) CATS.push({id: d.category, name: d.category}); return _afd(d); };
+}
+
+/* ── CSV ── */
+function parseCSV(text) {
+  text = text.replace(/^﻿/, '');
+  const first = text.split(/\r?\n/)[0] || '';
+  const sep = [';', '\t', ','].map(s => [s, first.split(s).length]).sort((a, b) => b[1] - a[1])[0][0];
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; continue; }
+    if (ch === '"') q = true;
+    else if (ch === sep) { row.push(cur); cur = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cur); cur = ''; if (row.some(x => x.trim())) rows.push(row); row = []; }
+    else cur += ch;
+  }
+  row.push(cur); if (row.some(x => x.trim())) rows.push(row);
+  return {sep, head: (rows.shift() || []).map(h => h.trim()), rows};
+}
+const IMP_DEF = {
+  artikel: {title: 'Artikel', icon: 'tag', fields: [['id', 'Artikelnummer', true, 'artikelnummer artnr art-nr sku nummer'], ['name', 'Bezeichnung', true, 'bezeichnung name artikel produkt titel'], ['brand', 'Marke', false, 'marke hersteller brand'], ['cat', 'Warengruppe', false, 'warengruppe kategorie gruppe category'], ['color', 'Farbe', false, 'farbe color colour'], ['size', 'Größe', false, 'groesse grosse size'], ['ean', 'EAN / Barcode', false, 'ean barcode gtin strichcode'], ['price', 'Verkaufspreis', true, 'vk verkaufspreis preis price brutto'], ['sale', 'Aktionspreis', false, 'aktionspreis sale angebot'], ['cost', 'Einkaufspreis netto', false, 'ek einkaufspreis cost'], ['vat', 'MwSt %', false, 'mwst ust steuer vat'], ['stock', 'Bestand', false, 'bestand menge lager stock'], ['supplier', 'Lieferant', false, 'lieferant supplier'], ['min', 'Mindestbestand', false, 'mindestbestand meldebestand min']],
+    template: 'Artikelnummer;Bezeichnung;Marke;Warengruppe;Farbe;Größe;EAN;Verkaufspreis;Aktionspreis;Einkaufspreis;MwSt;Bestand;Lieferant\r\nB2001;Trail Jacke;Bergwerk;Jacken & Westen;Dunkelblau;M;;199,00;;89,50;20;4;\r\nB2001;Trail Jacke;Bergwerk;Jacken & Westen;Dunkelblau;L;;199,00;;89,50;20;3;\r\n'},
+  kunde: {title: 'Kunden', icon: 'users', fields: [['name', 'Name', true, 'name kunde vorname nachname'], ['email', 'E-Mail', false, 'email e-mail mail'], ['phone', 'Telefon', false, 'telefon tel phone mobil handy'], ['street', 'Straße', false, 'strasse adresse street'], ['zip', 'PLZ', false, 'plz postleitzahl zip'], ['city', 'Ort', false, 'ort stadt city'], ['country', 'Land', false, 'land country'], ['uid', 'UID', false, 'uid ust-id'], ['tier', 'Kundenstufe', false, 'stufe kundenstufe tier'], ['points', 'Punkte', false, 'punkte bonuspunkte points'], ['consent', 'Newsletter (ja/nein)', false, 'newsletter einwilligung consent'], ['note', 'Notiz', false, 'notiz bemerkung note']],
+    template: 'Name;E-Mail;Telefon;Straße;PLZ;Ort;Kundenstufe;Punkte;Newsletter\r\nMaria Muster;maria@example.at;0660 123456;Hauptplatz 1;6020;Innsbruck;Kunde;0;ja\r\n'},
+  bestand: {title: 'Bestände', icon: 'boxes', fields: [['ean', 'EAN / Barcode', true, 'ean barcode gtin'], ['stock', 'Bestand (neu)', true, 'bestand menge stock anzahl']],
+    template: 'EAN;Bestand\r\n'},
+};
+function openImport(kind = 'artikel') {
+  if (!DESKTOP) return toast('Import nur in der Desktop-App', {type: 'warn'});
+  const st = {kind, csv: null, map: {}, extra: {}, check: null};
+  const el = openLayer(`<div class="modal" style="width:min(900px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="Import"><div id="imBox" style="display:flex;flex-direction:column;min-height:0"></div></div>`);
+  const box = $('#imBox', el);
+  const fields = () => [...IMP_DEF[st.kind].fields, ...(st.kind === 'bestand' ? [] : cfDefs(st.kind).map(d => ['cf:' + d.label, d.label + ' (Feld)', d.required, norm(d.label)]))];
+  const automap = () => {
+    st.map = {}; const used = new Set();
+    const key = x => norm(String(x).replace(/ß/g, 'ss').replace(/ä/gi, 'ae').replace(/ö/gi, 'oe').replace(/ü/gi, 'ue')).replace(/[^a-z0-9]/g, '');
+    const score = (h, keys) => Math.max(0, ...keys.map(w => key(h) === w ? 3 : key(h).startsWith(w) && w.length > 2 ? 2 : w.length > 3 && key(h).includes(w) ? 1 : 0));
+    // erst eindeutige Treffer (exakt), dann Anfang, dann enthalten – so landet „Einkaufspreis“ nicht beim Verkaufspreis
+    for (const lvl of [3, 2, 1]) fields().forEach(([k, , , kw]) => { if (st.map[k] != null) return; const keys = String(kw).split(' ').map(key).filter(Boolean); const i = st.csv.head.findIndex((h, j) => !used.has(j) && score(h, keys) === lvl); if (i >= 0) { st.map[k] = i; used.add(i); } });
+  };
+  const val = (r, k) => st.map[k] != null ? String(r[st.map[k]] ?? '').trim() : '';
+  const money = s => { const v = parseAmt(s); return isFinite(v) ? v : NaN; };
+  const build = () => {
+    const errs = [], rows = st.csv.rows;
+    if (st.kind === 'bestand') {
+      const stock = []; rows.forEach((r, i) => { const ean = val(r, 'ean'), q = parseInt(val(r, 'stock'), 10); if (!ean) return; if (!findEan(ean)) errs.push(`Zeile ${i + 2}: EAN ${ean} unbekannt`); else if (!isFinite(q)) errs.push(`Zeile ${i + 2}: Bestand fehlt`); else stock.push([ean, q]); });
+      return {errs, stock, articles: [], summary: `${stock.length} Bestände werden gesetzt`};
+    }
+    if (st.kind === 'kunde') {
+      const list = [];
+      rows.forEach((r, i) => {
+        const name = val(r, 'name'); if (!name) { errs.push(`Zeile ${i + 2}: Name fehlt`); return; }
+        const email = val(r, 'email'), ex = email && CUSTOMERS.find(c => c.email && c.email.toLowerCase() === email.toLowerCase());
+        const fields = {...(ex?.fields || {})}; Object.keys(st.map).filter(k => k.startsWith('cf:')).forEach(k => { const x = val(r, k); if (x) fields[k.slice(3)] = x; });
+        Object.entries(st.extra).forEach(([j, lbl]) => { const x = String(r[+j] ?? '').trim(); if (x && lbl) fields[lbl] = x; });
+        list.push(custToDb({...(ex || {}), id: ex?.id || '', name, email, phone: val(r, 'phone') || ex?.phone || '', street: val(r, 'street') || ex?.street || '', zip: val(r, 'zip') || ex?.zip || '', city: val(r, 'city') || ex?.city || '', country: val(r, 'country') || ex?.country || 'AT', uid: val(r, 'uid') || ex?.uid || '',
+          tier: val(r, 'tier') || ex?.tier || 'Kunde', points: parseInt(val(r, 'points'), 10) || ex?.points || 0, consent: /^(ja|j|1|x|yes|true)$/i.test(val(r, 'consent')) || !!ex?.consent, note: val(r, 'note') || ex?.note || '', club: ex?.club || null, fields}));
+      });
+      return {errs, list, summary: `${list.length} Kund:innen (${list.filter(c => c.id).length} aktualisiert, ${list.filter(c => !c.id).length} neu)`};
+    }
+    const by = new Map(), used = new Set(ART.flatMap(a => a.variants.map(v => v.ean))), stock = [];
+    rows.forEach((r, i) => {
+      const id = val(r, 'id'), name = val(r, 'name'), price = money(val(r, 'price'));
+      if (!id) return errs.push(`Zeile ${i + 2}: Artikelnummer fehlt`);
+      let a = by.get(id);
+      if (!a) {
+        if (!name) return errs.push(`Zeile ${i + 2}: Bezeichnung fehlt`);
+        if (!(price > 0)) return errs.push(`Zeile ${i + 2}: Verkaufspreis fehlt oder ungültig`);
+        const ex = artById(id), sale = money(val(r, 'sale')), cost = money(val(r, 'cost')), vat = parseInt(val(r, 'vat'), 10);
+        const supTxt = val(r, 'supplier'), sup = supTxt ? SUPPLIERS.find(s => s.id === supTxt || norm(s.name) === norm(supTxt)) : null;
+        if (supTxt && !sup) errs.push(`Zeile ${i + 2}: Lieferant „${supTxt}“ unbekannt – wird ohne Lieferant angelegt`);
+        const cat = ensureCat(val(r, 'cat') || (ex ? ex.cat : 'acc'));
+        const fields = {...(ex?.fields || {})}; Object.keys(st.map).filter(k => k.startsWith('cf:')).forEach(k => { const x = val(r, k); if (x) fields[k.slice(3)] = x; });
+        Object.entries(st.extra).forEach(([j, lbl]) => { const x = String(r[+j] ?? '').trim(); if (x && lbl) fields[lbl] = x; });
+        a = {id, name, brand: val(r, 'brand') || ex?.brand || '', cat, g: ex?.g || ({jacken: 'jacket', hosen: 'pants', schuhe: 'shoe', ski: 'ski', shirts: 'shirt', rucksaecke: 'backpack', acc: 'beanie'})[cat] || 'shirt', price: r2(price), sale: sale > 0 && sale < price ? r2(sale) : undefined, vat: [20, 13, 10, 0].includes(vat) ? vat : (ex?.vat ?? 20),
+          cost: cost > 0 ? r2(cost) : (ex?.cost ?? null), supplierId: sup?.id || ex?.supplierId || '', minStock: parseInt(val(r, 'min'), 10) >= 0 ? parseInt(val(r, 'min'), 10) : (ex?.minStock ?? 2), pop: ex?.pop || 50, tag: ex?.tag, prompts: ex?.prompts, fields, colors: [], sizes: [], combos: new Map(), ex};
+        by.set(id, a);
+      }
+      const c = ensureColor(val(r, 'color') || 'Standard'), s = val(r, 'size') || 'Einheitsgröße';
+      if (!a.colors.includes(c)) a.colors.push(c); if (!a.sizes.includes(s)) a.sizes.push(s);
+      let ean = val(r, 'ean').replace(/\s/g, '');
+      if (ean && !/^\d{8,14}$/.test(ean)) { errs.push(`Zeile ${i + 2}: EAN „${ean}“ ungültig – wird neu vergeben`); ean = ''; }
+      a.combos.set(c + '|' + s, {ean, stock: val(r, 'stock') !== '' ? parseInt(val(r, 'stock'), 10) : null});
+    });
+    const articles = [...by.values()].map(a => {
+      const variants = [];
+      a.colors.forEach(c => a.sizes.forEach(s => {
+        const want = a.combos.get(c + '|' + s), ex = a.ex?.variants.find(v => v.c === c && v.s === s);
+        let ean = want?.ean || ex?.ean;
+        if (!ean || (!ex && used.has(ean) && !a.ex?.variants.some(v => v.ean === ean))) { if (want?.ean) errs.push(`EAN ${want.ean} gibt es schon – ${a.id} ${c}/${s} bekommt eine neue`); ean = newEan(a.id, used); }
+        used.add(ean); variants.push({c, s, ean, q: ex?.q || 0});
+        if (want && want.stock != null && isFinite(want.stock)) stock.push([ean, want.stock]);
+      }));
+      // bestehende Varianten behalten, die nicht in der Datei stehen
+      a.ex?.variants.forEach(v => { if (!variants.some(x => x.c === v.c && x.s === v.s)) { variants.push({...v}); if (!a.colors.includes(v.c)) a.colors.push(v.c); if (!a.sizes.includes(v.s)) a.sizes.push(v.s); } });
+      const {combos, ex, ...rest} = a; return artToDb({...rest, variants});
+    });
+    return {errs, articles, stock, summary: `${articles.length} Artikel (${articles.filter(a => artById(a.id)).length} aktualisiert, ${articles.filter(a => !artById(a.id)).length} neu) · ${articles.reduce((n, a) => n + a.variants.length, 0)} Varianten · ${stock.length} Bestände`};
+  };
+  const render = () => {
+    const d = IMP_DEF[st.kind];
+    if (!st.csv) {
+      box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('download')}</div><div><h2>Daten importieren</h2><p>CSV-Datei aus Excel, der bisherigen Warenwirtschaft oder vom Lieferanten</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+        <div class="m-body" style="display:grid;gap:16px"><div class="opt-grid" style="grid-template-columns:repeat(3,1fr)">${Object.entries(IMP_DEF).map(([k, x]) => `<button class="opt" data-ik="${k}" aria-pressed="${st.kind === k}" style="height:auto;padding:16px;display:grid;gap:6px;justify-items:start">${ic(x.icon)}<b>${x.title}</b><span class="muted" style="font-size:12px;text-align:left">${k === 'artikel' ? 'eine Zeile je Variante (Farbe/Größe)' : k === 'kunde' ? 'gleiche E-Mail = bestehende Kundin aktualisieren' : 'Bestand je EAN setzen (z. B. Zählliste)'}</span></button>`).join('')}</div>
+          <div class="rule-box" style="background:var(--info-soft);border-color:transparent">${ic('info')}<div>In Excel: <b style="color:var(--text)">Datei → Speichern unter → „CSV (Trennzeichen-getrennt)“</b>. Spalten ordnen Sie im nächsten Schritt zu – Reihenfolge und Überschriften sind egal. Vor dem Import wird alles geprüft; es wird erst gespeichert, wenn Sie bestätigen.</div></div></div>
+        <div class="m-foot"><button class="btn btn-ghost" id="imTpl">${ic('download', 'i-sm')}Vorlage speichern</button><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="imFile">${ic('boxes', 'i-sm')}CSV-Datei wählen …</button></div>`;
+      return;
+    }
+    const chk = st.check = build(), f = fields();
+    const unmapped = st.csv.head.map((h, j) => j).filter(j => !Object.values(st.map).includes(j));
+    box.innerHTML = `<div class="m-head"><div class="m-ic">${ic(d.icon)}</div><div><h2>${d.title} importieren</h2><p>${num(st.csv.rows.length)} Zeilen · Trennzeichen „${st.csv.sep === '\t' ? 'Tab' : st.csv.sep}“ · ${esc(chk.summary)}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="m-body" style="display:grid;gap:14px;overflow:auto">
+        <div><div class="lab" style="font-size:12.5px;font-weight:600;margin-bottom:8px">Spalten zuordnen</div><div class="ed-grid">${f.map(([k, l, req]) => `<label class="field"><span>${esc(l)}${req ? ' <b class="req">*</b>' : ''}</span><select class="input select" data-im="${esc(k)}"><option value="">– nicht importieren –</option>${st.csv.head.map((h, j) => `<option value="${j}" ${st.map[k] === j ? 'selected' : ''}>${esc(h || 'Spalte ' + (j + 1))}</option>`).join('')}</select></label>`).join('')}</div></div>
+        ${st.kind !== 'bestand' && unmapped.length ? `<div><div class="lab" style="font-size:12.5px;font-weight:600;margin-bottom:6px">Weitere Spalten als freie Felder übernehmen</div><div class="reasons">${unmapped.map(j => `<button class="chip" data-ix="${j}" aria-pressed="${st.extra[j] != null}">${esc(st.csv.head[j] || 'Spalte ' + (j + 1))}</button>`).join('')}</div></div>` : ''}
+        <div><div class="lab" style="font-size:12.5px;font-weight:600;margin-bottom:6px">Vorschau</div><div class="card" style="overflow:auto;box-shadow:none"><table class="tbl" style="margin:0"><thead><tr>${st.csv.head.map(h => `<th style="white-space:nowrap">${esc(h)}</th>`).join('')}</tr></thead><tbody>${st.csv.rows.slice(0, 6).map(r => `<tr>${st.csv.head.map((_, j) => `<td style="font-size:12.5px;white-space:nowrap">${esc(r[j] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>
+        ${chk.errs.length ? `<div class="rule-box" style="background:var(--warn-soft);border-color:transparent">${ic('alert')}<div><b style="color:var(--text)">${chk.errs.length} Hinweise</b><ul style="margin:6px 0 0;padding-left:18px;font-size:12.5px">${chk.errs.slice(0, 8).map(x => `<li>${esc(x)}</li>`).join('')}${chk.errs.length > 8 ? `<li>… ${chk.errs.length - 8} weitere</li>` : ''}</ul></div></div>` : `<div class="rule-box" style="background:var(--pos-soft);border-color:transparent">${ic('check')}<div>Alles geprüft – bereit zum Import.</div></div>`}
+      </div>
+      <div class="m-foot"><button class="btn btn-ghost" id="imBack">Andere Datei</button><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="imGo" ${(chk.articles?.length || chk.list?.length || chk.stock?.length) ? '' : 'disabled'}>${ic('check', 'i-sm')}Jetzt importieren</button></div>`;
+  };
+  el.addEventListener('change', e => { const k = e.target.dataset.im; if (k != null) { if (e.target.value === '') delete st.map[k]; else st.map[k] = +e.target.value; render(); } });
+  el.addEventListener('click', async e => {
+    const k = e.target.closest('[data-ik]'); if (k) { st.kind = k.dataset.ik; return render(); }
+    const x = e.target.closest('[data-ix]'); if (x) { const j = +x.dataset.ix; if (st.extra[j] != null) delete st.extra[j]; else st.extra[j] = st.csv.head[j] || `Spalte ${j + 1}`; return render(); }
+    if (e.target.closest('#imBack')) { st.csv = null; return render(); }
+    if (e.target.closest('#imTpl')) { try { const p = await invoke('save_text', {name: `Kontor_Vorlage_${IMP_DEF[st.kind].title}.csv`, content: '﻿' + IMP_DEF[st.kind].template, title: 'Vorlage speichern'}); if (p) toast('Vorlage gespeichert', {t2: p, type: 'pos', icon: 'download'}); } catch (err) { toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); } return; }
+    if (e.target.closest('#imFile')) {
+      let txt; try { txt = await invoke('open_text', {title: 'CSV-Datei wählen', ext: 'csv'}); } catch (err) { return toast('Datei nicht lesbar', {t2: String(err), type: 'warn'}); }
+      if (!txt) return;
+      st.csv = parseCSV(txt); if (!st.csv.rows.length) { st.csv = null; return toast('Datei enthält keine Zeilen', {type: 'warn'}); }
+      automap(); return render();
+    }
+    if (e.target.closest('#imGo')) {
+      const c = st.check, perm = st.kind === 'kunde' ? 'kunden.bearbeiten' : st.kind === 'bestand' ? 'bestand.buchen' : 'artikel.bearbeiten';
+      try { await needPerm(perm, 'Import bestätigen', c.summary); } catch { return; }
+      const btn = $('#imGo', el); btn.disabled = true; btn.innerHTML = 'Importiere …';
+      try {
+        if (st.kind === 'kunde') { const r = await invoke('customers_import', {list: c.list, user: S.user.name}); CUSTOMERS.length = 0; r.list.forEach(d => CUSTOMERS.push(custFromDb(d))); toast('Kunden importiert', {t2: `${r.anzahl} Datensätze`, type: 'pos', icon: 'users'}); Hooks.emit('customer.imported', {anzahl: r.anzahl}); if (S.view === 'kunden') renderKunden(); }
+        else { const r = await invoke('articles_import', {articles: c.articles, stock: c.stock, user: S.user.name}); replaceCatalog(r.list); toast(st.kind === 'bestand' ? 'Bestände übernommen' : 'Artikel importiert', {t2: `${r.artikel} Artikel · ${r.bestaende} Bestände`, type: 'pos', icon: 'tag'}); Hooks.emit('catalog.imported', {artikel: r.artikel, bestaende: r.bestaende}); if (['artikel', 'bestand', 'kasse'].includes(S.view)) { const v = S.view; S.view = null; go(v); } }
+        closeLayer(el);
+      } catch (err) { btn.disabled = false; btn.innerHTML = `${ic('check', 'i-sm')}Jetzt importieren`; toast('Import abgebrochen – nichts gespeichert', {t2: String(err), type: 'warn', dur: 9000}); }
+    }
+  });
+  render();
+}
+// Import-Knöpfe in Artikel, Kunden und Bestand
+for (const [fn, kind, anchor] of [['renderArtikel', 'artikel', '#artNew'], ['renderKunden', 'kunde', '#kuNew']]) {
+  const orig = {renderArtikel, renderKunden}[fn];
+  const wrapped = function (...a) { const r = orig.apply(this, a); const b = $(anchor); if (DESKTOP && b && !b.previousElementSibling?.matches('[data-imp]')) b.insertAdjacentHTML('beforebegin', `<button class="btn btn-secondary" data-imp="${kind}" style="margin-right:8px">${ic('download', 'i-sm')}Import</button>`); return r; };
+  if (fn === 'renderArtikel') renderArtikel = wrapped; else renderKunden = wrapped;
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-imp]'); if (b) openImport(b.dataset.imp); });
+
+/* ════ Kundendisplay ════ */
+Object.assign(DEFAULTS, {'display.auto': false}); if (!('display.auto' in CFG)) CFG['display.auto'] = false;
+const KD = {on: false, last: null};
+async function toggleDisplay(force) {
+  if (!DESKTOP) return toast('Kundendisplay nur in der Desktop-App', {type: 'warn'});
+  try {
+    const open = await invoke('display_status');
+    if (open && force !== true) { await invoke('display_close'); KD.on = false; toast('Kundendisplay geschlossen', {icon: 'layout'}); }
+    else { KD.last = null; const second = await invoke('display_open'); KD.on = true; toast('Kundendisplay geöffnet', {t2: second ? 'Auf dem zweiten Bildschirm im Vollbild' : 'Kein zweiter Bildschirm erkannt – Fenster frei verschiebbar', icon: 'layout', type: 'pos'}); setTimeout(kdPush, 1500); }
+  } catch (e) { toast('Kundendisplay nicht möglich', {t2: String(e), type: 'warn'}); }
+}
+function kdState() {
+  if (S.view === 'kasse' && typeof PAY !== 'undefined' && PAY?.done) return {state: 'paid', total: PAY.total, change: PAY.parts?.reduce((a, p) => a + (p.change || 0), 0) || 0};
+  if (!POS.cart.length) return {state: 'idle'};
+  const t = totals();
+  return {state: typeof PAY !== 'undefined' && PAY && !PAY.done ? 'pay' : 'cart', total: t.total, savings: typeof savingsOf === 'function' ? savingsOf({lines: POS.cart, t}) : 0, customer: POS.customer?.name || null, points: POS.customer?.points ?? null,
+    lines: POS.cart.slice(-8).map(l => ({name: l.name, var: [l.c ? colorName(l.c) : '', l.s && l.s !== 'Einheitsgröße' ? l.s : ''].filter(Boolean).join(' · '), qty: l.qty, total: r2(l.unit * l.qty * (1 - (l.disc?.pct || 0) / 100)), was: l.was || null}))};
+}
+let kdT;
+function kdPush() {
+  if (!DESKTOP || window.__KONTOR_DISPLAY__) return;
+  clearTimeout(kdT);
+  kdT = setTimeout(() => { const s = kdState(), j = JSON.stringify(s); if (j === KD.last) return; KD.last = j; invoke('display_push', {payload: s}).catch(() => {}); }, 60);
+}
+if (DESKTOP && !window.__KONTOR_DISPLAY__) {
+  const _rc = renderCart; renderCart = function (...a) { const r = _rc.apply(this, a); kdPush(); return r; };
+  ['pos.payment.started', 'pos.sale.completed', 'pos.cart.cleared', 'pos.customer.attached'].forEach(ev => Hooks.on(ev, () => setTimeout(kdPush, 120)));
+  setInterval(kdPush, 2000);
+  // Display meldet sich nach dem Laden – dann aktuellen Stand senden
+  window.__TAURI__.event.listen('kd-ready', () => { KD.last = null; kdPush(); }).catch(() => {});
+}
+/** Im Display-Fenster: nur die Anzeige für Kund:innen */
+async function runDisplay() {
+  try { Object.assign(CFG, await invoke('settings_get')); } catch { /* */ }
+  applyPrefs(); document.documentElement.dataset.theme = 'light';
+  document.body.innerHTML = `<div class="kd"><div class="kd-l"><div class="kd-brand">${CFG['bon.logo'] ? `<img src="${esc(imgUrl(CFG['bon.logo']))}" alt="">` : `<div class="brand-mark" style="width:56px;height:56px;border-radius:16px;font-size:24px">K</div>`}<b>${esc(CFG['firma.marke'] || CFG['firma.name'] || 'Kontor')}</b></div><div class="kd-lines" id="kdLines"></div></div><div class="kd-r" id="kdR"></div></div>`;
+  const render = s => {
+    const L = $('#kdLines'), R = $('#kdR');
+    if (!s || s.state === 'idle') { L.innerHTML = ''; R.innerHTML = `<div class="kd-msg">Herzlich willkommen!</div><div style="color:var(--text-2);font-size:20px">${esc(CFG['firma.zusatz'] || '')}</div>${CFG['bon.kopf'] ? `<div style="color:var(--text-3);font-size:17px">${esc(CFG['bon.kopf'])}</div>` : ''}`; return; }
+    if (s.state === 'paid') { R.innerHTML = `<div class="ok-ring" style="width:84px;height:84px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div><div class="kd-msg">Vielen Dank für Ihren Einkauf!</div>${s.change ? `<div style="font-size:26px">Rückgeld <b>${eur(s.change)}</b></div>` : ''}`; return; }
+    L.innerHTML = (s.lines || []).map(l => `<div class="kd-line"><div class="n"><b>${l.qty > 1 ? l.qty + ' × ' : ''}${esc(l.name)}</b><span>${esc(l.var)}</span></div><div class="p">${l.was ? `<s style="color:var(--text-3);font-size:15px;font-weight:400;margin-right:8px">${eur(l.was * l.qty)}</s>` : ''}${eur(l.total)}</div></div>`).join('');
+    R.innerHTML = `${s.customer ? `<div style="font-size:20px;color:var(--text-2)">Hallo ${esc(s.customer.split(' ')[0])}!${s.points != null ? ` · ${num(s.points)} Bonuspunkte` : ''}</div>` : ''}<div style="font-size:22px;color:var(--text-2)">${s.state === 'pay' ? 'Zu bezahlen' : 'Summe'}</div><div class="kd-total">${eur(s.total)}</div>${s.savings > 0.005 ? `<div style="font-size:22px;color:var(--pos);font-weight:600">Sie sparen ${eur(s.savings)}</div>` : ''}${s.state === 'pay' ? '<div style="font-size:20px;color:var(--text-2)">Bitte am Terminal bezahlen oder bar an der Kasse</div>' : ''}`;
+  };
+  render(null);
+  await window.__TAURI__.event.listen('kd', e => render(e.payload));
+  window.__TAURI__.event.emit('kd-ready', {}).catch(() => {});
+}
+
+/* ════ Handy-App: Einstellungen ════ */
+SET_SECTIONS.splice(SET_SECTIONS.findIndex(s => s[0] === 'terminal'), 0, ['handy', 'Handy & Tablet', 'phone-pay'], ['display', 'Kundendisplay', 'layout']);
+{
+  const _rs = renderSettings;
+  renderSettings = function () {
+    _rs();
+    const a = $('#sec-terminal'); if (!a) return;
+    a.insertAdjacentHTML('beforebegin', `<section class="set-sec" id="sec-handy"><h2>Handy & Tablet</h2><p>Bestand prüfen, Ware zu- und abbuchen und Inventur zählen – im Browser jedes Handys oder Tablets im Firmennetz, ohne App-Store. Anmeldung mit der Kassen-PIN. Barcodes per Bluetooth-Scanner, Eingabe oder Foto.</p><div class="card" id="handyBox"></div></section>
+      <section class="set-sec" id="sec-display"><h2>Kundendisplay</h2><p>Zweiter Bildschirm für Kund:innen: Artikel, Preise, Ersparnis, Summe und Dankeschön – mit Ihrem Logo. Ist ein zweiter Bildschirm angeschlossen, öffnet sich die Anzeige dort im Vollbild.</p><div class="card">
+        ${field('display.auto', 'Beim Start automatisch öffnen', '', 'switch')}
+        <div class="set-row" style="border-bottom:0"><div><div class="set-l">Anzeige</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-kd="toggle" ${DESKTOP ? '' : 'disabled'}>${ic('layout', 'i-sm')}Öffnen / Schließen</button></div></div></div></section>`);
+    renderHandyBox();
+  };
+}
+async function renderHandyBox() {
+  const box = $('#handyBox'); if (!box) return;
+  if (!DESKTOP) { box.innerHTML = '<div class="empty" style="padding:24px"><p>Nur in der Desktop-App.</p></div>'; return; }
+  let i; try { i = await invoke('mobile_info'); } catch (e) { box.innerHTML = `<div style="padding:16px">${esc(String(e))}</div>`; return; }
+  const ready = i.running && i.lan && i.ips.length, url = i.ips.length ? `http://${i.ips[0]}:${i.port}/mobil` : '';
+  let qr = ''; if (ready) { try { qr = await invoke('qr_svg', {text: url}); } catch { /* */ } }
+  box.innerHTML = ready ? `<div class="set-row" style="border-bottom:0;align-items:center"><div><div class="set-l">Bereit <span class="pill pos" style="height:20px">läuft</span></div><div class="set-h">QR-Code mit der Handy-Kamera scannen oder Adresse eingeben:<br><b class="mono" style="font-size:14px;color:var(--text)">${esc(url)}</b><br>Tipp: Danach „Zum Startbildschirm hinzufügen“ – dann startet Kontor mobil wie eine App.</div></div><div class="set-c"><div class="qr-box">${qr.replace('<svg', '<svg width="150" height="150"')}</div></div></div>`
+    : `<div class="set-row" style="border-bottom:0"><div><div class="set-l">Noch nicht freigegeben</div><div class="set-h">Dafür läuft der eingebaute Server (REST-API) und ist im Firmennetz erreichbar. Beim ersten Mal fragt Windows nach der Firewall-Freigabe – bitte „Privates Netzwerk“ erlauben.${i.ips.length ? '' : '<br><b style="color:var(--warn)">Keine Netzwerkverbindung erkannt.</b>'}</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-handy="on">${ic('wifi', 'i-sm')}Für Handys freigeben</button></div></div>`;
+}
+function bindImportDisplay() {
+  $('#view-einstellungen').addEventListener('click', async e => {
+    if (e.target.closest('[data-kd="toggle"]')) return toggleDisplay();
+    if (e.target.closest('[data-handy="on"]')) {
+      try { await needPerm('anpassen', 'Handy-Zugang freigeben', 'Der eingebaute Server wird im Firmennetz erreichbar (Anmeldung nur mit PIN bzw. API-Schlüssel).'); } catch { return; }
+      try { await invoke('api_toggle', {on: true, lan: true, port: +CFG['api.port'] || 8787}); Object.assign(CFG, {'api.aktiv': true, 'api.lan': true}); toast('Handy-Zugang freigegeben', {type: 'pos', icon: 'wifi'}); } catch (err) { toast('Nicht möglich', {t2: String(err), type: 'warn', dur: 8000}); }
+      renderHandyBox();
+    }
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════
    12 · ANMELDUNG — Sperrbildschirm mit PIN, Windows Hello, FIDO2, SSO
    ════════════════════════════════════════════════════════════════════ */
 /* ════════════════════════════════════════════════════════════════════
@@ -7349,7 +8074,11 @@ document.addEventListener('keydown', e => {
 });
 
 function bindShell() {
-  $('#nav').addEventListener('click', e => { const b = e.target.closest('[data-view]'); b && go(b.dataset.view); });
+  $('#nav').addEventListener('click', e => {
+    const g = e.target.closest('[data-grp]');
+    if (g) { const k = g.dataset.grp, sec = g.parentElement; navClosed.has(k) ? navClosed.delete(k) : navClosed.add(k); sec.toggleAttribute('data-closed', navClosed.has(k)); g.setAttribute('aria-expanded', !navClosed.has(k)); persist.set('navClosed', [...navClosed]); return; }
+    const b = e.target.closest('[data-view]'); b && go(b.dataset.view);
+  });
   $('#paletteBtn').onclick = () => openPalette();
   $('#aiBtn').onclick = () => openPalette('? ');
   $('#themeBtn').onclick = toggleTheme;
@@ -7370,6 +8099,7 @@ function bindShell() {
 }
 
 async function init() {
+  if (window.__KONTOR_DISPLAY__) return runDisplay();   // zweites Fenster: nur Kundendisplay
   applyPrefs();
   await loadSettings();
   await loadCatalog();
@@ -7380,9 +8110,10 @@ async function init() {
   if (DESKTOP) { await refreshInfo(); Hooks.on('*', (p, e) => { if (!e.evt.startsWith('config.settings')) invoke('audit_append', {event: e.evt, payload: e.payload ?? {}}).catch(() => {}); }); }
   $('#palKbd').innerHTML = `<span class="kbd">${MOD}</span><span class="kbd">K</span>`;
   renderNav(); permNav(); renderMe(); renderStore(); renderStatus();
-  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings(); bindStockViews(); bindP5(); bindCustom(); bindAutomation(); bindSecurity(); bindAiFibu();
+  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings(); bindStockViews(); bindP5(); bindCustom(); bindAutomation(); bindSecurity(); bindAiFibu(); bindPages(); bindImportDisplay();
   go(location.hash.slice(1) || 'dashboard');
   if (DESKTOP) lock();   // Anmeldung mit PIN beim Start
+  if (DESKTOP) { loadPurchasing().then(() => navBadge('wareneingang', EK.pos.filter(p => ['bestellt', 'teilgeliefert'].includes(p.status)).length)).catch(() => {}); if (CFG['display.auto']) setTimeout(() => toggleDisplay(true), 1500); }
   if (DESKTOP) { Hooks.emit('desktop.ready', {version: S.appVersion, datenbank: S.info?.db_path}); setTimeout(autoBackupCheck, 4000); setInterval(autoBackupCheck, 36e5); }
   Hooks.emit('system.ready', {version: S.appVersion, kanal: 'stable', server: 'KONTOR-SRV01', modus: DESKTOP ? 'desktop' : 'vorschau'});
 }

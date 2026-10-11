@@ -204,6 +204,13 @@ fn handle(c: &Connection, db_path: &Path, mut req: Request) {
     let path = url.split('?').next().unwrap_or("").trim_end_matches('/').to_string();
     let args = query_args(&url);
     let arg = |k: &str| args.iter().find(|(a, _)| a == k).map(|(_, v)| v.clone());
+    if path == "/mobil" || path.starts_with("/mobil/") {
+        return crate::mobile::handle(c, req, &path);
+    }
+    if path.is_empty() {
+        let _ = req.respond(Response::empty(302).with_header(Header::from_bytes(&b"Location"[..], &b"/mobil"[..]).unwrap()));
+        return;
+    }
     if path == "/api/v1" || path == "/api/v1/openapi.json" {
         return reply(req, 200, if path.ends_with(".json") { openapi() } else { json!({ "name": "Kontor API", "version": VERSION, "doku": "/api/v1/openapi.json" }) });
     }
@@ -333,7 +340,19 @@ fn handle(c: &Connection, db_path: &Path, mut req: Request) {
 pub fn start(state: &ApiState, db_path: PathBuf, lan: bool, port: u16) -> Result<String, String> {
     stop(state);
     let addr = format!("{}:{}", if lan { "0.0.0.0" } else { "127.0.0.1" }, port);
-    let server = Arc::new(Server::http(&addr).map_err(|e| format!("Port {port} nicht verfügbar: {e}"))?);
+    // Beim Umschalten (z. B. nur lokal → Netzwerk) gibt der alte Server den Port erst nach kurzer Zeit frei
+    let mut tries = 0;
+    let server = loop {
+        match Server::http(&addr) {
+            Ok(s) => break Arc::new(s),
+            Err(e) if tries < 30 => {
+                let _ = e;
+                tries += 1;
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+            Err(e) => return Err(format!("Port {port} nicht verfügbar: {e}")),
+        }
+    };
     for _ in 0..2 {
         let s = server.clone();
         let p = db_path.clone();
