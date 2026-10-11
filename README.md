@@ -3,8 +3,20 @@
 On-Premise-Warenwirtschaft und Kassensystem für Mode, Sport, Outdoor und Lifestyle („Kontor“ ist ein Arbeitstitel).
 Diese Preview zeigt die UI-Richtung mit Testdaten, ohne Backend.
 
-**Öffnen:** `ui-preview/index.html` direkt im Browser (aktuelles Chrome, Edge, Safari oder Firefox).
-Eine Datei, keine Installation, keine externen Abhängigkeiten – läuft vollständig offline.
+## Lokal starten (On-Premise auf deinem Rechner, ohne Installation)
+
+**Windows** (keine Installation, nutzt nur Bordmittel von Windows):
+1. Projekt als ZIP herunterladen und entpacken.
+2. `kontor-start.bat` doppelklicken → Browser öffnet `http://localhost:8080`.
+3. Für Tablets/weitere Kassen im WLAN: `kontor-start-netzwerk.bat` (fragt nach Administratorrechten,
+   legt eine Firewall-Regel „Kontor 8080“ nur für private Netzwerke an und zeigt die Netzwerk-Adresse an).
+
+**macOS / Linux:** `kontor-start-mac.command` (benötigt `python3`).
+
+Beenden: Server-Fenster schließen. Alternativ geht auch ein Doppelklick direkt auf `ui-preview/index.html`.
+
+Hinweis: Aktuell ist das die UI-Preview mit Testdaten – jedes Gerät hat seinen eigenen Demo-Stand.
+Der echte Server mit Datenbank folgt in den nächsten Schritten und wird über dieselben Startdateien laufen.
 
 ## Iteration 2 – Inhalt
 
