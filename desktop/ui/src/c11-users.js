@@ -20,7 +20,13 @@ async function loadUsers() {
 }
 async function checkPin(user, pin, purpose) {
   if (!DESKTOP) { if (pin === '0000') throw new Error('Falsche PIN'); if (purpose === 'freigabe' && !canApprove(user)) throw new Error(`${user.name} darf keine Freigaben erteilen`); return user; }
-  try { await invoke('user_verify', {id: user.id, pin, purpose}); return user; } catch (e) { throw new Error(String(e)); }
+  try { await invoke('user_verify', {id: user.id, pin, purpose}); return user; }
+  catch (e) {
+    if (String(e) !== 'TOTP') throw new Error(String(e));
+    // Zwei-Faktor aktiv: zusätzlich Code aus der Authenticator-App
+    const code = await askTotp(user); if (!code) throw new Error('Abgebrochen – Code aus der Authenticator-App fehlt');
+    try { await invoke('user_verify', {id: user.id, pin, purpose, code}); return user; } catch (e2) { throw new Error(String(e2)); }
+  }
 }
 const pinPad = () => `<div class="keypad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-k="${n}">${n}</button>`).join('')}<span></span><button data-k="0">0</button><button class="fn" data-k="back" aria-label="Löschen">${ic('chevron-left')}</button></div>`;
 const shakeEl = el => { if (!el) return; el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); };
@@ -86,11 +92,11 @@ function lock() {
 }
 
 /* ── Freigabe (Step-up) ── */
-function stepUp({title, text, rule, admin = false}) {
+function stepUp({title, text, rule, admin = false, roles = null, purpose = 'freigabe'}) {
   return new Promise((resolve, reject) => {
-    const approvers = STAFF.filter(u => admin ? u.roleKey === 'admin' : canApprove(u));
-    if (!approvers.length) { toast('Keine berechtigte Person', {t2: admin ? 'Es ist kein Administrator angelegt' : 'Es ist keine Filialleitung angelegt', type: 'warn'}); return reject(new Error('keine Berechtigten')); }
-    let done = false, pin = '', busy = false, ap = canApprove(S.user) && (!admin || S.user.roleKey === 'admin') ? S.user : approvers[0];
+    const approvers = STAFF.filter(u => roles ? roles.includes(u.roleKey) : admin ? u.roleKey === 'admin' : canApprove(u));
+    if (!approvers.length) { toast('Keine berechtigte Person', {t2: roles ? 'Keine Person mit diesem Recht angelegt' : admin ? 'Es ist kein Administrator angelegt' : 'Es ist keine Filialleitung angelegt', type: 'warn'}); return reject(new Error('keine Berechtigten')); }
+    let done = false, pin = '', busy = false, ap = approvers.find(u => u.id === S.user.id) || approvers[0];
     const el = openLayer(`<div class="modal" style="width:min(440px,100%)" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div id="suBox"></div></div>`, {onClose: () => { if (!done) reject(new Error('abgebrochen')); }});
     const box = $('#suBox', el);
     const render = msg => {
@@ -116,7 +122,7 @@ function stepUp({title, text, rule, admin = false}) {
       dots();
       if (pin.length === 4) {
         busy = true;
-        try { await checkPin(ap, pin, 'freigabe'); ok(); }
+        try { await checkPin(ap, pin, purpose); ok(); }
         catch (e) { busy = false; pin = ''; render(e.message); shakeEl($('#suDots', el)); Hooks.emit('auth.stepup.failed', {von: ap.name, methode: 'PIN'}); }
       }
     };
@@ -128,7 +134,7 @@ function stepUp({title, text, rule, admin = false}) {
 
 /* ── Einstellungen → Benutzer ── */
 function usersSectionHTML() {
-  return `<section class="set-sec" id="sec-benutzer"><h2>Benutzer & Anmeldung</h2><p>Jede Person meldet sich mit eigener PIN an. Freigaben (Rabatte, Stornos, Entnahmen, Punkte) erteilen nur Filialleitung und Administrator. Nach 5 Fehlversuchen ist die PIN 2 Minuten gesperrt.</p>
+  return `<section class="set-sec" id="sec-benutzer"><h2>Benutzer & Anmeldung</h2><p>Jede Person meldet sich mit eigener PIN an – auf Wunsch zusätzlich mit Code aus einer Authenticator-App (2FA). Was eine Rolle darf, steht unter „Rechte je Rolle“; fehlt ein Recht, gibt eine berechtigte Person per PIN frei. Rabatt- und Storno-Freigaben erteilen Filialleitung und Administrator. Nach 5 Fehlversuchen ist die PIN 2 Minuten gesperrt.</p>
     <div class="card" id="usrBox"></div></section>`;
 }
 function renderUsersBox() {

@@ -783,6 +783,7 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
 .elsewhere span b{color:var(--text);font-weight:600}
 .prompts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .prompt-hint{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-3);margin-top:8px}
+.prompt-hint.blk{display:block;line-height:1.6}.prompt-hint.blk>.i:first-child{display:inline-block;vertical-align:-2px;margin-right:6px}
 .vp-foot{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:20px}
 .vp-foot .btn-primary{flex:1;height:48px;font-size:14px;border-radius:12px}
 
@@ -925,6 +926,9 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
 .receipt.minimal .tot{font-weight:600}
 
 /* Sperrbildschirm */
+.layer.over-lock{z-index:300}
+.nav-item.nav-locked{opacity:.55}
+.nav-item.nav-locked::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--warn);margin-left:auto;flex:none}
 .lockscreen{position:fixed;inset:0;z-index:250;display:grid;place-items:center;background:color-mix(in srgb,var(--frame) 80%,transparent);backdrop-filter:blur(26px) saturate(120%);-webkit-backdrop-filter:blur(26px) saturate(120%);animation:fadeIn var(--d-3)}
 .lockscreen.closing{animation:fadeOut var(--d-3) forwards}
 .lock-in{width:min(420px,calc(100% - 32px));text-align:center;animation:modalIn var(--d-4) var(--ease-out)}

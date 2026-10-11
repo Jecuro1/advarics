@@ -103,13 +103,14 @@ function newEan(artId, used) {
 /* ── Artikel-Editor ── */
 function openEditor(a) {
   const isNew = !a;
-  const st = a ? {id: a.id, name: a.name, brand: a.brand, cat: a.cat, g: a.g, price: num(a.price, 2), sale: (a.baseSale ?? a.sale) ? num(a.baseSale ?? a.sale, 2) : '', vat: a.vat ?? 20, tag: a.tag || '', colors: [...a.colors], sizes: a.sizes.join(', '), fields: Object.entries(a.fields || {}), ski: !!a.prompts, pop: a.pop || 50, cost: a.cost != null ? num(a.cost, 2) : '', supplierId: a.supplierId || '', minStock: String(a.minStock ?? 2)}
-    : {id: nextArtId(), name: '', brand: '', cat: AV.cat !== 'alle' ? AV.cat : 'jacken', g: 'jacket', price: '', sale: '', vat: 20, tag: '', colors: [], sizes: 'S, M, L, XL', fields: [], ski: false, pop: 50, cost: '', supplierId: '', minStock: '2'};
+  const st = a ? {id: a.id, name: a.name, brand: a.brand, cat: a.cat, g: a.g, price: num(a.price, 2), sale: ('baseSale' in a ? a.baseSale : a.sale) ? num('baseSale' in a ? a.baseSale : a.sale, 2) : '', vat: a.vat ?? 20, tag: a.tag || '', colors: [...a.colors], sizes: a.sizes.join(', '), fields: cfSplit('artikel', a.fields).free, cf: cfSplit('artikel', a.fields).typed, ski: !!a.prompts, pop: a.pop || 50, cost: a.cost != null ? num(a.cost, 2) : '', supplierId: a.supplierId || '', minStock: String(a.minStock ?? 2)}
+    : {id: nextArtId(), name: '', brand: '', cat: AV.cat !== 'alle' ? AV.cat : 'jacken', g: 'jacket', price: '', sale: '', vat: 20, tag: '', colors: [], sizes: 'S, M, L, XL', fields: [], cf: {}, ski: false, pop: 50, cost: '', supplierId: '', minStock: '2'};
   const el = openLayer(`<div class="drawer-panel" style="width:min(600px,100%)" role="dialog" aria-modal="true" aria-label="Artikel bearbeiten"><div id="edHead"></div><div class="drawer-body" id="edBody"></div>
     <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">${isNew ? '' : `<button class="btn btn-danger" id="edDel">${ic('trash', 'i-sm')}Deaktivieren</button>`}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="edSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {cls: 'drawer', focus: '[data-f="name"]'});
   const collect = () => {
     $$('[data-f]', el).forEach(i => { st[i.dataset.f] = i.value; });
     st.fields = $$('.frow', el).map(r => [$('[data-fk]', r).value.trim(), $('[data-fv]', r).value.trim()]);
+    if ($('[data-cfobj="artikel"]', el)) st.cf = cfRead(el, 'artikel', true);
   };
   const sizesArr = () => [...new Set(String(st.sizes).split(',').map(s => s.trim()).filter(Boolean))];
   const render = () => {
@@ -134,7 +135,8 @@ function openEditor(a) {
       <div class="ed-sec"><div class="lab">Farben <span class="muted">Reihenfolge = Anzeige · erste Farbe = Kachelbild</span></div><div class="cpick">${COLOR_KEYS.map(k => { const i = st.colors.indexOf(k); return `<button type="button" data-col="${k}" aria-pressed="${i >= 0}" style="--sw:${COLORS[k][1]}"><i></i>${COLORS[k][0]}${i >= 0 ? `<span class="ord">${i + 1}</span>` : ''}</button>`; }).join('')}</div></div>
       <div class="ed-sec"><div class="lab">Größen <span class="muted">durch Komma getrennt</span></div><input class="input" data-f="sizes" value="${esc(st.sizes)}"><div class="reasons" style="margin-top:8px">${SIZE_PRESETS.map(([l, val]) => `<button type="button" class="chip" data-sz="${esc(val)}">${l}</button>`).join('')}</div>
         <div class="prompt-hint">${ic('info', 'i-xs')}${st.colors.length * sizes.length} Varianten · EAN werden automatisch vergeben, bestehende bleiben erhalten · neue Varianten starten mit Bestand 0</div></div>
-      <div class="ed-sec"><div class="lab">Eigene Felder <button type="button" class="btn btn-ghost btn-sm" id="edAddF">${ic('plus', 'i-sm')}Feld</button></div>
+      ${cfHTML('artikel', st.cf, true, 'Felder')}
+      <div class="ed-sec"><div class="lab">${cfDefs('artikel').length ? 'Weitere Angaben' : 'Eigene Felder'} <button type="button" class="btn btn-ghost btn-sm" id="edAddF">${ic('plus', 'i-sm')}Feld</button>${DESKTOP ? `<button type="button" class="btn btn-ghost btn-sm" id="edAi">${ic('sparkle', 'i-sm')}Text mit KI</button>` : ''}</div>
         <div id="edFields">${st.fields.map(([k, val]) => `<div class="frow"><input class="input" data-fk value="${esc(k)}" placeholder="Feld, z. B. Wassersäule"><input class="input" data-fv value="${esc(val)}" placeholder="Wert"><button type="button" class="btn btn-ghost btn-icon" data-rmf aria-label="Feld entfernen">${ic('x', 'i-sm')}</button></div>`).join('') || '<div class="muted" style="font-size:12.5px">Noch keine eigenen Felder – z. B. Material, Gewicht, Saison.</div>'}</div></div>
       <div class="ed-sec"><div class="set-row" style="padding:12px 14px;border:1px solid var(--line);border-radius:12px"><div><div class="set-l">Kassen-Pflichtfelder „Skiverkauf“</div><div class="set-h">Z-Wert Bindung (Pflicht) und Seriennummer beim Verkauf abfragen</div></div><div class="set-c" style="min-width:0"><button type="button" class="switch" role="switch" id="edSki" aria-checked="${st.ski}" aria-label="Kassen-Pflichtfelder"></button></div></div></div>`;
   };
@@ -144,6 +146,7 @@ function openEditor(a) {
     const sz = t.closest('[data-sz]'); if (sz) { collect(); st.sizes = sz.dataset.sz; return render(); }
     if (t.closest('#edAddF')) { collect(); st.fields.push(['', '']); render(); $$('[data-fk]', el).pop()?.focus(); return; }
     const rmf = t.closest('[data-rmf]'); if (rmf) { collect(); st.fields.splice($$('.frow', el).indexOf(rmf.closest('.frow')), 1); return render(); }
+    if (t.closest('#edAi')) { collect(); const txt = await aiArticleText(st); if (txt) { const i = st.fields.findIndex(([k]) => k === 'Beschreibung'); i >= 0 ? (st.fields[i][1] = txt) : st.fields.push(['Beschreibung', txt]); render(); toast('Beschreibung erstellt', {t2: 'Bitte prüfen und bei Bedarf anpassen', type: 'pos', icon: 'sparkle'}); } return; }
     if (t.closest('#edSki')) { st.ski = !st.ski; $('#edSki', el).setAttribute('aria-checked', st.ski); return; }
     if (t.closest('#edImg')) { collect(); try { const n = await invoke('article_image_pick', {id: a.id}); if (n) { a.image = n; render(); renderArtTable(); toast('Bild übernommen', {t2: a.name, type: 'pos', icon: 'check'}); } } catch (err) { toast('Bild nicht übernommen', {t2: String(err), type: 'warn'}); } return; }
     if (t.closest('#edImgRm')) { collect(); try { await invoke('article_image_remove', {id: a.id}); a.image = null; render(); renderArtTable(); } catch (err) { toast('Fehler', {t2: String(err), type: 'warn'}); } return; }
@@ -165,11 +168,12 @@ function openEditor(a) {
       if (sale != null && !(sale > 0 && sale < price)) return fail('Aktionspreis muss unter dem Verkaufspreis liegen');
       if (!st.colors.length) return fail('Mindestens eine Farbe wählen');
       if (!sizes.length) return fail('Mindestens eine Größe angeben');
+      const cfv = await cfCheck('artikel', st.cf, true); if (!cfv) return;
       const used = new Set(ART.flatMap(x => x.variants.map(v => v.ean)));
       const variants = [];
       st.colors.forEach(c => sizes.forEach(s => { const ex = a?.variants.find(v => v.c === c && v.s === s); if (ex) variants.push({...ex}); else { const ean = newEan(st.id, used); used.add(ean); variants.push({c, s, ean, q: 0, other: null}); } }));
       const art = finishArt({id: st.id.trim(), name: st.name.trim(), brand: st.brand.trim(), cat: st.cat, g: st.g, price: r2(price), sale: sale ? r2(sale) : undefined, vat: +st.vat, tag: st.tag || undefined, pop: st.pop,
-        colors: [...st.colors], sizes, fields: Object.fromEntries(st.fields.filter(([k]) => k)), prompts: st.ski ? SKI_PROMPTS : undefined, variants,
+        colors: [...st.colors], sizes, fields: {...Object.fromEntries(st.fields.filter(([k]) => k)), ...cfv}, prompts: st.ski ? SKI_PROMPTS : undefined, variants,
         cost: String(st.cost).trim() && isFinite(parseAmt(st.cost)) ? r2(parseAmt(st.cost)) : null, supplierId: st.supplierId || '', minStock: Math.max(0, parseInt(st.minStock, 10) || 0)});
       const btn = $('#edSave', el); btn.disabled = true;
       try {

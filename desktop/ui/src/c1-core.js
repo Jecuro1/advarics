@@ -190,7 +190,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.8.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.9.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -309,11 +309,11 @@ const NAV = [
   {id: 'kunden', label: 'Kunden', icon: 'users'},
   {id: 'berichte', label: 'Berichte', icon: 'chart'},
   {g: 'System'},
-  {id: 'erweiterungen', label: 'Erweiterungen', icon: 'puzzle', count: 4},
+  {id: 'anpassen', label: 'Anpassen', icon: 'puzzle'},
   {id: 'designsystem', label: 'Designsystem', icon: 'palette'},
   {id: 'einstellungen', label: 'Einstellungen', icon: 'sliders'},
 ];
-const TITLES = {dashboard: 'Dashboard', kasse: 'Kasse', artikel: 'Artikel', bestand: 'Bestand', inventur: 'Inventur', aktionen: 'Preisaktionen', einkauf: 'Einkauf', kunden: 'Kunden', berichte: 'Berichte', erweiterungen: 'Erweiterungen', designsystem: 'Designsystem', einstellungen: 'Einstellungen'};
+const TITLES = {dashboard: 'Dashboard', kasse: 'Kasse', artikel: 'Artikel', bestand: 'Bestand', inventur: 'Inventur', aktionen: 'Preisaktionen', einkauf: 'Einkauf', kunden: 'Kunden', berichte: 'Berichte', anpassen: 'Anpassen', erweiterungen: 'Erweiterungen', designsystem: 'Designsystem', einstellungen: 'Einstellungen'};
 const PH_VIEWS = ['erweiterungen'];
 
 function renderNav() {
@@ -338,6 +338,7 @@ function toggleSidebar() {
 }
 
 function go(view) {
+  if (view === 'erweiterungen' && DESKTOP) view = 'anpassen';
   if (!TITLES[view]) view = 'dashboard';
   if (S.view === view) return;
   if (S.view === 'dashboard' && Dash.editing) setEditing(false, true);
@@ -355,8 +356,10 @@ function go(view) {
   else if (view === 'inventur') renderInventur();
   else if (view === 'aktionen') renderAktionen();
   else if (view === 'berichte') renderBerichte();
+  else if (view === 'anpassen') renderAnpassen();
+  else if (view.startsWith('obj-')) renderObj(view.slice(4));
   else renderPlaceholder(view);
-  const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
+  const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : view.startsWith('obj-') ? $('#view-obj') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
   $$('.nav-item').forEach(n => n.dataset.view === view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
   renderTopbar(); applySidebar();
   document.body.classList.forEach(c => c.startsWith('at-') && document.body.classList.remove(c)); document.body.classList.add('at-' + view);
@@ -371,7 +374,7 @@ function renderTopbar() {
     L.innerHTML = `<div class="tb-title"><h1>${esc(CFG['kasse.name'])}</h1><span class="tb-sub">${esc(CFG['kasse.id'])} · Bon ${belegNo()} · ${esc(S.user.name)}</span></div><div class="parked" id="parked"></div>`;
     renderParked();
   } else {
-    const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster', einstellungen: DESKTOP ? 'Lokale Datenbank' : 'Vorschau', artikel: `${ART.length} Artikel · ${DESKTOP ? 'Datenbank' : 'Vorschau, nicht gespeichert'}`, bestand: `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, kunden: `${num(CUSTOMERS.length)} Kund:innen · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, einkauf: 'Bestellungen & Wareneingang', berichte: 'Auswertungen & Abschlüsse', inventur: 'Zählen & Differenzen buchen', aktionen: 'Zeitlich begrenzte Nachlässe'}[S.view] || 'In Vorbereitung';
+    const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster', einstellungen: DESKTOP ? 'Lokale Datenbank' : 'Vorschau', artikel: `${ART.length} Artikel · ${DESKTOP ? 'Datenbank' : 'Vorschau, nicht gespeichert'}`, bestand: `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, kunden: `${num(CUSTOMERS.length)} Kund:innen · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, einkauf: 'Bestellungen & Wareneingang', berichte: 'Auswertungen & Abschlüsse', inventur: 'Zählen & Differenzen buchen', aktionen: 'Zeitlich begrenzte Nachlässe', anpassen: 'Felder · Objekte · Regeln · Webhooks · API'}[S.view] || (S.view.startsWith('obj-') ? 'Eigenes Objekt' : 'In Vorbereitung');
     L.innerHTML = `<div class="tb-title"><h1>${TITLES[S.view]}</h1><span class="tb-sub">${esc(sub)}</span></div>`;
   }
 }
@@ -408,7 +411,8 @@ function cmdList() {
     c('Navigation', 'Bestand', 'boxes', () => go('bestand'), {keys: ['G', 'B']}),
     c('Navigation', 'Kunden', 'users', () => go('kunden')),
     c('Navigation', 'Berichte', 'chart', () => go('berichte')),
-    c('Navigation', 'Erweiterungen', 'puzzle', () => go('erweiterungen'), {kw: 'plugins'}),
+    c('Navigation', 'Anpassen', 'puzzle', () => go('anpassen'), {kw: 'felder objekte regeln skripte webhooks api plugins erweiterungen'}),
+    ...(typeof CF !== 'undefined' ? CF.ents.map(e => c('Eigene Objekte', e.plural, e.icon || 'layers', () => go('obj-' + e.id), {kw: e.name})) : []),
     c('Navigation', 'Designsystem', 'palette', () => go('designsystem'), {keys: ['G', 'S'], kw: 'tokens komponenten'}),
     c('Navigation', 'Einstellungen', 'sliders', () => go('einstellungen')),
     c('Kasse', 'Neuer Verkauf', 'plus', () => { go('kasse'); newSale(); }),

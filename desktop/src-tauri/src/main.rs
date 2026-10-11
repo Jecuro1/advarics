@@ -449,6 +449,12 @@ fn user_verify(db: State<db::Db>, id: String, pin: String, purpose: Option<Strin
     if purpose.as_deref() == Some("freigabe") && !users::can_approve(&u.role) {
         return Err(format!("{} darf keine Freigaben erteilen", u.name));
     }
+    // Freigabe über ein bestimmtes Recht (Rechte-Matrix): die freigebende Person muss es selbst haben
+    if let Some(perm) = purpose.as_deref().and_then(|p| p.strip_prefix("recht:")) {
+        if !security::allowed(&c, &u.role, perm) {
+            return Err(format!("{} hat dieses Recht nicht", u.name));
+        }
+    }
     Ok(u)
 }
 
@@ -876,15 +882,12 @@ fn records_list(db: State<db::Db>, entity: String, q: Option<String>) -> Res<Vec
 fn record_save(db: State<db::Db>, entity: String, id: Option<i64>, data: Value, user: Option<String>) -> Res<Value> {
     let c = db.conn.lock().unwrap();
     let id = custom::record_save(&c, &entity, id, &data, user.as_deref())?;
-    let _ = db::audit_append(&c, &format!("objekt.{entity}.saved"), &json!({ "id": id }));
-    automation::dispatch(&c, &format!("objekt.{entity}.saved"), &json!({ "id": id, "daten": data }));
     custom::record_get(&c, &entity, id)
 }
 #[tauri::command]
 fn record_delete(db: State<db::Db>, entity: String, id: i64) -> Res<()> {
     let c = db.conn.lock().unwrap();
     custom::record_delete(&c, &entity, id)?;
-    let _ = db::audit_append(&c, &format!("objekt.{entity}.deleted"), &json!({ "id": id }));
     Ok(())
 }
 #[tauri::command]

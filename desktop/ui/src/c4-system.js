@@ -286,7 +286,7 @@ if (DESKTOP) {
 document.addEventListener('keydown', e => {
   const k = e.key, typing = isTyping(e.target);
   if ((e.metaKey || e.ctrlKey) && k.toLowerCase() === 'k' && !S.locked) { e.preventDefault(); if (S.paletteOpen) { const t = topLayer(); t && closeLayer(t.el); } else openPalette(); return; }
-  if (S.locked) { S.lockKey && S.lockKey(e); return; }
+  if (S.locked && !topLayer()?.el.classList.contains('over-lock')) { S.lockKey && S.lockKey(e); return; }
   if (layers.length) {
     const t = topLayer();
     if (k === 'Escape') { e.preventDefault(); if (t.escClose) closeLayer(t.el); }
@@ -334,10 +334,11 @@ async function init() {
   await loadCustomers();
   await loadUsers();
   if (DESKTOP) { await refreshRksv(); await loadSuppliers(); await loadPromos(); setInterval(applyPromos, 30 * 6e4); }
+  if (DESKTOP) { await Promise.all([loadCustom(), loadAutomation(), loadSecurity()]); installGuards(); }
   if (DESKTOP) { await refreshInfo(); Hooks.on('*', (p, e) => { if (!e.evt.startsWith('config.settings')) invoke('audit_append', {event: e.evt, payload: e.payload ?? {}}).catch(() => {}); }); }
   $('#palKbd').innerHTML = `<span class="kbd">${MOD}</span><span class="kbd">K</span>`;
-  renderNav(); renderMe(); renderStore(); renderStatus();
-  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings(); bindStockViews(); bindP5();
+  renderNav(); permNav(); renderMe(); renderStore(); renderStatus();
+  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings(); bindStockViews(); bindP5(); bindCustom(); bindAutomation(); bindSecurity(); bindAiFibu();
   go(location.hash.slice(1) || 'dashboard');
   if (DESKTOP) lock();   // Anmeldung mit PIN beim Start
   if (DESKTOP) { Hooks.emit('desktop.ready', {version: S.appVersion, datenbank: S.info?.db_path}); setTimeout(autoBackupCheck, 4000); setInterval(autoBackupCheck, 36e5); }

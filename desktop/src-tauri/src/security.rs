@@ -49,7 +49,6 @@ pub fn set(c: &Connection, role: &str, perm: &str, allowed: bool) -> Result<(), 
     Ok(())
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
 pub fn allowed(c: &Connection, role: &str, perm: &str) -> bool {
     matrix(c)["roles"][role][perm].as_bool().unwrap_or(false)
 }

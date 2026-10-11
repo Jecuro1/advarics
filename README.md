@@ -28,29 +28,38 @@ cd desktop
 npm install
 npm run dev      # startet Kontor als Programm-Fenster
 npm run build    # baut den Installer lokal (unter Windows)
-cd src-tauri && cargo test   # Tests: Retoure, Storno, Punkte, Gutscheine, RKSV, PIN, Abschluss, Einkauf, Drucker, Migration
+cd src-tauri && cargo test   # Tests: Retoure, Storno, Punkte, Gutscheine, RKSV, PIN/2FA, Abschluss, Einkauf, Drucker, API, Webhooks, ZVT, Migration
 ```
 
 Voraussetzungen zum Selberbauen: Node.js 22, Rust (stable), unter Windows zusätzlich die
 „Microsoft C++ Build Tools“. Nur zum Benutzen ist nichts davon nötig – nur der Installer.
 
-Stand 0.8.0 – alles mit lokaler Datenbank, ohne Server:
+Stand 0.9.0 – alles mit lokaler Datenbank, ohne Server:
 - **Anmeldung & Rechte:** persönliche PIN (Erst-PINs Lena 1111 · David 2222 (Admin) · Miriam 3333 – sofort ändern),
-  Rollen Kasse/Verkauf/Filialleitung/Administrator, Freigaben per PIN, Sperre nach Fehlversuchen.
+  optional Zwei-Faktor mit Authenticator-App (TOTP), Rollen Kasse/Verkauf/Filialleitung/Administrator mit anpassbarer
+  Rechte-Matrix, Freigaben per PIN durch berechtigte Personen, Sperre nach Fehlversuchen.
 - **Kasse:** Verkauf aus der Datenbank, Kunden & Bonuspunkte, Rabatte mit Freigabe, Retoure/Umtausch/Storno,
   Gutscheine mit echtem Code und Restwert, Kassenbuch, X-Bericht, Tagesabschluss mit Kassensturz (Z-Bericht).
 - **RKSV (Testmodus):** Startbeleg, Signaturkette, AES-verschlüsselter Umsatzzähler, ES256-Signatur, QR-Code,
   Null-/Monats-/Jahresbelege, DEP-Export. Software-Schlüssel statt Signaturkarte – technisch vollständig, aber nicht
   bei FinanzOnline registrierbar. Für den Echtbetrieb wird nur die Signaturquelle getauscht.
-- **Hardware:** Bondrucker (ESC/POS) per Netzwerk oder Windows-Drucker, Kassenlade am Drucker.
+- **Hardware:** Bondrucker (ESC/POS) per Netzwerk oder Windows-Drucker, Kassenlade am Drucker, Kartenterminal über
+  ZVT (Netzwerk) oder ohne Anbindung mit Bestätigung.
 - **Sortiment & Einkauf:** Artikel mit Varianten, Bildern, EK-Preis/Spanne, Lieferant, Mindestbestand; Bestand mit
   Journal; geführte Inventur; Preisaktionen mit Zeitraum; Etiketten (EAN-13, A4 oder ZPL); Lieferanten, Bestellungen,
   Bestellvorschlag, Wareneingang.
 - **Belege & Dokumente:** Bon-Designer mit Logo, Rechnung/Lieferschein/Bestellung A4, Versand per E-Mail (eigener SMTP).
-- **Auswertung:** Dashboard mit echten Zahlen, Berichte mit CSV-Export für Excel.
+- **Auswertung & KI (lokal):** Dashboard mit echten Zahlen, Berichte mit CSV-Export, Absatzprognose, Nachbestellvorschlag
+  mit Begründung, Auffälligkeiten (Retouren, Stornos, Inventur, Preis < EK, Ladenhüter), Fragen in normaler Sprache;
+  optional lokales Sprachmodell (Ollama) für freie Fragen und Artikeltexte.
+- **Buchhaltung:** Buchungsjournal (CSV) und DATEV-Export (EXTF Buchungsstapel), Konten einstellbar.
+- **Anpassen:** eigene Felder mit Typ/Pflicht/Auswahl (Artikel, Kunden, Lieferanten), eigene Objekte mit Menüpunkt
+  (z. B. Reparaturaufträge), Regeln (Wenn → Dann), Skripte in einer Sandbox, Webhooks (HMAC-signiert, mit Wiederholung),
+  lokale REST-API mit Schlüsseln und eigenen Endpunkten (OpenAPI unter `/api/v1/openapi.json`), Export/Import als Paket.
 - **Betrieb:** Datensicherung (optional AES-256-verschlüsselt, inkl. Bilder) mit Prüfung und Wiederherstellung,
   signierte Updates im Programm (Kanal Stable oder Beta), Protokoll.
-- **Noch Vorschau** (als „Vorschau“ markiert): KI-Hinweise, Erweiterungs-Widgets, weitere Filialen/Server.
+- **Noch offen:** Mehrplatz/Filialserver, echte RKSV-Signaturkarte bzw. A-Trust, TSE (Deutschland), App-Store-App,
+  Windows Hello/FIDO2/Entra ID/AD/SAML-Anmeldung.
 
 Datenbank: `%APPDATA%\at.kontor.desktop\kontor.db` · Sicherungen standardmäßig: `Dokumente\Kontor-Sicherungen`.
 Updates per neuem Installer behalten Datenbank und Einstellungen.

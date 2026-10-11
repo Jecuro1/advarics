@@ -62,12 +62,18 @@ function openSupplier(s) {
       <label class="field"><span>E-Mail</span><input class="input" data-sf="email" value="${esc(st.email)}"></label>
       <label class="field"><span>Telefon</span><input class="input" data-sf="phone" value="${esc(st.phone)}"></label>
       <label class="field"><span>Lieferzeit (Tage)</span><input class="input num" data-sf="lead_days" inputmode="numeric" value="${esc(st.lead_days)}"></label>
-      <label class="field full"><span>Notiz</span><input class="input" data-sf="note" value="${esc(st.note)}"></label></div></div>
+      <label class="field full"><span>Notiz</span><input class="input" data-sf="note" value="${esc(st.note)}"></label></div>${cfHTML('lieferant', CF.sup[s?.id] || {}, false, 'Felder')}</div>
     <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="sfSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {focus: '[data-sf="name"]'});
   $('#sfSave', el).onclick = async () => {
     $$('[data-sf]', el).forEach(i => { st[i.dataset.sf] = i.value; });
     st.lead_days = parseInt(st.lead_days, 10) || 0;
-    try { const l = await invoke('supplier_save', {supplier: {...st, id: s?.id || ''}}); SUPPLIERS.length = 0; SUPPLIERS.push(...l); }
+    const cfv = await cfCheck('lieferant', cfRead(el, 'lieferant')); if (!cfv) return;
+    try {
+      const before = new Set(SUPPLIERS.map(x => x.id));
+      const l = await invoke('supplier_save', {supplier: {...st, id: s?.id || ''}}); SUPPLIERS.length = 0; SUPPLIERS.push(...l);
+      const id = s?.id || l.find(x => !before.has(x.id))?.id;
+      if (id && cfDefs('lieferant').length) { await invoke('supplier_fields_set', {id, fields: cfv}); CF.sup[id] = cfv; }
+    }
     catch (e) { return toast('Speichern fehlgeschlagen', {t2: String(e), type: 'warn'}); }
     closeLayer(el); toast('Lieferant gespeichert', {t2: st.name, type: 'pos', icon: 'truck'}); if (S.view === 'einkauf') renderEinkauf();
   };

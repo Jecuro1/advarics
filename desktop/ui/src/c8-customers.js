@@ -76,13 +76,14 @@ function renderKuTable() {
 function openCustomerEditor(c, {prefill = '', onSaved} = {}) {
   const isNew = !c;
   const pre = prefill.trim(), preMail = pre.includes('@');
-  const st = c ? {street: c.street || '', zip: c.zip || '', city: c.city || '', country: c.country || 'AT', uid: c.uid || '', name: c.name, email: c.email, phone: c.phone, tier: c.tier, clubName: c.club?.name || '', clubPct: c.club ? String(c.club.pct) : '', consent: c.consent, note: c.note || '', fields: Object.entries(c.fields || {})}
-    : {street: '', zip: '', city: '', country: 'AT', uid: '', name: preMail ? '' : pre, email: preMail ? pre : '', phone: '', tier: 'Kunde', clubName: '', clubPct: '', consent: false, note: '', fields: []};
+  const st = c ? {street: c.street || '', zip: c.zip || '', city: c.city || '', country: c.country || 'AT', uid: c.uid || '', name: c.name, email: c.email, phone: c.phone, tier: c.tier, clubName: c.club?.name || '', clubPct: c.club ? String(c.club.pct) : '', consent: c.consent, note: c.note || '', fields: cfSplit('kunde', c.fields).free, cf: cfSplit('kunde', c.fields).typed}
+    : {street: '', zip: '', city: '', country: 'AT', uid: '', name: preMail ? '' : pre, email: preMail ? pre : '', phone: '', tier: 'Kunde', clubName: '', clubPct: '', consent: false, note: '', fields: [], cf: {}};
   const el = openLayer(`<div class="drawer-panel" style="width:min(580px,100%)" role="dialog" aria-modal="true" aria-label="${isNew ? 'Neuer Kunde' : 'Kunde bearbeiten'}"><div id="ceHead"></div><div class="drawer-body" id="ceBody"></div>
     <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">${isNew ? '' : `<button class="btn btn-danger" id="ceDel">${ic('trash', 'i-sm')}Deaktivieren</button>`}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="ceSave">${ic('check', 'i-sm')}${isNew && onSaved ? 'Anlegen & zuordnen' : 'Speichern'}</button></div></div>`, {cls: 'drawer', focus: st.name ? '[data-f="email"]' : '[data-f="name"]'});
   const collect = () => {
     $$('[data-f]', el).forEach(i => { st[i.dataset.f] = i.value; });
     st.fields = $$('.frow', el).map(r => [$('[data-fk]', r).value.trim(), $('[data-fv]', r).value.trim()]);
+    if ($('[data-cfobj="kunde"]', el)) st.cf = cfRead(el, 'kunde', true);
   };
   const tiers = TIERS.includes(st.tier) ? TIERS : [st.tier, ...TIERS];
   const render = () => {
@@ -102,7 +103,8 @@ function openCustomerEditor(c, {prefill = '', onSaved} = {}) {
         <label class="field full"><span>Notiz</span><textarea class="input" data-f="note" rows="2" style="height:auto;padding-top:9px;resize:vertical">${esc(st.note)}</textarea></label>
       </div>
       <div class="ed-sec"><div class="set-row" style="padding:12px 14px;border:1px solid var(--line);border-radius:12px"><div><div class="set-l">Newsletter & Angebote (Einwilligung)</div><div class="set-h">DSGVO: nur mit ausdrücklicher Zustimmung · jederzeit widerrufbar</div></div><div class="set-c" style="min-width:0"><button type="button" class="switch" role="switch" id="ceConsent" aria-checked="${st.consent}" aria-label="Einwilligung Newsletter"></button></div></div></div>
-      <div class="ed-sec"><div class="lab">Eigene Felder <button type="button" class="btn btn-ghost btn-sm" id="ceAddF">${ic('plus', 'i-sm')}Feld</button></div>
+      ${cfHTML('kunde', st.cf, true, 'Felder')}
+      <div class="ed-sec"><div class="lab">${cfDefs('kunde').length ? 'Weitere Angaben' : 'Eigene Felder'} <button type="button" class="btn btn-ghost btn-sm" id="ceAddF">${ic('plus', 'i-sm')}Feld</button></div>
         <div>${st.fields.map(([k, val]) => `<div class="frow"><input class="input" data-fk value="${esc(k)}" placeholder="Feld, z. B. Schuhgröße"><input class="input" data-fv value="${esc(val)}" placeholder="Wert"><button type="button" class="btn btn-ghost btn-icon" data-rmf aria-label="Feld entfernen">${ic('x', 'i-sm')}</button></div>`).join('') || '<div class="muted" style="font-size:12.5px">z. B. Schuhgröße, Skilänge, Konfektion – erscheinen an der Kasse beim Zuordnen.</div>'}</div></div>`;
   };
   el.addEventListener('click', async e => {
@@ -125,8 +127,9 @@ function openCustomerEditor(c, {prefill = '', onSaved} = {}) {
       if (st.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(st.email.trim())) return fail('E-Mail-Adresse ist ungültig');
       const pct = st.clubName.trim() ? parseInt(st.clubPct || '0', 10) : null;
       if (st.clubName.trim() && !(pct >= 0 && pct <= 50)) return fail('Vereinsrabatt: 0 bis 50 %');
+      const cfv = await cfCheck('kunde', st.cf, true); if (!cfv) return;
       const data = {id: c?.id || '', name: st.name.trim(), email: st.email.trim(), phone: st.phone.trim(), tier: st.tier, points: c?.points || 0,
-        club: st.clubName.trim() ? {name: st.clubName.trim(), pct} : null, consent: st.consent, note: st.note.trim(), fields: Object.fromEntries(st.fields.filter(([k]) => k)),
+        club: st.clubName.trim() ? {name: st.clubName.trim(), pct} : null, consent: st.consent, note: st.note.trim(), fields: {...Object.fromEntries(st.fields.filter(([k]) => k)), ...cfv},
         street: st.street.trim(), zip: st.zip.trim(), city: st.city.trim(), country: st.country.trim() || 'AT', uid: st.uid.trim()};
       const btn = $('#ceSave', el); btn.disabled = true;
       let saved;

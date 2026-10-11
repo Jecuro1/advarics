@@ -783,6 +783,7 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
 .elsewhere span b{color:var(--text);font-weight:600}
 .prompts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .prompt-hint{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-3);margin-top:8px}
+.prompt-hint.blk{display:block;line-height:1.6}.prompt-hint.blk>.i:first-child{display:inline-block;vertical-align:-2px;margin-right:6px}
 .vp-foot{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:20px}
 .vp-foot .btn-primary{flex:1;height:48px;font-size:14px;border-radius:12px}
 
@@ -925,6 +926,9 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
 .receipt.minimal .tot{font-weight:600}
 
 /* Sperrbildschirm */
+.layer.over-lock{z-index:300}
+.nav-item.nav-locked{opacity:.55}
+.nav-item.nav-locked::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--warn);margin-left:auto;flex:none}
 .lockscreen{position:fixed;inset:0;z-index:250;display:grid;place-items:center;background:color-mix(in srgb,var(--frame) 80%,transparent);backdrop-filter:blur(26px) saturate(120%);-webkit-backdrop-filter:blur(26px) saturate(120%);animation:fadeIn var(--d-3)}
 .lockscreen.closing{animation:fadeOut var(--d-3) forwards}
 .lock-in{width:min(420px,calc(100% - 32px));text-align:center;animation:modalIn var(--d-4) var(--ease-out)}
@@ -1347,6 +1351,8 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
       <section class="view" id="view-inventur" aria-label="Inventur"></section>
       <section class="view" id="view-aktionen" aria-label="Preisaktionen"></section>
       <section class="view" id="view-berichte" aria-label="Berichte"></section>
+      <section class="view" id="view-anpassen" aria-label="Anpassen"></section>
+      <section class="view" id="view-obj" aria-label="Eigenes Objekt"></section>
       <section class="view" id="view-ph" aria-live="polite"></section>
     </main>
   </div>
@@ -1547,7 +1553,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.8.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.9.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1666,11 +1672,11 @@ const NAV = [
   {id: 'kunden', label: 'Kunden', icon: 'users'},
   {id: 'berichte', label: 'Berichte', icon: 'chart'},
   {g: 'System'},
-  {id: 'erweiterungen', label: 'Erweiterungen', icon: 'puzzle', count: 4},
+  {id: 'anpassen', label: 'Anpassen', icon: 'puzzle'},
   {id: 'designsystem', label: 'Designsystem', icon: 'palette'},
   {id: 'einstellungen', label: 'Einstellungen', icon: 'sliders'},
 ];
-const TITLES = {dashboard: 'Dashboard', kasse: 'Kasse', artikel: 'Artikel', bestand: 'Bestand', inventur: 'Inventur', aktionen: 'Preisaktionen', einkauf: 'Einkauf', kunden: 'Kunden', berichte: 'Berichte', erweiterungen: 'Erweiterungen', designsystem: 'Designsystem', einstellungen: 'Einstellungen'};
+const TITLES = {dashboard: 'Dashboard', kasse: 'Kasse', artikel: 'Artikel', bestand: 'Bestand', inventur: 'Inventur', aktionen: 'Preisaktionen', einkauf: 'Einkauf', kunden: 'Kunden', berichte: 'Berichte', anpassen: 'Anpassen', erweiterungen: 'Erweiterungen', designsystem: 'Designsystem', einstellungen: 'Einstellungen'};
 const PH_VIEWS = ['erweiterungen'];
 
 function renderNav() {
@@ -1695,6 +1701,7 @@ function toggleSidebar() {
 }
 
 function go(view) {
+  if (view === 'erweiterungen' && DESKTOP) view = 'anpassen';
   if (!TITLES[view]) view = 'dashboard';
   if (S.view === view) return;
   if (S.view === 'dashboard' && Dash.editing) setEditing(false, true);
@@ -1712,8 +1719,10 @@ function go(view) {
   else if (view === 'inventur') renderInventur();
   else if (view === 'aktionen') renderAktionen();
   else if (view === 'berichte') renderBerichte();
+  else if (view === 'anpassen') renderAnpassen();
+  else if (view.startsWith('obj-')) renderObj(view.slice(4));
   else renderPlaceholder(view);
-  const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
+  const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : view.startsWith('obj-') ? $('#view-obj') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
   $$('.nav-item').forEach(n => n.dataset.view === view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
   renderTopbar(); applySidebar();
   document.body.classList.forEach(c => c.startsWith('at-') && document.body.classList.remove(c)); document.body.classList.add('at-' + view);
@@ -1728,7 +1737,7 @@ function renderTopbar() {
     L.innerHTML = `<div class="tb-title"><h1>${esc(CFG['kasse.name'])}</h1><span class="tb-sub">${esc(CFG['kasse.id'])} · Bon ${belegNo()} · ${esc(S.user.name)}</span></div><div class="parked" id="parked"></div>`;
     renderParked();
   } else {
-    const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster', einstellungen: DESKTOP ? 'Lokale Datenbank' : 'Vorschau', artikel: `${ART.length} Artikel · ${DESKTOP ? 'Datenbank' : 'Vorschau, nicht gespeichert'}`, bestand: `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, kunden: `${num(CUSTOMERS.length)} Kund:innen · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, einkauf: 'Bestellungen & Wareneingang', berichte: 'Auswertungen & Abschlüsse', inventur: 'Zählen & Differenzen buchen', aktionen: 'Zeitlich begrenzte Nachlässe'}[S.view] || 'In Vorbereitung';
+    const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster', einstellungen: DESKTOP ? 'Lokale Datenbank' : 'Vorschau', artikel: `${ART.length} Artikel · ${DESKTOP ? 'Datenbank' : 'Vorschau, nicht gespeichert'}`, bestand: `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, kunden: `${num(CUSTOMERS.length)} Kund:innen · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, einkauf: 'Bestellungen & Wareneingang', berichte: 'Auswertungen & Abschlüsse', inventur: 'Zählen & Differenzen buchen', aktionen: 'Zeitlich begrenzte Nachlässe', anpassen: 'Felder · Objekte · Regeln · Webhooks · API'}[S.view] || (S.view.startsWith('obj-') ? 'Eigenes Objekt' : 'In Vorbereitung');
     L.innerHTML = `<div class="tb-title"><h1>${TITLES[S.view]}</h1><span class="tb-sub">${esc(sub)}</span></div>`;
   }
 }
@@ -1765,7 +1774,8 @@ function cmdList() {
     c('Navigation', 'Bestand', 'boxes', () => go('bestand'), {keys: ['G', 'B']}),
     c('Navigation', 'Kunden', 'users', () => go('kunden')),
     c('Navigation', 'Berichte', 'chart', () => go('berichte')),
-    c('Navigation', 'Erweiterungen', 'puzzle', () => go('erweiterungen'), {kw: 'plugins'}),
+    c('Navigation', 'Anpassen', 'puzzle', () => go('anpassen'), {kw: 'felder objekte regeln skripte webhooks api plugins erweiterungen'}),
+    ...(typeof CF !== 'undefined' ? CF.ents.map(e => c('Eigene Objekte', e.plural, e.icon || 'layers', () => go('obj-' + e.id), {kw: e.name})) : []),
     c('Navigation', 'Designsystem', 'palette', () => go('designsystem'), {keys: ['G', 'S'], kw: 'tokens komponenten'}),
     c('Navigation', 'Einstellungen', 'sliders', () => go('einstellungen')),
     c('Kasse', 'Neuer Verkauf', 'plus', () => { go('kasse'); newSale(); }),
@@ -3598,13 +3608,14 @@ function newEan(artId, used) {
 /* ── Artikel-Editor ── */
 function openEditor(a) {
   const isNew = !a;
-  const st = a ? {id: a.id, name: a.name, brand: a.brand, cat: a.cat, g: a.g, price: num(a.price, 2), sale: (a.baseSale ?? a.sale) ? num(a.baseSale ?? a.sale, 2) : '', vat: a.vat ?? 20, tag: a.tag || '', colors: [...a.colors], sizes: a.sizes.join(', '), fields: Object.entries(a.fields || {}), ski: !!a.prompts, pop: a.pop || 50, cost: a.cost != null ? num(a.cost, 2) : '', supplierId: a.supplierId || '', minStock: String(a.minStock ?? 2)}
-    : {id: nextArtId(), name: '', brand: '', cat: AV.cat !== 'alle' ? AV.cat : 'jacken', g: 'jacket', price: '', sale: '', vat: 20, tag: '', colors: [], sizes: 'S, M, L, XL', fields: [], ski: false, pop: 50, cost: '', supplierId: '', minStock: '2'};
+  const st = a ? {id: a.id, name: a.name, brand: a.brand, cat: a.cat, g: a.g, price: num(a.price, 2), sale: ('baseSale' in a ? a.baseSale : a.sale) ? num('baseSale' in a ? a.baseSale : a.sale, 2) : '', vat: a.vat ?? 20, tag: a.tag || '', colors: [...a.colors], sizes: a.sizes.join(', '), fields: cfSplit('artikel', a.fields).free, cf: cfSplit('artikel', a.fields).typed, ski: !!a.prompts, pop: a.pop || 50, cost: a.cost != null ? num(a.cost, 2) : '', supplierId: a.supplierId || '', minStock: String(a.minStock ?? 2)}
+    : {id: nextArtId(), name: '', brand: '', cat: AV.cat !== 'alle' ? AV.cat : 'jacken', g: 'jacket', price: '', sale: '', vat: 20, tag: '', colors: [], sizes: 'S, M, L, XL', fields: [], cf: {}, ski: false, pop: 50, cost: '', supplierId: '', minStock: '2'};
   const el = openLayer(`<div class="drawer-panel" style="width:min(600px,100%)" role="dialog" aria-modal="true" aria-label="Artikel bearbeiten"><div id="edHead"></div><div class="drawer-body" id="edBody"></div>
     <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">${isNew ? '' : `<button class="btn btn-danger" id="edDel">${ic('trash', 'i-sm')}Deaktivieren</button>`}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="edSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {cls: 'drawer', focus: '[data-f="name"]'});
   const collect = () => {
     $$('[data-f]', el).forEach(i => { st[i.dataset.f] = i.value; });
     st.fields = $$('.frow', el).map(r => [$('[data-fk]', r).value.trim(), $('[data-fv]', r).value.trim()]);
+    if ($('[data-cfobj="artikel"]', el)) st.cf = cfRead(el, 'artikel', true);
   };
   const sizesArr = () => [...new Set(String(st.sizes).split(',').map(s => s.trim()).filter(Boolean))];
   const render = () => {
@@ -3629,7 +3640,8 @@ function openEditor(a) {
       <div class="ed-sec"><div class="lab">Farben <span class="muted">Reihenfolge = Anzeige · erste Farbe = Kachelbild</span></div><div class="cpick">${COLOR_KEYS.map(k => { const i = st.colors.indexOf(k); return `<button type="button" data-col="${k}" aria-pressed="${i >= 0}" style="--sw:${COLORS[k][1]}"><i></i>${COLORS[k][0]}${i >= 0 ? `<span class="ord">${i + 1}</span>` : ''}</button>`; }).join('')}</div></div>
       <div class="ed-sec"><div class="lab">Größen <span class="muted">durch Komma getrennt</span></div><input class="input" data-f="sizes" value="${esc(st.sizes)}"><div class="reasons" style="margin-top:8px">${SIZE_PRESETS.map(([l, val]) => `<button type="button" class="chip" data-sz="${esc(val)}">${l}</button>`).join('')}</div>
         <div class="prompt-hint">${ic('info', 'i-xs')}${st.colors.length * sizes.length} Varianten · EAN werden automatisch vergeben, bestehende bleiben erhalten · neue Varianten starten mit Bestand 0</div></div>
-      <div class="ed-sec"><div class="lab">Eigene Felder <button type="button" class="btn btn-ghost btn-sm" id="edAddF">${ic('plus', 'i-sm')}Feld</button></div>
+      ${cfHTML('artikel', st.cf, true, 'Felder')}
+      <div class="ed-sec"><div class="lab">${cfDefs('artikel').length ? 'Weitere Angaben' : 'Eigene Felder'} <button type="button" class="btn btn-ghost btn-sm" id="edAddF">${ic('plus', 'i-sm')}Feld</button>${DESKTOP ? `<button type="button" class="btn btn-ghost btn-sm" id="edAi">${ic('sparkle', 'i-sm')}Text mit KI</button>` : ''}</div>
         <div id="edFields">${st.fields.map(([k, val]) => `<div class="frow"><input class="input" data-fk value="${esc(k)}" placeholder="Feld, z. B. Wassersäule"><input class="input" data-fv value="${esc(val)}" placeholder="Wert"><button type="button" class="btn btn-ghost btn-icon" data-rmf aria-label="Feld entfernen">${ic('x', 'i-sm')}</button></div>`).join('') || '<div class="muted" style="font-size:12.5px">Noch keine eigenen Felder – z. B. Material, Gewicht, Saison.</div>'}</div></div>
       <div class="ed-sec"><div class="set-row" style="padding:12px 14px;border:1px solid var(--line);border-radius:12px"><div><div class="set-l">Kassen-Pflichtfelder „Skiverkauf“</div><div class="set-h">Z-Wert Bindung (Pflicht) und Seriennummer beim Verkauf abfragen</div></div><div class="set-c" style="min-width:0"><button type="button" class="switch" role="switch" id="edSki" aria-checked="${st.ski}" aria-label="Kassen-Pflichtfelder"></button></div></div></div>`;
   };
@@ -3639,6 +3651,7 @@ function openEditor(a) {
     const sz = t.closest('[data-sz]'); if (sz) { collect(); st.sizes = sz.dataset.sz; return render(); }
     if (t.closest('#edAddF')) { collect(); st.fields.push(['', '']); render(); $$('[data-fk]', el).pop()?.focus(); return; }
     const rmf = t.closest('[data-rmf]'); if (rmf) { collect(); st.fields.splice($$('.frow', el).indexOf(rmf.closest('.frow')), 1); return render(); }
+    if (t.closest('#edAi')) { collect(); const txt = await aiArticleText(st); if (txt) { const i = st.fields.findIndex(([k]) => k === 'Beschreibung'); i >= 0 ? (st.fields[i][1] = txt) : st.fields.push(['Beschreibung', txt]); render(); toast('Beschreibung erstellt', {t2: 'Bitte prüfen und bei Bedarf anpassen', type: 'pos', icon: 'sparkle'}); } return; }
     if (t.closest('#edSki')) { st.ski = !st.ski; $('#edSki', el).setAttribute('aria-checked', st.ski); return; }
     if (t.closest('#edImg')) { collect(); try { const n = await invoke('article_image_pick', {id: a.id}); if (n) { a.image = n; render(); renderArtTable(); toast('Bild übernommen', {t2: a.name, type: 'pos', icon: 'check'}); } } catch (err) { toast('Bild nicht übernommen', {t2: String(err), type: 'warn'}); } return; }
     if (t.closest('#edImgRm')) { collect(); try { await invoke('article_image_remove', {id: a.id}); a.image = null; render(); renderArtTable(); } catch (err) { toast('Fehler', {t2: String(err), type: 'warn'}); } return; }
@@ -3660,11 +3673,12 @@ function openEditor(a) {
       if (sale != null && !(sale > 0 && sale < price)) return fail('Aktionspreis muss unter dem Verkaufspreis liegen');
       if (!st.colors.length) return fail('Mindestens eine Farbe wählen');
       if (!sizes.length) return fail('Mindestens eine Größe angeben');
+      const cfv = await cfCheck('artikel', st.cf, true); if (!cfv) return;
       const used = new Set(ART.flatMap(x => x.variants.map(v => v.ean)));
       const variants = [];
       st.colors.forEach(c => sizes.forEach(s => { const ex = a?.variants.find(v => v.c === c && v.s === s); if (ex) variants.push({...ex}); else { const ean = newEan(st.id, used); used.add(ean); variants.push({c, s, ean, q: 0, other: null}); } }));
       const art = finishArt({id: st.id.trim(), name: st.name.trim(), brand: st.brand.trim(), cat: st.cat, g: st.g, price: r2(price), sale: sale ? r2(sale) : undefined, vat: +st.vat, tag: st.tag || undefined, pop: st.pop,
-        colors: [...st.colors], sizes, fields: Object.fromEntries(st.fields.filter(([k]) => k)), prompts: st.ski ? SKI_PROMPTS : undefined, variants,
+        colors: [...st.colors], sizes, fields: {...Object.fromEntries(st.fields.filter(([k]) => k)), ...cfv}, prompts: st.ski ? SKI_PROMPTS : undefined, variants,
         cost: String(st.cost).trim() && isFinite(parseAmt(st.cost)) ? r2(parseAmt(st.cost)) : null, supplierId: st.supplierId || '', minStock: Math.max(0, parseInt(st.minStock, 10) || 0)});
       const btn = $('#edSave', el); btn.disabled = true;
       try {
@@ -3974,13 +3988,14 @@ function renderKuTable() {
 function openCustomerEditor(c, {prefill = '', onSaved} = {}) {
   const isNew = !c;
   const pre = prefill.trim(), preMail = pre.includes('@');
-  const st = c ? {street: c.street || '', zip: c.zip || '', city: c.city || '', country: c.country || 'AT', uid: c.uid || '', name: c.name, email: c.email, phone: c.phone, tier: c.tier, clubName: c.club?.name || '', clubPct: c.club ? String(c.club.pct) : '', consent: c.consent, note: c.note || '', fields: Object.entries(c.fields || {})}
-    : {street: '', zip: '', city: '', country: 'AT', uid: '', name: preMail ? '' : pre, email: preMail ? pre : '', phone: '', tier: 'Kunde', clubName: '', clubPct: '', consent: false, note: '', fields: []};
+  const st = c ? {street: c.street || '', zip: c.zip || '', city: c.city || '', country: c.country || 'AT', uid: c.uid || '', name: c.name, email: c.email, phone: c.phone, tier: c.tier, clubName: c.club?.name || '', clubPct: c.club ? String(c.club.pct) : '', consent: c.consent, note: c.note || '', fields: cfSplit('kunde', c.fields).free, cf: cfSplit('kunde', c.fields).typed}
+    : {street: '', zip: '', city: '', country: 'AT', uid: '', name: preMail ? '' : pre, email: preMail ? pre : '', phone: '', tier: 'Kunde', clubName: '', clubPct: '', consent: false, note: '', fields: [], cf: {}};
   const el = openLayer(`<div class="drawer-panel" style="width:min(580px,100%)" role="dialog" aria-modal="true" aria-label="${isNew ? 'Neuer Kunde' : 'Kunde bearbeiten'}"><div id="ceHead"></div><div class="drawer-body" id="ceBody"></div>
     <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">${isNew ? '' : `<button class="btn btn-danger" id="ceDel">${ic('trash', 'i-sm')}Deaktivieren</button>`}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="ceSave">${ic('check', 'i-sm')}${isNew && onSaved ? 'Anlegen & zuordnen' : 'Speichern'}</button></div></div>`, {cls: 'drawer', focus: st.name ? '[data-f="email"]' : '[data-f="name"]'});
   const collect = () => {
     $$('[data-f]', el).forEach(i => { st[i.dataset.f] = i.value; });
     st.fields = $$('.frow', el).map(r => [$('[data-fk]', r).value.trim(), $('[data-fv]', r).value.trim()]);
+    if ($('[data-cfobj="kunde"]', el)) st.cf = cfRead(el, 'kunde', true);
   };
   const tiers = TIERS.includes(st.tier) ? TIERS : [st.tier, ...TIERS];
   const render = () => {
@@ -4000,7 +4015,8 @@ function openCustomerEditor(c, {prefill = '', onSaved} = {}) {
         <label class="field full"><span>Notiz</span><textarea class="input" data-f="note" rows="2" style="height:auto;padding-top:9px;resize:vertical">${esc(st.note)}</textarea></label>
       </div>
       <div class="ed-sec"><div class="set-row" style="padding:12px 14px;border:1px solid var(--line);border-radius:12px"><div><div class="set-l">Newsletter & Angebote (Einwilligung)</div><div class="set-h">DSGVO: nur mit ausdrücklicher Zustimmung · jederzeit widerrufbar</div></div><div class="set-c" style="min-width:0"><button type="button" class="switch" role="switch" id="ceConsent" aria-checked="${st.consent}" aria-label="Einwilligung Newsletter"></button></div></div></div>
-      <div class="ed-sec"><div class="lab">Eigene Felder <button type="button" class="btn btn-ghost btn-sm" id="ceAddF">${ic('plus', 'i-sm')}Feld</button></div>
+      ${cfHTML('kunde', st.cf, true, 'Felder')}
+      <div class="ed-sec"><div class="lab">${cfDefs('kunde').length ? 'Weitere Angaben' : 'Eigene Felder'} <button type="button" class="btn btn-ghost btn-sm" id="ceAddF">${ic('plus', 'i-sm')}Feld</button></div>
         <div>${st.fields.map(([k, val]) => `<div class="frow"><input class="input" data-fk value="${esc(k)}" placeholder="Feld, z. B. Schuhgröße"><input class="input" data-fv value="${esc(val)}" placeholder="Wert"><button type="button" class="btn btn-ghost btn-icon" data-rmf aria-label="Feld entfernen">${ic('x', 'i-sm')}</button></div>`).join('') || '<div class="muted" style="font-size:12.5px">z. B. Schuhgröße, Skilänge, Konfektion – erscheinen an der Kasse beim Zuordnen.</div>'}</div></div>`;
   };
   el.addEventListener('click', async e => {
@@ -4023,8 +4039,9 @@ function openCustomerEditor(c, {prefill = '', onSaved} = {}) {
       if (st.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(st.email.trim())) return fail('E-Mail-Adresse ist ungültig');
       const pct = st.clubName.trim() ? parseInt(st.clubPct || '0', 10) : null;
       if (st.clubName.trim() && !(pct >= 0 && pct <= 50)) return fail('Vereinsrabatt: 0 bis 50 %');
+      const cfv = await cfCheck('kunde', st.cf, true); if (!cfv) return;
       const data = {id: c?.id || '', name: st.name.trim(), email: st.email.trim(), phone: st.phone.trim(), tier: st.tier, points: c?.points || 0,
-        club: st.clubName.trim() ? {name: st.clubName.trim(), pct} : null, consent: st.consent, note: st.note.trim(), fields: Object.fromEntries(st.fields.filter(([k]) => k)),
+        club: st.clubName.trim() ? {name: st.clubName.trim(), pct} : null, consent: st.consent, note: st.note.trim(), fields: {...Object.fromEntries(st.fields.filter(([k]) => k)), ...cfv},
         street: st.street.trim(), zip: st.zip.trim(), city: st.city.trim(), country: st.country.trim() || 'AT', uid: st.uid.trim()};
       const btn = $('#ceSave', el); btn.disabled = true;
       let saved;
@@ -4500,7 +4517,13 @@ async function loadUsers() {
 }
 async function checkPin(user, pin, purpose) {
   if (!DESKTOP) { if (pin === '0000') throw new Error('Falsche PIN'); if (purpose === 'freigabe' && !canApprove(user)) throw new Error(`${user.name} darf keine Freigaben erteilen`); return user; }
-  try { await invoke('user_verify', {id: user.id, pin, purpose}); return user; } catch (e) { throw new Error(String(e)); }
+  try { await invoke('user_verify', {id: user.id, pin, purpose}); return user; }
+  catch (e) {
+    if (String(e) !== 'TOTP') throw new Error(String(e));
+    // Zwei-Faktor aktiv: zusätzlich Code aus der Authenticator-App
+    const code = await askTotp(user); if (!code) throw new Error('Abgebrochen – Code aus der Authenticator-App fehlt');
+    try { await invoke('user_verify', {id: user.id, pin, purpose, code}); return user; } catch (e2) { throw new Error(String(e2)); }
+  }
 }
 const pinPad = () => `<div class="keypad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-k="${n}">${n}</button>`).join('')}<span></span><button data-k="0">0</button><button class="fn" data-k="back" aria-label="Löschen">${ic('chevron-left')}</button></div>`;
 const shakeEl = el => { if (!el) return; el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); };
@@ -4566,11 +4589,11 @@ function lock() {
 }
 
 /* ── Freigabe (Step-up) ── */
-function stepUp({title, text, rule, admin = false}) {
+function stepUp({title, text, rule, admin = false, roles = null, purpose = 'freigabe'}) {
   return new Promise((resolve, reject) => {
-    const approvers = STAFF.filter(u => admin ? u.roleKey === 'admin' : canApprove(u));
-    if (!approvers.length) { toast('Keine berechtigte Person', {t2: admin ? 'Es ist kein Administrator angelegt' : 'Es ist keine Filialleitung angelegt', type: 'warn'}); return reject(new Error('keine Berechtigten')); }
-    let done = false, pin = '', busy = false, ap = canApprove(S.user) && (!admin || S.user.roleKey === 'admin') ? S.user : approvers[0];
+    const approvers = STAFF.filter(u => roles ? roles.includes(u.roleKey) : admin ? u.roleKey === 'admin' : canApprove(u));
+    if (!approvers.length) { toast('Keine berechtigte Person', {t2: roles ? 'Keine Person mit diesem Recht angelegt' : admin ? 'Es ist kein Administrator angelegt' : 'Es ist keine Filialleitung angelegt', type: 'warn'}); return reject(new Error('keine Berechtigten')); }
+    let done = false, pin = '', busy = false, ap = approvers.find(u => u.id === S.user.id) || approvers[0];
     const el = openLayer(`<div class="modal" style="width:min(440px,100%)" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div id="suBox"></div></div>`, {onClose: () => { if (!done) reject(new Error('abgebrochen')); }});
     const box = $('#suBox', el);
     const render = msg => {
@@ -4596,7 +4619,7 @@ function stepUp({title, text, rule, admin = false}) {
       dots();
       if (pin.length === 4) {
         busy = true;
-        try { await checkPin(ap, pin, 'freigabe'); ok(); }
+        try { await checkPin(ap, pin, purpose); ok(); }
         catch (e) { busy = false; pin = ''; render(e.message); shakeEl($('#suDots', el)); Hooks.emit('auth.stepup.failed', {von: ap.name, methode: 'PIN'}); }
       }
     };
@@ -4608,7 +4631,7 @@ function stepUp({title, text, rule, admin = false}) {
 
 /* ── Einstellungen → Benutzer ── */
 function usersSectionHTML() {
-  return `<section class="set-sec" id="sec-benutzer"><h2>Benutzer & Anmeldung</h2><p>Jede Person meldet sich mit eigener PIN an. Freigaben (Rabatte, Stornos, Entnahmen, Punkte) erteilen nur Filialleitung und Administrator. Nach 5 Fehlversuchen ist die PIN 2 Minuten gesperrt.</p>
+  return `<section class="set-sec" id="sec-benutzer"><h2>Benutzer & Anmeldung</h2><p>Jede Person meldet sich mit eigener PIN an – auf Wunsch zusätzlich mit Code aus einer Authenticator-App (2FA). Was eine Rolle darf, steht unter „Rechte je Rolle“; fehlt ein Recht, gibt eine berechtigte Person per PIN frei. Rabatt- und Storno-Freigaben erteilen Filialleitung und Administrator. Nach 5 Fehlversuchen ist die PIN 2 Minuten gesperrt.</p>
     <div class="card" id="usrBox"></div></section>`;
 }
 function renderUsersBox() {
@@ -5056,12 +5079,18 @@ function openSupplier(s) {
       <label class="field"><span>E-Mail</span><input class="input" data-sf="email" value="${esc(st.email)}"></label>
       <label class="field"><span>Telefon</span><input class="input" data-sf="phone" value="${esc(st.phone)}"></label>
       <label class="field"><span>Lieferzeit (Tage)</span><input class="input num" data-sf="lead_days" inputmode="numeric" value="${esc(st.lead_days)}"></label>
-      <label class="field full"><span>Notiz</span><input class="input" data-sf="note" value="${esc(st.note)}"></label></div></div>
+      <label class="field full"><span>Notiz</span><input class="input" data-sf="note" value="${esc(st.note)}"></label></div>${cfHTML('lieferant', CF.sup[s?.id] || {}, false, 'Felder')}</div>
     <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="sfSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {focus: '[data-sf="name"]'});
   $('#sfSave', el).onclick = async () => {
     $$('[data-sf]', el).forEach(i => { st[i.dataset.sf] = i.value; });
     st.lead_days = parseInt(st.lead_days, 10) || 0;
-    try { const l = await invoke('supplier_save', {supplier: {...st, id: s?.id || ''}}); SUPPLIERS.length = 0; SUPPLIERS.push(...l); }
+    const cfv = await cfCheck('lieferant', cfRead(el, 'lieferant')); if (!cfv) return;
+    try {
+      const before = new Set(SUPPLIERS.map(x => x.id));
+      const l = await invoke('supplier_save', {supplier: {...st, id: s?.id || ''}}); SUPPLIERS.length = 0; SUPPLIERS.push(...l);
+      const id = s?.id || l.find(x => !before.has(x.id))?.id;
+      if (id && cfDefs('lieferant').length) { await invoke('supplier_fields_set', {id, fields: cfv}); CF.sup[id] = cfv; }
+    }
     catch (e) { return toast('Speichern fehlgeschlagen', {t2: String(e), type: 'warn'}); }
     closeLayer(el); toast('Lieferant gespeichert', {t2: st.name, type: 'pos', icon: 'truck'}); if (S.view === 'einkauf') renderEinkauf();
   };
@@ -5783,6 +5812,1236 @@ function bindP5() {
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   31 · ANPASSEN — eigene Felder (mit Typ, Pflicht, Auswahl) für Artikel,
+   Kunden, Lieferanten und eigene Objekte; eigene Objekte mit Datensätzen
+   und eigenem Menüpunkt. Felder von Artikeln/Kunden werden unter ihrer
+   Bezeichnung gespeichert (so erscheinen sie überall wie bisher), bei
+   Lieferanten und eigenen Objekten unter ihrem technischen Namen.
+   ════════════════════════════════════════════════════════════════════ */
+const CF = {defs: [], ents: [], sup: {}};
+const FTYPES = [['text', 'Text'], ['mehrzeilig', 'Mehrzeiliger Text'], ['zahl', 'Zahl'], ['betrag', 'Betrag (€)'], ['datum', 'Datum'], ['auswahl', 'Auswahl'], ['janein', 'Ja / Nein'], ['email', 'E-Mail'], ['telefon', 'Telefon']];
+const OBJ_ICONS = ['layers', 'wrench', 'snow', 'calendar', 'tag', 'boxes', 'users', 'truck', 'star', 'clock', 'gift', 'flow', 'receipt', 'building'];
+const cfDefs = obj => CF.defs.filter(d => d.object === obj).sort((a, b) => a.pos - b.pos || a.id - b.id);
+const cfObjName = o => o === 'artikel' ? 'Artikel' : o === 'kunde' ? 'Kunden' : o === 'lieferant' ? 'Lieferanten' : (CF.ents.find(e => 'obj:' + e.id === o)?.plural || o);
+const entById = id => CF.ents.find(e => e.id === id);
+
+async function loadCustom() {
+  if (!DESKTOP) return;
+  try { [CF.defs, CF.ents, CF.sup] = await Promise.all([invoke('fields_list', {object: null}), invoke('entities_list'), invoke('supplier_fields_get')]); }
+  catch (e) { console.error(e); }
+  syncObjNav();
+}
+
+/* ── Navigation: eigene Objekte als eigene Menüpunkte ── */
+function syncObjNav() {
+  for (let i = NAV.length - 1; i >= 0; i--) if (NAV[i].obj || NAV[i].g === 'Eigene Objekte') NAV.splice(i, 1);
+  const sys = NAV.findIndex(n => n.g === 'System');
+  if (CF.ents.length) NAV.splice(sys, 0, {g: 'Eigene Objekte'}, ...CF.ents.map(e => ({id: 'obj-' + e.id, label: e.plural, icon: e.icon || 'layers', obj: true, count: e.count || undefined})));
+  Object.keys(TITLES).forEach(k => { if (k.startsWith('obj-')) delete TITLES[k]; });
+  CF.ents.forEach(e => { TITLES['obj-' + e.id] = e.plural; });
+  if ($('#nav')) { renderNav(); permNav(); $$('.nav-item').forEach(n => n.dataset.view === S.view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current')); }
+}
+
+/* ── Feld-Eingaben ── */
+const cfShow = (d, v) => {
+  if (v == null || v === '') return '';
+  if (d.type === 'janein') return v === true || v === 'ja' || v === 'true' ? 'ja' : 'nein';
+  if (d.type === 'betrag' && typeof v === 'number') return eur(v);
+  if (d.type === 'zahl' && typeof v === 'number') return num(v, Number.isInteger(v) ? 0 : 2);
+  if (d.type === 'datum' && /^\d{4}-\d\d-\d\d$/.test(v)) return new Date(v + 'T12:00').toLocaleDateString('de-AT');
+  return String(v);
+};
+function cfInput(d, v) {
+  const a = `data-cf="${esc(d.key)}"`;
+  const s = v == null ? '' : typeof v === 'number' ? String(v).replace('.', ',') : String(v);
+  switch (d.type) {
+    case 'mehrzeilig': return `<textarea class="input" ${a} rows="2" style="height:auto;padding-top:9px;resize:vertical">${esc(s)}</textarea>`;
+    case 'auswahl': return `<select class="input select" ${a}><option value="">–</option>${d.options.map(o => `<option ${o === s ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+    case 'janein': { const on = v === true || s === 'ja' || s === 'true'; return `<button type="button" class="switch" role="switch" ${a} data-cfsw aria-checked="${on}" aria-label="${esc(d.label)}"></button>`; }
+    case 'datum': return `<input class="input" type="date" ${a} value="${esc(s)}">`;
+    case 'zahl': case 'betrag': return `<input class="input num" inputmode="decimal" ${a} value="${esc(s)}" ${d.type === 'betrag' ? 'placeholder="€"' : ''}>`;
+    case 'email': return `<input class="input" type="email" ${a} value="${esc(s)}" autocomplete="off">`;
+    case 'telefon': return `<input class="input" type="tel" ${a} value="${esc(s)}" autocomplete="off">`;
+    default: return `<input class="input" ${a} value="${esc(s)}" autocomplete="off">`;
+  }
+}
+/** Abschnitt mit allen definierten Feldern eines Objekts. byLabel: Werte liegen unter der Bezeichnung */
+function cfHTML(obj, vals = {}, byLabel = false, title = 'Felder') {
+  const defs = cfDefs(obj); if (!defs.length) return '';
+  return `<div class="ed-sec" data-cfobj="${esc(obj)}"><div class="lab">${esc(title)} <span class="muted">unter Anpassen → Felder festgelegt</span></div><div class="ed-grid">${defs.map(d => {
+    const v = vals?.[byLabel ? d.label : d.key];
+    const lbl = `<span>${esc(d.label)}${d.required ? ' <b class="req">*</b>' : ''}</span>`;
+    const help = d.help ? `<small class="muted" style="font-size:11.5px">${esc(d.help)}</small>` : '';
+    return d.type === 'janein' ? `<div class="field"><span>${esc(d.label)}</span><div style="display:flex;align-items:center;gap:8px;min-height:36px">${cfInput(d, v)}${help}</div></div>`
+      : `<label class="field ${d.type === 'mehrzeilig' ? 'full' : ''}">${lbl}${cfInput(d, v)}${help}</label>`;
+  }).join('')}</div></div>`;
+}
+document.addEventListener('click', e => { const sw = e.target.closest('[data-cfsw]'); if (sw) sw.setAttribute('aria-checked', sw.getAttribute('aria-checked') !== 'true'); });
+/** Eingaben lesen (Rohwerte, Schlüssel = technischer Name oder Bezeichnung) */
+function cfRead(root, obj, byLabel = false) {
+  const out = {};
+  cfDefs(obj).forEach(d => {
+    const i = $(`[data-cfobj="${obj}"] [data-cf="${d.key}"]`, root); if (!i) return;
+    out[byLabel ? d.label : d.key] = i.dataset.cfsw != null ? (i.getAttribute('aria-checked') === 'true' ? 'ja' : 'nein') : i.value.trim();
+  });
+  return out;
+}
+/** Prüfen (Typ, Pflicht, Auswahl) – in der Desktop-App durch die Datenbank-Schicht. null bei Fehler. */
+async function cfCheck(obj, vals, byLabel = false) {
+  const defs = cfDefs(obj); if (!defs.length) return {};
+  const raw = {}; defs.forEach(d => { const v = vals[byLabel ? d.label : d.key]; if (v != null && v !== '') raw[d.key] = v; });
+  let normd;
+  try {
+    if (DESKTOP) normd = await invoke('fields_validate', {object: obj, values: raw});
+    else { const miss = defs.find(d => d.required && d.type !== 'janein' && !raw[d.key]); if (miss) throw new Error(`Pflichtfeld „${miss.label}“ fehlt`); normd = raw; }
+  } catch (e) { toast('Bitte Felder prüfen', {t2: String(e.message || e), type: 'warn', icon: 'alert'}); return null; }
+  if (!byLabel) return normd;
+  const out = {};
+  defs.forEach(d => { const v = normd[d.key]; if (v == null || v === '') return; out[d.label] = d.type === 'janein' ? (v ? 'ja' : 'nein') : typeof v === 'number' ? (d.type === 'betrag' ? num(v, 2) : String(v).replace('.', ',')) : String(v); });
+  return out;
+}
+/** Freie Felder von definierten trennen (Artikel/Kunden) */
+function cfSplit(obj, fields) {
+  const labels = new Set(cfDefs(obj).map(d => d.label)), typed = {}, free = [];
+  Object.entries(fields || {}).forEach(([k, v]) => labels.has(k) ? (typed[k] = v) : free.push([k, v]));
+  return {typed, free};
+}
+
+/* ════ Ansicht „Anpassen“ ════ */
+const AP = {tab: 'felder', obj: 'artikel'};
+const AP_TABS = [['felder', 'Felder', 'list'], ['objekte', 'Objekte', 'layers'], ['regeln', 'Regeln', 'flow'], ['skripte', 'Skripte', 'code'], ['webhooks', 'Webhooks', 'zap'], ['api', 'REST-API', 'server'], ['pakete', 'Pakete', 'boxes']];
+function renderAnpassen() {
+  const v = $('#view-anpassen');
+  if (!DESKTOP) { v.innerHTML = `<div class="cv"><div class="card"><div class="empty" style="padding:56px 20px"><div class="empty-icon">${ic('puzzle')}</div><h3>Anpassen nur in der Desktop-App</h3><p>Eigene Felder, Objekte, Regeln, Skripte, Webhooks und die REST-API werden in der lokalen Datenbank gespeichert.</p></div></div></div>`; return; }
+  v.innerHTML = `<div class="cv">
+    <div class="cv-head"><div><h2 class="h-title">Anpassen</h2><div class="dash-meta" style="margin-top:6px"><span>Kontor an Ihren Betrieb anpassen – ohne Programmierung, alles bleibt bei Updates erhalten</span></div></div></div>
+    <div class="cv-tools"><div class="reasons" id="apTabs">${AP_TABS.map(([k, l, i]) => `<button class="chip" data-apt="${k}" aria-pressed="${AP.tab === k}">${ic(i, 'i-sm')}${l}</button>`).join('')}</div></div>
+    <div id="apBody"></div></div>`;
+  renderApBody();
+}
+function renderApBody() {
+  const box = $('#apBody'); if (!box) return;
+  $$('#apTabs [data-apt]').forEach(b => b.setAttribute('aria-pressed', b.dataset.apt === AP.tab));
+  ({felder: renderApFields, objekte: renderApEntities, regeln: renderApRules, skripte: renderApScripts, webhooks: renderApHooks, api: renderApApi, pakete: renderApPackages})[AP.tab](box);
+}
+
+/* ── Felder ── */
+function renderApFields(box) {
+  const objs = [['artikel', 'Artikel', 'tag'], ['kunde', 'Kunden', 'users'], ['lieferant', 'Lieferanten', 'truck'], ...CF.ents.map(e => ['obj:' + e.id, e.plural, e.icon || 'layers'])];
+  if (!objs.some(o => o[0] === AP.obj)) AP.obj = 'artikel';
+  const defs = cfDefs(AP.obj);
+  box.innerHTML = `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><span class="muted" style="font-size:12.5px">Felder für</span>${objs.map(([k, l, i]) => `<button class="chip" data-apo="${esc(k)}" aria-pressed="${AP.obj === k}">${ic(i, 'i-sm')}${esc(l)}</button>`).join('')}<span class="sp" style="flex:1"></span><button class="btn btn-primary btn-sm" id="apFieldNew">${ic('plus', 'i-sm')}Neues Feld</button></div>
+    <div class="card">${defs.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Bezeichnung</th><th>Typ</th><th>Technischer Name</th><th>Pflicht</th>${['artikel', 'kunde'].includes(AP.obj) ? '<th>An der Kasse</th>' : ''}<th></th></tr></thead><tbody>${defs.map((d, i) => `<tr data-fdef="${d.id}" style="cursor:pointer"><td style="padding-left:16px"><b>${esc(d.label)}</b>${d.help ? `<div class="muted" style="font-size:11.5px">${esc(d.help)}</div>` : ''}</td><td>${esc(FTYPES.find(t => t[0] === d.type)?.[1] || d.type)}${d.type === 'auswahl' ? `<div class="muted" style="font-size:11.5px">${esc(d.options.join(' · '))}</div>` : ''}</td><td class="mono" style="font-size:12px">${esc(d.key)}</td><td>${d.required ? '<span class="pill accent">Pflicht</span>' : '–'}</td>${['artikel', 'kunde'].includes(AP.obj) ? `<td>${d.at_pos ? ic('check', 'i-sm') : '–'}</td>` : ''}<td class="r" style="white-space:nowrap;padding-right:12px"><button class="btn btn-ghost btn-sm btn-icon" data-fmove="${d.id}" data-dir="-1" ${i ? '' : 'disabled'} aria-label="nach oben"><span style="display:inline-flex;transform:rotate(180deg)">${ic('chevron-down', 'i-sm')}</span></button><button class="btn btn-ghost btn-sm btn-icon" data-fmove="${d.id}" data-dir="1" ${i < defs.length - 1 ? '' : 'disabled'} aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('list')}</div><h3>Noch keine Felder für ${esc(cfObjName(AP.obj))}</h3><p>z. B. „Saison“ (Auswahl), „Garantie bis“ (Datum), „Gewicht in g“ (Zahl) – mit Pflichtangabe und Prüfung. Erscheinen im Editor, in der API und in Regeln.</p></div>`}</div>
+    <div class="prompt-hint blk" style="margin-top:10px">${ic('info', 'i-xs')}Felder von Artikeln und Kunden stehen in Regeln als <span class="mono">{{feld.Bezeichnung}}</span> zur Verfügung und werden über die REST-API mitgeliefert.</div>`;
+}
+function openFieldEditor(d) {
+  const obj = d?.object || AP.obj;
+  const st = d ? {...d, options: d.options.join('\n')} : {object: obj, key: '', label: '', type: 'text', options: '', required: false, at_pos: false, help: '', pos: cfDefs(obj).length};
+  const el = openLayer(`<div class="modal" style="width:min(520px,100%)" role="dialog" aria-modal="true" aria-label="Feld"><div id="feBox"></div></div>`, {focus: '#feLabel'});
+  const box = $('#feBox', el);
+  const collect = () => { st.label = $('#feLabel', el).value.trim(); st.help = $('#feHelp', el).value.trim(); const o = $('#feOpts', el); if (o) st.options = o.value; };
+  const render = () => {
+    box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('list')}</div><div><h2>${d ? esc(d.label) : 'Neues Feld'}</h2><p>${esc(cfObjName(obj))}${d ? ` · ${esc(d.key)}` : ' · technischer Name wird aus der Bezeichnung gebildet'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="m-body" style="display:grid;gap:14px">
+        <label class="field"><span>Bezeichnung</span><input class="input" id="feLabel" value="${esc(st.label)}" placeholder="z. B. Saison"></label>
+        <div><div class="field"><span>Typ</span></div><div class="reasons" style="margin-top:6px">${FTYPES.map(([k, l]) => `<button class="chip" data-ft="${k}" aria-pressed="${st.type === k}" ${d && d.type !== k && !['text', 'mehrzeilig'].includes(k) ? '' : ''}>${l}</button>`).join('')}</div></div>
+        ${st.type === 'auswahl' ? `<label class="field"><span>Auswahlwerte (eine Zeile je Wert)</span><textarea class="input" id="feOpts" rows="4" style="height:auto;padding-top:9px">${esc(st.options)}</textarea></label>` : ''}
+        <label class="field"><span>Hilfetext (optional)</span><input class="input" id="feHelp" value="${esc(st.help)}" placeholder="erscheint unter dem Feld"></label>
+        <div class="set-row" style="padding:10px 0"><div><div class="set-l">Pflichtfeld</div><div class="set-h">Speichern nur mit Wert</div></div><div class="set-c"><button class="switch" role="switch" id="feReq" aria-checked="${st.required}" aria-label="Pflichtfeld"></button></div></div>
+        ${['artikel', 'kunde'].includes(obj) ? `<div class="set-row" style="padding:10px 0;border-bottom:0"><div><div class="set-l">An der Kasse zeigen</div><div class="set-h">${obj === 'kunde' ? 'beim Zuordnen der Kundin / des Kunden' : 'in der Artikelansicht der Kasse'}</div></div><div class="set-c"><button class="switch" role="switch" id="fePos" aria-checked="${st.at_pos}" aria-label="An der Kasse"></button></div></div>` : ''}
+      </div>
+      <div class="m-foot">${d ? `<button class="btn btn-danger" id="feDel">${ic('trash', 'i-sm')}Löschen</button>` : ''}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="feSave">${ic('check', 'i-sm')}Speichern</button></div>`;
+  };
+  el.addEventListener('click', async e => {
+    const ft = e.target.closest('[data-ft]'); if (ft) { collect(); st.type = ft.dataset.ft; return render(); }
+    if (e.target.closest('#feReq')) { st.required = !st.required; return e.target.closest('#feReq').setAttribute('aria-checked', st.required); }
+    if (e.target.closest('#fePos')) { st.at_pos = !st.at_pos; return e.target.closest('#fePos').setAttribute('aria-checked', st.at_pos); }
+    if (e.target.closest('#feDel')) {
+      try { await needPerm('anpassen', 'Feld löschen', `„${d.label}“ wird entfernt. Bereits gespeicherte Werte bleiben in den Datensätzen erhalten.`); CF.defs = await invoke('field_delete', {id: d.id}); } catch (err) { if (err?.message !== 'abgebrochen') toast('Nicht gelöscht', {t2: String(err), type: 'warn'}); return; }
+      closeLayer(el); renderApBody(); Hooks.emit('config.field.deleted', {objekt: obj, feld: d.key}); return;
+    }
+    if (e.target.closest('#feSave')) {
+      collect();
+      const field = {id: d?.id ?? null, object: obj, key: d?.key || '', label: st.label, type: st.type, options: st.type === 'auswahl' ? String(st.options).split('\n').map(s => s.trim()).filter(Boolean) : [], required: st.required, at_pos: st.at_pos, help: st.help, pos: st.pos};
+      try { CF.defs = await invoke('field_save', {field}); } catch (err) { return toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
+      closeLayer(el); renderApBody(); toast('Feld gespeichert', {t2: `${st.label} · ${cfObjName(obj)}`, type: 'pos', icon: 'list'}); Hooks.emit('config.field.saved', {objekt: obj, feld: st.label, typ: st.type});
+    }
+  });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); $('#feSave', el).click(); } });
+  render();
+}
+async function moveField(id, dir) {
+  const defs = cfDefs(AP.obj), i = defs.findIndex(d => d.id === id), j = i + dir; if (i < 0 || j < 0 || j >= defs.length) return;
+  [defs[i], defs[j]] = [defs[j], defs[i]];
+  try { for (let k = 0; k < defs.length; k++) if (defs[k].pos !== k) CF.defs = await invoke('field_save', {field: {...defs[k], pos: k}}); } catch (e) { toast('Reihenfolge nicht gespeichert', {t2: String(e), type: 'warn'}); }
+  renderApBody();
+}
+
+/* ── Objekte ── */
+function renderApEntities(box) {
+  box.innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><span class="muted" style="font-size:12.5px">Eigene Objekte bekommen einen Menüpunkt, eigene Felder, Suche, CSV-Export, Regeln und REST-Endpunkte.</span><span class="sp" style="flex:1"></span><button class="btn btn-primary btn-sm" id="apEntNew">${ic('plus', 'i-sm')}Neues Objekt</button></div>
+    <div class="card">${CF.ents.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Objekt</th><th>Felder</th><th class="r">Datensätze</th><th>REST-Endpunkt</th><th></th></tr></thead><tbody>${CF.ents.map(e => `<tr data-ent="${esc(e.id)}" style="cursor:pointer"><td style="padding-left:16px"><span style="display:inline-flex;gap:10px;align-items:center"><span class="reg-ic">${ic(e.icon || 'layers', 'i-sm')}</span><span><b>${esc(e.plural)}</b><div class="muted" style="font-size:11.5px">Einzahl: ${esc(e.name)}</div></span></span></td><td>${cfDefs('obj:' + e.id).map(d => esc(d.label)).join(' · ') || '<span class="muted">noch keine</span>'}</td><td class="r num">${num(e.count || 0)}</td><td class="mono" style="font-size:12px">/api/v1/objekte/${esc(e.id)}</td><td class="r" style="white-space:nowrap;padding-right:12px"><button class="btn btn-ghost btn-sm" data-entopen="${esc(e.id)}">Öffnen</button></td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('layers')}</div><h3>Noch keine eigenen Objekte</h3><p>Beispiele: Reparaturaufträge, Skiverleih, Kurse & Events, Maßanfertigungen, Leihgeräte. Jedes Objekt bekommt eigene Felder und einen eigenen Menüpunkt.</p><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:8px">${[['Reparaturauftrag', 'Reparaturaufträge', 'wrench'], ['Verleih', 'Verleih', 'snow'], ['Kurs', 'Kurse & Events', 'calendar']].map(([n, p, i]) => `<button class="btn btn-secondary btn-sm" data-enttpl="${esc(n)}|${esc(p)}|${i}">${ic(i, 'i-sm')}${esc(p)}</button>`).join('')}</div></div>`}</div>`;
+}
+const ENT_TEMPLATES = {
+  'Reparaturauftrag': [['Kunde', 'text', true], ['Telefon', 'telefon'], ['Gegenstand', 'text', true], ['Auftrag', 'mehrzeilig'], ['Status', 'auswahl', true, ['Angenommen', 'In Arbeit', 'Abholbereit', 'Abgeholt']], ['Fertig bis', 'datum'], ['Preis', 'betrag']],
+  'Verleih': [['Kunde', 'text', true], ['Gerät', 'text', true], ['Von', 'datum', true], ['Bis', 'datum', true], ['Kaution', 'betrag'], ['Zurückgegeben', 'janein']],
+  'Kurs': [['Titel', 'text', true], ['Datum', 'datum', true], ['Plätze', 'zahl'], ['Preis', 'betrag'], ['Leitung', 'text']],
+};
+function openEntityEditor(ent, tpl) {
+  const st = ent ? {...ent} : {id: '', name: tpl?.[0] || '', plural: tpl?.[1] || '', icon: tpl?.[2] || 'layers', title_field: null};
+  const el = openLayer(`<div class="modal" style="width:min(520px,100%)" role="dialog" aria-modal="true" aria-label="Objekt"><div id="enBox"></div></div>`, {focus: '#enName'});
+  const box = $('#enBox', el);
+  const collect = () => { st.name = $('#enName', el).value.trim(); st.plural = $('#enPlural', el).value.trim(); const t = $('#enTitle', el); if (t) st.title_field = t.value || null; };
+  const render = () => {
+    const defs = ent ? cfDefs('obj:' + ent.id) : [];
+    box.innerHTML = `<div class="m-head"><div class="m-ic">${ic(st.icon || 'layers')}</div><div><h2>${ent ? esc(ent.plural) : 'Neues Objekt'}</h2><p>${ent ? `Kennung ${esc(ent.id)} · ${num(ent.count || 0)} Datensätze` : tpl ? 'Vorlage mit passenden Feldern' : 'Felder legen Sie danach unter „Felder“ fest'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="m-body" style="display:grid;gap:14px">
+        <div class="ed-grid"><label class="field"><span>Name (Einzahl)</span><input class="input" id="enName" value="${esc(st.name)}" placeholder="z. B. Reparaturauftrag"></label><label class="field"><span>Mehrzahl (Menüpunkt)</span><input class="input" id="enPlural" value="${esc(st.plural)}" placeholder="z. B. Reparaturaufträge"></label></div>
+        <div><div class="field"><span>Symbol</span></div><div class="reasons" style="margin-top:6px">${OBJ_ICONS.map(i => `<button class="chip" data-eic="${i}" aria-pressed="${st.icon === i}" aria-label="${i}" style="width:38px;justify-content:center;padding:0">${ic(i, 'i-sm')}</button>`).join('')}</div></div>
+        ${defs.length ? `<label class="field"><span>Titelfeld (in Listen fett)</span><select class="input select" id="enTitle"><option value="">automatisch (erstes Feld)</option>${defs.map(d => `<option value="${esc(d.key)}" ${st.title_field === d.key ? 'selected' : ''}>${esc(d.label)}</option>`).join('')}</select></label>` : ''}
+        ${tpl && ENT_TEMPLATES[tpl[0]] ? `<div class="prompt-hint blk">${ic('list', 'i-xs')}Felder: ${ENT_TEMPLATES[tpl[0]].map(f => esc(f[0])).join(' · ')}</div>` : ''}
+      </div>
+      <div class="m-foot">${ent ? `<button class="btn btn-danger" id="enDel">${ic('trash', 'i-sm')}Löschen</button><button class="btn btn-ghost" id="enFields">${ic('list', 'i-sm')}Felder</button>` : ''}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="enSave">${ic('check', 'i-sm')}Speichern</button></div>`;
+  };
+  el.addEventListener('click', async e => {
+    const ei = e.target.closest('[data-eic]'); if (ei) { collect(); st.icon = ei.dataset.eic; return render(); }
+    if (e.target.closest('#enFields')) { closeLayer(el); AP.tab = 'felder'; AP.obj = 'obj:' + ent.id; return renderApBody(); }
+    if (e.target.closest('#enDel')) {
+      try { await needPerm('anpassen', 'Objekt löschen', `${ent.plural} und seine Felddefinitionen werden entfernt.`); CF.ents = await invoke('entity_delete', {id: ent.id}); } catch (err) { if (err?.message !== 'abgebrochen') toast('Nicht gelöscht', {t2: String(err), type: 'warn', dur: 6000}); return; }
+      CF.defs = await invoke('fields_list', {object: null}); closeLayer(el); syncObjNav(); renderApBody(); return;
+    }
+    if (e.target.closest('#enSave')) {
+      collect();
+      if (!st.name || !st.plural) return toast('Name in Einzahl und Mehrzahl angeben', {type: 'warn'});
+      let list; try { list = await invoke('entity_save', {entity: {id: ent?.id || '', name: st.name, plural: st.plural, icon: st.icon, title_field: st.title_field, count: 0}}); } catch (err) { return toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
+      const created = !ent && list.find(x => !CF.ents.some(o => o.id === x.id));
+      CF.ents = list;
+      if (created && tpl && ENT_TEMPLATES[tpl[0]]) {
+        let pos = 0;
+        for (const [label, type, required, options] of ENT_TEMPLATES[tpl[0]]) { try { CF.defs = await invoke('field_save', {field: {id: null, object: 'obj:' + created.id, key: '', label, type, options: options || [], required: !!required, at_pos: false, help: '', pos: pos++}}); } catch (err) { console.error(err); } }
+      }
+      closeLayer(el); syncObjNav(); renderApBody();
+      toast(ent ? 'Objekt gespeichert' : 'Objekt angelegt', {t2: `${st.plural} · eigener Menüpunkt links`, type: 'pos', icon: st.icon, action: created ? {label: 'Öffnen', run: () => go('obj-' + created.id)} : undefined});
+      Hooks.emit('config.entity.saved', {objekt: created?.id || ent?.id, name: st.plural});
+    }
+  });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); $('#enSave', el).click(); } });
+  render();
+}
+
+/* ════ Ansicht eines eigenen Objekts ════ */
+const OV = {ent: null, q: '', rows: []};
+const recTitle = (ent, r) => { const defs = cfDefs('obj:' + ent.id); const k = ent.title_field || defs[0]?.key; return String(r.data?.[k] ?? `#${r.id}`) || `#${r.id}`; };
+async function renderObj(id) {
+  const v = $('#view-obj'), ent = entById(id);
+  if (!ent) { v.innerHTML = `<div class="cv"><div class="card"><div class="empty"><h3>Objekt nicht gefunden</h3></div></div></div>`; return; }
+  if (OV.ent !== id) { OV.ent = id; OV.q = ''; }
+  const defs = cfDefs('obj:' + id);
+  v.innerHTML = `<div class="cv">
+    <div class="cv-head"><div><h2 class="h-title">${esc(ent.plural)}</h2><div class="dash-meta" style="margin-top:6px"><span>Eigenes Objekt · ${defs.length} Felder · REST: <span class="mono">/api/v1/objekte/${esc(id)}</span></span></div></div>
+      <div style="display:flex;gap:8px"><button class="btn btn-secondary" id="obCsv">${ic('download', 'i-sm')}CSV</button><button class="btn btn-ghost" id="obCfg">${ic('sliders', 'i-sm')}Felder</button><button class="btn btn-primary" id="obNew">${ic('plus', 'i-sm')}${esc(ent.name)} anlegen</button></div></div>
+    <div class="cv-tools"><div style="max-width:360px;flex:1"><input class="input" id="obQ" placeholder="Suchen …" value="${esc(OV.q)}" autocomplete="off"></div></div>
+    <div class="card" id="obList"><div style="padding:18px" class="thinking"><b>Lade …</b></div></div></div>`;
+  await loadObjRows();
+}
+async function loadObjRows() {
+  const ent = entById(OV.ent); if (!ent) return;
+  try { OV.rows = await invoke('records_list', {entity: ent.id, q: OV.q || null}); } catch (e) { OV.rows = []; toast('Datensätze nicht geladen', {t2: String(e), type: 'warn'}); }
+  const box = $('#obList'); if (!box) return;
+  const defs = cfDefs('obj:' + ent.id).slice(0, 6);
+  box.innerHTML = OV.rows.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">#</th>${defs.map(d => `<th class="${['zahl', 'betrag'].includes(d.type) ? 'r' : ''}">${esc(d.label)}</th>`).join('')}<th>Geändert</th></tr></thead><tbody>${OV.rows.map(r => `<tr data-rec="${r.id}" style="cursor:pointer"><td style="padding-left:16px" class="muted num">${r.id}</td>${defs.map((d, i) => `<td class="${['zahl', 'betrag'].includes(d.type) ? 'r num' : ''}" style="${i === 0 || d.key === ent.title_field ? 'font-weight:550' : ''}">${d.type === 'auswahl' && r.data[d.key] ? `<span class="pill">${esc(r.data[d.key])}</span>` : esc(cfShow(d, r.data[d.key]))}</td>`).join('')}<td class="muted" style="font-size:12px">${esc(fmtTs(r.updated_at))}${r.user ? ` · ${esc(r.user)}` : ''}</td></tr>`).join('')}</tbody></table>`
+    : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic(ent.icon || 'layers')}</div><h3>${OV.q ? 'Keine Treffer' : `Noch keine ${esc(ent.plural)}`}</h3><p>${defs.length ? 'Mit „anlegen“ den ersten Datensatz erfassen.' : 'Zuerst unter „Felder“ festlegen, was erfasst wird.'}</p></div>`;
+}
+function openRecord(ent, rec) {
+  const defs = cfDefs('obj:' + ent.id);
+  if (!defs.length) { toast('Noch keine Felder', {t2: 'Zuerst unter Anpassen → Felder festlegen', type: 'warn', action: {label: 'Felder', run: () => { AP.tab = 'felder'; AP.obj = 'obj:' + ent.id; go('anpassen'); }}}); return; }
+  const el = openLayer(`<div class="drawer-panel" style="width:min(560px,100%)" role="dialog" aria-modal="true" aria-label="${esc(ent.name)}">
+    <div class="m-head" style="padding-bottom:14px"><div class="m-ic">${ic(ent.icon || 'layers')}</div><div><h2>${rec ? esc(recTitle(ent, rec)) : `${esc(ent.name)} anlegen`}</h2><p>${rec ? `#${rec.id} · angelegt ${esc(fmtTs(rec.created_at))}${rec.user ? ` · zuletzt ${esc(rec.user)}` : ''}` : esc(ent.plural)}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="drawer-body">${cfHTML('obj:' + ent.id, rec?.data || {}, false, 'Angaben')}</div>
+    <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">${rec ? `<button class="btn btn-danger" id="rcDel">${ic('trash', 'i-sm')}Löschen</button>` : ''}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="rcSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {cls: 'drawer'});
+  el.addEventListener('click', async e => {
+    if (e.target.closest('#rcDel')) {
+      try { await stepUp({title: `${ent.name} löschen`, text: `#${rec.id} „${recTitle(ent, rec)}“ wird endgültig gelöscht.`}); await invoke('record_delete', {entity: ent.id, id: rec.id}); } catch (err) { if (err?.message !== 'abgebrochen') toast('Nicht gelöscht', {t2: String(err), type: 'warn'}); return; }
+      closeLayer(el); Hooks.emit(`objekt.${ent.id}.deleted`, {id: rec.id}); await refreshEntCounts(); loadObjRows(); return;
+    }
+    if (e.target.closest('#rcSave')) {
+      const vals = await cfCheck('obj:' + ent.id, cfRead(el, 'obj:' + ent.id)); if (!vals) return;
+      let saved; try { saved = await invoke('record_save', {entity: ent.id, id: rec?.id ?? null, data: vals, user: S.user.name}); } catch (err) { return toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
+      closeLayer(el); toast(rec ? 'Gespeichert' : `${ent.name} angelegt`, {t2: `#${saved.id} · ${recTitle(ent, saved)}`, type: 'pos', icon: ent.icon || 'layers'});
+      Hooks.emit(`objekt.${ent.id}.saved`, {id: saved.id, neu: !rec, objekt: ent.id, ...saved.data});
+      await refreshEntCounts(); if (S.view === 'obj-' + ent.id) loadObjRows();
+    }
+  });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); $('#rcSave', el).click(); } });
+}
+async function refreshEntCounts() { try { CF.ents = await invoke('entities_list'); syncObjNav(); } catch { /* */ } }
+function objCsv() {
+  const ent = entById(OV.ent); if (!ent) return;
+  const defs = cfDefs('obj:' + ent.id), q = s => `"${String(s ?? '').replace(/"/g, '""')}"`;
+  const csv = [['Nr', ...defs.map(d => d.label), 'Angelegt', 'Geändert', 'Benutzer'].map(q).join(';'), ...OV.rows.map(r => [r.id, ...defs.map(d => cfShow(d, r.data[d.key])), fmtTs(r.created_at), fmtTs(r.updated_at), r.user || ''].map(q).join(';'))].join('\r\n');
+  invoke('save_text', {name: `Kontor_${ent.plural.replace(/\W+/g, '')}.csv`, content: '﻿' + csv, title: `${ent.plural} exportieren`}).then(p => p && toast('Exportiert', {t2: p, type: 'pos', icon: 'download'})).catch(e => toast('Export fehlgeschlagen', {t2: String(e), type: 'warn'}));
+}
+
+function bindCustom() {
+  const ap = $('#view-anpassen');
+  ap.addEventListener('click', async e => {
+    const t = e.target;
+    const tab = t.closest('[data-apt]'); if (tab) { AP.tab = tab.dataset.apt; return renderApBody(); }
+    const o = t.closest('[data-apo]'); if (o) { AP.obj = o.dataset.apo; return renderApBody(); }
+    if (t.closest('#apFieldNew')) return openFieldEditor(null);
+    const mv = t.closest('[data-fmove]'); if (mv) { e.stopPropagation(); return moveField(+mv.dataset.fmove, +mv.dataset.dir); }
+    const fd = t.closest('[data-fdef]'); if (fd) return openFieldEditor(CF.defs.find(d => d.id === +fd.dataset.fdef));
+    if (t.closest('#apEntNew')) return openEntityEditor(null);
+    const tp = t.closest('[data-enttpl]'); if (tp) return openEntityEditor(null, tp.dataset.enttpl.split('|'));
+    const eo = t.closest('[data-entopen]'); if (eo) { e.stopPropagation(); return go('obj-' + eo.dataset.entopen); }
+    const en = t.closest('[data-ent]'); if (en) return openEntityEditor(entById(en.dataset.ent));
+  });
+  const ov = $('#view-obj');
+  ov.addEventListener('click', e => {
+    const ent = entById(OV.ent); if (!ent) return;
+    if (e.target.closest('#obNew')) return openRecord(ent, null);
+    if (e.target.closest('#obCsv')) return objCsv();
+    if (e.target.closest('#obCfg')) { AP.tab = 'felder'; AP.obj = 'obj:' + ent.id; return go('anpassen'); }
+    const r = e.target.closest('[data-rec]'); if (r) return openRecord(ent, OV.rows.find(x => x.id === +r.dataset.rec));
+  });
+  let tm; ov.addEventListener('input', e => { if (e.target.id === 'obQ') { OV.q = e.target.value.trim(); clearTimeout(tm); tm = setTimeout(loadObjRows, 180); } });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   32 · AUTOMATISIERUNG — Regeln (Auslöser → Bedingungen → Aktionen),
+   Skripte (isoliert in einem Web-Worker ohne Zugriff auf App, Dateien
+   oder Netz; Zeitlimit), Webhooks (signiert, mit Warteschlange),
+   REST-API (Schlüssel, eigene Endpunkte) und Pakete (Export/Import).
+   ════════════════════════════════════════════════════════════════════ */
+const AU = {rules: [], scripts: [], hooks: [], queue: [], api: null};
+const TRIGGERS = [
+  ['pos.sale.completed', 'Verkauf abgeschlossen', ['beleg', 'summe', 'positionen', 'zahlungen', 'kunde']],
+  ['pos.return.completed', 'Retoure gebucht', ['beleg', 'zu', 'betrag', 'grund', 'erstattung']],
+  ['pos.sale.voided', 'Beleg storniert', ['beleg', 'zu', 'betrag', 'grund']],
+  ['pos.customer.attached', 'Kunde an der Kasse zugeordnet', ['kunde', 'stufe']],
+  ['pos.discount.applied', 'Rabatt gewährt', ['prozent', 'grund', 'freigabe']],
+  ['customer.saved', 'Kunde gespeichert', ['kunde', 'neu']],
+  ['catalog.article.saved', 'Artikel gespeichert', ['sku', 'name', 'neu']],
+  ['inventory.booked', 'Bestand gebucht', ['sku', 'variante', 'menge', 'bestand']],
+  ['inventory.finished', 'Inventur abgeschlossen', ['inventur']],
+  ['purchasing.order.placed', 'Bestellung ausgelöst', ['bestellung']],
+  ['purchasing.goods.received', 'Wareneingang gebucht', ['bestellung', 'stueck']],
+  ['cash.moved', 'Einlage / Entnahme', ['art', 'betrag', 'grund']],
+  ['cash.closing', 'Tagesabschluss', ['nr', 'umsatz', 'differenz']],
+  ['loyalty.points.earned', 'Punkte gesammelt', ['kunde', 'punkte']],
+  ['auth.login', 'Anmeldung', ['benutzer', 'rolle', 'methode']],
+  ['auth.login.failed', 'Fehlgeschlagene Anmeldung', ['benutzer']],
+  ['zeit.taeglich', 'Täglich zu einer Uhrzeit', ['datum', 'uhrzeit']],
+];
+const trigName = t => { if (t.startsWith('objekt.')) { const [, e, a] = t.split('.'); return `${entById(e)?.name || e} ${a === 'saved' ? 'gespeichert' : 'gelöscht'}`; } const b = t.split('@')[0]; return (TRIGGERS.find(x => x[0] === b)?.[1] || t) + (t.includes('@') ? ` · ${t.split('@')[1]} Uhr` : ''); };
+const allTriggers = () => [...TRIGGERS, ...CF.ents.flatMap(e => [[`objekt.${e.id}.saved`, `${e.name} gespeichert`, ['id', 'neu', ...cfDefs('obj:' + e.id).map(d => d.key)]], [`objekt.${e.id}.deleted`, `${e.name} gelöscht`, ['id']]])];
+const OPS = [['=', 'ist'], ['≠', 'ist nicht'], ['>', 'größer als'], ['<', 'kleiner als'], ['≥', 'mindestens'], ['≤', 'höchstens'], ['enthält', 'enthält'], ['leer', 'ist leer'], ['nicht leer', 'ist nicht leer']];
+const ACTIONS = [['hinweis', 'Hinweis anzeigen', 'info'], ['mail', 'E-Mail senden', 'mail'], ['webhook', 'Webhook senden', 'zap'], ['punkte', 'Bonuspunkte buchen', 'star'], ['stufe', 'Kundenstufe setzen', 'users'], ['objekt', 'Datensatz anlegen', 'layers'], ['skript', 'Skript ausführen', 'code'], ['protokoll', 'Ins Protokoll schreiben', 'history']];
+
+async function loadAutomation() {
+  if (!DESKTOP) return;
+  try { [AU.rules, AU.scripts] = await Promise.all([invoke('rules_list'), invoke('scripts_list')]); const w = await invoke('webhooks_list'); AU.hooks = w.hooks; AU.queue = w.queue; }
+  catch (e) { console.error(e); }
+}
+
+/* ── Kontext & Vorlagen ── */
+const getPath = (o, p) => String(p).split('.').reduce((x, k) => x == null ? undefined : x[k], o);
+const tmpl = (s, ctx) => String(s ?? '').replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_, p) => { const v = getPath(ctx, p); return v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v); });
+function ruleContext(evt, p) {
+  const d = new Date();
+  const ctx = {...p, ereignis: evt, datum: d.toLocaleDateString('de-AT'), uhrzeit: clock(), benutzer: S.user?.name, kasse: CFG['kasse.id'], filiale: CFG['firma.name']};
+  const cid = typeof p.kunde === 'string' ? p.kunde : null, c = cid && CUSTOMERS.find(x => x.id === cid);
+  if (c) Object.assign(ctx, {kunde_name: c.name, kunde_email: c.email, kunde_telefon: c.phone, kunde_stufe: c.tier, kunde_punkte: c.points, kunde_umsatz: c.revenue, feld: {...(c.fields || {})}});
+  const a = p.sku && artById(p.sku);
+  if (a) Object.assign(ctx, {artikel_name: a.name, artikel_marke: a.brand, artikel_preis: a.sale || a.price, artikel_bestand: a.stock, warengruppe: a.cat, feld: {...(ctx.feld || {}), ...(a.fields || {})}});
+  return ctx;
+}
+function condOk(c, ctx) {
+  const raw = getPath(ctx, c.feld), v = raw == null ? '' : String(raw), w = tmpl(c.wert, ctx);
+  const n1 = typeof raw === 'number' ? raw : parseAmt(v), n2 = parseAmt(w), numeric = isFinite(n1) && isFinite(n2);
+  switch (c.op) {
+    case '=': return numeric ? n1 === n2 : norm(v) === norm(w);
+    case '≠': return numeric ? n1 !== n2 : norm(v) !== norm(w);
+    case '>': return numeric && n1 > n2; case '<': return numeric && n1 < n2;
+    case '≥': return numeric && n1 >= n2; case '≤': return numeric && n1 <= n2;
+    case 'enthält': return norm(Array.isArray(raw) ? raw.join(' ') : v).includes(norm(w));
+    case 'leer': return !v.trim(); case 'nicht leer': return !!v.trim();
+    default: return false;
+  }
+}
+
+/* ── Skript-Sandbox: Web-Worker aus Blob, kein Zugriff auf Fenster, App-Schnittstelle oder Netzwerk ── */
+function runScript(code, ereignis, daten, ms = 2000) {
+  return new Promise(resolve => {
+    const prelude = `"use strict";
+const __acts = [], __log = [];
+const __s = v => v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+const toast = (text, text2) => { __acts.push({typ: 'hinweis', text: __s(text), text2: __s(text2)}); };
+const hinweis = toast;
+const log = (...a) => { __log.push(a.map(__s).join(' ')); };
+const mail = (an, betreff, text) => { __acts.push({typ: 'mail', an: __s(an), betreff: __s(betreff), text: __s(text)}); };
+const punkte = (n, grund) => { __acts.push({typ: 'punkte', punkte: Math.round(Number(n) || 0), grund: __s(grund)}); };
+const stufe = s => { __acts.push({typ: 'stufe', stufe: __s(s)}); };
+const webhook = (id, daten) => { __acts.push({typ: 'webhook', hook: Number(id), daten: daten ?? null}); };
+const objekt = (objektId, werte) => { __acts.push({typ: 'objekt', objekt: __s(objektId), werte: werte || {}}); };
+const __post = postMessage.bind(self);
+self.onmessage = async m => {
+  const ereignis = m.data.e, daten = m.data.d;
+  try {
+    const r = await (async (fetch, XMLHttpRequest, WebSocket, EventSource, importScripts, indexedDB, caches, navigator, self, globalThis, postMessage, close) => {
+`;
+    const src = prelude + code + `
+    })();
+    __post({ok: true, actions: __acts, log: __log, result: r === undefined ? null : JSON.parse(JSON.stringify(r))});
+  } catch (e) { __post({ok: false, error: String(e && e.message || e), actions: __acts, log: __log}); }
+};`;
+    let w, url, done = false;
+    const fin = r => { if (done) return; done = true; try { w && w.terminate(); } catch { /* */ } url && URL.revokeObjectURL(url); resolve(r); };
+    try { url = URL.createObjectURL(new Blob([src], {type: 'text/javascript'})); w = new Worker(url); }
+    catch (e) { return fin({ok: false, error: 'Skript konnte nicht gestartet werden: ' + e.message, actions: [], log: []}); }
+    w.onmessage = m => fin(m.data);
+    w.onerror = e => { e.preventDefault(); fin({ok: false, error: e.message || 'Syntaxfehler im Skript', actions: [], log: []}); };
+    setTimeout(() => fin({ok: false, error: `Zeitlimit überschritten (${ms / 1000} s)`, actions: [], log: []}), ms);
+    w.postMessage({e: ereignis, d: JSON.parse(JSON.stringify(daten ?? {}))});
+  });
+}
+
+/* ── Aktionen ausführen ── */
+async function doAction(a, ctx, rule) {
+  const custId = typeof ctx.kunde === 'string' ? ctx.kunde : null;
+  switch (a.typ) {
+    case 'hinweis': toast(tmpl(a.text, ctx) || 'Hinweis', {t2: tmpl(a.text2, ctx) || `Regel „${rule.name}“`, type: 'accent', icon: 'flow', dur: 7000}); return;
+    case 'protokoll': Hooks.emit('rule.log', {regel: rule.name, text: tmpl(a.text, ctx)}); return;
+    case 'mail': {
+      const to = tmpl(a.an, ctx).trim(); if (!to) throw new Error('Kein Empfänger');
+      if (!mailReady()) throw new Error('E-Mail-Versand nicht eingerichtet');
+      const text = tmpl(a.text, ctx);
+      await invoke('mail_send', {to, subject: tmpl(a.betreff, ctx) || `Kontor · ${rule.name}`, html: `<div style="font-family:system-ui,sans-serif;font-size:14px;line-height:1.5">${esc(text).replace(/\n/g, '<br>')}</div>`, text, qr: null, purpose: 'regel'}); return;
+    }
+    case 'webhook': await invoke('webhook_fire', {id: +a.hook, event: ctx.ereignis, payload: a.daten ?? ctx}); return;
+    case 'punkte': {
+      if (!custId) throw new Error('Ereignis ohne Kunde');
+      const n = Math.round(parseAmt(tmpl(a.punkte, ctx))); if (!n) return;
+      const bal = await invoke('customer_points', {id: custId, delta: n, reason: tmpl(a.grund, ctx) || `Regel: ${rule.name}`, user: S.user.name, approvedBy: `Regel ${rule.name}`});
+      const c = CUSTOMERS.find(x => x.id === custId); if (c) c.points = bal; return;
+    }
+    case 'stufe': {
+      const c = custId && CUSTOMERS.find(x => x.id === custId); if (!c) throw new Error('Ereignis ohne Kunde');
+      const tier = tmpl(a.stufe, ctx).trim(); if (!tier || c.tier === tier) return;
+      Object.assign(c, custFromDb(await invoke('customer_save', {customer: custToDb({...c, tier}), user: `Regel ${rule.name}`}))); return;
+    }
+    case 'objekt': {
+      const data = {}; Object.entries(a.werte || {}).forEach(([k, v]) => { data[k] = typeof v === 'string' ? tmpl(v, ctx) : v; });
+      const r = await invoke('record_save', {entity: a.objekt, id: null, data, user: `Regel ${rule.name}`});
+      Hooks.emit(`objekt.${a.objekt}.saved`, {id: r.id, neu: true, objekt: a.objekt, quelle: 'regel', ...r.data}); return;
+    }
+    case 'skript': {
+      const s = AU.scripts.find(x => x.id === +a.skript); if (!s) throw new Error('Skript nicht gefunden');
+      const r = await runScript(s.code, ctx.ereignis, ctx);
+      for (const x of r.actions || []) await doAction({...x, daten: x.daten}, ctx, rule);
+      if (r.log?.length) Hooks.emit('script.log', {skript: s.name, ausgabe: r.log.slice(0, 20)});
+      if (!r.ok) throw new Error(`Skript „${s.name}“: ${r.error}`);
+      return;
+    }
+  }
+}
+let ruleDepth = 0;
+async function runRule(rule, evt, payload, {test = false} = {}) {
+  const ctx = ruleContext(evt, payload || {});
+  const conds = Array.isArray(rule.conditions) ? rule.conditions : [];
+  if (!conds.every(c => condOk(c, ctx))) return {matched: false};
+  let error = null;
+  ruleDepth++;
+  try { for (const a of rule.actions || []) await doAction(a, ctx, rule); }
+  catch (e) { error = String(e.message || e); toast(`Regel „${rule.name}“: Fehler`, {t2: error, type: 'warn', icon: 'flow', dur: 7000}); }
+  finally { ruleDepth--; }
+  if (!test && rule.id) { invoke('rule_ran', {id: rule.id, error}).catch(() => {}); rule.runs = (rule.runs || 0) + 1; rule.last_run = new Date().toISOString(); rule.last_error = error; }
+  Hooks.emit('rule.applied', {regel: rule.name, ausloeser: evt, fehler: error || undefined});
+  return {matched: true, error};
+}
+Hooks.on('*', (p, e) => {
+  if (!DESKTOP || ruleDepth > 2 || /^(rule|config|script|webhook|test)\./.test(e.evt)) return;
+  AU.rules.filter(r => r.active && r.trigger === e.evt).forEach(r => runRule(r, e.evt, p));
+});
+// Zeitgesteuerte Regeln (täglich HH:MM), geprüft jede Minute – einmal je Tag und Regel
+setInterval(() => {
+  if (!DESKTOP || !AU.rules.length) return;
+  const d = new Date(), hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`, day = d.toISOString().slice(0, 10), done = persist.get('rulesDaily', {});
+  AU.rules.filter(r => r.active && r.trigger === 'zeit.taeglich@' + hm && done[r.id] !== day).forEach(r => { done[r.id] = day; persist.set('rulesDaily', done); runRule(r, 'zeit.taeglich', {datum: d.toLocaleDateString('de-AT'), uhrzeit: hm}); });
+}, 30000);
+
+/* ── UI: Regeln ── */
+function renderApRules(box) {
+  box.innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><span class="muted" style="font-size:12.5px">Wenn ein Ereignis eintritt und die Bedingungen erfüllt sind, führt Kontor die Aktionen aus.</span><span class="sp" style="flex:1"></span><button class="btn btn-primary btn-sm" id="apRuleNew">${ic('plus', 'i-sm')}Neue Regel</button></div>
+    <div class="card">${AU.rules.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Regel</th><th>Wenn</th><th>Dann</th><th class="r">Ausgeführt</th><th>Aktiv</th></tr></thead><tbody>${AU.rules.map(r => `<tr data-rule="${r.id}" style="cursor:pointer"><td style="padding-left:16px"><b>${esc(r.name)}</b>${r.last_error ? `<div style="font-size:11.5px;color:var(--neg)">${ic('alert', 'i-xs')} ${esc(r.last_error)}</div>` : ''}</td><td>${esc(trigName(r.trigger))}${(r.conditions || []).length ? `<div class="muted" style="font-size:11.5px">${(r.conditions || []).map(c => `${esc(c.feld)} ${esc(OPS.find(o => o[0] === c.op)?.[1] || c.op)} ${['leer', 'nicht leer'].includes(c.op) ? '' : esc(c.wert)}`).join(' · und ')}</div>` : ''}</td><td>${(r.actions || []).map(a => `<span class="pill" style="margin:1px 2px 1px 0">${ic(ACTIONS.find(x => x[0] === a.typ)?.[2] || 'flow')}${esc(ACTIONS.find(x => x[0] === a.typ)?.[1] || a.typ)}</span>`).join('')}</td><td class="r num">${num(r.runs || 0)}${r.last_run ? `<div class="muted" style="font-size:11px">${esc(fmtTs(r.last_run))}</div>` : ''}</td><td><button class="switch" role="switch" data-ruleon="${r.id}" aria-checked="${r.active}" aria-label="Regel aktiv"></button></td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('flow')}</div><h3>Noch keine Regeln</h3><p>Beispiele: „Verkauf über € 500 → Dankes-Mail an Kund:in“, „Retoure mit Grund defekt → Mail an Einkauf“, „Täglich 18:00 → Webhook an Warenwirtschaft“.</p><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:8px"><button class="btn btn-secondary btn-sm" data-ruletpl="gross">${ic('star', 'i-sm')}Treuepunkte ab € 500</button><button class="btn btn-secondary btn-sm" data-ruletpl="retoure">${ic('mail', 'i-sm')}Retoure „defekt“ melden</button><button class="btn btn-secondary btn-sm" data-ruletpl="vip">${ic('users', 'i-sm')}VIP ab 5.000 Punkten</button></div></div>`}</div>`;
+}
+const RULE_TPL = {
+  gross: {name: 'Bonuspunkte für große Einkäufe', trigger: 'pos.sale.completed', conditions: [{feld: 'summe', op: '≥', wert: '500'}, {feld: 'kunde', op: 'nicht leer', wert: ''}], actions: [{typ: 'punkte', punkte: '100', grund: 'Bonus Einkauf ab € 500'}, {typ: 'hinweis', text: '{{kunde_name}} erhält 100 Bonuspunkte', text2: 'Einkauf {{beleg}} über € {{summe}}'}]},
+  retoure: {name: 'Defekte Ware an Einkauf melden', trigger: 'pos.return.completed', conditions: [{feld: 'grund', op: 'enthält', wert: 'defekt'}], actions: [{typ: 'mail', an: '', betreff: 'Retoure defekt: {{beleg}}', text: 'Retoure {{beleg}} zu Beleg {{zu}} über € {{betrag}}.\nGrund: {{grund}}\nKasse {{kasse}} · {{benutzer}}'}]},
+  vip: {name: 'VIP-Stufe ab 5.000 Punkten', trigger: 'loyalty.points.earned', conditions: [{feld: 'kunde_punkte', op: '≥', wert: '5000'}], actions: [{typ: 'stufe', stufe: 'Gipfel-Club Gold'}]},
+};
+function openRuleEditor(rule, preset) {
+  const st = JSON.parse(JSON.stringify(rule || preset || {name: '', trigger: 'pos.sale.completed', conditions: [], actions: [{typ: 'hinweis', text: '', text2: ''}], active: true}));
+  if (!Array.isArray(st.conditions)) st.conditions = [];
+  let time = st.trigger.startsWith('zeit.taeglich@') ? st.trigger.split('@')[1] : '18:00';
+  const el = openLayer(`<div class="drawer-panel" style="width:min(720px,100%)" role="dialog" aria-modal="true" aria-label="Regel"><div id="ruHead"></div><div class="drawer-body" id="ruBody"></div>
+    <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">${rule ? `<button class="btn btn-danger" id="ruDel">${ic('trash', 'i-sm')}Löschen</button>` : ''}<button class="btn btn-ghost" id="ruTest">${ic('zap', 'i-sm')}Jetzt testen</button><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="ruSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {cls: 'drawer', focus: '#ruName'});
+  const trigBase = () => st.trigger.split('@')[0];
+  const vars = () => { const t = allTriggers().find(x => x[0] === trigBase()); return [...(t?.[2] || []), 'benutzer', 'kasse', 'datum', 'uhrzeit', ...(t?.[2] || []).includes('kunde') ? ['kunde_name', 'kunde_email', 'kunde_stufe', 'kunde_punkte', 'feld.<Kundenfeld>'] : [], ...(t?.[2] || []).includes('sku') ? ['artikel_name', 'artikel_preis', 'artikel_bestand', 'warengruppe'] : []]; };
+  const actHTML = (a, i) => {
+    const ctl = (k, ph, wide) => `<input class="input" data-ak="${k}" data-ai="${i}" value="${esc(a[k] ?? '')}" placeholder="${esc(ph)}" ${wide ? 'style="grid-column:1/-1"' : ''}>`;
+    let body = '';
+    if (a.typ === 'hinweis') body = ctl('text', 'Text, z. B. {{kunde_name}} hat Geburtstag', true) + ctl('text2', 'Zweite Zeile (optional)', true);
+    else if (a.typ === 'protokoll') body = ctl('text', 'Text für das Protokoll', true);
+    else if (a.typ === 'mail') body = ctl('an', 'An, z. B. {{kunde_email}} oder einkauf@firma.at') + ctl('betreff', 'Betreff') + `<textarea class="input" data-ak="text" data-ai="${i}" rows="3" style="grid-column:1/-1;height:auto;padding-top:9px" placeholder="Text – Platzhalter wie {{beleg}} möglich">${esc(a.text ?? '')}</textarea>`;
+    else if (a.typ === 'webhook') body = `<select class="input select" data-ak="hook" data-ai="${i}">${AU.hooks.length ? AU.hooks.map(h => `<option value="${h.id}" ${+a.hook === h.id ? 'selected' : ''}>${esc(h.name || h.url)}</option>`).join('') : '<option value="">Zuerst unter „Webhooks“ ein Ziel anlegen</option>'}</select>`;
+    else if (a.typ === 'punkte') body = ctl('punkte', 'Punkte, z. B. 100 oder -50') + ctl('grund', 'Grund');
+    else if (a.typ === 'stufe') body = `<select class="input select" data-ak="stufe" data-ai="${i}">${[...new Set([...TIERS, a.stufe].filter(Boolean))].map(t => `<option ${t === a.stufe ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
+    else if (a.typ === 'skript') body = `<select class="input select" data-ak="skript" data-ai="${i}">${AU.scripts.length ? AU.scripts.map(s => `<option value="${s.id}" ${+a.skript === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('') : '<option value="">Zuerst unter „Skripte“ ein Skript anlegen</option>'}</select>`;
+    else if (a.typ === 'objekt') {
+      const ent = entById(a.objekt) || CF.ents[0]; if (ent && !a.objekt) a.objekt = ent.id;
+      body = `<select class="input select" data-ak="objekt" data-ai="${i}">${CF.ents.length ? CF.ents.map(e => `<option value="${esc(e.id)}" ${a.objekt === e.id ? 'selected' : ''}>${esc(e.name)}</option>`).join('') : '<option value="">Zuerst unter „Objekte“ ein Objekt anlegen</option>'}</select><span></span>`
+        + (ent ? cfDefs('obj:' + ent.id).map(d => `<label class="field"><span>${esc(d.label)}</span><input class="input" data-aw="${esc(d.key)}" data-ai="${i}" value="${esc(a.werte?.[d.key] ?? '')}" placeholder="Wert oder {{platzhalter}}"></label>`).join('') : '');
+    }
+    return `<div class="card" style="padding:12px 14px;margin-bottom:8px;box-shadow:none"><div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><span class="reg-ic">${ic(ACTIONS.find(x => x[0] === a.typ)?.[2] || 'flow', 'i-sm')}</span><select class="input select" data-atyp="${i}" style="max-width:240px">${ACTIONS.map(([k, l]) => `<option value="${k}" ${k === a.typ ? 'selected' : ''}>${l}</option>`).join('')}</select><span class="sp" style="flex:1"></span><button class="btn btn-ghost btn-sm btn-icon" data-arm="${i}" aria-label="Aktion entfernen">${ic('x', 'i-sm')}</button></div><div class="ed-grid">${body}</div></div>`;
+  };
+  const render = () => {
+    $('#ruHead', el).innerHTML = `<div class="m-head" style="padding-bottom:14px"><div class="m-ic">${ic('flow')}</div><div><h2>${rule ? esc(rule.name) : 'Neue Regel'}</h2><p>${rule ? `${num(rule.runs || 0)} × ausgeführt${rule.last_run ? ' · zuletzt ' + esc(fmtTs(rule.last_run)) : ''}` : 'Wenn … und … dann …'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>`;
+    $('#ruBody', el).innerHTML = `
+      <label class="field"><span>Name</span><input class="input" id="ruName" value="${esc(st.name)}" placeholder="z. B. Dankes-Mail ab € 300"></label>
+      <div class="ed-sec"><div class="lab">Wenn</div><div style="display:flex;gap:8px"><select class="input select" id="ruTrig">${allTriggers().map(([k, l]) => `<option value="${esc(k)}" ${k === trigBase() ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>${trigBase() === 'zeit.taeglich' ? `<input class="input" type="time" id="ruTime" value="${esc(time)}" style="max-width:130px">` : ''}</div>
+        <div class="prompt-hint blk">${ic('braces', 'i-xs')}Ereignis <span class="mono">${esc(trigBase())}</span> · verfügbare Werte: ${vars().map(v => `<span class="mono">${esc(v)}</span>`).join(', ')}</div></div>
+      <div class="ed-sec"><div class="lab">Und (alle Bedingungen) <button type="button" class="btn btn-ghost btn-sm" id="ruAddC">${ic('plus', 'i-sm')}Bedingung</button></div>
+        ${st.conditions.map((c, i) => `<div class="frow" style="grid-template-columns:1fr 150px 1fr 36px"><input class="input" data-cf2="feld" data-ci="${i}" value="${esc(c.feld)}" placeholder="Wert, z. B. summe" list="ruVars"><select class="input select" data-cf2="op" data-ci="${i}">${OPS.map(([k, l]) => `<option value="${esc(k)}" ${k === c.op ? 'selected' : ''}>${l}</option>`).join('')}</select><input class="input" data-cf2="wert" data-ci="${i}" value="${esc(c.wert)}" placeholder="Vergleichswert" ${['leer', 'nicht leer'].includes(c.op) ? 'disabled' : ''}><button type="button" class="btn btn-ghost btn-icon" data-crm="${i}" aria-label="Bedingung entfernen">${ic('x', 'i-sm')}</button></div>`).join('') || '<div class="muted" style="font-size:12.5px">Ohne Bedingung läuft die Regel bei jedem Ereignis.</div>'}
+        <datalist id="ruVars">${vars().filter(v => !v.includes('<')).map(v => `<option value="${esc(v)}">`).join('')}</datalist></div>
+      <div class="ed-sec"><div class="lab">Dann <button type="button" class="btn btn-ghost btn-sm" id="ruAddA">${ic('plus', 'i-sm')}Aktion</button></div>${st.actions.map(actHTML).join('')}
+        <div class="prompt-hint blk">${ic('info', 'i-xs')}Platzhalter mit doppelten geschweiften Klammern, z. B. <span class="mono">{{kunde_name}}</span>, <span class="mono">{{summe}}</span>, <span class="mono">{{feld.Schuhgröße}}</span>.</div></div>
+      <div class="ed-sec"><div class="set-row" style="padding:12px 14px;border:1px solid var(--line);border-radius:12px"><div><div class="set-l">Regel aktiv</div><div class="set-h">Inaktive Regeln bleiben gespeichert</div></div><div class="set-c"><button type="button" class="switch" role="switch" id="ruOn" aria-checked="${st.active}" aria-label="Aktiv"></button></div></div></div>`;
+  };
+  const collect = () => {
+    st.name = $('#ruName', el).value.trim(); const tr = $('#ruTrig', el).value; const tm = $('#ruTime', el); if (tm) time = tm.value || time;
+    st.trigger = tr === 'zeit.taeglich' ? `zeit.taeglich@${time}` : tr;
+    $$('[data-cf2]', el).forEach(i => { st.conditions[+i.dataset.ci][i.dataset.cf2] = i.value; });
+    $$('[data-ak]', el).forEach(i => { st.actions[+i.dataset.ai][i.dataset.ak] = i.value; });
+    $$('[data-aw]', el).forEach(i => { const a = st.actions[+i.dataset.ai]; (a.werte ||= {})[i.dataset.aw] = i.value; });
+  };
+  el.addEventListener('change', e => {
+    if (e.target.id === 'ruTrig') { collect(); return render(); }
+    const at = e.target.dataset.atyp; if (at != null) { collect(); st.actions[+at] = {typ: e.target.value}; return render(); }
+    if (e.target.dataset.cf2 === 'op' || e.target.dataset.ak === 'objekt') { collect(); if (e.target.dataset.ak === 'objekt') st.actions[+e.target.dataset.ai].werte = {}; render(); }
+  });
+  el.addEventListener('click', async e => {
+    const t = e.target;
+    if (t.closest('#ruAddC')) { collect(); st.conditions.push({feld: '', op: '=', wert: ''}); return render(); }
+    const cr = t.closest('[data-crm]'); if (cr) { collect(); st.conditions.splice(+cr.dataset.crm, 1); return render(); }
+    if (t.closest('#ruAddA')) { collect(); st.actions.push({typ: 'hinweis', text: ''}); return render(); }
+    const ar = t.closest('[data-arm]'); if (ar) { collect(); st.actions.splice(+ar.dataset.arm, 1); return render(); }
+    if (t.closest('#ruOn')) { st.active = !st.active; return t.closest('#ruOn').setAttribute('aria-checked', st.active); }
+    if (t.closest('#ruTest')) {
+      collect();
+      const sample = ruleSample(st.trigger.split('@')[0]);
+      const ctx = ruleContext(st.trigger.split('@')[0], sample);
+      const ok = st.conditions.every(c => condOk(c, ctx));
+      const r = await askConfirm('Regel testen', `Beispieldaten: ${JSON.stringify(sample).slice(0, 220)}`, ok ? 'Bedingungen erfüllt – Aktionen jetzt wirklich ausführen?' : 'Bedingungen mit diesen Beispieldaten NICHT erfüllt.', ok ? 'Ausführen' : null);
+      if (r) await runRule({...st, name: st.name || 'Test'}, st.trigger.split('@')[0], sample, {test: true});
+      return;
+    }
+    if (t.closest('#ruDel')) {
+      try { await needPerm('anpassen', 'Regel löschen', `„${rule.name}“ wird entfernt.`); AU.rules = await invoke('rule_delete', {id: rule.id}); } catch (err) { if (err?.message !== 'abgebrochen') toast('Nicht gelöscht', {t2: String(err), type: 'warn'}); return; }
+      closeLayer(el); renderApBody(); return;
+    }
+    if (t.closest('#ruSave')) {
+      collect();
+      if (!st.name) return toast('Name fehlt', {type: 'warn'});
+      if (!st.actions.length) return toast('Mindestens eine Aktion', {type: 'warn'});
+      if (st.conditions.some(c => !c.feld.trim())) return toast('Bedingung ohne Wert-Feld', {type: 'warn'});
+      try { AU.rules = await invoke('rule_save', {rule: {id: rule?.id ?? null, name: st.name, trigger: st.trigger, conditions: st.conditions, actions: st.actions, active: st.active, runs: rule?.runs || 0, last_run: rule?.last_run || null, last_error: null}}); }
+      catch (err) { return toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
+      closeLayer(el); renderApBody(); toast('Regel gespeichert', {t2: `${st.name} · ${trigName(st.trigger)}`, type: 'pos', icon: 'flow'});
+    }
+  });
+  render();
+}
+function ruleSample(trig) {
+  const c = CUSTOMERS[0], a = ART[0];
+  const s = {
+    'pos.sale.completed': {beleg: `${YEAR}-000999`, summe: 549.9, positionen: 2, zahlungen: ['bar'], kunde: c?.id || null},
+    'pos.return.completed': {beleg: `${YEAR}-001000`, zu: `${YEAR}-000999`, betrag: 89.9, grund: 'Ware defekt', erstattung: 'bar'},
+    'pos.sale.voided': {beleg: `${YEAR}-001001`, zu: `${YEAR}-000999`, betrag: 549.9, grund: 'Fehlbuchung'},
+    'pos.customer.attached': {beleg: `${YEAR}-000999`, kunde: c?.id, stufe: c?.tier},
+    'customer.saved': {kunde: c?.id, neu: false}, 'loyalty.points.earned': {kunde: c?.id, punkte: 55},
+    'catalog.article.saved': {sku: a?.id, name: a?.name, neu: false}, 'inventory.booked': {sku: a?.id, variante: 'Beispiel', menge: 5, bestand: 7},
+    'cash.closing': {nr: 'Z-0001', umsatz: 2450, differenz: 0}, 'cash.moved': {art: 'entnahme', betrag: 200, grund: 'Bank'},
+    'zeit.taeglich': {datum: new Date().toLocaleDateString('de-AT'), uhrzeit: clock()},
+  }[trig];
+  if (s) return s;
+  if (trig.startsWith('objekt.')) { const id = trig.split('.')[1], o = {id: 1, neu: true, objekt: id}; cfDefs('obj:' + id).forEach(d => { o[d.key] = d.type === 'auswahl' ? d.options[0] : d.type === 'zahl' || d.type === 'betrag' ? 10 : d.type === 'janein' ? false : 'Beispiel'; }); return o; }
+  return {beispiel: true};
+}
+function askConfirm(title, text, q, yes) {
+  return new Promise(resolve => {
+    const el = openLayer(`<div class="modal" style="width:min(520px,100%)" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="m-head"><div class="m-ic">${ic('zap')}</div><div><h2>${esc(title)}</h2><p>${esc(q)}</p></div></div>
+      <div class="m-body"><pre class="code" style="white-space:pre-wrap;font-size:11.5px;max-height:200px;overflow:auto">${esc(text)}</pre></div>
+      <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>${yes ? 'Abbrechen' : 'Schließen'}</button>${yes ? `<button class="btn btn-primary" id="acYes">${esc(yes)}</button>` : ''}</div></div>`, {onClose: () => resolve(false)});
+    const b = $('#acYes', el); if (b) b.onclick = () => { resolve(true); closeLayer(el); };
+  });
+}
+
+/* ── UI: Skripte ── */
+const SCRIPT_SAMPLE = `// Läuft isoliert (kein Zugriff auf Dateien, Netzwerk oder die App).
+// Verfügbar: ereignis, daten, toast(text, zeile2), mail(an, betreff, text),
+// punkte(anzahl, grund), stufe(name), webhook(id, daten), objekt(objektId, werte), log(...)
+
+if (daten.summe >= 300 && daten.kunde_email) {
+  mail(daten.kunde_email, 'Danke für Ihren Einkauf', \`Liebe:r \${daten.kunde_name}, danke für Ihren Einkauf über € \${daten.summe}!\`);
+}
+toast('Skript gelaufen', 'Beleg ' + daten.beleg);
+`;
+function renderApScripts(box) {
+  box.innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><span class="muted" style="font-size:12.5px">JavaScript in einer Sandbox (Web-Worker, ohne Netz- und Dateizugriff, max. 2 s). Skripte werden über Regeln ausgelöst.</span><span class="sp" style="flex:1"></span><button class="btn btn-primary btn-sm" id="apScrNew">${ic('plus', 'i-sm')}Neues Skript</button></div>
+    <div class="card">${AU.scripts.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Skript</th><th>Verwendet in</th><th class="r">Zeilen</th></tr></thead><tbody>${AU.scripts.map(s => `<tr data-scr="${s.id}" style="cursor:pointer"><td style="padding-left:16px"><b class="mono">${esc(s.name)}</b></td><td>${AU.rules.filter(r => (r.actions || []).some(a => a.typ === 'skript' && +a.skript === s.id)).map(r => esc(r.name)).join(' · ') || '<span class="muted">keiner Regel zugeordnet</span>'}</td><td class="r num">${s.code.split('\n').length}</td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('code')}</div><h3>Noch keine Skripte</h3><p>Für alles, was mit Regeln allein nicht geht: Berechnungen, Verzweigungen, mehrere Aktionen abhängig von Werten.</p></div>`}</div>`;
+}
+function openScriptEditor(s) {
+  const st = s ? {...s} : {name: 'mein-skript.js', code: SCRIPT_SAMPLE};
+  const el = openLayer(`<div class="drawer-panel" style="width:min(820px,100%)" role="dialog" aria-modal="true" aria-label="Skript">
+    <div class="m-head" style="padding-bottom:14px"><div class="m-ic">${ic('code')}</div><div style="flex:1"><input class="input mono" id="scName" value="${esc(st.name)}" style="max-width:320px"></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="drawer-body" style="display:grid;gap:12px;grid-template-rows:1fr auto">
+      <textarea class="input mono" id="scCode" spellcheck="false" style="min-height:340px;height:100%;padding:12px;font-size:12.5px;line-height:1.55;resize:vertical;tab-size:2">${esc(st.code)}</textarea>
+      <div><div style="display:flex;gap:8px;align-items:center"><select class="input select" id="scEvt" style="max-width:300px">${allTriggers().map(([k, l]) => `<option value="${esc(k)}">${esc(l)}</option>`).join('')}</select><button class="btn btn-secondary btn-sm" id="scRun">${ic('zap', 'i-sm')}Probelauf</button><span class="muted" style="font-size:12px">Probelauf führt keine Aktionen aus – zeigt nur, was passieren würde.</span></div>
+        <pre class="code" id="scOut" style="margin-top:10px;max-height:200px;overflow:auto;white-space:pre-wrap;font-size:11.5px">–</pre></div></div>
+    <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">${s ? `<button class="btn btn-danger" id="scDel">${ic('trash', 'i-sm')}Löschen</button>` : ''}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="scSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {cls: 'drawer', focus: '#scCode'});
+  const ta = $('#scCode', el);
+  ta.addEventListener('keydown', e => { if (e.key === 'Tab') { e.preventDefault(); const p = ta.selectionStart; ta.setRangeText('  ', p, ta.selectionEnd, 'end'); } });
+  el.addEventListener('click', async e => {
+    if (e.target.closest('#scRun')) {
+      const evt = $('#scEvt', el).value, ctx = ruleContext(evt, ruleSample(evt)), out = $('#scOut', el);
+      out.textContent = 'läuft …';
+      const r = await runScript(ta.value, evt, ctx);
+      out.textContent = `${r.ok ? '✓ fertig' : '✗ Fehler: ' + r.error}\n\nAktionen (${(r.actions || []).length}):\n${(r.actions || []).map(a => '  · ' + JSON.stringify(a)).join('\n') || '  –'}\n\nAusgabe:\n${(r.log || []).map(l => '  ' + l).join('\n') || '  –'}${r.result != null ? `\n\nRückgabe: ${JSON.stringify(r.result)}` : ''}`;
+      return;
+    }
+    if (e.target.closest('#scDel')) {
+      try { await needPerm('anpassen', 'Skript löschen', `„${s.name}“ wird entfernt.`); AU.scripts = await invoke('script_delete', {id: s.id}); } catch (err) { if (err?.message !== 'abgebrochen') toast('Nicht gelöscht', {t2: String(err), type: 'warn'}); return; }
+      closeLayer(el); renderApBody(); return;
+    }
+    if (e.target.closest('#scSave')) {
+      const name = $('#scName', el).value.trim();
+      try { AU.scripts = await invoke('script_save', {script: {id: s?.id ?? null, name, code: ta.value}}); } catch (err) { return toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
+      closeLayer(el); renderApBody(); toast('Skript gespeichert', {t2: name, type: 'pos', icon: 'code'});
+    }
+  });
+}
+
+/* ── UI: Webhooks ── */
+const QST = {offen: ['wartet', ''], ok: ['zugestellt', 'pos'], zugestellt: ['zugestellt', 'pos'], fehler: ['fehlgeschlagen', 'neg']};
+function renderApHooks(box) {
+  box.innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><span class="muted" style="font-size:12.5px">Kontor sendet Ereignisse als HTTP-POST (JSON) an freigegebene Ziele – signiert mit HMAC-SHA256, bei Fehlern automatisch wiederholt.</span><span class="sp" style="flex:1"></span><button class="btn btn-secondary btn-sm" id="apHookReload">${ic('sync', 'i-sm')}</button><button class="btn btn-primary btn-sm" id="apHookNew">${ic('plus', 'i-sm')}Neues Ziel</button></div>
+    <div class="card">${AU.hooks.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Ziel</th><th>Ereignisse</th><th>Aktiv</th></tr></thead><tbody>${AU.hooks.map(h => `<tr data-hook="${h.id}" style="cursor:pointer"><td style="padding-left:16px"><b>${esc(h.name || 'Webhook')}</b><div class="mono muted" style="font-size:11.5px">${esc(h.url)}</div></td><td>${h.events.map(x => `<span class="pill" style="margin:1px 2px 1px 0">${esc(x)}</span>`).join('')}</td><td>${h.active ? '<span class="pill pos">aktiv</span>' : '<span class="pill">pausiert</span>'}</td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty" style="padding:40px 20px"><div class="empty-icon">${ic('zap')}</div><h3>Noch keine Webhooks</h3><p>z. B. Verkäufe an Ihr ERP, Onlineshop oder ein Automatisierungswerkzeug (n8n, Make, Power Automate) senden.</p></div>`}</div>
+    <h3 style="font-size:14px;margin:22px 0 10px">Zustellungen <span class="muted" style="font-weight:400">· letzte 100</span></h3>
+    <div class="card">${AU.queue.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Zeit</th><th>Ziel</th><th>Ereignis</th><th>Status</th><th class="r">Versuche</th><th></th></tr></thead><tbody>${AU.queue.map(q => { const [l, tone] = QST[q.status] || [q.status, '']; return `<tr><td style="padding-left:16px;white-space:nowrap" class="muted">${esc(fmtTs(q.created_at))}</td><td>${esc(q.webhook || '–')}</td><td class="mono" style="font-size:12px">${esc(q.event)}</td><td><span class="pill ${tone}" title="${esc(q.last_error || '')}">${l}${q.last_status ? ` · ${q.last_status}` : ''}</span>${q.last_error && q.status !== 'zugestellt' ? `<div class="muted" style="font-size:11px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.last_error)}</div>` : ''}</td><td class="r num">${q.attempts}</td><td class="r" style="padding-right:12px">${q.status === 'fehler' || (q.status === 'offen' && q.attempts) ? `<button class="btn btn-ghost btn-sm" data-qretry="${q.id}">Erneut</button>` : ''}</td></tr>`; }).join('')}</tbody></table>`
+      : '<div class="empty" style="padding:24px"><p>Noch keine Zustellungen.</p></div>'}</div>`;
+}
+async function reloadHooks() { try { const w = await invoke('webhooks_list'); AU.hooks = w.hooks; AU.queue = w.queue; } catch (e) { console.error(e); } if (AP.tab === 'webhooks') renderApBody(); }
+function openHookEditor(h) {
+  const st = h ? {...h, events: [...h.events]} : {name: '', url: 'https://', events: ['pos.sale.completed'], active: true};
+  const el = openLayer(`<div class="modal" style="width:min(620px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="Webhook"><div id="whBox" style="display:flex;flex-direction:column;min-height:0"></div></div>`, {focus: '#whName'});
+  const box = $('#whBox', el);
+  const collect = () => { st.name = $('#whName', el).value.trim(); st.url = $('#whUrl', el).value.trim(); };
+  const render = () => {
+    const evs = [['*', 'Alle Ereignisse'], ...allTriggers().filter(t => t[0] !== 'zeit.taeglich').map(t => [t[0], t[1]]), ['pos.*', 'Alles an der Kasse'], ['inventory.*', 'Alles zum Bestand']];
+    box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('zap')}</div><div><h2>${h ? esc(h.name || 'Webhook') : 'Neues Webhook-Ziel'}</h2><p>POST · JSON · Header X-Kontor-Event und X-Kontor-Signature</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="m-body" style="display:grid;gap:14px;overflow:auto">
+        <div class="ed-grid"><label class="field"><span>Name</span><input class="input" id="whName" value="${esc(st.name)}" placeholder="z. B. ERP"></label><label class="field"><span>Ziel-URL</span><input class="input mono" id="whUrl" value="${esc(st.url)}" placeholder="https://…"></label></div>
+        <div><div class="field"><span>Ereignisse</span></div><div class="reasons" style="margin-top:6px">${evs.map(([k, l]) => `<button class="chip" data-wev="${esc(k)}" aria-pressed="${st.events.includes(k)}" title="${esc(k)}">${esc(l)}</button>`).join('')}</div></div>
+        ${h ? `<div><div class="field"><span>Geheimnis für die Signatur (HMAC-SHA256 über den Rohtext)</span></div><div style="display:flex;gap:6px;margin-top:6px"><input class="input mono" readonly value="${esc(h.secret)}" id="whSec"><button class="btn btn-secondary btn-sm" id="whCopy">${ic('copy', 'i-sm')}</button></div><div class="prompt-hint blk">${ic('info', 'i-xs')}Prüfung beim Empfänger: <span class="mono">X-Kontor-Signature == "sha256=" + hex(hmac_sha256(geheimnis, body))</span></div></div>` : ''}
+        <div class="set-row" style="padding:10px 0;border-bottom:0"><div><div class="set-l">Aktiv</div><div class="set-h">Pausierte Ziele erhalten nichts</div></div><div class="set-c"><button class="switch" role="switch" id="whOn" aria-checked="${st.active}" aria-label="Aktiv"></button></div></div>
+      </div>
+      <div class="m-foot">${h ? `<button class="btn btn-danger" id="whDel">${ic('trash', 'i-sm')}</button><button class="btn btn-ghost" id="whTest">${ic('zap', 'i-sm')}Test senden</button>` : ''}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="whSave">${ic('check', 'i-sm')}Speichern</button></div>`;
+  };
+  el.addEventListener('click', async e => {
+    const ev = e.target.closest('[data-wev]'); if (ev) { collect(); const k = ev.dataset.wev, i = st.events.indexOf(k); i >= 0 ? st.events.splice(i, 1) : st.events.push(k); return render(); }
+    if (e.target.closest('#whOn')) { st.active = !st.active; return e.target.closest('#whOn').setAttribute('aria-checked', st.active); }
+    if (e.target.closest('#whCopy')) return navigator.clipboard?.writeText(h.secret).then(() => toast('Kopiert', {type: 'pos', icon: 'copy', dur: 1500}));
+    if (e.target.closest('#whTest')) { try { await invoke('webhook_test', {id: h.id}); toast('Test eingereiht', {t2: 'Zustellung in wenigen Sekunden – siehe „Zustellungen“', icon: 'zap'}); closeLayer(el); setTimeout(reloadHooks, 6500); } catch (err) { toast('Fehler', {t2: String(err), type: 'warn'}); } return; }
+    if (e.target.closest('#whDel')) { try { await needPerm('anpassen', 'Webhook löschen', `Ziel ${h.url} wird entfernt.`); await invoke('webhook_delete', {id: h.id}); } catch (err) { if (err?.message !== 'abgebrochen') toast('Nicht gelöscht', {t2: String(err), type: 'warn'}); return; } closeLayer(el); reloadHooks(); return; }
+    if (e.target.closest('#whSave')) {
+      collect();
+      try { const w = await invoke('webhook_save', {hook: {id: h?.id ?? null, name: st.name, url: st.url, events: st.events, secret: '', active: st.active}}); AU.hooks = w.hooks; AU.queue = w.queue; }
+      catch (err) { return toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
+      closeLayer(el); renderApBody(); toast('Webhook gespeichert', {t2: st.url, type: 'pos', icon: 'zap'});
+    }
+  });
+  render();
+}
+
+/* ── UI: REST-API ── */
+async function renderApApi(box) {
+  box.innerHTML = '<div class="card" style="padding:18px"><span class="thinking"><b>Lade …</b></span></div>';
+  try { AU.api = await invoke('api_status'); } catch (e) { box.innerHTML = `<div class="card" style="padding:18px">${esc(String(e))}</div>`; return; }
+  const a = AU.api, on = !!a.running, port = +CFG['api.port'] || 8787, lan = !!CFG['api.lan'];
+  const base = a.running ? `http://${a.running.replace('0.0.0.0', CFG['api.lan'] ? '<IP-dieses-PCs>' : '127.0.0.1')}` : `http://127.0.0.1:${port}`;
+  const ex = a.keys.find(k => k.active);
+  box.innerHTML = `<div class="card">
+      <div class="set-row"><div><div class="set-l">REST-API ${on ? '<span class="pill pos" style="height:20px">läuft</span>' : '<span class="pill" style="height:20px">aus</span>'}</div><div class="set-h">${on ? `Erreichbar unter <span class="mono">${esc(base)}/api/v1</span>` : 'Für Onlineshop, Warenwirtschaft, BI-Werkzeuge, eigene Apps'}</div></div><div class="set-c"><button class="switch" role="switch" id="apiOn" aria-checked="${on}" aria-label="API aktiv"></button></div></div>
+      <div class="set-row"><div><div class="set-l">Port</div></div><div class="set-c"><input class="input num" id="apiPort" type="number" min="1024" max="65535" value="${port}" style="max-width:110px"></div></div>
+      <div class="set-row" style="border-bottom:0"><div><div class="set-l">Aus dem Netzwerk erreichbar</div><div class="set-h">Aus: nur auf diesem PC (127.0.0.1). Ein: auch von anderen Geräten im Firmennetz – Windows-Firewall-Freigabe nötig, nur mit Schlüssel.</div></div><div class="set-c"><button class="switch" role="switch" id="apiLan" aria-checked="${lan}" aria-label="Netzwerk"></button></div></div></div>
+    <h3 style="font-size:14px;margin:22px 0 10px;display:flex;align-items:center">API-Schlüssel<span class="sp" style="flex:1"></span><button class="btn btn-primary btn-sm" id="apiKeyNew">${ic('plus', 'i-sm')}Schlüssel erzeugen</button></h3>
+    <div class="card">${a.keys.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Name</th><th>Schlüssel</th><th>Rechte</th><th>Zuletzt benutzt</th><th></th></tr></thead><tbody>${a.keys.map(k => `<tr style="${k.active ? '' : 'opacity:.5'}"><td style="padding-left:16px"><b>${esc(k.name)}</b><div class="muted" style="font-size:11px">${esc(fmtTs(k.created_at))}</div></td><td class="mono" style="font-size:12px">${esc(k.prefix)}…</td><td>${k.scopes.map(s => `<span class="pill">${esc(s)}</span>`).join(' ')}</td><td class="muted" style="font-size:12px">${k.last_used ? esc(fmtTs(k.last_used)) : '–'}</td><td class="r" style="padding-right:12px">${k.active ? `<button class="btn btn-ghost btn-sm" data-krev="${k.id}">Widerrufen</button>` : '<span class="muted" style="font-size:12px">widerrufen</span>'}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:24px"><p>Noch kein Schlüssel – jede Anfrage braucht einen.</p></div>'}</div>
+    <h3 style="font-size:14px;margin:22px 0 10px;display:flex;align-items:center">Eigene Endpunkte<span class="sp" style="flex:1"></span><button class="btn btn-secondary btn-sm" id="apiEpNew">${ic('plus', 'i-sm')}Endpunkt</button></h3>
+    <div class="card">${a.endpoints.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Adresse</th><th>Titel</th><th>Parameter</th><th>Aktiv</th></tr></thead><tbody>${a.endpoints.map(p => `<tr data-ep="${p.id}" style="cursor:pointer"><td style="padding-left:16px" class="mono">/api/v1/eigene/${esc(p.slug)}</td><td>${esc(p.title)}</td><td class="mono" style="font-size:12px">${p.params.map(x => '?' + esc(x) + '=').join(' ') || '–'}</td><td>${p.active ? ic('check', 'i-sm') : '–'}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:24px"><p>Eigene Endpunkte liefern das Ergebnis einer gespeicherten, schreibgeschützten Abfrage – z. B. Bestand je Marke für den Onlineshop.</p></div>'}</div>
+    <h3 style="font-size:14px;margin:22px 0 10px">Schnittstellen</h3>
+    <div class="card"><table class="tbl" style="margin:0"><tbody>${Object.entries(a.openapi.paths).flatMap(([p, ms]) => Object.entries(ms).map(([m, d]) => `<tr><td style="padding-left:16px;width:70px"><span class="pill ${m === 'get' ? 'info' : 'accent'}">${m.toUpperCase()}</span></td><td class="mono" style="font-size:12px">${esc(p)}</td><td style="font-size:12.5px">${esc(d.summary)}</td><td class="muted" style="font-size:12px">${esc(d['x-berechtigung'])}</td></tr>`)).join('')}</tbody></table>
+      <div style="padding:12px 16px;border-top:1px solid var(--line)"><div class="muted" style="font-size:12px;margin-bottom:6px">Beispiel</div><pre class="code" style="white-space:pre-wrap;font-size:11.5px">curl -H "Authorization: Bearer ${ex ? esc(ex.prefix) + '…' : 'ktr_…'}" ${esc(base)}/api/v1/artikel?q=jacke
+curl ${esc(base)}/api/v1/openapi.json   # Beschreibung (OpenAPI 3)</pre></div></div>`;
+}
+async function apiApply(on) {
+  const port = clamp(parseInt($('#apiPort')?.value, 10) || 8787, 1024, 65535), lan = $('#apiLan')?.getAttribute('aria-checked') === 'true';
+  try { const r = await invoke('api_toggle', {on, lan, port}); Object.assign(CFG, {'api.aktiv': on, 'api.lan': lan, 'api.port': port}); toast(on ? 'REST-API gestartet' : 'REST-API gestoppt', {t2: r || '', type: on ? 'pos' : '', icon: 'server'}); }
+  catch (e) { toast('API nicht gestartet', {t2: String(e), type: 'warn', dur: 7000}); }
+  renderApBody();
+}
+function openKeyCreate() {
+  const st = {name: '', scopes: ['lesen']};
+  const el = openLayer(`<div class="modal" style="width:min(520px,100%)" role="dialog" aria-modal="true" aria-label="API-Schlüssel"><div id="akBox"></div></div>`, {focus: '#akName'});
+  const render = key => {
+    $('#akBox', el).innerHTML = key ? `<div class="m-head"><div class="m-ic" style="color:var(--pos)">${ic('check')}</div><div><h2>Schlüssel erzeugt</h2><p>Jetzt kopieren – er wird nur dieses eine Mal angezeigt.</p></div></div>
+      <div class="m-body"><div style="display:flex;gap:6px"><input class="input mono" readonly value="${esc(key)}" id="akKey"><button class="btn btn-primary btn-sm" id="akCopy">${ic('copy', 'i-sm')}Kopieren</button></div></div>
+      <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Fertig</button></div>`
+      : `<div class="m-head"><div class="m-ic">${ic('lock')}</div><div><h2>Neuer API-Schlüssel</h2><p>Für jede Anwendung einen eigenen Schlüssel – einzeln widerrufbar</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="m-body" style="display:grid;gap:14px"><label class="field"><span>Name</span><input class="input" id="akName" placeholder="z. B. Onlineshop"></label>
+        <div><div class="field"><span>Rechte</span></div><div class="reasons" style="margin-top:6px"><button class="chip" data-sc="lesen" aria-pressed="${st.scopes.includes('lesen')}">Lesen</button><button class="chip" data-sc="schreiben" aria-pressed="${st.scopes.includes('schreiben')}">Schreiben (Bestand, Kunden, Objekte)</button></div></div></div>
+      <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="akGo">${ic('check', 'i-sm')}Erzeugen</button></div>`;
+  };
+  el.addEventListener('click', async e => {
+    const sc = e.target.closest('[data-sc]'); if (sc) { st.name = $('#akName', el).value; const k = sc.dataset.sc, i = st.scopes.indexOf(k); i >= 0 ? st.scopes.splice(i, 1) : st.scopes.push(k); render(); $('#akName', el).value = st.name; return; }
+    if (e.target.closest('#akCopy')) return navigator.clipboard?.writeText($('#akKey', el).value).then(() => toast('Kopiert', {type: 'pos', icon: 'copy', dur: 1500}));
+    if (e.target.closest('#akGo')) {
+      st.name = $('#akName', el).value.trim();
+      try { await needPerm('anpassen', 'API-Schlüssel erzeugen', `Zugriff „${st.scopes.join(' + ')}“ für ${st.name || '…'}`); const key = await invoke('api_key_create', {name: st.name, scopes: st.scopes}); render(key); renderApBody(); }
+      catch (err) { if (err?.message !== 'abgebrochen') toast('Nicht erzeugt', {t2: String(err), type: 'warn'}); }
+    }
+  });
+  render();
+}
+function openEndpointEditor(p) {
+  const st = p ? {...p} : {slug: '', title: '', sql: "SELECT a.brand AS marke, SUM(v.stock) AS bestand\nFROM variants v JOIN articles a ON a.id = v.article_id\nWHERE a.active = 1\nGROUP BY a.brand ORDER BY bestand DESC", active: true};
+  const el = openLayer(`<div class="drawer-panel" style="width:min(760px,100%)" role="dialog" aria-modal="true" aria-label="Endpunkt">
+    <div class="m-head" style="padding-bottom:14px"><div class="m-ic">${ic('server')}</div><div><h2>${p ? '/api/v1/eigene/' + esc(p.slug) : 'Neuer Endpunkt'}</h2><p>Nur lesende Abfragen (SELECT) · Parameter als <span class="mono">:name</span> → <span class="mono">?name=</span></p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="drawer-body" style="display:grid;gap:12px">
+      <div class="ed-grid"><label class="field"><span>Adresse</span><input class="input mono" id="epSlug" value="${esc(st.slug)}" placeholder="bestand-je-marke"></label><label class="field"><span>Titel</span><input class="input" id="epTitle" value="${esc(st.title)}" placeholder="Bestand je Marke"></label></div>
+      <label class="field"><span>Abfrage (SQL)</span><textarea class="input mono" id="epSql" spellcheck="false" style="min-height:180px;padding:12px;font-size:12.5px;line-height:1.5;resize:vertical">${esc(st.sql)}</textarea></label>
+      <div class="prompt-hint blk">${ic('info', 'i-xs')}Tabellen u. a.: articles, variants, stock_moves, sales, customers, suppliers, purchase_orders, po_lines, vouchers, closings, records (eigene Objekte, Spalte data als JSON – z. B. <span class="mono">json_extract(data,'$.status')</span>)</div>
+      <div style="display:flex;gap:8px;align-items:center"><input class="input mono" id="epArgs" placeholder='Testwerte als JSON, z. B. {"ean":"9012…"}' style="flex:1"><button class="btn btn-secondary btn-sm" id="epTest">${ic('zap', 'i-sm')}Testen</button></div>
+      <div id="epOut" class="card" style="max-height:260px;overflow:auto;box-shadow:none"></div>
+      <div class="set-row" style="padding:10px 0;border-bottom:0"><div><div class="set-l">Aktiv</div></div><div class="set-c"><button class="switch" role="switch" id="epOn" aria-checked="${st.active}" aria-label="Aktiv"></button></div></div></div>
+    <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">${p ? `<button class="btn btn-danger" id="epDel">${ic('trash', 'i-sm')}Löschen</button>` : ''}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="epSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {cls: 'drawer', focus: '#epSlug'});
+  el.addEventListener('click', async e => {
+    if (e.target.closest('#epOn')) { st.active = !st.active; return e.target.closest('#epOn').setAttribute('aria-checked', st.active); }
+    if (e.target.closest('#epTest')) {
+      let args = {}; try { const t = $('#epArgs', el).value.trim(); if (t) args = JSON.parse(t); } catch { return toast('Testwerte: ungültiges JSON', {type: 'warn'}); }
+      const out = $('#epOut', el);
+      try { const rows = await invoke('api_query_test', {sql: $('#epSql', el).value, args}); const cols = rows.length ? Object.keys(rows[0]) : [];
+        out.innerHTML = rows.length ? `<div class="muted" style="font-size:12px;padding:8px 12px">${num(rows.length)} Zeilen</div><table class="tbl" style="margin:0"><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0, 50).map(r => `<tr>${cols.map(c => `<td style="font-size:12.5px">${esc(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>` : '<div style="padding:12px" class="muted">Keine Zeilen</div>'; }
+      catch (err) { out.innerHTML = `<div style="padding:12px;color:var(--neg)">${esc(String(err))}</div>`; }
+      return;
+    }
+    if (e.target.closest('#epDel')) { try { await invoke('api_endpoint_delete', {id: p.id}); } catch (err) { return toast('Fehler', {t2: String(err), type: 'warn'}); } closeLayer(el); renderApBody(); return; }
+    if (e.target.closest('#epSave')) {
+      try { await invoke('api_endpoint_save', {id: p?.id ?? null, slug: $('#epSlug', el).value, title: $('#epTitle', el).value, sql: $('#epSql', el).value, active: st.active}); }
+      catch (err) { return toast('Nicht gespeichert', {t2: String(err), type: 'warn', dur: 7000}); }
+      closeLayer(el); renderApBody(); toast('Endpunkt gespeichert', {type: 'pos', icon: 'server'});
+    }
+  });
+}
+
+/* ── UI: Pakete (Anpassungen exportieren / importieren) ── */
+function renderApPackages(box) {
+  box.innerHTML = `<div class="card">
+    <div class="set-row"><div><div class="set-l">Anpassungen exportieren</div><div class="set-h">Felder, Objekte, Regeln, Skripte und Webhook-Ziele (ohne Geheimnisse, ohne Datensätze) als JSON-Paket – zum Sichern, Weitergeben oder Übertragen auf eine andere Kasse.</div></div><div class="set-c"><button class="btn btn-primary btn-sm" id="pkExp">${ic('download', 'i-sm')}Exportieren</button></div></div>
+    <div class="set-row" style="border-bottom:0"><div><div class="set-l">Paket importieren</div><div class="set-h">Bestehende Einträge mit gleichem Namen werden aktualisiert, neue ergänzt. Nichts wird gelöscht.</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" id="pkImp">${ic('boxes', 'i-sm')}Importieren …</button></div></div></div>
+    <div class="prompt-hint blk" style="margin-top:10px">${ic('info', 'i-xs')}Format <span class="mono">kontor.paket/v1</span> · Pakete sind lesbares JSON und können versioniert werden.</div>`;
+}
+async function exportPackage() {
+  const pkg = {format: 'kontor.paket/v1', erstellt: new Date().toISOString(), version: S.appVersion, firma: CFG['firma.name'],
+    objekte: CF.ents.map(({id, name, plural, icon, title_field}) => ({id, name, plural, icon, title_field})),
+    felder: CF.defs.map(({object, key, label, type, options, required, at_pos, help, pos}) => ({object, key, label, type, options, required, at_pos, help, pos})),
+    regeln: AU.rules.map(({name, trigger, conditions, actions, active}) => ({name, trigger, conditions, actions, active})),
+    skripte: AU.scripts.map(({name, code}) => ({name, code})),
+    webhooks: AU.hooks.map(({name, url, events, active}) => ({name, url, events, active}))};
+  try { const p = await invoke('save_text', {name: `Kontor_Anpassungen_${new Date().toISOString().slice(0, 10)}.json`, content: JSON.stringify(pkg, null, 2), title: 'Anpassungen exportieren'}); if (p) toast('Paket exportiert', {t2: p, type: 'pos', icon: 'download'}); }
+  catch (e) { toast('Export fehlgeschlagen', {t2: String(e), type: 'warn'}); }
+}
+async function importPackage() {
+  let txt; try { txt = await invoke('open_text', {title: 'Paket importieren', ext: 'json'}); } catch (e) { return toast('Datei nicht lesbar', {t2: String(e), type: 'warn'}); }
+  if (!txt) return;
+  let pkg; try { pkg = JSON.parse(txt); if (pkg.format !== 'kontor.paket/v1') throw new Error('Kein Kontor-Paket'); } catch (e) { return toast('Ungültiges Paket', {t2: e.message, type: 'warn'}); }
+  try { await needPerm('anpassen', 'Paket importieren', `${(pkg.objekte || []).length} Objekte · ${(pkg.felder || []).length} Felder · ${(pkg.regeln || []).length} Regeln · ${(pkg.skripte || []).length} Skripte · ${(pkg.webhooks || []).length} Webhooks`); } catch { return; }
+  const n = {o: 0, f: 0, r: 0, s: 0, w: 0}, errs = [];
+  for (const o of pkg.objekte || []) { try { CF.ents = await invoke('entity_save', {entity: {...o, count: 0}}); n.o++; } catch (e) { errs.push(`Objekt ${o.name}: ${e}`); } }
+  for (const f of pkg.felder || []) { const ex = CF.defs.find(d => d.object === f.object && d.key === f.key); try { CF.defs = await invoke('field_save', {field: {...f, id: ex?.id ?? null}}); n.f++; } catch (e) { errs.push(`Feld ${f.label}: ${e}`); } }
+  for (const s of pkg.skripte || []) { const ex = AU.scripts.find(x => x.name === s.name); try { AU.scripts = await invoke('script_save', {script: {...s, id: ex?.id ?? null}}); n.s++; } catch (e) { errs.push(`Skript ${s.name}: ${e}`); } }
+  for (const r of pkg.regeln || []) { const ex = AU.rules.find(x => x.name === r.name); try { AU.rules = await invoke('rule_save', {rule: {...r, id: ex?.id ?? null, runs: ex?.runs || 0, last_run: ex?.last_run || null, last_error: null}}); n.r++; } catch (e) { errs.push(`Regel ${r.name}: ${e}`); } }
+  for (const w of pkg.webhooks || []) { const ex = AU.hooks.find(x => x.url === w.url); try { const res = await invoke('webhook_save', {hook: {...w, id: ex?.id ?? null, secret: ''}}); AU.hooks = res.hooks; n.w++; } catch (e) { errs.push(`Webhook ${w.url}: ${e}`); } }
+  syncObjNav(); renderApBody();
+  toast(errs.length ? 'Paket teilweise importiert' : 'Paket importiert', {t2: `${n.o} Objekte · ${n.f} Felder · ${n.r} Regeln · ${n.s} Skripte · ${n.w} Webhooks${errs.length ? ' · ' + errs[0] : ''}`, type: errs.length ? 'warn' : 'pos', icon: 'boxes', dur: 8000});
+  Hooks.emit('config.package.imported', {...n, fehler: errs.length});
+}
+
+function bindAutomation() {
+  $('#view-anpassen').addEventListener('click', async e => {
+    const t = e.target;
+    if (t.closest('#apRuleNew')) return openRuleEditor(null);
+    const rt = t.closest('[data-ruletpl]'); if (rt) return openRuleEditor(null, RULE_TPL[rt.dataset.ruletpl]);
+    const ro = t.closest('[data-ruleon]'); if (ro) { e.stopPropagation(); const r = AU.rules.find(x => x.id === +ro.dataset.ruleon); try { AU.rules = await invoke('rule_save', {rule: {...r, active: !r.active}}); } catch (err) { return toast('Fehler', {t2: String(err), type: 'warn'}); } return renderApBody(); }
+    const ru = t.closest('[data-rule]'); if (ru) return openRuleEditor(AU.rules.find(x => x.id === +ru.dataset.rule));
+    if (t.closest('#apScrNew')) return openScriptEditor(null);
+    const sc = t.closest('[data-scr]'); if (sc) return openScriptEditor(AU.scripts.find(x => x.id === +sc.dataset.scr));
+    if (t.closest('#apHookNew')) return openHookEditor(null);
+    if (t.closest('#apHookReload')) return reloadHooks();
+    const qr = t.closest('[data-qretry]'); if (qr) { try { await invoke('webhook_retry', {id: +qr.dataset.qretry}); toast('Erneut eingereiht', {icon: 'sync'}); setTimeout(reloadHooks, 6000); } catch (err) { toast('Fehler', {t2: String(err), type: 'warn'}); } return; }
+    const hk = t.closest('[data-hook]'); if (hk) return openHookEditor(AU.hooks.find(x => x.id === +hk.dataset.hook));
+    if (t.closest('#apiOn')) { const on = t.closest('#apiOn').getAttribute('aria-checked') !== 'true'; if (on) { try { await needPerm('anpassen', 'REST-API einschalten', 'Andere Programme können mit einem Schlüssel auf Daten zugreifen.'); } catch { return; } } return apiApply(on); }
+    if (t.closest('#apiLan')) { const sw = t.closest('#apiLan'); sw.setAttribute('aria-checked', sw.getAttribute('aria-checked') !== 'true'); if (AU.api?.running) apiApply(true); else saveSettings({'api.lan': sw.getAttribute('aria-checked') === 'true'}, true); return; }
+    if (t.closest('#apiKeyNew')) return openKeyCreate();
+    const kr = t.closest('[data-krev]'); if (kr) { try { await needPerm('anpassen', 'Schlüssel widerrufen', 'Anwendungen mit diesem Schlüssel verlieren sofort den Zugriff.'); await invoke('api_key_revoke', {id: +kr.dataset.krev}); } catch { return; } return renderApBody(); }
+    if (t.closest('#apiEpNew')) return openEndpointEditor(null);
+    const ep = t.closest('[data-ep]'); if (ep) return openEndpointEditor(AU.api.endpoints.find(x => x.id === +ep.dataset.ep));
+    if (t.closest('#pkExp')) return exportPackage();
+    if (t.closest('#pkImp')) return importPackage();
+  });
+  $('#view-anpassen').addEventListener('change', e => { if (e.target.id === 'apiPort') { if (AU.api?.running) apiApply(true); else saveSettings({'api.port': clamp(parseInt(e.target.value, 10) || 8787, 1024, 65535)}, true); } });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   33 · RECHTE & ZWEI-FAKTOR — Rechte je Rolle (anpassbar, in der
+   Datenbank), Prüfung vor sensiblen Aktionen mit Freigabe durch eine
+   berechtigte Person; Authenticator-App (TOTP) je Benutzer.
+   ════════════════════════════════════════════════════════════════════ */
+const SEC = {roles: null, perms: [], totp: new Set()};
+const PERM_DEFAULT = {kasse: ['kasse.verkaufen', 'kasse.kassenbuch', 'kunden.bearbeiten'], verkauf: ['kasse.verkaufen', 'kasse.retoure', 'kasse.kassenbuch', 'artikel.bearbeiten', 'bestand.buchen', 'einkauf', 'kunden.bearbeiten']};
+async function loadSecurity() {
+  if (!DESKTOP) return;
+  try { const m = await invoke('permissions_get'); SEC.roles = m.roles; SEC.perms = m.perms; SEC.totp = new Set(await invoke('totp_users')); } catch (e) { console.error(e); }
+}
+function can(perm, u = S.user) {
+  const role = u?.roleKey; if (!role) return false;
+  if (!SEC.roles) return role === 'admin' || role === 'leitung' || (PERM_DEFAULT[role] || []).includes(perm);
+  return !!SEC.roles[role]?.[perm];
+}
+const permLabel = p => SEC.perms.find(x => x.perm === p)?.label || p;
+const rolesWith = perm => Object.keys(ROLE_NAMES).filter(r => SEC.roles ? SEC.roles[r]?.[perm] : can(perm, {roleKey: r}));
+/** Recht prüfen; fehlt es, gibt eine berechtigte Person per PIN frei. Wirft „abgebrochen“. */
+async function needPerm(perm, title, text) {
+  if (can(perm)) return {by: S.user};
+  const g = SEC.grant?.[perm]; if (g && g.user === S.user.id && Date.now() - g.t < 90e3) return {by: g.by};   // eben freigegeben: nicht doppelt fragen
+  try { const r = await stepUp({title: title || 'Freigabe erforderlich', text: text || `${S.user.name} (${S.user.role}) fehlt das Recht „${permLabel(perm)}“.`, rule: `Recht „${permLabel(perm)}“ · festgelegt unter Einstellungen → Benutzer → Rechte`, roles: rolesWith(perm), purpose: DESKTOP ? 'recht:' + perm : 'freigabe'}); (SEC.grant ||= {})[perm] = {user: S.user.id, by: r.by, t: Date.now()}; return r; }
+  catch (e) { throw new Error('abgebrochen'); }
+}
+function guard(perm, fn, title) {
+  return async function (...args) {
+    try { await needPerm(perm, title); } catch { return; }
+    return fn.apply(this, args);
+  };
+}
+
+/* ── Code aus der Authenticator-App abfragen (auch über dem Sperrbildschirm) ── */
+function askTotp(user) {
+  return new Promise(resolve => {
+    let done = false;
+    const el = openLayer(`<div class="modal" style="width:min(400px,100%)" role="dialog" aria-modal="true" aria-label="Zwei-Faktor-Code">
+      <div class="m-head"><div class="m-ic">${ic('shield')}</div><div><h2>Bestätigungscode</h2><p>${esc(user.name)} · 6-stelliger Code aus der Authenticator-App</p></div></div>
+      <div class="m-body"><input class="input num" id="totpIn" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="000 000" style="font-size:26px;height:56px;text-align:center;letter-spacing:.2em"></div>
+      <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="totpGo">${ic('check', 'i-sm')}Bestätigen</button></div></div>`, {cls: 'over-lock', focus: '#totpIn', onClose: () => { if (!done) resolve(null); }});
+    const inp = $('#totpIn', el);
+    const go2 = () => { const c = inp.value.replace(/\D/g, ''); if (c.length !== 6) return shakeEl(inp); done = true; resolve(c); closeLayer(el); };
+    $('#totpGo', el).onclick = go2;
+    inp.addEventListener('input', () => { if (inp.value.replace(/\D/g, '').length === 6) go2(); });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go2(); } });
+  });
+}
+async function openTotp(u) {
+  if (!DESKTOP) return;
+  const on = SEC.totp.has(u.id);
+  try { if (u.id !== S.user.id || on) await needPerm('system', on ? 'Zwei-Faktor ausschalten' : 'Zwei-Faktor einrichten', `${u.name} · Authenticator-App`); } catch { return; }
+  if (on) {
+    try { await invoke('totp_disable', {user: u.id, by: S.user.name}); SEC.totp.delete(u.id); } catch (e) { return toast('Fehler', {t2: String(e), type: 'warn'}); }
+    renderUsersBox(); toast('Zwei-Faktor ausgeschaltet', {t2: u.name, icon: 'shield'}); return;
+  }
+  let t, svg;
+  try { t = await invoke('totp_begin', {user: u.id}); svg = await invoke('qr_svg', {text: t.uri}); } catch (e) { return toast('Fehler', {t2: String(e), type: 'warn'}); }
+  const el = openLayer(`<div class="modal" style="width:min(520px,100%)" role="dialog" aria-modal="true" aria-label="Zwei-Faktor einrichten">
+    <div class="m-head"><div class="m-ic">${ic('shield')}</div><div><h2>Authenticator-App verbinden</h2><p>${esc(u.name)} · z. B. Microsoft Authenticator, Google Authenticator, 1Password</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body" style="display:grid;grid-template-columns:180px 1fr;gap:18px;align-items:start">
+      <div style="background:#fff;border-radius:12px;padding:6px;line-height:0" id="totpQr">${svg}</div>
+      <div style="display:grid;gap:12px"><div style="font-size:13px;color:var(--text-2)">1. QR-Code mit der App scannen<br>2. Den angezeigten 6-stelligen Code eingeben</div>
+        <div><div class="muted" style="font-size:11.5px">Oder Schlüssel manuell eingeben</div><div class="mono" style="font-size:12.5px;word-break:break-all;margin-top:4px">${esc(t.secret.match(/.{1,4}/g).join(' '))}</div></div>
+        <input class="input num" id="totpCode" inputmode="numeric" maxlength="7" placeholder="000 000" style="font-size:20px;text-align:center;letter-spacing:.2em"></div></div>
+    <div class="prompt-hint blk" style="padding:0 22px">${ic('info', 'i-xs')}Danach wird bei jeder PIN-Anmeldung und Freigabe dieser Person zusätzlich der Code abgefragt.</div>
+    <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="totpOk">${ic('check', 'i-sm')}Aktivieren</button></div></div>`, {focus: '#totpCode'});
+  const svgEl = $('#totpQr svg', el); if (svgEl) { svgEl.setAttribute('width', '168'); svgEl.setAttribute('height', '168'); }
+  const ok = async () => {
+    const code = $('#totpCode', el).value.replace(/\D/g, '');
+    try { await invoke('totp_enable', {user: u.id, secret: t.secret, code}); } catch (e) { shakeEl($('#totpCode', el)); return toast('Code stimmt nicht', {t2: String(e), type: 'warn'}); }
+    SEC.totp.add(u.id); closeLayer(el); renderUsersBox(); toast('Zwei-Faktor aktiv', {t2: `${u.name} · ab der nächsten Anmeldung`, type: 'pos', icon: 'shield'});
+  };
+  $('#totpOk', el).onclick = ok;
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ok(); } });
+}
+
+/* ── Einstellungen → Benutzer: 2FA je Person und Rechte-Matrix ── */
+const _renderUsersBox = renderUsersBox;
+renderUsersBox = function () {
+  _renderUsersBox();
+  const box = $('#usrBox'); if (!box || !DESKTOP) return;
+  STAFF.forEach(u => {
+    const b = $(`[data-usr="${u.id}"]`, box); if (!b) return;
+    const on = SEC.totp.has(u.id);
+    b.insertAdjacentHTML('beforebegin', `<button class="btn ${on ? 'btn-secondary' : 'btn-ghost'} btn-sm" data-totp="${u.id}" data-tip="${on ? 'Zwei-Faktor ist aktiv – klicken zum Ausschalten' : 'Authenticator-App als zweiten Faktor einrichten'}">${ic('shield', 'i-sm')}${on ? '2FA aktiv' : '2FA'}</button>`);
+  });
+  $('#permBox')?.remove();
+  box.insertAdjacentHTML('afterend', `<div class="card" id="permBox" style="margin-top:12px"><div class="set-row"><div><div class="set-l">Rechte je Rolle</div><div class="set-h">Fehlt ein Recht, kann eine berechtigte Person die Aktion per PIN freigeben. Änderungen erfordern einen Administrator.</div></div></div>
+    <table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Recht</th>${Object.values(ROLE_NAMES).map(n => `<th style="text-align:center">${esc(n)}</th>`).join('')}</tr></thead><tbody>${SEC.perms.map(p => `<tr><td style="padding-left:16px">${esc(p.label)}<div class="mono muted" style="font-size:11px">${esc(p.perm)}</div></td>${Object.keys(ROLE_NAMES).map(r => `<td style="text-align:center"><button class="switch" role="switch" data-perm="${esc(p.perm)}" data-role="${r}" aria-checked="${!!SEC.roles?.[r]?.[p.perm]}" aria-label="${esc(ROLE_NAMES[r] + ': ' + p.label)}" ${r === 'admin' && ['system', 'einstellungen'].includes(p.perm) ? 'disabled' : ''}></button></td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
+};
+function bindSecurity() {
+  $('#view-einstellungen').addEventListener('click', async e => {
+    const tb = e.target.closest('[data-totp]'); if (tb) { e.stopPropagation(); return openTotp(STAFF.find(s => s.id === tb.dataset.totp)); }
+    const pm = e.target.closest('[data-perm]'); if (!pm) return;
+    e.stopPropagation();
+    const allowed = pm.getAttribute('aria-checked') !== 'true';
+    let by; try { by = (await stepUp({title: 'Rechte ändern', text: `${ROLE_NAMES[pm.dataset.role]}: „${permLabel(pm.dataset.perm)}“ ${allowed ? 'erlauben' : 'entziehen'}`, admin: true})).by; } catch { return; }
+    try { const m = await invoke('permission_set', {role: pm.dataset.role, perm: pm.dataset.perm, allowed, by: by.name}); SEC.roles = m.roles; } catch (err) { return toast('Nicht geändert', {t2: String(err), type: 'warn'}); }
+    pm.setAttribute('aria-checked', allowed); permNav();
+    toast('Recht geändert', {t2: `${ROLE_NAMES[pm.dataset.role]} · ${permLabel(pm.dataset.perm)}: ${allowed ? 'erlaubt' : 'nicht erlaubt'}`, type: 'pos', icon: 'shield'});
+  }, true);
+}
+
+/* ── Rechte an den Einstiegspunkten ── */
+const VIEW_PERM = {berichte: 'berichte', anpassen: 'anpassen', einstellungen: 'einstellungen', einkauf: 'einkauf', aktionen: 'preise.aktionen', inventur: 'bestand.buchen'};
+function permNav() {
+  if (!DESKTOP) return;
+  $$('#nav .nav-item').forEach(n => { const p = VIEW_PERM[n.dataset.view]; n.classList.toggle('nav-locked', !!p && !can(p)); if (p && !can(p)) n.dataset.tip = `${n.querySelector('.nav-label')?.textContent} · Freigabe nötig`; });
+}
+function installGuards() {
+  if (!DESKTOP) return;
+  const _go = go;
+  go = function (view) {
+    const p = VIEW_PERM[view === 'erweiterungen' ? 'anpassen' : view];
+    if (p && !can(p) && S.view !== view) {
+      if (!S.started) return _go('dashboard');
+      return needPerm(p, `${TITLES[view] || view} öffnen`).then(() => _go(view)).catch(() => { if (location.hash.slice(1) !== S.view) history.replaceState(null, '', '#' + S.view); });
+    }
+    return _go(view);
+  };
+  openReturnStart = guard('kasse.retoure', openReturnStart, 'Retoure / Storno');
+  openReturn = guard('kasse.retoure', openReturn, 'Retoure / Storno');
+  openEditor = guard('artikel.bearbeiten', openEditor, 'Artikel bearbeiten');
+  openBooking = guard('bestand.buchen', openBooking, 'Bestand buchen');
+  openCashBook = guard('kasse.kassenbuch', openCashBook, 'Kassenbuch');
+  openClosing = guard('kasse.kassenbuch', openClosing, 'Tagesabschluss');
+  openPromo = guard('preise.aktionen', openPromo, 'Preisaktion');
+  openPO = guard('einkauf', openPO, 'Bestellung');
+  openSupplier = guard('einkauf', openSupplier, 'Lieferant');
+  openCustomerEditor = guard('kunden.bearbeiten', openCustomerEditor, 'Kunde bearbeiten');
+  openPayment = guard('kasse.verkaufen', openPayment, 'Verkaufen');
+  Hooks.on('auth.login', () => {
+    SEC.grant = {}; permNav();
+    const p = VIEW_PERM[S.view]; if (p && !can(p)) { S.view = null; go('dashboard'); }
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   34 · LOKALE KI, BUCHHALTUNG, ZAHLUNGSTERMINAL
+   KI: Prognosen, Nachbestellvorschläge mit Begründung und Hinweise
+   rechnet Kontor selbst (Statistik auf den eigenen Belegen) – ohne
+   Internet. Optional ein lokales Sprachmodell (Ollama) für freie Fragen
+   und Artikeltexte. Buchhaltung: Buchungsjournal und DATEV-Export.
+   Terminal: ZVT über das Netzwerk oder externes Terminal mit Bestätigung.
+   ════════════════════════════════════════════════════════════════════ */
+Object.assign(DEFAULTS, {'ki.url': 'http://127.0.0.1:11434', 'ki.modell': '', 'terminal.art': 'aus', 'terminal.adresse': '', 'terminal.passwort': '',
+  'fibu.kasse': '2700', 'fibu.transit': '2880', 'fibu.bank': '2800', 'fibu.gutschein': '3630', 'fibu.erloes20': '4000', 'fibu.erloes13': '4030', 'fibu.erloes10': '4010', 'fibu.erloes0': '4090', 'fibu.datev.berater': '', 'fibu.datev.mandant': ''});
+Object.keys(DEFAULTS).forEach(k => { if (!(k in CFG)) CFG[k] = DEFAULTS[k]; });
+const AI = {ins: null, t: 0, busy: false, reorder: null};
+const llmReady = () => DESKTOP && CFG['ki.url'] && CFG['ki.modell'];
+
+/* ── KI-Hinweise im Dashboard (echt, lokal berechnet) ── */
+async function loadInsights(force) {
+  if (!DESKTOP || AI.busy || (!force && AI.ins && Date.now() - AI.t < 10 * 6e4)) return;
+  AI.busy = true;
+  try {
+    const l = await invoke('ai_insights');
+    AI.ins = l; AI.t = Date.now();
+    INSIGHTS.length = 0;
+    l.forEach(x => INSIGHTS.push({id: x.id, icon: x.icon, tone: x.tone, t: x.title, conf: Math.round(x.confidence), p: x.text, a: x.action?.label || 'Ansehen', act: x.action}));
+  } catch (e) { console.error(e); AI.ins = AI.ins || []; }
+  AI.busy = false;
+  (Dash.layout || []).filter(it => it.t === 'ai.insights').forEach(it => rerenderWidget(it.id));
+}
+if (DESKTOP) {
+  const wi = W['ai.insights']; wi.demo = false;
+  wi.desc = 'Auffälligkeiten aus Ihren Belegen: Retourenquoten, Stornos, Inventurdifferenzen, Preise unter EK, Bestseller mit knapper Reichweite, Ladenhüter.';
+  wi.tools = () => `<span class="ai-chip"><span class="dot live"></span>lokal berechnet</span>`;
+  const body0 = wi.body;
+  wi.body = it => { if (!AI.ins) { loadInsights(); return `<div class="empty" style="flex:1"><span class="thinking"><b>Werte Belege aus …</b></span></div>`; } return body0(it); };
+  let tmI; Hooks.on('pos.sale.completed', () => { clearTimeout(tmI); tmI = setTimeout(() => loadInsights(true), 4000); });
+  Hooks.on('inventory.finished', () => loadInsights(true));
+}
+function insightAction(x) {
+  const a = x.act; if (!a) return;
+  Hooks.emit('ai.insight.action', {hinweis: x.t, aktion: a.kind});
+  if (a.kind === 'artikel') { go('artikel'); setTimeout(() => { const art = artById(a.ref); art ? openEditor(art) : toast('Artikel nicht gefunden', {type: 'warn'}); }, 120); }
+  else if (a.kind === 'belege') openReceipts();
+  else if (a.kind === 'inventur') go('inventur');
+  else if (a.kind === 'einkauf') { EK.tab = 'ki'; go('einkauf'); }
+  else if (a.kind === 'aktion') { const art = artById(a.ref); go('aktionen'); setTimeout(() => openPromo({name: `Abverkauf ${art?.name || ''}`.trim(), pct: 20, scope: 'artikel', scope_values: [a.ref], from_date: today(), to_date: dIso(addDays(new Date(), 14)), active: true}), 140); }
+}
+
+/* ── Fragen in natürlicher Sprache: echte Zahlen, optional Sprachmodell ── */
+function aiPeriod(n) {
+  const now = new Date(), sod = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (/gestern/.test(n)) return ['gestern', addDays(sod, -1), sod];
+  if (/vorwoche|letzte woche/.test(n)) { const mon = addDays(sod, -((now.getDay() + 6) % 7)); return ['letzte Woche', addDays(mon, -7), mon]; }
+  if (/woche/.test(n)) { const mon = addDays(sod, -((now.getDay() + 6) % 7)); return ['diese Woche', mon, addDays(mon, 7)]; }
+  if (/vormonat|letzte[nm]? monat/.test(n)) return ['letzter Monat', new Date(now.getFullYear(), now.getMonth() - 1, 1), new Date(now.getFullYear(), now.getMonth(), 1)];
+  if (/monat/.test(n)) return ['dieser Monat', new Date(now.getFullYear(), now.getMonth(), 1), new Date(now.getFullYear(), now.getMonth() + 1, 1)];
+  if (/jahr/.test(n)) return ['dieses Jahr', new Date(now.getFullYear(), 0, 1), new Date(now.getFullYear() + 1, 0, 1)];
+  if (/30 tage|letzte.*tage/.test(n)) return ['letzte 30 Tage', addDays(sod, -29), addDays(sod, 1)];
+  return ['heute', sod, addDays(sod, 1)];
+}
+async function aiStats(f, t) { const [s] = await invoke('stats', {ranges: [{from: isoL(f), to: isoL(t)}], detail: true}); return s; }
+async function realAnswer(q) {
+  const n = norm(q), e = c => eur((c || 0) / 100);
+  if (/nachbest|bestell|reichweit|ausverk|knapp|niedrig|lager|bestand/.test(n)) {
+    const l = await invoke('ai_reorder');
+    return {title: 'Nachbestellvorschlag · Prognose aus den letzten 12 Wochen', sql: 'ai.reorder: Holt-Prognose je Artikel × Variantenanteil, Lieferzeit des Lieferanten, offene Bestellungen',
+      text: l.length ? `${l.length === 1 ? 'Eine Variante reicht' : `${l.length} Varianten reichen`} nicht bis zur nächsten Lieferung plus eine Woche Puffer.${l.length > 10 ? ' Die dringendsten 10:' : ''}` : 'Keine Variante unterschreitet die Reichweite bis zur nächsten Lieferung – kein Nachschub nötig.',
+      cols: ['Artikel', 'Variante', 'Bestand', 'Reichweite', 'Vorschlag', 'Begründung'], num: [2, 3, 4], rows: l.slice(0, 10).map(r => [r.name, `${COLORS[r.color]?.[0] || r.color} · ${r.size}`, num(r.stock), `${num(r.cover_days)} T`, `${num(r.qty)} Stk.`, r.reason]), act: l.length ? {label: 'Im Einkauf öffnen', run: () => { EK.tab = 'ki'; go('einkauf'); }} : null};
+  }
+  if (/prognos|vorhers|erwart|naechste|kommende/.test(n)) {
+    const l = await invoke('ai_forecast');
+    return {title: 'Absatzprognose · nächste 4 Wochen', sql: 'ai.forecast: Holt (doppelte exponentielle Glättung) auf Wochenabsätzen der letzten 12 Wochen',
+      text: l.length ? `Erwarteter Absatz der Top-Artikel in den nächsten 4 Wochen, mit Trend gegenüber den Wochen davor und Reichweite des aktuellen Bestands.` : 'Für eine Prognose fehlen noch Verkäufe.',
+      cols: ['Artikel', 'Erwartet 4 Wo.', 'Trend', 'Bestand', 'Reichweite'], num: [1, 2, 3, 4], rows: l.slice(0, 12).map(r => [r.name, `${num(r.next4, 1)} Stk.`, pct(r.trend, 0), num(r.stock), r.cover_days >= 9999 ? '–' : `${num(r.cover_days)} T`])};
+  }
+  if (/hinweis|auffaell|anomal|problem|retour/.test(n)) {
+    await loadInsights(true); const l = AI.ins || [];
+    return {title: 'Auffälligkeiten', sql: 'ai.insights: Retourenquote, Stornos je Kassier:in, Inventurdifferenzen, Preis < EK, Reichweite, Ladenhüter',
+      text: l.length ? `${l.length} Hinweise aus Ihren Daten:` : 'Derzeit keine Auffälligkeiten.', cols: ['Hinweis', 'Sicherheit', 'Details'], num: [1], rows: l.map(x => [x.title, `${Math.round(x.confidence)} %`, x.text])};
+  }
+  if (/kunde|stammk|treu/.test(n)) {
+    const l = [...CUSTOMERS].sort((a, b) => (b.revenue || 0) - (a.revenue || 0)).slice(0, 10);
+    return {title: 'Kund:innen nach Umsatz', text: `${num(CUSTOMERS.length)} Kund:innen gespeichert. Die umsatzstärksten:`, cols: ['Kund:in', 'Stufe', 'Einkäufe', 'Punkte', 'Umsatz'], num: [2, 3, 4], rows: l.map(c => [c.name, c.tier, num(c.visits || 0), num(c.points || 0), eur(c.revenue || 0)])};
+  }
+  const [lbl, f, t] = aiPeriod(n);
+  if (/top|best|meist|renner|artikel|verkauf/.test(n) && !/umsatz/.test(n)) {
+    const s = await aiStats(f, t), items = [...s.items].sort((a, b) => b.rev - a.rev).slice(0, 10);
+    return {title: `Meistverkaufte Artikel · ${lbl}`, sql: `stats(${dIso(f)} … ${dIso(addDays(t, -1))}): Positionen nach Umsatz, Retouren abgezogen`, text: items.length ? `${num(s.sold)} Artikel in ${num(s.sales)} Bons verkauft. Nach Umsatz:` : `Im Zeitraum (${lbl}) wurde noch nichts verkauft.`,
+      cols: ['Artikel', 'Nr.', 'Stück', 'Umsatz'], num: [2, 3], rows: items.map(i => [i.name, i.sku, num(i.qty), e(i.rev)])};
+  }
+  if (/umsatz|verdien|einnahm|wie laeuft|wie lief|bons|kasse/.test(n)) {
+    const s = await aiStats(f, t);
+    return {title: `Umsatz · ${lbl}`, sql: `stats(${dIso(f)} … ${dIso(addDays(t, -1))})`, text: `${lbl[0].toUpperCase() + lbl.slice(1)}: ${e(s.revenue)} Umsatz in ${num(s.sales)} Bons${s.sales ? ` (Ø ${e(s.revenue / s.sales)})` : ''}, ${num(s.sold)} Artikel. Retouren/Stornos: ${e(s.returns)}.`,
+      cols: ['Tag', 'Bons', 'Umsatz'], num: [1, 2], rows: s.days.map(d => [new Date(d.day + 'T12:00').toLocaleDateString('de-AT', {weekday: 'short', day: '2-digit', month: '2-digit'}), num(d.sales), e(d.revenue)])};
+  }
+  if (llmReady()) {
+    const now = new Date(), sod = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const [d30, rec] = await Promise.all([aiStats(addDays(sod, -29), addDays(sod, 1)), invoke('ai_reorder').catch(() => [])]);
+    const ctx = `Firma: ${CFG['firma.name']}. Heute: ${now.toLocaleDateString('de-AT')}.\nLetzte 30 Tage: Umsatz ${e(d30.revenue)}, ${d30.sales} Bons, ${d30.sold} Artikel, Retouren ${e(d30.returns)}.\nTop-Artikel: ${[...d30.items].sort((a, b) => b.rev - a.rev).slice(0, 8).map(i => `${i.name} (${i.qty} Stk., ${e(i.rev)})`).join('; ')}.\nKnapper Bestand: ${rec.slice(0, 6).map(r => `${r.name} ${r.color}/${r.size}: ${r.stock} Stk., Reichweite ${r.cover_days} T`).join('; ') || 'keiner'}.\nArtikel gesamt: ${ART.length}, Kunden: ${CUSTOMERS.length}.`;
+    const txt = await invoke('ai_llm', {system: 'Du bist der Assistent einer Warenwirtschaft im Einzelhandel in Österreich. Antworte kurz, sachlich und auf Deutsch. Verwende nur die gegebenen Daten; wenn sie nicht reichen, sag das.', prompt: `Daten:\n${ctx}\n\nFrage: ${q}`});
+    return {title: 'Antwort des lokalen Sprachmodells', text: txt.trim(), sql: `Sprachmodell ${CFG['ki.modell']} über ${CFG['ki.url']} · Kontext: Kennzahlen der letzten 30 Tage`, model: CFG['ki.modell']};
+  }
+  return {title: 'Das kann ich beantworten', text: 'Fragen Sie z. B. nach „Umsatz diese Woche“, „Top-Artikel letzten Monat“, „Was muss ich nachbestellen?“, „Prognose nächste Wochen“, „Auffälligkeiten“ oder „beste Kunden“. Für frei formulierte Fragen kann unter Einstellungen → Lokale KI ein Sprachmodell (Ollama) auf diesem PC oder im Firmennetz eingebunden werden – Ihre Daten verlassen das Netzwerk nicht.', rows: null};
+}
+if (DESKTOP) askAI = async function (q) {
+  if (S.view !== 'dashboard') go('dashboard');
+  const inp = $('#askInput'); if (inp) inp.value = q;
+  const slot = $('#answerSlot'); if (!slot) return;
+  const tok = (S.aiTok = uid()), t0 = performance.now();
+  Hooks.emit('ai.query', {frage: q, modell: llmReady() ? CFG['ki.modell'] : 'Kontor-Statistik (lokal)'});
+  slot.innerHTML = `<div class="answer"><div class="answer-head"><span class="ai-chip">${ic('sparkle', 'i-xs')}KI · lokal</span><h3>…</h3><button class="btn btn-ghost btn-sm btn-icon" id="ansClose" aria-label="Antwort schließen">${ic('x', 'i-sm')}</button></div><div class="answer-text"><span class="thinking">${ic('database', 'i-xs')}<b>Werte die lokale Datenbank aus …</b></span></div><div id="ansTbl"></div><div class="answer-foot"></div></div>`;
+  $('#ansClose').onclick = () => { S.aiTok = null; slot.innerHTML = ''; };
+  let a; try { a = await realAnswer(q); } catch (e) { a = {title: 'Keine Antwort', text: String(e.message || e)}; }
+  if (S.aiTok !== tok || !$('.answer', slot)) return;
+  $('.answer-head h3', slot).textContent = a.title;
+  $('.answer-text', slot).textContent = a.text;
+  if (a.rows?.length) {
+    $('#ansTbl', slot).innerHTML = `<table class="tbl"><thead><tr>${a.cols.map((c, i) => `<th class="${a.num?.includes(i) ? 'r' : ''}">${esc(c)}</th>`).join('')}</tr></thead><tbody>${a.rows.map(r => `<tr>${r.map((c, i) => `<td class="${a.num?.includes(i) ? 'r num' : ''}" style="${i === 0 ? 'font-weight:550' : ''}${i === r.length - 1 && String(c).length > 60 ? ';font-size:12px;color:var(--text-2);white-space:normal' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  }
+  $('.answer-foot', slot).innerHTML = `${ic('server', 'i-xs')}<span>${esc(a.model ? `${a.model} · lokal` : 'Kontor-Statistik · lokal')} · ${num((performance.now() - t0) / 1000, 1)} s · keine Daten verlassen Ihr Netzwerk</span><span style="margin-left:auto;display:flex;gap:6px">${a.sql ? `<button class="btn btn-ghost btn-sm" data-ans2="sql">${ic('code', 'i-sm')}Herleitung</button>` : ''}${a.act ? `<button class="btn btn-secondary btn-sm" data-ans2="act">${esc(a.act.label)}</button>` : ''}</span>`;
+  $('.answer-foot', slot).onclick = e => { const b = e.target.closest('[data-ans2]'); if (!b) return; if (b.dataset.ans2 === 'act') a.act.run(); else toast('So wurde gerechnet', {t2: a.sql, icon: 'code', dur: 7000}); };
+};
+
+// Beispielfragen passend zu dem, was die lokale Auswertung beantworten kann
+if (DESKTOP) {
+  const _renderDashboard = renderDashboard;
+  renderDashboard = function (...a) {
+    const r = _renderDashboard.apply(this, a);
+    const c = $('#askChips'); if (c) c.innerHTML = ['Was muss ich nachbestellen?', 'Umsatz diese Woche', 'Top-Artikel diesen Monat', 'Prognose nächste Wochen', 'Auffälligkeiten'].map(q => `<button class="chip" data-q="${esc(q)}">${esc(q)}</button>`).join('');
+    return r;
+  };
+}
+
+/* ── Artikeltext mit KI ── */
+async function aiArticleText(st) {
+  if (!llmReady()) { toast('Kein lokales Sprachmodell eingerichtet', {t2: 'Einstellungen → Lokale KI', type: 'warn', action: {label: 'Einrichten', run: () => { go('einstellungen'); setTimeout(() => $('#sec-ki')?.scrollIntoView(), 150); }}}); return null; }
+  toast('Text wird erstellt …', {t2: CFG['ki.modell'], icon: 'sparkle', dur: 2500});
+  const facts = [`Artikel: ${st.name}`, st.brand && `Marke: ${st.brand}`, `Warengruppe: ${CATS.find(c => c.id === st.cat)?.name || st.cat}`, st.colors?.length && `Farben: ${st.colors.map(c => COLORS[c]?.[0] || c).join(', ')}`, st.sizes && `Größen: ${st.sizes}`, ...(st.fields || []).filter(([k, v]) => k && v && k !== 'Beschreibung').map(([k, v]) => `${k}: ${v}`)].filter(Boolean).join('\n');
+  try { return (await invoke('ai_llm', {system: 'Du schreibst Produkttexte für einen Sport- und Modehändler in Österreich. Deutsch, sachlich, 2–3 Sätze, keine erfundenen technischen Daten, keine Superlative.', prompt: `Schreibe einen kurzen Produkttext:\n${facts}`})).trim(); }
+  catch (e) { toast('KI nicht erreichbar', {t2: String(e), type: 'warn', dur: 7000}); return null; }
+}
+
+/* ── Einkauf: Tab „KI-Vorschlag“ ── */
+const _renderEinkauf = renderEinkauf;
+renderEinkauf = async function () {
+  await _renderEinkauf();
+  const seg = $('#ekSeg'); if (!seg || !DESKTOP || $('[data-v="ki"]', seg)) return;
+  seg.insertAdjacentHTML('beforeend', `<button data-v="ki" aria-pressed="${EK.tab === 'ki'}">${ic('sparkle', 'i-xs')} KI-Prognose</button>`);
+  if (EK.tab === 'ki') $$('button', seg).forEach(b => b.setAttribute('aria-pressed', b.dataset.v === 'ki'));
+  requestAnimationFrame(() => seg._place && seg._place(false));
+  if (EK.tab === 'ki') renderEkBody();
+};
+const _renderEkBody = renderEkBody;
+renderEkBody = function () {
+  if (EK.tab !== 'ki') return _renderEkBody();
+  const b = $('#ekBody'); if (!b) return;
+  b.innerHTML = '<div class="card" style="padding:24px"><span class="thinking"><b>Berechne Prognose aus den Verkäufen der letzten 12 Wochen …</b></span></div>';
+  invoke('ai_reorder').then(l => {
+    AI.reorder = l; if (!$('#ekBody') || EK.tab !== 'ki') return;
+    const groups = {}; l.forEach(r => (groups[r.supplier_id || ''] ||= []).push(r));
+    b.innerHTML = l.length ? `<div class="prompt-hint blk" style="margin:0 0 12px">${ic('sparkle', 'i-xs')}Prognose je Artikel (Holt-Verfahren auf Wochenabsätzen), aufgeteilt nach Variantenanteil · berücksichtigt Lieferzeit, offene Bestellungen und Trend · Menge deckt Lieferzeit + 3 Wochen</div>` + Object.entries(groups).map(([sid, rows]) => `<div class="card" style="margin-bottom:12px" data-kg="${esc(sid)}">
+      <div class="set-row"><div><div class="set-l">${esc(supName(sid))}</div><div class="set-h">${rows.length} Varianten · Lieferzeit ${rows[0].lead_days} Tage</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-kgo="${esc(sid)}" ${sid ? '' : 'disabled title="Lieferant im Artikel hinterlegen"'}>${ic('plus', 'i-sm')}Bestellung anlegen</button></div></div>
+      <table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:40px"></th><th>Artikel</th><th class="r">Bestand</th><th class="r">offen</th><th class="r">Reichweite</th><th>Begründung</th><th class="r" style="padding-right:16px">Menge</th></tr></thead><tbody>${rows.map(r => `<tr><td style="padding-left:16px"><input type="checkbox" data-kv="${r.variant_id}" checked></td><td><b>${esc(r.name)}</b><div class="muted" style="font-size:11.5px">${esc(COLORS[r.color]?.[0] || r.color)} · ${esc(r.size)}</div></td><td class="r num">${num(r.stock)}</td><td class="r num">${num(r.open)}</td><td class="r num" style="color:${r.cover_days < r.lead_days ? 'var(--neg)' : 'var(--warn)'}">${num(r.cover_days)} T</td><td style="font-size:12px;color:var(--text-2);max-width:380px">${esc(r.reason)}</td><td class="r" style="padding-right:16px"><input class="input num" data-kq="${r.variant_id}" value="${r.qty}" style="width:70px;height:30px;text-align:right"></td></tr>`).join('')}</tbody></table></div>`).join('')
+      : `<div class="card"><div class="empty" style="padding:56px 20px"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><h3>Keine Engpässe absehbar</h3><p>Laut Prognose reicht der Bestand aller Varianten über die Lieferzeit hinaus. Grundlage sind die Verkäufe der letzten 12 Wochen.</p></div></div>`;
+  }).catch(e => { b.innerHTML = `<div class="card" style="padding:18px">${esc(String(e))}</div>`; });
+};
+
+/* ── Berichte: Tab „Buchhaltung“ ── */
+TABS.push(['fibu', 'Buchhaltung']);
+const _renderRpBody = renderRpBody;
+renderRpBody = async function () {
+  if (RP.tab !== 'fibu') return _renderRpBody();
+  const b = $('#rpBody'); if (!b) return;
+  const [f, t] = rpRange(), von = dIso(f), bis = dIso(addDays(t, -1));
+  let rows = []; try { rows = await invoke('fibu_preview', {von, bis}); } catch (e) { toast('Buchungen nicht verfügbar', {t2: String(e), type: 'warn'}); }
+  if (!$('#rpBody') || RP.tab !== 'fibu') return;
+  const sum = rows.reduce((s, r) => s + r.betrag, 0), tax = rows.reduce((s, r) => s + (r.steuer || 0), 0);
+  b.innerHTML = `<div class="kpis"><div class="card"><b class="num">${num(rows.length)}</b><span>Buchungszeilen</span></div><div class="card"><b>${eur(sum / 100)}</b><span>Summe Buchungen</span></div><div class="card"><b>${eur(tax / 100)}</b><span>davon Umsatzsteuer</span></div><div class="card"><b class="num">${esc(CFG['fibu.kasse'])}</b><span>Kassenkonto</span></div></div>
+    <div class="cv-tools"><div class="reasons">${TABS.map(([k, l]) => `<button class="chip" data-rt="${k}" aria-pressed="${RP.tab === k}">${l}</button>`).join('')}</div><span style="margin-left:auto;display:flex;gap:6px"><button class="btn btn-secondary btn-sm" data-fibu="journal">${ic('download', 'i-sm')}Buchungsjournal (CSV)</button><button class="btn btn-primary btn-sm" data-fibu="datev">${ic('download', 'i-sm')}DATEV-Export</button></span></div>
+    <div class="card">${rows.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Datum</th><th>Beleg</th><th>Soll</th><th>Haben</th><th class="r">Betrag</th><th class="r">USt</th><th>Buchungstext</th></tr></thead><tbody>${rows.slice(0, 400).map(r => `<tr><td style="padding-left:16px" class="num">${esc(new Date(r.datum + 'T12:00').toLocaleDateString('de-AT'))}</td><td class="mono" style="font-size:12px">${esc(r.beleg)}</td><td class="mono">${esc(r.soll)}</td><td class="mono">${esc(r.haben)}</td><td class="r num">${eur(r.betrag / 100)}</td><td class="r num">${r.ust ? r.ust + ' %' : '–'}</td><td style="font-size:12.5px">${esc(r.text)}</td></tr>`).join('')}</tbody></table>${rows.length > 400 ? `<div class="muted" style="padding:10px 16px;font-size:12px">… ${num(rows.length - 400)} weitere Zeilen im Export</div>` : ''}`
+      : '<div class="empty" style="padding:40px"><p>Keine Buchungen im Zeitraum.</p></div>'}</div>
+    <div class="prompt-hint blk" style="margin-top:10px">${ic('info', 'i-xs')}Tagesweise verdichtet: Erlöse je Steuersatz, Zahlungsarten, Gutscheine, Kassenbewegungen. Konten unter Einstellungen → Buchhaltung. DATEV-Format „Buchungsstapel“ (EXTF 700) – vor der ersten Übergabe mit der Steuerberatung abstimmen.</div>`;
+};
+async function fibuExport(format) {
+  const [f, t] = rpRange();
+  try { const p = await invoke('fibu_export', {von: dIso(f), bis: dIso(addDays(t, -1)), format}); if (p) toast(format === 'datev' ? 'DATEV-Export gespeichert' : 'Buchungsjournal gespeichert', {t2: p, type: 'pos', icon: 'download'}); }
+  catch (e) { toast('Export nicht möglich', {t2: String(e), type: 'warn'}); }
+}
+
+/* ── Zahlungsterminal ── */
+const _runTerminalSim = runTerminal;
+runTerminal = async function (m, amount) {
+  if (!DESKTOP) return _runTerminalSim(m, amount);
+  PAY.busy = true;
+  const term = $('#term'), go2 = $('#payGo'); go2.disabled = true; $('#payAmtIn').disabled = true;
+  const reset = msg => { if (!PAY) return; PAY.busy = false; go2.disabled = false; $('#payAmtIn').disabled = false; if (msg) term.innerHTML = msg; };
+  if (CFG['terminal.art'] === 'zvt' && CFG['terminal.adresse']) {
+    term.innerHTML = `<div class="dev wait">${ic(m.kind === 'wallet' ? 'phone-pay' : 'terminal')}</div><h3>Bitte am Terminal bezahlen</h3><p>${eur(amount)} · ${esc(m.label)} · ZVT ${esc(CFG['terminal.adresse'])}</p><div class="steps"><i class="done"></i><i class="on"></i><i></i></div>`;
+    Hooks.emit('device.terminal.started', {betrag: r2(amount), art: m.id});
+    let r; try { r = await invoke('terminal_pay', {amount: Math.round(amount * 100)}); } catch (e) { r = {ok: false, message: String(e)}; }
+    if (!PAY) return;
+    if (r.ok) {
+      term.innerHTML = `<div class="ok-ring" style="width:72px;height:72px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div><h3>Zahlung erfolgreich</h3><p>${esc(r.card || m.label)}${r.receipt_no ? ` · Beleg ${esc(r.receipt_no)}` : ''}${r.trace ? ` · Trace ${esc(r.trace)}` : ''}</p>`;
+      await wait(reduced() ? 80 : 600);
+      if (PAY) addPart(m, amount, `${r.card || m.label}${r.receipt_no ? ' · TB ' + r.receipt_no : ''}`, {terminal: {receipt: r.receipt_no, trace: r.trace, card: r.card}});
+      return;
+    }
+    reset(`<div class="dev" style="color:var(--neg)">${ic('alert')}</div><h3>${esc(r.message || 'Zahlung nicht durchgeführt')}</h3><p>Erneut versuchen oder andere Zahlungsart wählen.</p>`);
+    Hooks.emit('device.terminal.failed', {betrag: r2(amount), grund: r.message});
+    return;
+  }
+  // Externes Terminal ohne Anbindung: Betrag am Gerät eingeben, Erfolg bestätigen
+  term.innerHTML = `<div class="dev">${ic('terminal')}</div><h3>${eur(amount)} am Kartenterminal eingeben</h3><p>Terminal ohne Kassenanbindung · nach erfolgreicher Zahlung bestätigen</p><div style="display:flex;gap:8px;justify-content:center;margin-top:12px"><button class="btn btn-secondary" id="extNo">Abgebrochen</button><button class="btn btn-primary" id="extOk">${ic('check', 'i-sm')}Zahlung erfolgreich</button></div>`;
+  $('#extOk').onclick = () => { if (PAY) addPart(m, amount, 'externes Terminal'); };
+  $('#extNo').onclick = () => reset(`<div class="dev">${ic('card')}</div><h3>Zahlung abgebrochen</h3><p>Andere Zahlungsart wählen oder erneut versuchen.</p>`);
+  $('#extOk').focus();
+};
+
+/* ── Einstellungen: Lokale KI, Buchhaltung, Zahlungsterminal ── */
+SET_SECTIONS.splice(SET_SECTIONS.findIndex(s => s[0] === 'rksv'), 0, ['terminal', 'Zahlungsterminal', 'card'], ['buchhaltung', 'Buchhaltung', 'receipt'], ['ki', 'Lokale KI', 'sparkle']);
+const _renderSettings = renderSettings;
+renderSettings = function () {
+  _renderSettings();
+  const anchor = $('#sec-rksv'); if (!anchor) return;
+  anchor.insertAdjacentHTML('beforebegin', `
+    <section class="set-sec" id="sec-terminal"><h2>Zahlungsterminal</h2><p>Kartenzahlung direkt aus der Kasse: Betrag geht automatisch ans Terminal, das Ergebnis zurück (ZVT-Protokoll über das Netzwerk, z. B. Ingenico, Verifone, CCV – je nach Netzbetreiber freischalten lassen). Ohne Anbindung wird der Betrag am Terminal eingetippt und an der Kasse bestätigt.</p><div class="card" id="termBox"></div></section>
+    <section class="set-sec" id="sec-buchhaltung"><h2>Buchhaltung</h2><p>Konten für Buchungsjournal und DATEV-Export (Berichte → Buchhaltung). Vorgaben nach Einheitskontenrahmen – mit Ihrer Steuerberatung abstimmen.</p><div class="card" id="fibuBox"></div></section>
+    <section class="set-sec" id="sec-ki"><h2>Lokale KI</h2><p>Prognosen, Nachbestellvorschläge und Hinweise rechnet Kontor selbst aus Ihren Belegen – ohne Internet. Für frei formulierte Fragen und Artikeltexte kann zusätzlich ein Sprachmodell eingebunden werden, das auf diesem PC oder im Firmennetz läuft (Ollama). Daten verlassen Ihr Netzwerk nicht.</p><div class="card" id="kiBox"></div></section>`);
+  renderTermBox(); renderFibuBox(); renderKiBox();
+};
+function renderTermBox() {
+  const box = $('#termBox'); if (!box) return;
+  const art = CFG['terminal.art'] || 'aus';
+  box.innerHTML = `<div class="set-row"><div><div class="set-l">Anbindung</div></div><div class="set-c"><div class="seg" id="termSeg">${[['aus', 'Ohne Anbindung'], ['zvt', 'ZVT · Netzwerk']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${art === k}">${l}</button>`).join('')}</div></div></div>`
+    + (art === 'zvt' ? field('terminal.adresse', 'IP-Adresse des Terminals', 'z. B. 192.168.1.80 (Port 20007) oder 192.168.1.80:5577') + field('terminal.passwort', 'Kassenpasswort (ZVT)', 'meist 000000 – vom Netzbetreiber', 'password', 'style="max-width:140px"')
+      + `<div class="set-row" style="border-bottom:0"><div><div class="set-l">Terminal</div><div class="set-h">Anmelden nach Einrichtung · Kassenschnitt (Tagesabschluss am Terminal) täglich</div></div><div class="set-c" style="gap:6px"><button class="btn btn-secondary btn-sm" data-term="anmelden">${ic('wifi', 'i-sm')}Anmelden</button><button class="btn btn-secondary btn-sm" data-term="kassenschnitt">${ic('receipt', 'i-sm')}Kassenschnitt</button></div></div>` : '');
+  initSeg($('#termSeg', box), async b => { await saveSettings({'terminal.art': b.dataset.v}, true); renderTermBox(); });
+}
+function renderFibuBox() {
+  const box = $('#fibuBox'); if (!box) return;
+  const f = (k, l, h) => field(k, l, h, 'text', 'style="max-width:120px"');
+  box.innerHTML = f('fibu.kasse', 'Kasse', 'Bargeld') + f('fibu.transit', 'Geldtransit / Kartenzahlungen', 'Standard für alle unbaren Zahlarten') + f('fibu.bank', 'Bank', 'Entnahmen zur Bank')
+    + f('fibu.gutschein', 'Gutscheine (Verbindlichkeit)', 'Verkauf und Einlösung') + f('fibu.erloes20', 'Erlöse 20 %', '') + f('fibu.erloes13', 'Erlöse 13 %', '') + f('fibu.erloes10', 'Erlöse 10 %', '') + f('fibu.erloes0', 'Erlöse 0 %', '')
+    + f('fibu.datev.berater', 'DATEV Beraternummer', 'nur für DATEV-Export') + f('fibu.datev.mandant', 'DATEV Mandantennummer', '');
+}
+async function renderKiBox() {
+  const box = $('#kiBox'); if (!box) return;
+  box.innerHTML = field('ki.url', 'Adresse des Sprachmodell-Servers', 'Ollama: http://127.0.0.1:11434 (dieser PC) oder http://<server>:11434', 'text')
+    + `<div class="set-row"><div><div class="set-l">Modell</div><div class="set-h">z. B. llama3.1:8b, mistral, qwen2.5 – vorher mit „ollama pull“ laden</div></div><div class="set-c" style="gap:6px"><select class="input select" id="kiModel" style="max-width:240px"><option value="">${CFG['ki.modell'] ? esc(CFG['ki.modell']) : '– keines –'}</option></select><button class="btn btn-secondary btn-sm" id="kiLoad">${ic('sync', 'i-sm')}Modelle laden</button></div></div>`
+    + `<div class="set-row" style="border-bottom:0"><div><div class="set-l">Test</div><div class="set-h" id="kiState">${llmReady() ? `Eingerichtet: ${esc(CFG['ki.modell'])}` : 'Ohne Sprachmodell funktionieren Prognosen, Vorschläge, Hinweise und Standardfragen trotzdem.'}</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" id="kiTest" ${llmReady() ? '' : 'disabled'}>${ic('sparkle', 'i-sm')}Testfrage</button></div></div>`;
+  if (CFG['ki.modell']) $('#kiModel', box).firstElementChild.value = CFG['ki.modell'];
+}
+function bindAiFibu() {
+  $('#view-dashboard').addEventListener('click', e => {
+    if (!DESKTOP) return;
+    const b = e.target.closest('[data-act="ins"]'); if (!b) return;
+    e.stopPropagation(); const x = INSIGHTS.find(i => i.id === b.dataset.id); if (x) insightAction(x);
+  }, true);
+  $('#view-einkauf').addEventListener('click', e => {
+    const k = e.target.closest('[data-kgo]'); if (!k) return;
+    const card = k.closest('[data-kg]'), sid = k.dataset.kgo;
+    const lines = $$('[data-kv]', card).filter(c => c.checked).map(c => { const vid = +c.dataset.kv, r = AI.reorder.find(s => s.variant_id === vid), a = artById(r.article_id); return {variant_id: vid, name: r.name, color: r.color, size: r.size, qty: $(`[data-kq="${vid}"]`, card).value, cost: a?.cost != null ? Math.round(a.cost * 100) : null}; });
+    if (!lines.length) return toast('Keine Position ausgewählt', {type: 'warn'});
+    openPO(null, {supplier: sid, lines});
+  });
+  $('#view-berichte').addEventListener('click', e => { const f = e.target.closest('[data-fibu]'); if (f) fibuExport(f.dataset.fibu); });
+  const sv = $('#view-einstellungen');
+  sv.addEventListener('click', async e => {
+    const tb = e.target.closest('[data-term]');
+    if (tb) {
+      toast(tb.dataset.term === 'anmelden' ? 'Anmeldung am Terminal …' : 'Kassenschnitt läuft …', {icon: 'terminal', dur: 2500});
+      try { const r = await invoke('terminal_admin', {action: tb.dataset.term, receipt: null}); toast(r.ok ? 'Terminal: erledigt' : 'Terminal meldet einen Fehler', {t2: r.message, type: r.ok ? 'pos' : 'warn'}); }
+      catch (err) { toast('Terminal nicht erreichbar', {t2: String(err), type: 'warn', dur: 7000}); }
+      return;
+    }
+    if (e.target.closest('#kiLoad')) {
+      try { const l = await invoke('ai_models', {url: CFG['ki.url']}); const sel = $('#kiModel'); sel.innerHTML = `<option value="">– keines –</option>${l.map(m => `<option ${m === CFG['ki.modell'] ? 'selected' : ''}>${esc(m)}</option>`).join('')}`; toast(`${l.length} Modelle gefunden`, {icon: 'sparkle'}); }
+      catch (err) { toast('Server nicht erreichbar', {t2: String(err), type: 'warn', dur: 7000}); }
+      return;
+    }
+    if (e.target.closest('#kiTest')) {
+      $('#kiState').textContent = 'frage …';
+      try { const a = await invoke('ai_llm', {system: 'Antworte in einem kurzen deutschen Satz.', prompt: 'Sag Hallo an das Team im Geschäft.'}); $('#kiState').textContent = `Antwort: ${a.trim()}`; }
+      catch (err) { $('#kiState').textContent = String(err); }
+    }
+  });
+  sv.addEventListener('change', async e => { if (e.target.id === 'kiModel') { await saveSettings({'ki.modell': e.target.value}); renderKiBox(); } });
+}
+
+/* ════════════════════════════════════════════════════════════════════
    12 · ANMELDUNG — Sperrbildschirm mit PIN, Windows Hello, FIDO2, SSO
    ════════════════════════════════════════════════════════════════════ */
 /* ════════════════════════════════════════════════════════════════════
@@ -6069,7 +7328,7 @@ if (DESKTOP) {
 document.addEventListener('keydown', e => {
   const k = e.key, typing = isTyping(e.target);
   if ((e.metaKey || e.ctrlKey) && k.toLowerCase() === 'k' && !S.locked) { e.preventDefault(); if (S.paletteOpen) { const t = topLayer(); t && closeLayer(t.el); } else openPalette(); return; }
-  if (S.locked) { S.lockKey && S.lockKey(e); return; }
+  if (S.locked && !topLayer()?.el.classList.contains('over-lock')) { S.lockKey && S.lockKey(e); return; }
   if (layers.length) {
     const t = topLayer();
     if (k === 'Escape') { e.preventDefault(); if (t.escClose) closeLayer(t.el); }
@@ -6117,10 +7376,11 @@ async function init() {
   await loadCustomers();
   await loadUsers();
   if (DESKTOP) { await refreshRksv(); await loadSuppliers(); await loadPromos(); setInterval(applyPromos, 30 * 6e4); }
+  if (DESKTOP) { await Promise.all([loadCustom(), loadAutomation(), loadSecurity()]); installGuards(); }
   if (DESKTOP) { await refreshInfo(); Hooks.on('*', (p, e) => { if (!e.evt.startsWith('config.settings')) invoke('audit_append', {event: e.evt, payload: e.payload ?? {}}).catch(() => {}); }); }
   $('#palKbd').innerHTML = `<span class="kbd">${MOD}</span><span class="kbd">K</span>`;
-  renderNav(); renderMe(); renderStore(); renderStatus();
-  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings(); bindStockViews(); bindP5();
+  renderNav(); permNav(); renderMe(); renderStore(); renderStatus();
+  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings(); bindStockViews(); bindP5(); bindCustom(); bindAutomation(); bindSecurity(); bindAiFibu();
   go(location.hash.slice(1) || 'dashboard');
   if (DESKTOP) lock();   // Anmeldung mit PIN beim Start
   if (DESKTOP) { Hooks.emit('desktop.ready', {version: S.appVersion, datenbank: S.info?.db_path}); setTimeout(autoBackupCheck, 4000); setInterval(autoBackupCheck, 36e5); }
