@@ -3,6 +3,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod backup;
+mod catalog;
 mod db;
 
 use serde::Serialize;
@@ -209,6 +210,89 @@ fn open_folder(path: String) -> Res<()> {
     std::process::Command::new(cmd).arg(&p).spawn().map(|_| ()).map_err(err)
 }
 
+/* ── Artikel, Bestand, Belege ── */
+
+#[tauri::command]
+fn catalog_list(db: State<db::Db>) -> Res<Vec<catalog::Article>> {
+    catalog::list(&db.conn.lock().unwrap()).map_err(err)
+}
+
+/// Erstbefüllung mit Startdaten (nur wenn noch keine Artikel existieren).
+#[tauri::command]
+fn catalog_seed(db: State<db::Db>, articles: Vec<catalog::Article>) -> Res<usize> {
+    let mut c = db.conn.lock().unwrap();
+    if db::count(&c, "articles") > 0 {
+        return Ok(0);
+    }
+    let tx = c.transaction().map_err(err)?;
+    for a in &articles {
+        catalog::save(&tx, a)?;
+        for v in &a.variants {
+            if v.stock != 0 {
+                let vid: i64 = tx
+                    .query_row("SELECT id FROM variants WHERE ean = ?1", [&v.ean], |r| r.get(0))
+                    .map_err(err)?;
+                catalog::book(&tx, vid, v.stock, true, "Anfangsbestand", None, Some("System"))?;
+            }
+        }
+    }
+    db::audit_append(&tx, "catalog.seeded", &json!({ "artikel": articles.len() })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    Ok(articles.len())
+}
+
+#[tauri::command]
+fn article_save(db: State<db::Db>, article: catalog::Article, user: Option<String>) -> Res<Vec<catalog::Article>> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    catalog::save(&tx, &article)?;
+    db::audit_append(&tx, "catalog.article.saved", &json!({ "artikel": article.id, "name": article.name, "varianten": article.variants.len(), "benutzer": user })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    catalog::list(&c).map_err(err)
+}
+
+#[tauri::command]
+fn article_delete(db: State<db::Db>, id: String, user: Option<String>) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    catalog::deactivate(&c, &id).map_err(err)?;
+    db::audit_append(&c, "catalog.article.deactivated", &json!({ "artikel": id, "benutzer": user })).map_err(err)?;
+    Ok(())
+}
+
+#[tauri::command]
+fn stock_book(db: State<db::Db>, variant_id: i64, value: i64, set: bool, reason: String, user: Option<String>) -> Res<i64> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let after = catalog::book(&tx, variant_id, value, set, &reason, None, user.as_deref())?;
+    db::audit_append(&tx, "inventory.booked", &json!({ "variante": variant_id, "wert": value, "inventur": set, "grund": reason, "bestand": after })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    Ok(after)
+}
+
+#[tauri::command]
+fn stock_moves(db: State<db::Db>, article_id: Option<String>, limit: Option<i64>) -> Res<Vec<Value>> {
+    catalog::moves(&db.conn.lock().unwrap(), article_id.as_deref(), limit.unwrap_or(50)).map_err(err)
+}
+
+#[tauri::command]
+fn beleg_peek(db: State<db::Db>) -> i64 {
+    catalog::beleg_peek(&db.conn.lock().unwrap())
+}
+
+#[tauri::command]
+fn sale_commit(db: State<db::Db>, lines: Vec<catalog::SaleLine>, total: i64, cashier: String, customer: Option<String>, data: Value) -> Res<Value> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let r = catalog::commit_sale(&tx, &lines, total, &cashier, customer.as_deref(), &data)?;
+    tx.commit().map_err(err)?;
+    Ok(r)
+}
+
+#[tauri::command]
+fn sales_list(db: State<db::Db>, limit: Option<i64>) -> Res<Vec<Value>> {
+    catalog::sales(&db.conn.lock().unwrap(), limit.unwrap_or(100)).map_err(err)
+}
+
 /// Vollbild / Kassen-Kiosk ein- oder ausschalten.
 #[tauri::command]
 fn set_fullscreen(window: tauri::WebviewWindow, on: bool) -> Res<bool> {
@@ -256,7 +340,16 @@ fn main() {
             pick_folder,
             open_folder,
             set_fullscreen,
-            set_zoom
+            set_zoom,
+            catalog_list,
+            catalog_seed,
+            article_save,
+            article_delete,
+            stock_book,
+            stock_moves,
+            beleg_peek,
+            sale_commit,
+            sales_list
         ])
         .run(tauri::generate_context!())
         .expect("Kontor konnte nicht gestartet werden");

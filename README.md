@@ -9,7 +9,7 @@ Kontor ist ein installiertes Programm (kein Browser, kein Web-Server, läuft ohn
 
 1. Auf GitHub **Actions** → Workflow **„Desktop · Windows-Installer“** → letzten erfolgreichen Lauf öffnen.
 2. Unten unter **Artifacts** `Kontor-Windows-Installer` herunterladen und entpacken.
-3. `Kontor_0.3.0_x64-setup.exe` doppelklicken → Kontor erscheint im Startmenü und öffnet sich maximiert.
+3. `Kontor_0.4.0_x64-setup.exe` doppelklicken → Kontor erscheint im Startmenü und öffnet sich maximiert.
    (Alternativ für Firmen-Verteilung: die `.msi`-Datei.)
 
 Hinweise:
@@ -29,11 +29,14 @@ npm run build    # baut den Installer lokal (unter Windows)
 Voraussetzungen zum Selberbauen: Node.js 22, Rust (stable), unter Windows zusätzlich die
 „Microsoft C++ Build Tools“. Nur zum Benutzen ist nichts davon nötig – nur der Installer.
 
-Stand 0.3.0:
-- **Echt:** lokale Datenbank (SQLite im Benutzer-Datenordner), Einstellungen (Firma, Kasse, Darstellung,
-  Anzeigegröße), Datensicherung (manuell + automatisch täglich, Prüfsumme, Integritätsprüfung, geführte
-  Wiederherstellung mit Sicherheitskopie und PIN-Freigabe), Protokoll aller Aktionen.
-- **Noch Testdaten:** Artikel, Bestand, Verkäufe, Kunden, Dashboard-Zahlen. Updates, RKSV und Hardware folgen.
+Stand 0.4.0:
+- **Echt:** lokale Datenbank, Einstellungen, Anzeigegröße, Datensicherung mit Wiederherstellung, Protokoll;
+  **Artikel** (anlegen/bearbeiten, Varianten aus Farben × Größen, automatische EAN, eigene Felder,
+  Kassen-Pflichtfelder), **Bestand** (Matrix je Artikel, Zugang/Abgang/Inventur mit Grund, Bewegungsjournal),
+  **Kasse** verkauft aus der Datenbank (Belegnummer, Beleg gespeichert, Bestand wird abgebucht), **Belegliste**
+  mit Bonansicht (Kasse → Mehr → Belege).
+- **Noch Testdaten / Vorschau:** Kunden, Dashboard-Zahlen, KI, andere Filialen. Echte Updates, RKSV-Signatur
+  und Hardware (Drucker, Terminal) folgen.
 
 Datenbank: `%APPDATA%\at.kontor.desktop\kontor.db` · Sicherungen standardmäßig: `Dokumente\Kontor-Sicherungen`.
 Updates per neuem Installer behalten Datenbank und Einstellungen.

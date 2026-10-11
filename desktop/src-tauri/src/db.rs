@@ -38,6 +38,61 @@ const MIGRATIONS: &[&str] = &[
         note   TEXT
     );
     "#,
+    // 2 · Artikel, Varianten, Bestand, Belege
+    r#"
+    CREATE TABLE articles (
+        id          TEXT PRIMARY KEY,
+        name        TEXT NOT NULL,
+        brand       TEXT NOT NULL DEFAULT '',
+        category    TEXT NOT NULL,
+        glyph       TEXT NOT NULL DEFAULT 'shirt',
+        price       INTEGER NOT NULL,
+        sale_price  INTEGER,
+        vat         INTEGER NOT NULL DEFAULT 20,
+        tag         TEXT,
+        popularity  INTEGER NOT NULL DEFAULT 0,
+        colors      TEXT NOT NULL DEFAULT '[]',
+        sizes       TEXT NOT NULL DEFAULT '[]',
+        fields      TEXT NOT NULL DEFAULT '{}',
+        prompts     TEXT NOT NULL DEFAULT 'null',
+        active      INTEGER NOT NULL DEFAULT 1,
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+    );
+    CREATE TABLE variants (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        article_id  TEXT NOT NULL REFERENCES articles(id),
+        color       TEXT NOT NULL,
+        size        TEXT NOT NULL,
+        ean         TEXT NOT NULL UNIQUE,
+        stock       INTEGER NOT NULL DEFAULT 0,
+        active      INTEGER NOT NULL DEFAULT 1,
+        UNIQUE(article_id, color, size)
+    );
+    CREATE TABLE stock_moves (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts          TEXT NOT NULL,
+        variant_id  INTEGER NOT NULL REFERENCES variants(id),
+        delta       INTEGER NOT NULL,
+        stock_after INTEGER NOT NULL,
+        reason      TEXT NOT NULL,
+        ref         TEXT,
+        user        TEXT
+    );
+    CREATE INDEX stock_moves_variant ON stock_moves(variant_id, id);
+    CREATE TABLE sales (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        beleg_no    TEXT NOT NULL UNIQUE,
+        ts          TEXT NOT NULL,
+        total       INTEGER NOT NULL,
+        cashier     TEXT,
+        customer_id TEXT,
+        data        TEXT NOT NULL
+    );
+    CREATE INDEX sales_ts ON sales(ts);
+    CREATE TABLE counters (name TEXT PRIMARY KEY, value INTEGER NOT NULL);
+    INSERT INTO counters(name, value) VALUES ('beleg', 4717);
+    "#,
 ];
 
 pub fn schema_version() -> i64 {
