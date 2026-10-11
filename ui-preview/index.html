@@ -232,7 +232,7 @@ a{color:inherit}
    ════════════════════════════════════════════════════════════════════ */
 .app{
   display:grid; grid-template-columns:var(--sb-w) minmax(0,1fr); grid-template-rows:minmax(0,1fr) 30px;
-  height:100vh; height:100dvh;
+  height:100vh; height:calc(100dvh / var(--zoom, 1));
   background:radial-gradient(1100px 520px at 0% -8%,hsl(var(--ah) 45% 50% / .07),transparent 62%),var(--frame);
   transition:grid-template-columns var(--d-3) var(--ease-out);
 }
@@ -1024,6 +1024,25 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
 .motion-demo .ball{position:absolute;top:7px;left:7px;width:24px;height:24px;border-radius:7px;background:var(--accent)}
 .motion-demo .k{font:11.5px var(--font-mono);color:var(--text-3)}
 
+/* Einstellungen */
+.set{display:grid;grid-template-columns:220px minmax(0,1fr);gap:32px;padding:28px 32px 80px;max-width:1240px;margin:0 auto}
+.set-nav{position:sticky;top:0;align-self:start;display:flex;flex-direction:column;gap:2px;padding-top:4px}
+.set-nav button{display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:13.5px;font-weight:500;text-align:left;transition:background var(--d-1),color var(--d-1)}
+.set-nav button:hover{background:var(--surface-2);color:var(--text)}
+.set-nav button .i{color:var(--text-3)}
+.set-note{margin-top:14px;padding:10px 12px;font-size:11.5px;color:var(--text-3);display:flex;gap:6px;align-items:flex-start;line-height:1.45}
+.set-sec{margin-bottom:36px;scroll-margin-top:20px}
+.set-sec>h2{font-size:17px;font-weight:620;letter-spacing:-.015em}
+.set-sec>p{font-size:13px;color:var(--text-3);margin:4px 0 14px;max-width:76ch;line-height:1.55}
+.set-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto);gap:24px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.set-row:last-child{border-bottom:0}
+.set-l{font-size:13.5px;font-weight:550}
+.set-h{font-size:12px;color:var(--text-3);margin-top:2px;line-height:1.45;max-width:60ch}
+.set-c{display:flex;align-items:center;justify-content:flex-end;min-width:220px}
+.set-c .input{width:320px;max-width:100%}
+.set-path{font-size:11.5px;color:var(--text-2);max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:left}
+@media (max-width:900px){.set{grid-template-columns:1fr;padding:18px 16px 60px}.set-nav{position:static;flex-direction:row;overflow-x:auto}.set-row{grid-template-columns:1fr}.set-c{justify-content:flex-start;min-width:0}}
+
 /* Platzhalter-Ansichten */
 .ph{height:100%;display:grid;place-items:center;padding:40px}
 .ph .empty{max-width:520px}
@@ -1243,6 +1262,7 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
       <section class="view" id="view-dashboard" aria-label="Dashboard"></section>
       <section class="view" id="view-kasse" aria-label="Kasse"></section>
       <section class="view" id="view-designsystem" aria-label="Designsystem"></section>
+      <section class="view" id="view-einstellungen" aria-label="Einstellungen"></section>
       <section class="view" id="view-ph" aria-live="polite"></section>
     </main>
   </div>
@@ -1443,7 +1463,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.2.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.3.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1565,7 +1585,7 @@ const NAV = [
   {id: 'einstellungen', label: 'Einstellungen', icon: 'sliders'},
 ];
 const TITLES = {dashboard: 'Dashboard', kasse: 'Kasse', artikel: 'Artikel', bestand: 'Bestand', einkauf: 'Einkauf', kunden: 'Kunden', berichte: 'Berichte', erweiterungen: 'Erweiterungen', designsystem: 'Designsystem', einstellungen: 'Einstellungen'};
-const PH_VIEWS = ['artikel', 'bestand', 'einkauf', 'kunden', 'berichte', 'erweiterungen', 'einstellungen'];
+const PH_VIEWS = ['artikel', 'bestand', 'einkauf', 'kunden', 'berichte', 'erweiterungen'];
 
 function renderNav() {
   $('#nav').innerHTML = NAV.map(n => n.g ? `<div class="nav-group">${n.g}</div>` :
@@ -1598,6 +1618,7 @@ function go(view) {
   if (view === 'dashboard') renderDashboard();
   else if (view === 'kasse') renderPOS();
   else if (view === 'designsystem') renderDesign();
+  else if (view === 'einstellungen') renderSettings();
   else renderPlaceholder(view);
   const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
   $$('.nav-item').forEach(n => n.dataset.view === view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
@@ -1611,10 +1632,10 @@ function go(view) {
 function renderTopbar() {
   const L = $('#tbLeft');
   if (S.view === 'kasse') {
-    L.innerHTML = `<div class="tb-title"><h1>Kasse 1</h1><span class="tb-sub">INN-K01 · Bon ${belegNo()} · ${esc(S.user.name)}</span></div><div class="parked" id="parked"></div>`;
+    L.innerHTML = `<div class="tb-title"><h1>${esc(CFG['kasse.name'])}</h1><span class="tb-sub">${esc(CFG['kasse.id'])} · Bon ${belegNo()} · ${esc(S.user.name)}</span></div><div class="parked" id="parked"></div>`;
     renderParked();
   } else {
-    const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster'}[S.view] || 'In Vorbereitung';
+    const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster', einstellungen: DESKTOP ? 'Lokale Datenbank' : 'Vorschau'}[S.view] || 'In Vorbereitung';
     L.innerHTML = `<div class="tb-title"><h1>${TITLES[S.view]}</h1><span class="tb-sub">${esc(sub)}</span></div>`;
   }
 }
@@ -1626,7 +1647,7 @@ function renderStatus() {
     <span class="sb-sep"></span>
     <span class="sbi ${S.queue ? 'accent' : ''}">${ic('sync')}${S.queue ? `${S.queue} Beleg${S.queue > 1 ? 'e' : ''} in Warteschlange` : 'Synchron'}</span>
     <span class="sbi hide-sm">${ic('shield')}RKSV · Signatureinheit aktiv</span>
-    <button class="sbi hide-sm" id="sbBackup" data-tip="Backup-Werkzeuge · Verantwortung beim Betreiber">${ic('database')}${S.backupH ? `Backup vor ${S.backupH} h` : 'Backup gerade eben'} · NAS-01</button>
+    <button class="sbi hide-sm ${S.backupH === Infinity || S.backupH >= 48 ? 'off' : ''}" id="sbBackup" data-tip="${DESKTOP ? 'Klicken: Datensicherung öffnen' : 'Backup-Werkzeuge'}">${ic('database')}${backupLabel()}${DESKTOP ? '' : ' · NAS-01'}</button>
     <button class="sbi accent hide-sm" id="sbUpdate">${ic('download')}${S.update === 'pending' ? 'Update 1.8.0 wartet auf Freigabe' : 'Update 1.8.0 geplant · heute 20:00'}</button>
     <span class="sb-spacer"></span>
     <button class="sbi" id="sbHooks" data-tip="Ereignis-Inspektor · Hooks & Webhooks" data-tip-pos="up-left">${ic('braces')}Ereignisse <b class="num" id="sbHookCount" style="font-weight:600;color:var(--text-2)">${Hooks.count}</b></button>
@@ -2056,7 +2077,7 @@ const W = {
     sub: () => 'KONTOR-SRV01 · Ihre Infrastruktur',
     body: () => `<div class="res"><div><b>18 %</b><div class="meter neutral"><i style="width:18%"></i></div><span style="display:block;margin-top:5px">CPU</span></div><div><b>41 %</b><div class="meter neutral"><i style="width:41%"></i></div><span style="display:block;margin-top:5px">RAM</span></div><div><b>62 %</b><div class="meter neutral"><i style="width:62%"></i></div><span style="display:block;margin-top:5px">Speicher</span></div></div>
       <div style="flex:1;min-height:0;overflow:auto">
-      <div class="ops-row">${ic('database', 'i-sm')}<div class="k"><b>Backup ${S.backupH ? `vor ${S.backupH} h` : 'gerade eben'}</b>NAS-01 · verschlüsselt · Integrität geprüft</div><button class="btn btn-secondary btn-sm" data-act="backup">Jetzt sichern</button></div>
+      <div class="ops-row">${ic('database', 'i-sm')}<div class="k"><b>${esc(backupLabel())}</b>${DESKTOP ? 'Lokale Datenbank · Prüfsumme & Integrität geprüft' : 'NAS-01 · Integrität geprüft'}</div><button class="btn btn-secondary btn-sm" data-act="backup">Jetzt sichern</button></div>
       <div class="ops-row">${ic('download', 'i-sm')}<div class="k"><b>${S.update === 'pending' ? 'Update 1.8.0 wartet' : 'Update 1.8.0 geplant'}</b>${S.update === 'pending' ? 'Stable · signiert · Freigabe nötig' : 'Installation heute 20:00'}</div><button class="btn ${S.update === 'pending' ? 'btn-primary' : 'btn-secondary'} btn-sm" data-act="update">${S.update === 'pending' ? 'Prüfen' : 'Details'}</button></div>
       <div class="ops-row">${ic('sparkle', 'i-sm')}<div class="k"><b>KI-Modell bereit</b>lokal · GPU 0 · keine Daten verlassen das Haus</div></div>
       </div><div class="wl-foot" style="margin-top:6px">${ic('info', 'i-xs')} Backups liegen in Ihrer Verantwortung – Kontor stellt die Werkzeuge.</div>`},
@@ -2803,7 +2824,7 @@ function openFlow() {
     <div class="m-foot"><button class="btn btn-ghost" id="flowJson">${ic('code', 'i-sm')}Als JSON</button><span class="sp"></span><button class="btn btn-primary" data-close>Fertig</button></div></div>`);
   el.addEventListener('click', e => {
     const s = e.target.closest('[data-flow]');
-    if (s) { const k = s.dataset.flow; f[k] = !f[k]; s.setAttribute('aria-checked', f[k]); Hooks.emit('config.flow.changed', {ablauf: 'Standard', schritt: k, aktiv: f[k]}); toast(f[k] ? 'Schritt aktiviert' : 'Schritt deaktiviert', {t2: 'Sofort wirksam an dieser Kasse · versioniert', icon: 'flow'}); }
+    if (s) { const k = s.dataset.flow; f[k] = !f[k]; s.setAttribute('aria-checked', f[k]); saveSettings({[{clubRule: 'kasse.vereinsregel', prompts: 'kasse.pflichtfelder', approval: 'kasse.freigabe'}[k]]: f[k]}, true); Hooks.emit('config.flow.changed', {ablauf: 'Standard', schritt: k, aktiv: f[k]}); toast(f[k] ? 'Schritt aktiviert' : 'Schritt deaktiviert', {t2: 'Sofort wirksam an dieser Kasse · versioniert', icon: 'flow'}); }
     if (e.target.closest('#flowJson')) toast('kontor.kassenablauf/v1', {t2: JSON.stringify({kundeRegelVerein: f.clubRule, pflichtfelderSki: f.prompts, rabattFreigabeAb: f.approval ? f.approvalPct : null}), icon: 'code', dur: 6000});
   });
 }
@@ -3050,11 +3071,11 @@ function receiptHTML(rec, tpl) {
     return `<div class="r"><span>${l.qty} × ${esc(l.name)}</span><span>${money(g)}</span></div>${vtxt ? `<div class="sm">&nbsp;&nbsp;${esc(vtxt)}${l.vat === 0 ? ' · 0 %' : ''}</div>` : ''}${l.vals ? `<div class="sm">&nbsp;&nbsp;${Object.entries(l.vals).filter(([, v]) => v).map(([k, v]) => `${k === 'z' ? 'Z-Wert' : 'SN'} ${esc(v)}`).join(' · ')}</div>` : ''}${dd ? `<div class="r sm"><span>&nbsp;&nbsp;Rabatt ${l.disc.pct} % (${esc(l.disc.reason || '')})</span><span>−${money(dd)}</span></div>` : ''}`;
   }).join('');
   const lineDisc = rec.lines.reduce((s, l) => s + (l.disc ? r2(r2(l.unit * l.qty) * l.disc.pct / 100) : 0), 0), billDisc = r2(rec.t.disc - lineDisc);
-  const head = tpl === 'modern' ? `<div class="band"></div><div class="logo"><span class="mk"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.5v15"/><path d="M18 4.5 10.5 12 18 19.5"/></svg></span><b>Alpenlicht Sport</b><span class="sm">Maria-Theresien-Str. 18 · 6020 Innsbruck</span></div>`
-    : tpl === 'minimal' ? `<div class="logo"><b>ALPENLICHT</b><span class="sm">Innsbruck</span></div>`
-    : `<div class="logo"><b>ALPENLICHT</b><span>Sport &amp; Mode</span><span class="sm">Maria-Theresien-Str. 18, 6020 Innsbruck<br>UID ATU00000000 · Tel. 0512 000000</span></div>`;
+  const head = tpl === 'modern' ? `<div class="band"></div><div class="logo"><span class="mk"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.5v15"/><path d="M18 4.5 10.5 12 18 19.5"/></svg></span><b>${esc(CFG['firma.marke'])} ${esc(CFG['firma.zusatz'].split(' ')[0])}</b><span class="sm">${esc(CFG['firma.adresse'])}</span></div>`
+    : tpl === 'minimal' ? `<div class="logo"><b>${esc(CFG['firma.marke'].toUpperCase())}</b><span class="sm">${esc(CFG['firma.adresse'].split(',').pop().trim())}</span></div>`
+    : `<div class="logo"><b>${esc(CFG['firma.marke'].toUpperCase())}</b><span>${esc(CFG['firma.zusatz'])}</span><span class="sm">${esc(CFG['firma.adresse'])}<br>UID ${esc(CFG['firma.uid'])} · Tel. ${esc(CFG['firma.telefon'])}</span></div>`;
   return `<div class="receipt ${tpl}">${head}<hr>
-    <div class="r"><span>Bon ${rec.no}</span><span>Kasse INN-K01</span></div><div class="r sm"><span>${d}</span><span>${esc(rec.cashier.split(' ')[0])}</span></div><hr>
+    <div class="r"><span>Bon ${rec.no}</span><span>Kasse ${esc(CFG['kasse.id'])}</span></div><div class="r sm"><span>${d}</span><span>${esc(rec.cashier.split(' ')[0])}</span></div><hr>
     ${lines}
     ${billDisc > 0 && rec.billDisc ? `<div class="r sm"><span>Bonrabatt ${rec.billDisc.pct} %${rec.billDisc.reason ? ' · ' + esc(rec.billDisc.reason) : ''}</span><span>−${money(billDisc)}</span></div>` : ''}
     <hr><div class="r tot"><span>SUMME EUR</span><span>${money(rec.t.total)}</span></div><hr>
@@ -3066,7 +3087,7 @@ function receiptHTML(rec, tpl) {
     ${rec.customer ? `<hr><div class="sm c">Kunde ${esc(rec.customer.id)} · +${rec.t.points} Gipfel-Punkte</div>` : ''}
     <div class="qrw">${pseudoQR('rksv|' + rec.no + '|' + rec.sig)}</div>
     <div class="sm c">RKSV · Signatur ES256 · Zert. 3D1F8A20<br>Sig. …${rec.sig.slice(-12)}${rec.offline ? '<br>Offline erfasst · Sync ausstehend' : ''}</div><hr>
-    <div class="c" style="font-size:${tpl === 'minimal' ? '11px' : '12px'}">Danke für Ihren Einkauf!</div><div class="sm c">Umtausch innerhalb von 30 Tagen mit Beleg.</div></div>`;
+    <div class="c" style="font-size:${tpl === 'minimal' ? '11px' : '12px'};white-space:pre-line">${esc(CFG['kasse.bonFuss'])}</div></div>`;
 }
 
 function bindPOS() {
@@ -3138,6 +3159,217 @@ function posKey(e, typing) {
   }
   if (!typing && k.length === 1 && /[\p{L}\p{N}]/u.test(k) && !e.metaKey && !e.ctrlKey && !e.altKey && k.toLowerCase() !== 'g' && Date.now() - gChord > 900) { $('#posSearch').focus(); return false; }
   return false;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   16 · EINSTELLUNGEN — gespeichert in der lokalen Datenbank (Desktop)
+   bzw. im Browser-Speicher (Vorschau). Wirken sofort.
+   ════════════════════════════════════════════════════════════════════ */
+const DEFAULTS = {
+  'firma.name': 'Alpenlicht Sport GmbH', 'firma.marke': 'Alpenlicht', 'firma.zusatz': 'Sport & Mode',
+  'firma.adresse': 'Maria-Theresien-Str. 18, 6020 Innsbruck', 'firma.uid': 'ATU00000000', 'firma.telefon': '0512 000000',
+  'kasse.id': 'INN-K01', 'kasse.name': 'Kasse 1', 'kasse.freigabe': true, 'kasse.rabattGrenze': 20,
+  'kasse.vereinsregel': true, 'kasse.pflichtfelder': true, 'kasse.bonFuss': 'Danke für Ihren Einkauf! Umtausch innerhalb von 30 Tagen mit Beleg.',
+  'anzeige.zoom': 1, 'backup.dir': '', 'backup.auto': true, 'backup.keep': 14, 'update.kanal': 'stable',
+};
+const CFG = {...DEFAULTS};
+async function loadSettings() {
+  try { Object.assign(CFG, DESKTOP ? await invoke('settings_get') : persist.get('settings', {})); } catch (e) { console.error(e); }
+  applySettings();
+}
+async function saveSettings(values, quiet) {
+  Object.assign(CFG, values);
+  try {
+    if (DESKTOP) await invoke('settings_set', {values});
+    else { const cur = persist.get('settings', {}); persist.set('settings', Object.assign(cur, values)); }
+    if (!quiet) toast('Gespeichert', {t2: DESKTOP ? 'In der lokalen Datenbank' : 'Im Browser (Vorschau)', type: 'pos', icon: 'check', dur: 1800});
+  } catch (e) { toast('Speichern fehlgeschlagen', {t2: String(e), type: 'warn'}); }
+  applySettings();
+}
+function applySettings() {
+  POS.flow.clubRule = !!CFG['kasse.vereinsregel'];
+  POS.flow.prompts = !!CFG['kasse.pflichtfelder'];
+  POS.flow.approval = !!CFG['kasse.freigabe'];
+  POS.flow.approvalPct = clamp(+CFG['kasse.rabattGrenze'] || 20, 0, 100);
+  const t = $('.brand-tenant'); if (t) t.textContent = CFG['firma.name'];
+  applyZoom(+CFG['anzeige.zoom'] || 1);
+  if (S.view) renderTopbar();
+}
+function applyZoom(f) {
+  f = clamp(Math.round(f * 100) / 100, .7, 2);
+  if (DESKTOP) invoke('set_zoom', {factor: f}).catch(() => {});
+  else { document.documentElement.style.zoom = f === 1 ? '' : f; document.documentElement.style.setProperty('--zoom', f); }
+}
+function stepZoom(dir) {
+  const steps = [.8, .9, 1, 1.1, 1.25, 1.4, 1.5, 1.75];
+  const cur = +CFG['anzeige.zoom'] || 1, i = steps.findIndex(s => s >= cur - .001);
+  const next = dir === 0 ? 1 : steps[clamp((i < 0 ? 2 : i) + dir, 0, steps.length - 1)];
+  saveSettings({'anzeige.zoom': next}, true); toast(`Anzeigegröße ${Math.round(next * 100)} %`, {icon: 'eye', dur: 1400});
+  if (S.view === 'einstellungen') $$('#zoomSeg button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.v === next));
+}
+
+/* ── Systeminfo & Datensicherung ── */
+async function refreshInfo() {
+  if (!DESKTOP) return null;
+  try {
+    const i = await invoke('app_info');
+    S.info = i; S.appVersion = i.version;
+    S.backupH = i.last_backup ? Math.max(0, Math.floor((Date.now() - new Date(i.last_backup)) / 36e5)) : Infinity;
+    renderStatus(); return i;
+  } catch (e) { console.error(e); return null; }
+}
+const backupLabel = () => S.backupH === Infinity ? 'Noch keine Sicherung' : S.backupH ? `Backup vor ${S.backupH} h` : 'Backup gerade eben';
+const fmtBytes = b => b >= 1048576 ? `${num(b / 1048576, 1)} MB` : `${num(Math.max(1, Math.round(b / 1024)))} KB`;
+const fmtTs = ts => { const d = new Date(ts); return isNaN(d) ? ts : d.toLocaleString('de-AT', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'}); };
+async function realBackup(kind = 'manuell', quiet) {
+  if (!quiet) toast('Sicherung läuft …', {t2: 'Konsistenter Stand der Datenbank', icon: 'database', dur: 1500});
+  try {
+    const e = await invoke('backup_create', {kind});
+    await refreshInfo(); refreshDashboard(['ops.system']);
+    if (S.view === 'einstellungen') renderBackups();
+    if (!quiet || kind !== 'automatisch') toast('Sicherung erstellt', {t2: `${e.file} · ${fmtBytes(e.manifest.bytes)} · geprüft`, type: 'pos', icon: 'database'});
+    return e;
+  } catch (e) { toast('Sicherung fehlgeschlagen', {t2: String(e), type: 'warn', icon: 'database', dur: 7000}); await refreshInfo(); return null; }
+}
+async function autoBackupCheck() {
+  if (!DESKTOP || !CFG['backup.auto']) return;
+  if (S.backupH === Infinity || S.backupH >= 24) { const e = await realBackup('automatisch', true); if (e) toast('Automatische Sicherung erstellt', {t2: e.file, icon: 'database', type: 'pos'}); }
+}
+
+/* ── Ansicht ── */
+const SET_SECTIONS = [['allgemein', 'Firma & Filiale', 'store'], ['kasse', 'Kasse', 'register'], ['anzeige', 'Darstellung', 'palette'], ['sicherung', 'Datensicherung', 'database'], ['updates', 'Updates', 'download'], ['system', 'System & Protokoll', 'server']];
+function field(key, label, help, type = 'text', extra = '') {
+  const v = CFG[key];
+  let ctl;
+  if (type === 'switch') ctl = `<button class="switch" role="switch" data-key="${key}" aria-checked="${!!v}" aria-label="${esc(label)}"></button>`;
+  else if (type === 'textarea') ctl = `<textarea class="input" data-key="${key}" rows="2" style="height:auto;padding:9px 12px;resize:vertical">${esc(v)}</textarea>`;
+  else ctl = `<input class="input" data-key="${key}" type="${type}" value="${esc(v)}" ${extra}>`;
+  return `<div class="set-row"><div><div class="set-l">${esc(label)}</div>${help ? `<div class="set-h">${esc(help)}</div>` : ''}</div><div class="set-c">${ctl}</div></div>`;
+}
+function renderSettings() {
+  const v = $('#view-einstellungen');
+  const zoom = +CFG['anzeige.zoom'] || 1;
+  const segRow = (lbl, help, key, opts) => `<div class="set-row"><div><div class="set-l">${lbl}</div><div class="set-h">${help}</div></div><div class="set-c"><div class="seg" data-pref="${key}">${opts.map(([val, l]) => `<button data-v="${val}" aria-pressed="${prefs[key] === val}">${l}</button>`).join('')}</div></div></div>`;
+  v.innerHTML = `<div class="set">
+    <nav class="set-nav" aria-label="Bereiche">${SET_SECTIONS.map(([id, l, i]) => `<button data-sec="${id}">${ic(i, 'i-sm')}${l}</button>`).join('')}
+      <div class="set-note">${DESKTOP ? `${ic('database', 'i-xs')}Gespeichert in der lokalen Datenbank` : `${ic('info', 'i-xs')}Vorschau im Browser – Werte nur in diesem Browser`}</div></nav>
+    <div class="set-main">
+      <section class="set-sec" id="sec-allgemein"><h2>Firma & Filiale</h2><p>Erscheint auf Belegen, in der Seitenleiste und in Exporten.</p><div class="card">
+        ${field('firma.name', 'Firmenname', 'Rechtlicher Name des Unternehmens')}
+        ${field('firma.marke', 'Markenname auf dem Bon', 'Kurzform für Bonkopf und Kundendisplay')}
+        ${field('firma.zusatz', 'Zusatz', 'z. B. „Sport & Mode“')}
+        ${field('firma.adresse', 'Adresse der Filiale', '')}
+        ${field('firma.uid', 'UID-Nummer', 'Pflichtangabe auf Belegen ab € 400')}
+        ${field('firma.telefon', 'Telefon', '')}
+      </div></section>
+      <section class="set-sec" id="sec-kasse"><h2>Kasse</h2><p>Gilt für diese Kasse. Änderungen wirken sofort und werden protokolliert.</p><div class="card">
+        ${field('kasse.name', 'Bezeichnung', 'Anzeige in der Kopfzeile')}
+        ${field('kasse.id', 'Kassen-ID (RKSV)', 'Eindeutige Kennung je Registrierkasse – wird mit der RKSV-Registrierung verbindlich')}
+        ${field('kasse.freigabe', 'Rabatte freigeben lassen', 'Rabatte über der Grenze erfordern Filialleitung (Step-up)', 'switch')}
+        ${field('kasse.rabattGrenze', 'Rabattgrenze ohne Freigabe (%)', '', 'number', 'min="0" max="100" step="1" style="max-width:120px"')}
+        ${field('kasse.vereinsregel', 'Vereinsrabatt automatisch', 'Regel greift beim Zuordnen von Vereinsmitgliedern', 'switch')}
+        ${field('kasse.pflichtfelder', 'Pflichtfelder je Warengruppe', 'z. B. Z-Wert und Seriennummer beim Skiverkauf', 'switch')}
+        ${field('kasse.bonFuss', 'Text am Bonende', '', 'textarea')}
+      </div></section>
+      <section class="set-sec" id="sec-anzeige"><h2>Darstellung</h2><p>Gilt für den angemeldeten Benutzer. Anzeigegröße auch mit <span class="kbd">Strg</span> <span class="kbd">+</span> / <span class="kbd">−</span> / <span class="kbd">0</span>.</p><div class="card">
+        <div class="set-row"><div><div class="set-l">Anzeigegröße</div><div class="set-h">Für große Bildschirme oder Touch-Kassen</div></div><div class="set-c"><div class="seg" id="zoomSeg">${[.8, .9, 1, 1.1, 1.25, 1.5].map(z => `<button data-v="${z}" aria-pressed="${Math.abs(z - zoom) < .001}">${Math.round(z * 100)} %</button>`).join('')}</div></div></div>
+        ${segRow('Modus', 'Hell, Dunkel oder wie Windows', 'theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['system', 'System']])}
+        <div class="set-row"><div><div class="set-l">Akzentfarbe</div><div class="set-h">Oder eigene Markenfarbe</div></div><div class="set-c"><div class="swatch-row">${Object.entries(ACCENTS).map(([k, a]) => `<button class="swb" data-acc="${k}" aria-pressed="${prefs.accent === k}" style="--sw:hsl(${a.h} ${a.s}% 55%)" title="${a.name}" aria-label="${a.name}"></button>`).join('')}<label class="swb custom" title="Eigene Farbe" aria-pressed="${prefs.accent === 'custom'}"><input type="color" id="setAccCustom" value="#c98a5a" aria-label="Eigene Akzentfarbe"></label></div></div></div>
+        ${segRow('Dichte', 'Touch vergrößert alle Bedienflächen', 'density', [['compact', 'Kompakt'], ['comfort', 'Komfort'], ['touch', 'Touch']])}
+        ${segRow('Ecken', '', 'radius', [['sharp', 'Präzise'], ['soft', 'Weich']])}
+        ${segRow('Bewegung', 'Animationen reduzieren', 'motion', [['full', 'Voll'], ['reduced', 'Reduziert']])}
+      </div></section>
+      <section class="set-sec" id="sec-sicherung"><h2>Datensicherung</h2><p>Die Verantwortung für regelmäßige Sicherungen liegt beim Betreiber. Kontor stellt die Werkzeuge: konsistente Sicherung im laufenden Betrieb, Prüfsumme, Integritätsprüfung und geführte Wiederherstellung.</p>
+        <div id="backupBox">${DESKTOP ? '<div class="card" style="padding:18px"><span class="thinking"><b>Lade Sicherungen …</b></span></div>' : `<div class="card"><div class="empty"><div class="empty-icon">${ic('database')}</div><h3>Nur in der Desktop-App</h3><p>In der Browser-Vorschau gibt es keine Datenbank zum Sichern.</p></div></div>`}</div></section>
+      <section class="set-sec" id="sec-updates"><h2>Updates</h2><p>Jedes Update wird erst nach Ihrer Freigabe installiert.</p><div class="card">
+        <div class="set-row"><div><div class="set-l">Installierte Version</div><div class="set-h">Kontor für Windows</div></div><div class="set-c"><b class="num">${esc(S.appVersion)}</b></div></div>
+        <div class="set-row"><div><div class="set-l">Kanal</div><div class="set-h">Beta erhält neue Funktionen früher</div></div><div class="set-c"><div class="seg" id="chanSeg"><button data-v="stable" aria-pressed="${CFG['update.kanal'] !== 'beta'}">Stable</button><button data-v="beta" aria-pressed="${CFG['update.kanal'] === 'beta'}">Beta</button></div></div></div>
+        <div class="set-row"><div><div class="set-l">Automatische Update-Suche</div><div class="set-h">Signierte Pakete, Changelog, Freigabe und Zeitfenster – folgt mit dem nächsten Ausbauschritt. Bis dahin: neuen Installer ausführen; Einstellungen und Daten bleiben erhalten.</div></div><div class="set-c"><span class="pill warn">${ic('clock')}in Arbeit</span></div></div>
+      </div></section>
+      <section class="set-sec" id="sec-system"><h2>System & Protokoll</h2><p>Jede Änderung und jede Kassenaktion wird lokal protokolliert.</p><div class="card" id="sysBox">${DESKTOP ? '<div style="padding:18px" class="thinking"><b>Lade …</b></div>' : `<div class="set-row"><div><div class="set-l">Betriebsart</div><div class="set-h">Browser-Vorschau ohne Datenbank</div></div><div class="set-c"><span class="pill">Vorschau</span></div></div>`}</div>
+        <div class="card" style="margin-top:12px"><div class="set-row" style="border-bottom:0"><div><div class="set-l">Protokoll</div><div class="set-h">Letzte 60 Einträge</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" id="auditReload">${ic('sync', 'i-sm')}Aktualisieren</button></div></div><div id="auditBox" style="max-height:420px;overflow:auto"></div></div>
+      </section>
+    </div></div>`;
+  $$('.seg', v).forEach(s => initSeg(s, b => {
+    if (s.id === 'zoomSeg') return saveSettings({'anzeige.zoom': +b.dataset.v}, true);
+    if (s.id === 'chanSeg') return saveSettings({'update.kanal': b.dataset.v});
+    if (s.dataset.pref) { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }
+  }));
+  if (DESKTOP) { renderBackups(); renderSys(); }
+  renderAudit();
+}
+async function renderSys() {
+  const i = await refreshInfo(); const box = $('#sysBox'); if (!i || !box) return;
+  const row = (l, h, val) => `<div class="set-row"><div><div class="set-l">${l}</div>${h ? `<div class="set-h">${h}</div>` : ''}</div><div class="set-c" style="min-width:0">${val}</div></div>`;
+  box.innerHTML = row('Version', '', `<b class="num">${esc(i.version)}</b>`)
+    + row('Datenbank', `Schema ${i.schema} · ${num(i.settings)} Einstellungen · ${num(i.audit_entries)} Protokolleinträge`, `<span class="mono set-path" title="${esc(i.db_path)}">${esc(i.db_path)}</span><span class="pill" style="margin-left:8px">${fmtBytes(i.db_bytes)}</span>`)
+    + row('Datenordner', '', `<button class="btn btn-secondary btn-sm" data-open="${esc(i.data_dir)}">${ic('boxes', 'i-sm')}Ordner öffnen</button>`);
+}
+async function renderBackups() {
+  const box = $('#backupBox'); if (!box) return;
+  const i = S.info || await refreshInfo(); let list = [];
+  try { list = await invoke('backup_list'); } catch (e) { console.error(e); }
+  if (!$('#backupBox')) return;
+  box.innerHTML = `<div class="card">
+    <div class="set-row"><div><div class="set-l">Zielordner</div><div class="set-h">Lokaler Pfad, Netzlaufwerk oder NAS (z. B. \\\\NAS-01\\kontor)</div></div><div class="set-c" style="min-width:0;gap:6px"><span class="mono set-path" title="${esc(i?.backup_dir || '')}"><bdi>${esc(i?.backup_dir || '')}</bdi></span><button class="btn btn-secondary btn-sm" id="bkPick">Ändern …</button><button class="btn btn-ghost btn-sm btn-icon" data-open="${esc(i?.backup_dir || '')}" aria-label="Ordner öffnen" data-tip="Ordner öffnen">${ic('boxes', 'i-sm')}</button></div></div>
+    ${field('backup.auto', 'Automatisch täglich sichern', 'Beim Start und stündlich geprüft: Sicherung, wenn die letzte älter als 24 h ist', 'switch')}
+    ${field('backup.keep', 'Automatische Sicherungen behalten', 'Ältere automatische Sicherungen werden gelöscht – manuelle nie', 'number', 'min="1" max="365" step="1" style="max-width:120px"')}
+    <div class="set-row"><div><div class="set-l">${esc(backupLabel())}</div><div class="set-h">${i?.last_backup ? 'Letzte erfolgreiche Sicherung: ' + esc(fmtTs(i.last_backup)) : 'Es wurde noch keine Sicherung erstellt'}</div></div><div class="set-c"><button class="btn btn-primary" id="bkNow">${ic('database', 'i-sm')}Jetzt sichern</button></div></div>
+  </div>
+  <div class="card" style="margin-top:12px">${list.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:18px">Sicherung</th><th>Art</th><th class="r">Größe</th><th>Status</th><th></th></tr></thead><tbody>${list.map(e => `<tr data-path="${esc(e.path)}"><td style="padding-left:18px"><div style="font-weight:550">${esc(e.manifest ? fmtTs(e.manifest.created) : e.file)}</div><div class="muted mono" style="font-size:11px">${esc(e.file)}</div></td><td>${esc(e.manifest?.kind || '–')}</td><td class="r">${e.manifest ? fmtBytes(e.manifest.bytes) : '–'}</td><td class="bk-st"><span class="pill">ungeprüft</span></td><td class="r" style="white-space:nowrap;padding-right:14px"><button class="btn btn-ghost btn-sm" data-bk="verify">Prüfen</button><button class="btn btn-secondary btn-sm" data-bk="restore">Wiederherstellen</button></td></tr>`).join('')}</tbody></table>`
+    : `<div class="empty"><div class="empty-icon">${ic('database')}</div><h3>Noch keine Sicherungen</h3><p>Erstellen Sie jetzt die erste Sicherung – sie erscheint dann hier.</p></div>`}</div>`;
+}
+async function renderAudit() {
+  const box = $('#auditBox'); if (!box) return;
+  let rows = [];
+  if (DESKTOP) { try { rows = await invoke('audit_recent', {limit: 60}); } catch (e) { console.error(e); } }
+  else rows = Hooks.log.slice(0, 60).map(e => ({ts: e.t.toISOString(), event: e.evt, payload: e.payload}));
+  if (!$('#auditBox')) return;
+  box.innerHTML = rows.length ? rows.map(r => `<div class="ev"><span class="t">${esc(fmtTs(r.ts).split(', ').pop())}</span><div><span class="n ${evClass(r.event)}">${esc(r.event)}</span><pre>${esc(JSON.stringify(r.payload).replace(/"([^"]+)":/g, '$1: '))}</pre></div></div>`).join('')
+    : '<div class="empty"><p>Noch keine Einträge.</p></div>';
+}
+async function restoreFlow(path, tr) {
+  const st = $('.bk-st', tr); st.innerHTML = '<span class="pill">prüfe …</span>';
+  const chk = await invoke('backup_verify', {path});
+  st.innerHTML = `<span class="pill ${chk.ok ? 'pos' : 'neg'}">${ic(chk.ok ? 'check' : 'alert')}${chk.ok ? 'in Ordnung' : 'fehlerhaft'}</span>`;
+  if (!chk.ok) return toast('Wiederherstellung nicht möglich', {t2: chk.message, type: 'warn', dur: 7000});
+  const el = openLayer(`<div class="modal" style="width:min(520px,100%)" role="dialog" aria-modal="true" aria-label="Wiederherstellen">
+    <div class="m-head"><div class="m-ic" style="color:var(--warn)">${ic('alert')}</div><div><h2>Sicherung wiederherstellen?</h2><p>Der aktuelle Datenstand wird durch die Sicherung ersetzt.</p></div></div>
+    <div class="m-body"><div class="rule-box">${ic('shield')}<div>Vorher wird automatisch eine <b style="color:var(--text)">Sicherheitskopie des aktuellen Stands</b> angelegt – der Schritt lässt sich damit rückgängig machen.<br><span class="muted">${esc(path)}</span></div></div></div>
+    <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="rsGo">${ic('shield', 'i-sm')}Wiederherstellen</button></div></div>`);
+  $('#rsGo', el).onclick = async () => {
+    closeLayer(el);
+    try { await stepUp({title: 'Administrator-Freigabe', text: 'Datenstand aus einer Sicherung wiederherstellen.', rule: 'Wiederherstellungen erfordern Step-up-Authentifizierung'}); } catch { return; }
+    toast('Stelle wieder her …', {icon: 'database', dur: 1500});
+    try { const r = await invoke('backup_restore', {path}); toast('Wiederherstellung abgeschlossen', {t2: 'Kontor lädt die Daten neu …', type: 'pos', icon: 'database'}); setTimeout(() => location.reload(), 1600); }
+    catch (e) { toast('Wiederherstellung fehlgeschlagen', {t2: String(e), type: 'warn', dur: 8000}); }
+  };
+}
+function bindSettings() {
+  const v = $('#view-einstellungen');
+  v.addEventListener('change', e => {
+    const k = e.target.dataset.key; if (!k) return;
+    const val = e.target.type === 'number' ? Number(e.target.value) : e.target.value;
+    if (e.target.type === 'number' && !isFinite(val)) return;
+    saveSettings({[k]: val});
+  });
+  v.addEventListener('input', e => { if (e.target.id === 'setAccCustom') { prefs.custom = hexToHS(e.target.value); prefs.accent = 'custom'; applyPrefs(); } });
+  v.addEventListener('click', async e => {
+    const t = e.target;
+    const sec = t.closest('[data-sec]'); if (sec) { $('#sec-' + sec.dataset.sec)?.scrollIntoView({behavior: reduced() ? 'auto' : 'smooth', block: 'start'}); return; }
+    const sw = t.closest('.switch[data-key]'); if (sw) { const on = sw.getAttribute('aria-checked') !== 'true'; sw.setAttribute('aria-checked', on); return saveSettings({[sw.dataset.key]: on}); }
+    const acc = t.closest('[data-acc]'); if (acc) { prefs.accent = acc.dataset.acc; applyPrefs(true); $$('[data-acc],.swb.custom', v).forEach(b => b.setAttribute('aria-pressed', b === acc)); return; }
+    const op = t.closest('[data-open]'); if (op) return invoke('open_folder', {path: op.dataset.open}).catch(err => toast('Ordner nicht verfügbar', {t2: String(err), type: 'warn'}));
+    if (t.closest('#bkNow')) return realBackup('manuell');
+    if (t.closest('#auditReload')) return renderAudit();
+    if (t.closest('#bkPick')) { const dir = await invoke('pick_folder'); if (dir) { await saveSettings({'backup.dir': dir}); await refreshInfo(); renderBackups(); } return; }
+    const bk = t.closest('[data-bk]');
+    if (bk) {
+      const tr = bk.closest('tr'), path = tr.dataset.path;
+      if (bk.dataset.bk === 'verify') { const st = $('.bk-st', tr); st.innerHTML = '<span class="pill">prüfe …</span>'; const c = await invoke('backup_verify', {path}); st.innerHTML = `<span class="pill ${c.ok ? 'pos' : 'neg'}" title="${esc(c.message)}">${ic(c.ok ? 'check' : 'alert')}${c.ok ? 'in Ordnung' : 'fehlerhaft'}</span>`; toast(c.ok ? 'Sicherung in Ordnung' : 'Sicherung fehlerhaft', {t2: c.message, type: c.ok ? 'pos' : 'warn'}); }
+      else restoreFlow(path, tr);
+    }
+  });
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -3256,6 +3488,7 @@ function openUpdate() {
           <label class="radio"><input type="radio" name="win" value="so">Sonntag 08:00–09:00<small>Filiale geschlossen</small></label>
           <label class="radio"><input type="radio" name="win" value="manuell">Manuell starten<small>durch Administrator</small></label></div></div>
       </div>
+      <div class="prompt-hint" style="padding:0 22px">${ic('info', 'i-xs')}Vorschau des Freigabe-Ablaufs – echte Update-Pakete folgen mit dem nächsten Ausbauschritt.</div>
       <div class="m-foot"><button class="btn btn-ghost" data-close>Später</button><span class="sp"></span><button class="btn btn-secondary" id="uReject">Ablehnen</button><button class="btn btn-primary" id="uApprove">${ic('shield', 'i-sm')}Freigeben</button></div>`;
     initSeg($('#uChan', box), b => { channel = b.dataset.c; render(); });
   };
@@ -3276,6 +3509,7 @@ function openUpdate() {
   if (scheduled) toast('Update ist bereits geplant', {t2: 'Sie können die Planung hier ändern', icon: 'clock'});
 }
 function backupNow() {
+  if (DESKTOP) return realBackup('manuell');
   toast('Backup läuft …', {t2: 'Konsistenter Snapshot · Datenbank & Artikelbilder → NAS-01', icon: 'database', dur: 1700});
   Hooks.emit('backup.started', {ziel: '\\\\NAS-01\\kontor-backup', art: 'manuell'});
   setTimeout(() => { S.backupH = 0; renderStatus(); refreshDashboard(['ops.system']); toast('Backup abgeschlossen', {t2: '2,4 GB · AES-256 verschlüsselt · Integrität geprüft', type: 'pos', icon: 'database'}); Hooks.emit('backup.completed', {groesse: '2,4 GB', verschluesselung: 'AES-256', integritaet: 'ok'}); }, reduced() ? 50 : 1700);
@@ -3449,7 +3683,7 @@ const PH = {
   kunden: {icon: 'users', t: 'Kunden & Bindung', d: 'Kundenkonten mit Kaufhistorie, Bonusprogramm, Einwilligungen und eigenen Feldern.', li: ['DSGVO-Einwilligungen und Auskunft auf Knopfdruck', 'Bonusstufen und Vereinskonditionen als Regeln', 'Eigene Felder wie Schuhgröße oder Skilänge – auch an der Kasse sichtbar'], a: [['Kunden an der Kasse zuordnen', 'kasse']]},
   berichte: {icon: 'chart', t: 'Berichte', d: 'Auswertungen als Tabellen und Diagramme – jede Auswertung lässt sich als Dashboard-Widget anheften.', li: ['Frei kombinierbare Kennzahlen und Dimensionen', 'Fragen in natürlicher Sprache an die lokale KI', 'Export, Abo per E-Mail, später DATEV'], a: [['KI-Frage im Dashboard stellen', 'dashboard']]},
   erweiterungen: {icon: 'puzzle', t: 'Erweiterungen', d: '4 Erweiterungen aktiv. Erweiterungen bringen eigene Entitäten, Widgets, Kassenschritte, Hooks und API-Endpunkte mit.', li: ['Werkstatt & Service 1.2 – eigene Entität „Reparaturauftrag“', 'Verleih Pro 2.0 – Partner-Erweiterung', 'Frequenzzähler · Skiservice-Hinweis (Skript)'], a: [['Ereignis-Inspektor öffnen', 'inspector']]},
-  einstellungen: {icon: 'sliders', t: 'Einstellungen', d: 'Betrieb in Ihrer Hand: Updates freigeben, Backups einrichten, Anmeldemethoden und Rechte festlegen.', li: ['Updates: Stable/Beta-Kanal, Freigabe und Zeitfenster', 'Backups: Ziele, Zeitplan, Verschlüsselung, Integritätsprüfung', 'Anmeldung: PIN, Passwort + MFA, Windows Hello, FIDO2, Entra ID, AD, OIDC, SAML'], a: [['Update prüfen', 'update'], ['Backup erstellen', 'backup']]},
+  _einstellungen: {icon: 'sliders', t: 'Einstellungen', d: 'Betrieb in Ihrer Hand: Updates freigeben, Backups einrichten, Anmeldemethoden und Rechte festlegen.', li: ['Updates: Stable/Beta-Kanal, Freigabe und Zeitfenster', 'Backups: Ziele, Zeitplan, Verschlüsselung, Integritätsprüfung', 'Anmeldung: PIN, Passwort + MFA, Windows Hello, FIDO2, Entra ID, AD, OIDC, SAML'], a: [['Update prüfen', 'update'], ['Backup erstellen', 'backup']]},
 };
 function renderPlaceholder(view) {
   const p = PH[view];
@@ -3474,7 +3708,8 @@ function toggleFullscreen() {
 if (DESKTOP) {
   document.addEventListener('keydown', e => {
     const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
-    if (k === 'f5' || (mod && ['r', 'p', 'f', 'g', 'j', 'u', '+', '-', '=', '0'].includes(k))) { if (!(mod && ['k'].includes(k))) e.preventDefault(); }
+    if (mod && ['+', '=', '-', '0'].includes(k)) { e.preventDefault(); e.stopPropagation(); return stepZoom(k === '0' ? 0 : k === '-' ? -1 : 1); }
+    if (k === 'f5' || (mod && ['r', 'p', 'f', 'g', 'j', 'u'].includes(k))) e.preventDefault();
     if (k === 'f11') { e.preventDefault(); toggleFullscreen(); }
   }, true);
   document.addEventListener('contextmenu', e => { if (!isTyping(e.target)) e.preventDefault(); });
@@ -3517,20 +3752,22 @@ function bindShell() {
   $('#tbLeft').addEventListener('click', e => { const p = e.target.closest('[data-park]'); p && resume(p.dataset.park); });
   $('#statusbar').addEventListener('click', e => {
     const id = e.target.closest('[id]')?.id;
-    ({sbConn: () => setOnline(!S.online), sbBackup: backupNow, sbUpdate: openUpdate, sbHooks: toggleInspector})[id]?.();
+    ({sbConn: () => setOnline(!S.online), sbBackup: () => DESKTOP ? (go('einstellungen'), setTimeout(() => $('#sec-sicherung')?.scrollIntoView({block: 'start'}), 120)) : backupNow(), sbUpdate: openUpdate, sbHooks: toggleInspector})[id]?.();
   });
   $('#views').addEventListener('mousedown', e => { if (matchMedia('(max-width: 900px)').matches && !e.target.closest('.sidebar')) $('#app').classList.remove('sb-open'); });
   addEventListener('hashchange', () => go(location.hash.slice(1)));
   setInterval(() => { const c = $('#sbClock'); if (c) c.textContent = clock(); const l = $('#lockTime'); if (l) l.textContent = clock(); }, 1000);
 }
 
-function init() {
+async function init() {
   applyPrefs();
+  await loadSettings();
+  if (DESKTOP) { await refreshInfo(); Hooks.on('*', (p, e) => { if (!e.evt.startsWith('config.settings')) invoke('audit_append', {event: e.evt, payload: e.payload ?? {}}).catch(() => {}); }); }
   $('#palKbd').innerHTML = `<span class="kbd">${MOD}</span><span class="kbd">K</span>`;
   renderNav(); renderMe(); renderStore(); renderStatus();
-  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder();
+  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings();
   go(location.hash.slice(1) || 'dashboard');
-  if (DESKTOP) invoke('app_info').then(i => { S.appVersion = i.version; S.dataDir = i.data_dir; renderStatus(); Hooks.emit('desktop.ready', {version: i.version, os: i.os, daten: i.data_dir}); }).catch(() => {});
+  if (DESKTOP) { Hooks.emit('desktop.ready', {version: S.appVersion, datenbank: S.info?.db_path}); setTimeout(autoBackupCheck, 4000); setInterval(autoBackupCheck, 36e5); }
   Hooks.emit('system.ready', {version: S.appVersion, kanal: 'stable', server: 'KONTOR-SRV01', modus: DESKTOP ? 'desktop' : 'vorschau'});
 }
 init();
