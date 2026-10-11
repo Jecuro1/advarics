@@ -4,10 +4,16 @@
 
 mod backup;
 mod catalog;
+mod closing;
 mod customers;
 mod db;
+mod printer;
+mod purchasing;
+mod rksv;
 mod sales;
 mod updates;
+mod users;
+mod vouchers;
 
 use serde::Serialize;
 use serde_json::{json, Map, Value};
@@ -240,6 +246,7 @@ fn catalog_seed(db: State<db::Db>, articles: Vec<catalog::Article>) -> Res<usize
         }
     }
     db::audit_append(&tx, "catalog.seeded", &json!({ "artikel": articles.len() })).map_err(err)?;
+    purchasing::supplier_seed(&tx)?;
     tx.commit().map_err(err)?;
     Ok(articles.len())
 }
@@ -369,6 +376,232 @@ fn customer_points(db: State<db::Db>, id: String, delta: i64, reason: String, us
     Ok(balance)
 }
 
+/* ── Benutzer & Anmeldung ── */
+
+#[tauri::command]
+fn users_list(db: State<db::Db>) -> Res<Vec<users::User>> {
+    users::list(&db.conn.lock().unwrap()).map_err(err)
+}
+
+#[tauri::command]
+fn user_verify(db: State<db::Db>, id: String, pin: String, purpose: Option<String>) -> Res<users::User> {
+    let c = db.conn.lock().unwrap();
+    let r = users::verify(&c, &id, &pin);
+    let _ = db::audit_append(&c, if r.is_ok() { "auth.pin.ok" } else { "auth.pin.failed" }, &json!({ "benutzer": id, "zweck": purpose }));
+    let u = r?;
+    if purpose.as_deref() == Some("freigabe") && !users::can_approve(&u.role) {
+        return Err(format!("{} darf keine Freigaben erteilen", u.name));
+    }
+    Ok(u)
+}
+
+#[tauri::command]
+fn user_save(db: State<db::Db>, user: users::User, pin: Option<String>, by: Option<String>) -> Res<Vec<users::User>> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let id = users::save(&tx, &user, pin.as_deref().filter(|p| !p.is_empty()))?;
+    db::audit_append(&tx, "user.saved", &json!({ "benutzer": id, "rolle": user.role, "pin_geaendert": pin.as_deref().map(|p| !p.is_empty()).unwrap_or(false), "durch": by })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    users::list(&c).map_err(err)
+}
+
+#[tauri::command]
+fn user_delete(db: State<db::Db>, id: String, by: Option<String>) -> Res<Vec<users::User>> {
+    let c = db.conn.lock().unwrap();
+    users::deactivate(&c, &id)?;
+    db::audit_append(&c, "user.deactivated", &json!({ "benutzer": id, "durch": by })).map_err(err)?;
+    users::list(&c).map_err(err)
+}
+
+/* ── Gutscheine ── */
+
+#[tauri::command]
+fn voucher_get(db: State<db::Db>, code: String) -> Res<Value> {
+    vouchers::get(&db.conn.lock().unwrap(), &code)
+}
+
+#[tauri::command]
+fn voucher_list(db: State<db::Db>) -> Res<Vec<Value>> {
+    vouchers::list(&db.conn.lock().unwrap(), 500).map_err(err)
+}
+
+/* ── Kassenbuch & Tagesabschluss ── */
+
+#[tauri::command]
+fn cash_status(db: State<db::Db>) -> Res<Value> {
+    closing::summary(&db.conn.lock().unwrap())
+}
+
+#[tauri::command]
+fn cash_move(db: State<db::Db>, kind: String, amount: i64, reason: String, user: Option<String>, approved_by: Option<String>) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    closing::cash_move(&c, &kind, amount, &reason, user.as_deref())?;
+    db::audit_append(&c, "cash.moved", &json!({ "art": kind, "betrag": amount, "grund": reason, "benutzer": user, "freigabe": approved_by })).map_err(err)?;
+    closing::summary(&c)
+}
+
+#[tauri::command]
+fn closing_create(db: State<db::Db>, counted: i64, note: String, user: Option<String>) -> Res<Value> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let z = closing::close(&tx, counted, &note, user.as_deref())?;
+    db::audit_append(&tx, "cash.closing", &json!({ "nr": z["no"], "umsatz": z["revenue"], "differenz": z["diff"], "benutzer": user })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    Ok(z)
+}
+
+#[tauri::command]
+fn closings_list(db: State<db::Db>) -> Res<Vec<Value>> {
+    closing::list(&db.conn.lock().unwrap(), 200).map_err(err)
+}
+
+/* ── RKSV ── */
+
+#[tauri::command]
+fn rksv_status(db: State<db::Db>) -> Res<Value> {
+    rksv::status(&db.conn.lock().unwrap())
+}
+
+#[tauri::command]
+fn rksv_init(db: State<db::Db>, kassen_id: String, user: String) -> Res<Value> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let r = rksv::init(&tx, &kassen_id, &user)?;
+    db::setting_set(&tx, "kasse.id", &json!(kassen_id.trim())).map_err(err)?;
+    db::audit_append(&tx, "rksv.started", &json!({ "kasse": kassen_id, "startbeleg": r["no"], "modus": "test" })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    Ok(r)
+}
+
+#[tauri::command]
+fn rksv_null(db: State<db::Db>, label: String, user: String) -> Res<Value> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let r = rksv::null_receipt(&tx, &label, &user)?;
+    db::audit_append(&tx, "rksv.nullbeleg", &json!({ "beleg": r["no"], "art": label })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    Ok(r)
+}
+
+#[tauri::command]
+async fn dep_export(app: AppHandle) -> Res<Option<String>> {
+    let data = {
+        let db = app.state::<db::Db>();
+        let c = db.conn.lock().unwrap();
+        rksv::dep_export(&c)?
+    };
+    let name = format!("DEP-Export_{}.json", chrono::Local::now().format("%Y-%m-%d"));
+    let Some(path) = app.dialog().file().set_title("DEP-Export speichern").set_file_name(&name).add_filter("JSON", &["json"]).blocking_save_file() else { return Ok(None) };
+    let p = path.into_path().map_err(err)?;
+    std::fs::write(&p, serde_json::to_string_pretty(&data).map_err(err)?).map_err(err)?;
+    let db = app.state::<db::Db>();
+    let _ = db::audit_append(&db.conn.lock().unwrap(), "rksv.dep.exported", &json!({ "datei": p.display().to_string() }));
+    Ok(Some(p.display().to_string()))
+}
+
+/// QR-Code als SVG (Belege, Bildschirm)
+#[tauri::command]
+fn qr_svg(text: String) -> Res<String> {
+    use qrcode::{render::svg, EcLevel, QrCode};
+    let code = QrCode::with_error_correction_level(text.as_bytes(), EcLevel::M).map_err(err)?;
+    Ok(code.render::<svg::Color>().quiet_zone(true).min_dimensions(160, 160).dark_color(svg::Color("#141414")).light_color(svg::Color("#ffffff")).build())
+}
+
+/// Text in eine vom Benutzer gewählte Datei schreiben (CSV-Export u. Ä.)
+#[tauri::command]
+async fn save_text(app: AppHandle, name: String, content: String, title: Option<String>) -> Res<Option<String>> {
+    let ext = name.rsplit('.').next().unwrap_or("txt").to_string();
+    let Some(path) = app.dialog().file().set_title(title.unwrap_or_else(|| "Speichern".into())).set_file_name(&name).add_filter(ext.to_uppercase(), &[ext.as_str()]).blocking_save_file() else { return Ok(None) };
+    let p = path.into_path().map_err(err)?;
+    // BOM, damit Excel Umlaute in CSV richtig liest
+    let body = if ext == "csv" { format!("\u{feff}{content}") } else { content };
+    std::fs::write(&p, body).map_err(err)?;
+    Ok(Some(p.display().to_string()))
+}
+
+/* ── Bondrucker & Kassenlade ── */
+
+fn printer_target(c: &rusqlite::Connection) -> printer::Target {
+    let g = |k: &str| db::setting_get(c, k);
+    let kind = g("drucker.art").and_then(|v| v.as_str().map(str::to_string)).unwrap_or_else(|| "aus".into());
+    let addr = if kind == "windows" { g("drucker.name") } else { g("drucker.adresse") }.and_then(|v| v.as_str().map(str::to_string)).unwrap_or_default();
+    let width = g("drucker.breite").and_then(|v| v.as_u64()).unwrap_or(48) as usize;
+    printer::Target { kind, addr, width }
+}
+
+#[tauri::command]
+async fn printer_print(app: AppHandle, ops: Vec<printer::Op>, purpose: Option<String>) -> Res<()> {
+    let t = { printer_target(&app.state::<db::Db>().conn.lock().unwrap()) };
+    let bytes = printer::encode(&ops, t.width);
+    let r = printer::send(&t, &bytes);
+    let db = app.state::<db::Db>();
+    let _ = db::audit_append(&db.conn.lock().unwrap(), if r.is_ok() { "device.printer.printed" } else { "device.printer.failed" }, &json!({ "zweck": purpose, "fehler": r.as_ref().err() }));
+    r
+}
+
+#[tauri::command]
+fn printer_list() -> Vec<String> {
+    printer::list_windows()
+}
+
+/* ── Einkauf ── */
+
+#[tauri::command]
+fn suppliers_list(db: State<db::Db>) -> Res<Vec<purchasing::Supplier>> {
+    purchasing::suppliers(&db.conn.lock().unwrap()).map_err(err)
+}
+
+#[tauri::command]
+fn supplier_save(db: State<db::Db>, supplier: purchasing::Supplier) -> Res<Vec<purchasing::Supplier>> {
+    let c = db.conn.lock().unwrap();
+    let id = purchasing::supplier_save(&c, &supplier)?;
+    db::audit_append(&c, "purchasing.supplier.saved", &json!({ "lieferant": id })).map_err(err)?;
+    purchasing::suppliers(&c).map_err(err)
+}
+
+#[tauri::command]
+fn po_list(db: State<db::Db>) -> Res<Vec<Value>> {
+    purchasing::po_list(&db.conn.lock().unwrap()).map_err(err)
+}
+
+#[tauri::command]
+fn po_lines(db: State<db::Db>, id: i64) -> Res<Vec<Value>> {
+    purchasing::po_lines(&db.conn.lock().unwrap(), id).map_err(err)
+}
+
+#[tauri::command]
+fn po_save(db: State<db::Db>, id: Option<i64>, supplier: String, note: String, lines: Vec<purchasing::PoLineIn>, user: String) -> Res<i64> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let id = purchasing::po_save(&tx, id, &supplier, &note, &lines, &user)?;
+    db::audit_append(&tx, "purchasing.order.saved", &json!({ "bestellung": id, "positionen": lines.len() })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    Ok(id)
+}
+
+#[tauri::command]
+fn po_status(db: State<db::Db>, id: i64, status: String, user: Option<String>) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    purchasing::po_status(&c, id, &status)?;
+    db::audit_append(&c, "purchasing.order.status", &json!({ "bestellung": id, "status": status, "benutzer": user })).map_err(err)?;
+    Ok(())
+}
+
+#[tauri::command]
+fn po_receive(db: State<db::Db>, id: i64, items: Vec<purchasing::Receive>, user: String) -> Res<Vec<Value>> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let r = purchasing::po_receive(&tx, id, &items, &user)?;
+    db::audit_append(&tx, "purchasing.goods.received", &json!({ "bestellung": id, "positionen": r.len(), "benutzer": user })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    Ok(r)
+}
+
+#[tauri::command]
+fn po_suggest(db: State<db::Db>) -> Res<Vec<Value>> {
+    purchasing::suggest(&db.conn.lock().unwrap())
+}
+
 /// Vollbild / Kassen-Kiosk ein- oder ausschalten.
 #[tauri::command]
 fn set_fullscreen(window: tauri::WebviewWindow, on: bool) -> Res<bool> {
@@ -402,6 +635,10 @@ fn main() {
             let path = dir.join("kontor.db");
             let conn = db::open(&path).map_err(|e| format!("Datenbank konnte nicht geöffnet werden: {e}"))?;
             let _ = db::audit_append(&conn, "system.started", &json!({ "version": app.package_info().version.to_string() }));
+            users::seed(&conn).map_err(|e| format!("Benutzer: {e}"))?;
+            if db::count(&conn, "articles") > 0 {
+                purchasing::supplier_seed(&conn).map_err(|e| format!("Lieferanten: {e}"))?;
+            }
             app.manage(db::Db { conn: Mutex::new(conn), path });
             // Nur Entwicklungs-Builds: automatisierte Oberflächentests (Skript wird nach dem Start im Fenster ausgeführt).
             #[cfg(debug_assertions)]
@@ -448,6 +685,32 @@ fn main() {
             customer_delete,
             customer_detail,
             customer_points,
+            users_list,
+            user_verify,
+            user_save,
+            user_delete,
+            voucher_get,
+            voucher_list,
+            cash_status,
+            cash_move,
+            closing_create,
+            closings_list,
+            rksv_status,
+            rksv_init,
+            rksv_null,
+            dep_export,
+            qr_svg,
+            save_text,
+            printer_print,
+            printer_list,
+            suppliers_list,
+            supplier_save,
+            po_list,
+            po_lines,
+            po_save,
+            po_status,
+            po_receive,
+            po_suggest,
             updates::update_check,
             updates::update_install
         ])

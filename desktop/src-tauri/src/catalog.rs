@@ -52,6 +52,16 @@ pub struct Article {
     pub active: bool,
     #[serde(default)]
     pub variants: Vec<Variant>,
+    /// Einkaufspreis netto in Cent
+    #[serde(default)]
+    pub cost: Option<i64>,
+    #[serde(default)]
+    pub supplier_id: Option<String>,
+    #[serde(default = "two")]
+    pub min_stock: i64,
+}
+fn two() -> i64 {
+    2
 }
 
 pub fn list(c: &Connection) -> rusqlite::Result<Vec<Article>> {
@@ -67,7 +77,7 @@ pub fn list(c: &Connection) -> rusqlite::Result<Vec<Article>> {
         }
     }
     let mut st = c.prepare(
-        "SELECT id, name, brand, category, glyph, price, sale_price, vat, tag, popularity, colors, sizes, fields, prompts
+        "SELECT id, name, brand, category, glyph, price, sale_price, vat, tag, popularity, colors, sizes, fields, prompts, cost, supplier_id, min_stock
          FROM articles WHERE active = 1 ORDER BY popularity DESC, name",
     )?;
     let rows = st.query_map([], |r| {
@@ -89,6 +99,9 @@ pub fn list(c: &Connection) -> rusqlite::Result<Vec<Article>> {
             prompts: js(13)?,
             active: true,
             variants: vec![],
+            cost: r.get(14)?,
+            supplier_id: r.get(15)?,
+            min_stock: r.get(16)?,
         })
     })?;
     let mut out = vec![];
@@ -129,16 +142,18 @@ pub fn save(tx: &Transaction, a: &Article) -> Result<(), String> {
     validate(a)?;
     let now = db::now();
     tx.execute(
-        "INSERT INTO articles(id, name, brand, category, glyph, price, sale_price, vat, tag, popularity, colors, sizes, fields, prompts, active, created_at, updated_at)
-         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,1,?15,?15)
+        "INSERT INTO articles(id, name, brand, category, glyph, price, sale_price, vat, tag, popularity, colors, sizes, fields, prompts, active, created_at, updated_at, cost, supplier_id, min_stock)
+         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,1,?15,?15,?16,?17,?18)
          ON CONFLICT(id) DO UPDATE SET name=excluded.name, brand=excluded.brand, category=excluded.category, glyph=excluded.glyph,
            price=excluded.price, sale_price=excluded.sale_price, vat=excluded.vat, tag=excluded.tag, colors=excluded.colors,
-           sizes=excluded.sizes, fields=excluded.fields, prompts=excluded.prompts, active=1, updated_at=excluded.updated_at",
+           sizes=excluded.sizes, fields=excluded.fields, prompts=excluded.prompts, active=1, updated_at=excluded.updated_at,
+           cost=excluded.cost, supplier_id=excluded.supplier_id, min_stock=excluded.min_stock",
         params![
             a.id.trim(), a.name.trim(), a.brand.trim(), a.category, if a.glyph.is_empty() { "shirt" } else { &a.glyph },
             a.price, a.sale_price, a.vat, a.tag, a.popularity,
             serde_json::to_string(&a.colors).unwrap(), serde_json::to_string(&a.sizes).unwrap(),
-            if a.fields.is_null() { "{}".to_string() } else { a.fields.to_string() }, a.prompts.to_string(), now
+            if a.fields.is_null() { "{}".to_string() } else { a.fields.to_string() }, a.prompts.to_string(), now,
+            a.cost.filter(|c| *c >= 0), a.supplier_id.as_deref().filter(|s| !s.is_empty()), a.min_stock.clamp(0, 9999)
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -215,17 +230,47 @@ pub struct SaleLine {
     pub qty: i64,
 }
 
-/// Verkauf festschreiben: Belegnummer vergeben, Beleg speichern, Bestand abbuchen – alles oder nichts.
+/// Verkauf festschreiben: Belegnummer, Gutscheine, Beleg, RKSV-Signatur, Bestand, Punkte – alles oder nichts.
 pub fn commit_sale(tx: &Transaction, lines: &[SaleLine], total: i64, cashier: &str, customer: Option<&str>, data: &Value) -> Result<Value, String> {
     let n: i64 = tx
         .query_row("UPDATE counters SET value = value + 1 WHERE name = 'beleg' RETURNING value", [], |r| r.get(0))
         .map_err(|e| e.to_string())?;
     let no = format_beleg(n);
+    let ts = chrono::Local::now();
     let mut data = data.clone();
     data["no"] = json!(no);
+    let years = db::setting_get(tx, "gutschein.jahre").and_then(|v| v.as_i64()).unwrap_or(3);
+
+    // Gutscheine ausgeben (Codes vergibt die Datenbank)
+    let mut issued = vec![];
+    if let Some(ls) = data["lines"].as_array_mut() {
+        for l in ls.iter_mut().filter(|l| l["voucher"].as_bool().unwrap_or(false)) {
+            let amount = (l["unit"].as_f64().unwrap_or(0.0) * 100.0).round() as i64;
+            let mut codes = vec![];
+            for _ in 0..l["qty"].as_i64().unwrap_or(1).max(1) {
+                codes.push(crate::vouchers::issue(tx, amount, &no, customer, years, "Verkauf", Some(cashier))?);
+            }
+            l["meta"] = json!(format!("Code {}", codes.join(", ")));
+            issued.extend(codes.iter().cloned());
+            l["codes"] = json!(codes);
+        }
+    }
+    // Gutscheine einlösen
+    for p in data["parts"].as_array().cloned().unwrap_or_default() {
+        if p["m"] == "gutschein" {
+            let code = p["code"].as_str().ok_or("Gutscheincode fehlt")?;
+            let amount = (p["amount"].as_f64().unwrap_or(0.0) * 100.0).round() as i64;
+            crate::vouchers::redeem(tx, code, amount, &no, Some(cashier))?;
+        }
+    }
+    // RKSV
+    let signed = crate::rksv::sign(tx, &no, &ts, &data, "beleg")?;
+    if let Some(s) = &signed {
+        data["rksv"] = json!({ "qr": s.qr, "test": true });
+    }
     tx.execute(
-        "INSERT INTO sales(beleg_no, ts, total, cashier, customer_id, data) VALUES (?1,?2,?3,?4,?5,?6)",
-        params![no, db::now(), total, cashier, customer, data.to_string()],
+        "INSERT INTO sales(beleg_no, ts, total, cashier, customer_id, data, rksv) VALUES (?1,?2,?3,?4,?5,?6,?7)",
+        params![no, ts.to_rfc3339_opts(chrono::SecondsFormat::Secs, false), total, cashier, customer, data.to_string(), signed.as_ref().map(|s| s.qr.clone())],
     )
     .map_err(|e| e.to_string())?;
     let mut stocks = vec![];
@@ -237,17 +282,19 @@ pub fn commit_sale(tx: &Transaction, lines: &[SaleLine], total: i64, cashier: &s
             }
         }
     }
-    // Bonuspunkte: 1 Punkt je volle 10 €
+    // Bonuspunkte: 1 Punkt je volle 10 € (Gutscheinverkauf zählt nicht)
     let mut points = Value::Null;
     if let Some(cid) = customer {
         let exists: bool = tx.query_row("SELECT 1 FROM customers WHERE id = ?1", [cid], |_| Ok(true)).optional().map_err(|e| e.to_string())?.unwrap_or(false);
         if exists {
-            let earned = if total > 0 { total / crate::customers::CENTS_PER_POINT } else { 0 };
+            let zero = (data["t"]["zero"].as_f64().unwrap_or(0.0) * 100.0).round() as i64;
+            let base = total - zero;
+            let earned = if base > 0 { base / crate::customers::CENTS_PER_POINT } else { 0 };
             let (delta, balance) = crate::customers::book_points(tx, cid, earned, "Einkauf", Some(&no), Some(cashier))?;
             points = json!({ "earned": delta, "balance": balance });
         }
     }
-    Ok(json!({ "no": no, "number": n, "stocks": stocks, "points": points }))
+    Ok(json!({ "no": no, "number": n, "stocks": stocks, "points": points, "vouchers": issued, "data": data }))
 }
 
 pub fn sale_row(r: &rusqlite::Row) -> rusqlite::Result<Value> {

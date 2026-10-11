@@ -201,6 +201,37 @@ pub fn commit_return(tx: &Transaction, orig_no: &str, lines: &[ReturnLine], stor
     let zero = rates.iter().find(|(r, _)| *r == 0).map(|(_, g)| -eur(*g)).unwrap_or(0.0);
     let m_id = method["m"].as_str().unwrap_or("bar");
     let m_label = method["label"].as_str().unwrap_or("Bar");
+    let ts = chrono::Local::now();
+
+    // Verkaufte Gutscheine zurücknehmen (nur unbenutzte)
+    for l in &out_lines {
+        if let Some(codes) = l["codes"].as_array() {
+            let mut left = l["qty"].as_i64().unwrap_or(0);
+            for code in codes.iter().filter_map(|c| c.as_str()) {
+                if left == 0 {
+                    break;
+                }
+                let v = crate::vouchers::get(tx, code)?;
+                if v["status"] == "storniert" {
+                    continue;
+                }
+                crate::vouchers::void(tx, code, &no, Some(cashier))?;
+                left -= 1;
+            }
+            if left > 0 {
+                return Err("Gutschein bereits zurückgenommen".into());
+            }
+        }
+    }
+    // Erstattung als neuer Gutschein
+    let mut refund_ref = if m_id == "bar" { "Auszahlung Lade 1".to_string() } else { "Erstattung".to_string() };
+    let mut refund_code = Value::Null;
+    if m_id == "gutschein" {
+        let years = db::setting_get(tx, "gutschein.jahre").and_then(|v| v.as_i64()).unwrap_or(3);
+        let code = crate::vouchers::issue(tx, refund, &no, o.customer.as_deref(), years, "Erstattung", Some(cashier))?;
+        refund_ref = format!("neuer Gutschein {code}");
+        refund_code = json!(code);
+    }
 
     // Bestand zurückbuchen
     let mut stocks = vec![];
@@ -245,15 +276,20 @@ pub fn commit_return(tx: &Transaction, orig_no: &str, lines: &[ReturnLine], stor
     }
 
     let data = json!({
-        "kind": kind, "ref": o.no, "reason": reason, "date": chrono::Local::now().to_rfc3339(), "cashier": cashier,
+        "kind": kind, "ref": o.no, "reason": reason, "date": ts.to_rfc3339(), "cashier": cashier,
         "customer": o.data["customer"], "lines": out_lines, "billDisc": Value::Null, "change": 0, "offline": false, "sig": format!("{:016X}", (n as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15)),
         "t": { "total": -eur(refund), "sub": -eur(refund), "disc": 0, "vat": vat, "zero": zero, "points": 0 },
-        "parts": [{ "m": m_id, "label": m_label, "amount": -eur(refund), "ref": if m_id == "bar" { "Auszahlung Lade 1" } else { "Erstattung" } }],
+        "parts": [{ "m": m_id, "label": m_label, "amount": -eur(refund), "ref": refund_ref, "code": refund_code }],
         "points": points
     });
+    let mut data = data;
+    let signed = crate::rksv::sign(tx, &no, &ts, &data, kind)?;
+    if let Some(s) = &signed {
+        data["rksv"] = json!({ "qr": s.qr, "test": true });
+    }
     tx.execute(
-        "INSERT INTO sales(beleg_no, ts, total, cashier, customer_id, data, kind, ref_no) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)",
-        params![no, db::now(), -refund, cashier, o.customer, data.to_string(), kind, o.no],
+        "INSERT INTO sales(beleg_no, ts, total, cashier, customer_id, data, kind, ref_no, rksv) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+        params![no, ts.to_rfc3339_opts(chrono::SecondsFormat::Secs, false), -refund, cashier, o.customer, data.to_string(), kind, o.no, signed.as_ref().map(|s| s.qr.clone())],
     )
     .map_err(|e| e.to_string())?;
     if storno {
@@ -291,9 +327,22 @@ pub fn stats(c: &Connection, r: &Range, detail: bool) -> Result<Value, String> {
     let mut items: HashMap<String, (String, i64, i64)> = HashMap::new();
     let mut by_cat: HashMap<String, i64> = HashMap::new();
     let mut pay: HashMap<String, (String, i64)> = HashMap::new();
+    let mut days: std::collections::BTreeMap<String, (i64, i64, i64)> = std::collections::BTreeMap::new();
+    let mut cashiers: HashMap<String, (i64, i64)> = HashMap::new();
+    let mut vat_sum: std::collections::BTreeMap<i64, (i64, i64, i64)> = std::collections::BTreeMap::new();
+    let mut discounts = 0i64;
     for row in rows {
         let (ts, total, kind, data) = row.map_err(|e| e.to_string())?;
         revenue += total;
+        if detail {
+            let e = days.entry(ts[..10].to_string()).or_insert((0, 0, 0));
+            e.0 += total;
+            if kind == "verkauf" {
+                e.1 += 1;
+            } else if total < 0 {
+                e.2 += -total;
+            }
+        }
         out_rows.push(json!([ts, total, kind]));
         let is_sale = kind == "verkauf";
         match kind.as_str() {
@@ -312,6 +361,24 @@ pub fn stats(c: &Connection, r: &Range, detail: bool) -> Result<Value, String> {
         }
         let d: Value = serde_json::from_str(&data).unwrap_or(Value::Null);
         let bill = d["billDisc"]["pct"].as_f64().unwrap_or(0.0);
+        let ce = cashiers.entry(d["cashier"].as_str().unwrap_or("").to_string()).or_insert((0, 0));
+        ce.0 += total;
+        if is_sale {
+            ce.1 += 1;
+            discounts += cents(&d["t"]["disc"]);
+        }
+        for v in d["t"]["vat"].as_array().into_iter().flatten() {
+            let x = vat_sum.entry(v["rate"].as_i64().unwrap_or(20)).or_insert((0, 0, 0));
+            x.0 += cents(&v["gross"]);
+            x.1 += cents(&v["net"]);
+            x.2 += cents(&v["tax"]);
+        }
+        let z = cents(&d["t"]["zero"]);
+        if z != 0 {
+            let x = vat_sum.entry(0).or_insert((0, 0, 0));
+            x.0 += z;
+            x.1 += z;
+        }
         for l in d["lines"].as_array().into_iter().flatten() {
             let qty = l["qty"].as_i64().unwrap_or(0);
             let amount = if is_sale { line_effective(l, bill) } else { -l["refund"].as_i64().unwrap_or(0) };
@@ -334,13 +401,16 @@ pub fn stats(c: &Connection, r: &Range, detail: bool) -> Result<Value, String> {
     }
     let mut items: Vec<Value> = items.into_iter().map(|(k, (n, q, a))| json!({ "sku": k, "name": n, "qty": q, "rev": a })).collect();
     items.sort_by_key(|v| -v["rev"].as_i64().unwrap_or(0));
-    items.truncate(30);
+    items.truncate(if detail { 500 } else { 30 });
     let mut cats_v: Vec<Value> = by_cat.into_iter().map(|(k, a)| json!({ "cat": k, "rev": a })).collect();
     cats_v.sort_by_key(|v| -v["rev"].as_i64().unwrap_or(0));
     let pay_v: Vec<Value> = pay.into_iter().map(|(k, (l, a))| json!({ "m": k, "label": l, "amount": a })).collect();
     Ok(json!({
         "revenue": revenue, "gross": gross, "returns": ret_amt, "sales": sales_n - storno_n, "stornos": storno_n,
-        "sold": sold, "returned": ret_qty, "rows": out_rows, "items": items, "cats": cats_v, "pay": pay_v
+        "sold": sold, "returned": ret_qty, "rows": out_rows, "items": items, "cats": cats_v, "pay": pay_v, "discounts": discounts,
+        "days": days.iter().map(|(d, (r, n, x))| json!({ "day": d, "revenue": r, "sales": n, "returns": x })).collect::<Vec<_>>(),
+        "cashiers": cashiers.iter().map(|(n, (r, b))| json!({ "name": n, "revenue": r, "sales": b })).collect::<Vec<_>>(),
+        "vat": vat_sum.iter().rev().map(|(r, (g, n, t))| json!({ "rate": r, "gross": g, "net": n, "tax": t })).collect::<Vec<_>>()
     }))
 }
 
@@ -448,5 +518,47 @@ mod tests {
         let g = sale_get(&c, &no).unwrap();
         assert_eq!(g["sale"]["voided"], json!(true));
         assert_eq!(g["follow"].as_array().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn gutschein_verkauf_einloesung_und_rksv() {
+        let mut c = setup();
+        crate::rksv::init(&c, "INN-K01", "Test").unwrap();
+        // Gutschein über 50 € verkaufen
+        let d = json!({ "t": { "total": 50.0, "vat": [], "zero": 50.0 }, "parts": [{ "m": "bar", "label": "Bar", "amount": 50.0 }],
+            "lines": [{ "name": "Gutschein", "qty": 1, "unit": 50.0, "vat": 0, "service": true, "voucher": true }] });
+        let tx = c.transaction().unwrap();
+        let r = catalog::commit_sale(&tx, &[], 5000, "Test", Some("K-1"), &d).unwrap();
+        tx.commit().unwrap();
+        let code = r["vouchers"][0].as_str().unwrap().to_string();
+        assert!(r["data"]["rksv"]["qr"].as_str().unwrap().contains("_0,00_0,00_0,00_50,00_0,00_"));
+        assert_eq!(points(&c), 0, "Gutscheinkauf bringt keine Punkte");
+        let gs_no = r["no"].as_str().unwrap().to_string();
+        // 30 € damit bezahlen
+        let d2 = json!({ "t": { "total": 30.0, "vat": [{ "rate": 20, "gross": 30.0 }] }, "parts": [{ "m": "gutschein", "label": "Gutschein", "amount": 30.0, "code": code }],
+            "lines": [{ "name": "Mütze", "qty": 1, "unit": 30.0, "vat": 20, "service": true }] });
+        let tx = c.transaction().unwrap();
+        catalog::commit_sale(&tx, &[], 3000, "Test", None, &d2).unwrap();
+        tx.commit().unwrap();
+        assert_eq!(crate::vouchers::get(&c, &code).unwrap()["balance"], json!(2000));
+        // mehr als Restwert scheitert – und nichts wird gebucht
+        let d3 = json!({ "t": { "total": 30.0, "vat": [{ "rate": 20, "gross": 30.0 }] }, "parts": [{ "m": "gutschein", "label": "Gutschein", "amount": 30.0, "code": code }], "lines": [] });
+        let tx = c.transaction().unwrap();
+        assert!(catalog::commit_sale(&tx, &[], 3000, "Test", None, &d3).is_err());
+        drop(tx);
+        // angebrochener Gutschein kann nicht retourniert werden
+        let tx = c.transaction().unwrap();
+        assert!(commit_return(&tx, &gs_no, &[ReturnLine { idx: 0, qty: 1 }], false, "x", &json!({ "m": "bar", "label": "Bar" }), "Test").is_err());
+        drop(tx);
+        // Jacke kaufen, als Gutschein erstatten
+        let no = sell(&mut c, 1, None);
+        let tx = c.transaction().unwrap();
+        let rr = commit_return(&tx, &no, &[ReturnLine { idx: 0, qty: 1 }], false, "Größe", &json!({ "m": "gutschein", "label": "Gutschein" }), "Test").unwrap();
+        tx.commit().unwrap();
+        let newc = rr["data"]["parts"][0]["code"].as_str().unwrap();
+        assert_eq!(crate::vouchers::get(&c, newc).unwrap()["balance"], json!(10000));
+        assert!(rr["data"]["rksv"]["qr"].as_str().unwrap().contains("_-100,00_"));
+        let n: i64 = c.query_row("SELECT COUNT(*) FROM dep", [], |r| r.get(0)).unwrap();
+        assert_eq!(n, 5, "Start, Gutschein, Mütze, Jacke, Retoure");
     }
 }

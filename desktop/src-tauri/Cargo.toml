@@ -19,6 +19,17 @@ tauri-plugin-updater = "2"
 rusqlite = { version = "0.40", features = ["bundled", "backup"] }
 sha2 = "0.10"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+# RKSV: ES256-Signatur, AES-256-ICM-Umsatzzähler, Base64, QR-Code
+p256 = { version = "0.13", features = ["ecdsa", "pkcs8"] }
+aes = "0.8"
+ctr = "0.9"
+base64 = "0.22"
+rand_core = { version = "0.6", features = ["getrandom"] }
+qrcode = { version = "0.14", default-features = false, features = ["svg"] }
+
+[target.'cfg(windows)'.dependencies]
+# Bondrucker über den Windows-Druckerspooler (RAW)
+windows = { version = "0.58", features = ["Win32_Foundation", "Win32_Graphics_Printing", "Win32_Graphics_Gdi", "Win32_Security"] }
 
 [profile.release]
 codegen-units = 1

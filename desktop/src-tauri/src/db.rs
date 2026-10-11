@@ -129,6 +129,117 @@ const MIGRATIONS: &[&str] = &[
     CREATE INDEX sales_customer ON sales(customer_id, id);
     CREATE INDEX sales_ref ON sales(ref_no);
     "#,
+    // 4 · Benutzer, Gutscheine, Kassenbuch, Tagesabschluss, RKSV, Einkauf
+    r#"
+    CREATE TABLE users (
+        id           TEXT PRIMARY KEY,
+        name         TEXT NOT NULL,
+        role         TEXT NOT NULL DEFAULT 'kasse',
+        pin_hash     TEXT NOT NULL,
+        pin_salt     TEXT NOT NULL,
+        failed       INTEGER NOT NULL DEFAULT 0,
+        locked_until TEXT,
+        active       INTEGER NOT NULL DEFAULT 1,
+        created_at   TEXT NOT NULL,
+        updated_at   TEXT NOT NULL
+    );
+    CREATE TABLE vouchers (
+        code        TEXT PRIMARY KEY,
+        initial     INTEGER NOT NULL,
+        balance     INTEGER NOT NULL,
+        status      TEXT NOT NULL DEFAULT 'aktiv',
+        sale_no     TEXT,
+        customer_id TEXT,
+        valid_until TEXT,
+        created_at  TEXT NOT NULL
+    );
+    CREATE TABLE voucher_moves (
+        id      INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts      TEXT NOT NULL,
+        code    TEXT NOT NULL REFERENCES vouchers(code),
+        delta   INTEGER NOT NULL,
+        balance INTEGER NOT NULL,
+        reason  TEXT NOT NULL,
+        ref     TEXT,
+        user    TEXT
+    );
+    CREATE TABLE cash_moves (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts         TEXT NOT NULL,
+        kind       TEXT NOT NULL,
+        amount     INTEGER NOT NULL,
+        reason     TEXT NOT NULL,
+        user       TEXT,
+        closing_id INTEGER
+    );
+    CREATE TABLE closings (
+        id       INTEGER PRIMARY KEY AUTOINCREMENT,
+        no       INTEGER NOT NULL UNIQUE,
+        ts       TEXT NOT NULL,
+        from_ts  TEXT NOT NULL,
+        expected INTEGER NOT NULL,
+        counted  INTEGER NOT NULL,
+        diff     INTEGER NOT NULL,
+        user     TEXT,
+        data     TEXT NOT NULL
+    );
+    CREATE TABLE rksv (
+        id          INTEGER PRIMARY KEY CHECK (id = 1),
+        kassen_id   TEXT NOT NULL,
+        mode        TEXT NOT NULL,
+        aes_key     TEXT NOT NULL,
+        sig_key     TEXT NOT NULL,
+        public_key  TEXT NOT NULL,
+        cert_serial TEXT NOT NULL,
+        turnover    INTEGER NOT NULL DEFAULT 0,
+        last_jws    TEXT,
+        started_at  TEXT NOT NULL
+    );
+    CREATE TABLE dep (
+        id       INTEGER PRIMARY KEY AUTOINCREMENT,
+        beleg_no TEXT NOT NULL,
+        ts       TEXT NOT NULL,
+        kind     TEXT NOT NULL,
+        jws      TEXT NOT NULL
+    );
+    ALTER TABLE sales ADD COLUMN rksv TEXT;
+    CREATE TABLE suppliers (
+        id          TEXT PRIMARY KEY,
+        name        TEXT NOT NULL,
+        contact     TEXT NOT NULL DEFAULT '',
+        email       TEXT NOT NULL DEFAULT '',
+        phone       TEXT NOT NULL DEFAULT '',
+        customer_no TEXT NOT NULL DEFAULT '',
+        lead_days   INTEGER NOT NULL DEFAULT 7,
+        note        TEXT NOT NULL DEFAULT '',
+        active      INTEGER NOT NULL DEFAULT 1,
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+    );
+    CREATE TABLE purchase_orders (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        no          TEXT NOT NULL UNIQUE,
+        supplier_id TEXT NOT NULL REFERENCES suppliers(id),
+        status      TEXT NOT NULL DEFAULT 'entwurf',
+        note        TEXT NOT NULL DEFAULT '',
+        created_at  TEXT NOT NULL,
+        ordered_at  TEXT,
+        user        TEXT
+    );
+    CREATE TABLE po_lines (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        po_id      INTEGER NOT NULL REFERENCES purchase_orders(id),
+        variant_id INTEGER NOT NULL REFERENCES variants(id),
+        qty        INTEGER NOT NULL,
+        received   INTEGER NOT NULL DEFAULT 0,
+        cost       INTEGER
+    );
+    CREATE INDEX po_lines_po ON po_lines(po_id);
+    ALTER TABLE articles ADD COLUMN cost INTEGER;
+    ALTER TABLE articles ADD COLUMN supplier_id TEXT;
+    ALTER TABLE articles ADD COLUMN min_stock INTEGER NOT NULL DEFAULT 2;
+    INSERT INTO counters(name, value) VALUES ('bestellung', 0), ('abschluss', 0);
+    "#,
 ];
 
 pub fn schema_version() -> i64 {
