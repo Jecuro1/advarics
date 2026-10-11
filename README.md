@@ -1,22 +1,36 @@
-# Kontor – UI-Preview
+# Kontor
 
 On-Premise-Warenwirtschaft und Kassensystem für Mode, Sport, Outdoor und Lifestyle („Kontor“ ist ein Arbeitstitel).
-Diese Preview zeigt die UI-Richtung mit Testdaten, ohne Backend.
+Desktop-Programm für Windows (Tauri). Aktuell: Programm-Hülle mit UI-Vorschau und Testdaten.
 
-## Lokal starten (On-Premise auf deinem Rechner, ohne Installation)
+## Kontor als Windows-Programm installieren
 
-**Windows** (keine Installation, nutzt nur Bordmittel von Windows):
-1. Projekt als ZIP herunterladen und entpacken.
-2. `kontor-start.bat` doppelklicken → Browser öffnet `http://localhost:8080`.
-3. Für Tablets/weitere Kassen im WLAN: `kontor-start-netzwerk.bat` (fragt nach Administratorrechten,
-   legt eine Firewall-Regel „Kontor 8080“ nur für private Netzwerke an und zeigt die Netzwerk-Adresse an).
+Kontor ist ein installiertes Programm (kein Browser, kein Web-Server, läuft ohne Internet).
 
-**macOS / Linux:** `kontor-start-mac.command` (benötigt `python3`).
+1. Auf GitHub **Actions** → Workflow **„Desktop · Windows-Installer“** → letzten erfolgreichen Lauf öffnen.
+2. Unten unter **Artifacts** `Kontor-Windows-Installer` herunterladen und entpacken.
+3. `Kontor_0.2.0_x64-setup.exe` doppelklicken → Kontor erscheint im Startmenü und öffnet sich maximiert.
+   (Alternativ für Firmen-Verteilung: die `.msi`-Datei.)
 
-Beenden: Server-Fenster schließen. Alternativ geht auch ein Doppelklick direkt auf `ui-preview/index.html`.
+Hinweise:
+- Der Installer ist noch nicht code-signiert → Windows SmartScreen zeigt „Computer wurde geschützt“:
+  „Weitere Informationen“ → „Trotzdem ausführen“.
+- `F11` schaltet Vollbild/Kassen-Kiosk um. Es kann nur eine Kontor-Instanz gleichzeitig laufen.
 
-Hinweis: Aktuell ist das die UI-Preview mit Testdaten – jedes Gerät hat seinen eigenen Demo-Stand.
-Der echte Server mit Datenbank folgt in den nächsten Schritten und wird über dieselben Startdateien laufen.
+### Entwickeln
+
+```bash
+cd desktop
+npm install
+npm run dev      # startet Kontor als Programm-Fenster
+npm run build    # baut den Installer lokal (unter Windows)
+```
+
+Voraussetzungen zum Selberbauen: Node.js 22, Rust (stable), unter Windows zusätzlich die
+„Microsoft C++ Build Tools“. Nur zum Benutzen ist nichts davon nötig – nur der Installer.
+
+Aktueller Stand: Programm-Hülle mit der UI-Vorschau und Testdaten. Lokale Datenbank, echte Belege,
+RKSV-Signatur und Hardware-Anbindung folgen als nächste Schritte.
 
 ## Iteration 2 – Inhalt
 
@@ -35,3 +49,4 @@ Der echte Server mit Datenbank folgt in den nächsten Schritten und wird über d
 Kasse: `F2` Suche · `F3` Kunde · `F4` Rabatt · `F8` Parken · `F9` Bezahlen · `F10` Sperren · `1–8` Zahlart
 
 Statusleiste unten: Klick auf den Serverstatus simuliert den Offline-Modus, „Ereignisse“ öffnet den Hook-Inspektor.
+In der Vorschau gilt jede 4-stellige PIN außer `0000`.

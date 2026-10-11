@@ -1,0 +1,14 @@
+{
+  "name": "kontor-desktop",
+  "private": true,
+  "version": "0.2.0",
+  "description": "Kontor – Warenwirtschaft & Kasse als installierbares Windows-Programm",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "icons": "tauri icon ../assets/kontor-icon.png"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.2"
+  }
+}

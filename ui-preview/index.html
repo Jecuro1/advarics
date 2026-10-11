@@ -1286,6 +1286,8 @@ const persist = {
 const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 const MOD = IS_MAC ? '⌘' : 'Strg';
 const parseAmt = s => { const v = parseFloat(String(s).trim().replace(/\s|€/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')); return isFinite(v) ? v : NaN; };
+const DESKTOP = !!(window.__TAURI__ && window.__TAURI__.core);
+const invoke = (cmd, args) => DESKTOP ? window.__TAURI__.core.invoke(cmd, args) : Promise.reject(new Error('Nur in der Desktop-App'));
 const isTyping = el => el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
 
 const NOW = new Date();
@@ -1441,7 +1443,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.2.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1629,7 +1631,7 @@ function renderStatus() {
     <span class="sb-spacer"></span>
     <button class="sbi" id="sbHooks" data-tip="Ereignis-Inspektor · Hooks & Webhooks" data-tip-pos="up-left">${ic('braces')}Ereignisse <b class="num" id="sbHookCount" style="font-weight:600;color:var(--text-2)">${Hooks.count}</b></button>
     <span class="sbi hide-md">${ic('sparkle')}KI lokal · bereit</span>
-    <span class="sbi hide-md">v1.7.2 · Stable</span>
+    <span class="sbi hide-md">${DESKTOP ? `Desktop-App v${S.appVersion}` : 'Vorschau im Browser'}</span>
     <span class="sbi num" id="sbClock">${clock()}</span>`;
 }
 
@@ -1670,6 +1672,7 @@ function cmdList() {
     c('System', 'Backup jetzt erstellen', 'database', backupNow, {kw: 'sicherung'}),
     c('System', 'Ereignis-Inspektor (Hooks & Webhooks)', 'braces', toggleInspector, {kw: 'events entwickler'}),
     c('System', 'RKSV: DEP-Export erstellen', 'shield', depExport, {kw: 'finanz prüfung datenerfassungsprotokoll'}),
+    ...(DESKTOP ? [c('System', S.fullscreen ? 'Vollbild beenden' : 'Vollbild / Kassen-Kiosk', 'layout', toggleFullscreen, {keys: ['F11'], kw: 'kiosk vollbild'})] : []),
     c('Hilfe', 'Tastenkürzel anzeigen', 'keyboard', openShortcuts, {keys: ['?']}),
   ];
 }
@@ -3238,7 +3241,7 @@ function openUpdate() {
   const box = $('#uBody', el);
   const render = () => {
     const beta = channel === 'beta';
-    box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('download')}</div><div style="flex:1"><div class="upd-head"><span class="upd-ver">${beta ? '1.9.0-beta.2' : '1.8.0'}</span><span class="pill ${beta ? 'warn' : 'pos'}">${beta ? 'Beta' : 'Stable'}</span>${beta ? '' : `<span class="pill info">${ic('shield')}enthält Sicherheitskorrektur</span>`}</div><p>Signiert von Kontor Software · Signatur geprüft (Ed25519) · ${beta ? '204' : '182'} MB · aktuell installiert: 1.7.2</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('download')}</div><div style="flex:1"><div class="upd-head"><span class="upd-ver">${beta ? '1.9.0-beta.2' : '1.8.0'}</span><span class="pill ${beta ? 'warn' : 'pos'}">${beta ? 'Beta' : 'Stable'}</span>${beta ? '' : `<span class="pill info">${ic('shield')}enthält Sicherheitskorrektur</span>`}</div><p>Signiert von Kontor Software · Signatur geprüft (Ed25519) · ${beta ? '204' : '182'} MB · aktuell installiert: ${esc(S.appVersion)}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
       <div class="m-body" style="display:grid;gap:18px">
         <div class="seg" id="uChan" style="justify-self:start"><button data-c="stable" aria-pressed="${!beta}">Stable-Kanal</button><button data-c="beta" aria-pressed="${beta}">Beta-Kanal</button></div>
         <div class="chg">
@@ -3464,6 +3467,19 @@ function bindPlaceholder() {
    15 · TASTATUR & START
    ════════════════════════════════════════════════════════════════════ */
 let gChord = 0;
+function toggleFullscreen() {
+  invoke('set_fullscreen', {on: !S.fullscreen}).then(on => { S.fullscreen = on; toast(on ? 'Vollbild aktiv' : 'Vollbild beendet', {t2: on ? 'Beenden mit F11' : '', icon: 'layout'}); }).catch(e => toast('Vollbild nicht verfügbar', {t2: String(e), type: 'warn'}));
+}
+// Desktop-App: Browser-Verhalten abschalten (Neu laden, Drucken-Dialog, Kontextmenü, Zoom)
+if (DESKTOP) {
+  document.addEventListener('keydown', e => {
+    const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
+    if (k === 'f5' || (mod && ['r', 'p', 'f', 'g', 'j', 'u', '+', '-', '=', '0'].includes(k))) { if (!(mod && ['k'].includes(k))) e.preventDefault(); }
+    if (k === 'f11') { e.preventDefault(); toggleFullscreen(); }
+  }, true);
+  document.addEventListener('contextmenu', e => { if (!isTyping(e.target)) e.preventDefault(); });
+  document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, {passive: false});
+}
 document.addEventListener('keydown', e => {
   const k = e.key, typing = isTyping(e.target);
   if ((e.metaKey || e.ctrlKey) && k.toLowerCase() === 'k' && !S.locked) { e.preventDefault(); if (S.paletteOpen) { const t = topLayer(); t && closeLayer(t.el); } else openPalette(); return; }
@@ -3514,7 +3530,8 @@ function init() {
   renderNav(); renderMe(); renderStore(); renderStatus();
   bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder();
   go(location.hash.slice(1) || 'dashboard');
-  Hooks.emit('system.ready', {version: '1.7.2', kanal: 'stable', server: 'KONTOR-SRV01', modus: 'on-premise'});
+  if (DESKTOP) invoke('app_info').then(i => { S.appVersion = i.version; S.dataDir = i.data_dir; renderStatus(); Hooks.emit('desktop.ready', {version: i.version, os: i.os, daten: i.data_dir}); }).catch(() => {});
+  Hooks.emit('system.ready', {version: S.appVersion, kanal: 'stable', server: 'KONTOR-SRV01', modus: DESKTOP ? 'desktop' : 'vorschau'});
 }
 init();
 })();

@@ -1,0 +1,52 @@
+name: Desktop · Windows-Installer
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths: ["desktop/**", "ui-preview/**", "assets/**", ".github/workflows/desktop-windows.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Kontor für Windows bauen
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - name: Abhängigkeiten
+        run: npm ci
+
+      - name: Installer bauen (NSIS + MSI)
+        run: npx tauri build
+
+      - name: Installer bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kontor-Windows-Installer
+          path: |
+            desktop/src-tauri/target/release/bundle/nsis/*.exe
+            desktop/src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: error
+          retention-days: 30
