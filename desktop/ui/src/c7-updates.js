@@ -20,7 +20,7 @@ async function checkUpdates(manual) {
   if (!DESKTOP || UPD.state === 'checking') return;
   UPD.state = 'checking'; renderUpdBits();
   try {
-    const i = await invoke('update_check');
+    const i = await invoke('update_check', {channel: CFG['update.kanal'] || 'stable'});
     UPD.info = i; UPD.last = new Date(); UPD.state = i.available ? 'available' : 'current';
     if (i.available) {
       Hooks.emit('update.available', {version: i.version});
@@ -39,7 +39,7 @@ async function checkUpdates(manual) {
 }
 function notesHTML(md) {
   if (!md) return '<p class="muted" style="font-size:13px">Keine Hinweise angegeben.</p>';
-  let out = '', list = false;
+  let out = /sicherheit/i.test(md) ? `<div class="rule-box" style="margin-bottom:10px">${ic('shield')}<div><b style="color:var(--text)">Sicherheitsupdate</b> – bitte zeitnah freigeben und installieren.</div></div>` : '', list = false;
   md.split(/\r?\n/).forEach(l => {
     const t = l.trim();
     if (/^[-*]\s+/.test(t)) { if (!list) { out += '<ul>'; list = true; } out += `<li>${esc(t.replace(/^[-*]\s+/, '').replace(/\*\*/g, ''))}</li>`; return; }
@@ -123,7 +123,8 @@ function renderUpdSection() {
   box.innerHTML = `<div class="set-row"><div><div class="set-l">Installierte Version</div><div class="set-h">Kontor für Windows</div></div><div class="set-c"><b class="num">${esc(S.appVersion)}</b></div></div>
     <div class="set-row"><div><div class="set-l">${esc(updLabel())}</div><div class="set-h">${UPD.state === 'error' ? esc(UPD.error) : UPD.last ? 'Zuletzt geprüft: ' + esc(fmtTs(UPD.last.toISOString())) : 'Noch nicht geprüft'}${ap && av ? ` · freigegeben von ${esc(ap.by)}` : ''}</div></div><div class="set-c" style="gap:8px">${av ? `<button class="btn btn-primary btn-sm" id="updOpen">${ic('download', 'i-sm')}Ansehen & freigeben</button>` : ''}<button class="btn btn-secondary btn-sm" id="updCheck" ${UPD.state === 'checking' ? 'disabled' : ''}>${ic('sync', 'i-sm')}Jetzt suchen</button></div></div>
     ${field('update.auto', 'Automatisch nach Updates suchen', 'Beim Start und alle 6 Stunden. Installiert wird nie ohne Freigabe.', 'switch')}
-    <div class="set-row"><div><div class="set-l">Kanal</div><div class="set-h">Stable: geprüfte Versionen. Beta-Kanal folgt.</div></div><div class="set-c"><span class="pill pos">Stable</span></div></div>`;
+    <div class="set-row"><div><div class="set-l">Kanal</div><div class="set-h">Stable: nur geprüfte Versionen · Beta: neue Funktionen früher, für Technik-Begeisterte (enthält auch alle Stable-Versionen)</div></div><div class="set-c"><div class="seg" id="chanSeg2">${[['stable', 'Stable'], ['beta', 'Beta']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${(CFG['update.kanal'] || 'stable') === k}">${l}</button>`).join('')}</div></div></div>`;
+  initSeg($('#chanSeg2', box), async b => { await saveSettings({'update.kanal': b.dataset.v}, true); toast(b.dataset.v === 'beta' ? 'Beta-Kanal aktiv' : 'Stable-Kanal aktiv', {t2: 'Suche nach Updates …', icon: 'download'}); UPD.state = 'idle'; checkUpdates(false); });
 }
 function bindUpdates() {
   $('#view-einstellungen').addEventListener('click', e => { if (e.target.closest('#updCheck')) checkUpdates(true); if (e.target.closest('#updOpen')) openUpdate(); });

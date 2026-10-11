@@ -10,6 +10,8 @@ const DEFAULTS = {
   'kasse.vereinsregel': true, 'kasse.retoureGrenze': 100, 'ziel.tag': 2500, 'kasse.pflichtfelder': true, 'kasse.bonFuss': 'Danke für Ihren Einkauf! Umtausch innerhalb von 30 Tagen mit Beleg.',
   'anzeige.zoom': 1, 'backup.dir': '', 'backup.auto': true, 'backup.keep': 14, 'update.kanal': 'stable', 'update.auto': true, 'update.freigabe': null,
   'drucker.art': 'aus', 'drucker.adresse': '', 'drucker.name': '', 'drucker.breite': 48, 'drucker.auto': false, 'drucker.lade': false, 'gutschein.jahre': 3,
+  'bon.logo': '', 'bon.logoDruck': true, 'bon.ersparnis': true, 'bon.artikelnr': false, 'bon.kopf': '', 'bon.fussA4': '',
+  'mail.host': '', 'mail.port': 587, 'mail.tls': 'starttls', 'mail.user': '', 'mail.pass': '', 'mail.from': '', 'etikett.art': 'a4', 'etikett.adresse': '', 'etikett.name': '', 'etikett.format': '3x8',
 };
 const CFG = {...DEFAULTS};
 async function loadSettings() {
@@ -76,7 +78,7 @@ async function autoBackupCheck() {
 }
 
 /* ── Ansicht ── */
-const SET_SECTIONS = [['allgemein', 'Firma & Filiale', 'store'], ['kasse', 'Kasse', 'register'], ['benutzer', 'Benutzer', 'users'], ['drucker', 'Drucker & Lade', 'printer'], ['rksv', 'RKSV', 'shield'], ['anzeige', 'Darstellung', 'palette'], ['sicherung', 'Datensicherung', 'database'], ['updates', 'Updates', 'download'], ['system', 'System & Protokoll', 'server']];
+const SET_SECTIONS = [['allgemein', 'Firma & Filiale', 'store'], ['kasse', 'Kasse', 'register'], ['benutzer', 'Benutzer', 'users'], ['bon', 'Bon & Belege', 'receipt'], ['drucker', 'Drucker & Lade', 'printer'], ['etikett', 'Etiketten', 'tag'], ['mail', 'E-Mail', 'mail'], ['rksv', 'RKSV', 'shield'], ['anzeige', 'Darstellung', 'palette'], ['sicherung', 'Datensicherung', 'database'], ['updates', 'Updates', 'download'], ['system', 'System & Protokoll', 'server']];
 function field(key, label, help, type = 'text', extra = '') {
   const v = CFG[key];
   let ctl;
@@ -113,7 +115,7 @@ function renderSettings() {
         ${field('kasse.pflichtfelder', 'Pflichtfelder je Warengruppe', 'z. B. Z-Wert und Seriennummer beim Skiverkauf', 'switch')}
         ${field('kasse.bonFuss', 'Text am Bonende', '', 'textarea')}
       </div></section>
-      ${usersSectionHTML()}${printerSectionHTML()}${rksvSectionHTML()}
+      ${usersSectionHTML()}${bonSectionHTML()}${printerSectionHTML()}${labelSectionHTML()}${mailSectionHTML()}${rksvSectionHTML()}
       <section class="set-sec" id="sec-anzeige"><h2>Darstellung</h2><p>Gilt für den angemeldeten Benutzer. Anzeigegröße auch mit <span class="kbd">Strg</span> <span class="kbd">+</span> / <span class="kbd">−</span> / <span class="kbd">0</span>.</p><div class="card">
         <div class="set-row"><div><div class="set-l">Anzeigegröße</div><div class="set-h">Für große Bildschirme oder Touch-Kassen</div></div><div class="set-c"><div class="seg" id="zoomSeg">${[.8, .9, 1, 1.1, 1.25, 1.5].map(z => `<button data-v="${z}" aria-pressed="${Math.abs(z - zoom) < .001}">${Math.round(z * 100)} %</button>`).join('')}</div></div></div>
         ${segRow('Modus', 'Hell, Dunkel oder wie Windows', 'theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['system', 'System']])}
@@ -134,8 +136,8 @@ function renderSettings() {
     if (s.id === 'chanSeg') return saveSettings({'update.kanal': b.dataset.v});
     if (s.dataset.pref) { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }
   }));
-  if (DESKTOP) { renderBackups(); renderSys(); }
-  renderUpdSection(); renderAudit(); renderUsersBox(); renderPrinterBox(); renderRksvBox().then(renderSettingsKasseLock);
+  if (DESKTOP) { renderBackups().then(renderBackupCrypt); renderSys(); }
+  renderUpdSection(); renderAudit(); renderUsersBox(); renderBonBox(); renderMailBox(); renderLabelBox(); renderPrinterBox(); renderRksvBox().then(renderSettingsKasseLock);
 }
 async function renderSys() {
   const i = await refreshInfo(); const box = $('#sysBox'); if (!i || !box) return;
@@ -169,7 +171,8 @@ async function renderAudit() {
 }
 async function restoreFlow(path, tr) {
   const st = $('.bk-st', tr); st.innerHTML = '<span class="pill">prüfe …</span>';
-  const chk = await invoke('backup_verify', {path});
+  let chk = await invoke('backup_verify', {path}), password = null;
+  if (chk.needs_password) { password = await askPassword('Sicherung ist verschlüsselt', 'Sicherungspasswort eingeben'); if (password) chk = await invoke('backup_verify', {path, password}); }
   st.innerHTML = `<span class="pill ${chk.ok ? 'pos' : 'neg'}">${ic(chk.ok ? 'check' : 'alert')}${chk.ok ? 'in Ordnung' : 'fehlerhaft'}</span>`;
   if (!chk.ok) return toast('Wiederherstellung nicht möglich', {t2: chk.message, type: 'warn', dur: 7000});
   const el = openLayer(`<div class="modal" style="width:min(520px,100%)" role="dialog" aria-modal="true" aria-label="Wiederherstellen">
@@ -180,7 +183,7 @@ async function restoreFlow(path, tr) {
     closeLayer(el);
     try { await stepUp({title: 'Administrator-Freigabe', text: 'Datenstand aus einer Sicherung wiederherstellen.', rule: 'Wiederherstellungen erfordern Step-up-Authentifizierung'}); } catch { return; }
     toast('Stelle wieder her …', {icon: 'database', dur: 1500});
-    try { const r = await invoke('backup_restore', {path}); toast('Wiederherstellung abgeschlossen', {t2: 'Kontor lädt die Daten neu …', type: 'pos', icon: 'database'}); setTimeout(() => location.reload(), 1600); }
+    try { const r = await invoke('backup_restore', {path, password}); toast('Wiederherstellung abgeschlossen', {t2: 'Kontor lädt die Daten neu …', type: 'pos', icon: 'database'}); setTimeout(() => location.reload(), 1600); }
     catch (e) { toast('Wiederherstellung fehlgeschlagen', {t2: String(e), type: 'warn', dur: 8000}); }
   };
 }
@@ -206,7 +209,7 @@ function bindSettings() {
     const bk = t.closest('[data-bk]');
     if (bk) {
       const tr = bk.closest('tr'), path = tr.dataset.path;
-      if (bk.dataset.bk === 'verify') { const st = $('.bk-st', tr); st.innerHTML = '<span class="pill">prüfe …</span>'; const c = await invoke('backup_verify', {path}); st.innerHTML = `<span class="pill ${c.ok ? 'pos' : 'neg'}" title="${esc(c.message)}">${ic(c.ok ? 'check' : 'alert')}${c.ok ? 'in Ordnung' : 'fehlerhaft'}</span>`; toast(c.ok ? 'Sicherung in Ordnung' : 'Sicherung fehlerhaft', {t2: c.message, type: c.ok ? 'pos' : 'warn'}); }
+      if (bk.dataset.bk === 'verify') { const st = $('.bk-st', tr); st.innerHTML = '<span class="pill">prüfe …</span>'; let c = await invoke('backup_verify', {path}); if (c.needs_password) { const pw = await askPassword('Sicherung ist verschlüsselt', 'Sicherungspasswort eingeben'); if (pw) c = await invoke('backup_verify', {path, password: pw}); } st.innerHTML = `<span class="pill ${c.ok ? 'pos' : 'neg'}" title="${esc(c.message)}">${ic(c.ok ? 'check' : 'alert')}${c.ok ? 'in Ordnung' : 'fehlerhaft'}</span>`; toast(c.ok ? 'Sicherung in Ordnung' : 'Sicherung fehlerhaft', {t2: c.message, type: c.ok ? 'pos' : 'warn'}); }
       else restoreFlow(path, tr);
     }
   });

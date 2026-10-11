@@ -16,11 +16,12 @@ function custFinish(c) {
 function custFromDb(d) {
   return custFinish({id: d.id, name: d.name, email: d.email || '', phone: d.phone || '', tier: d.tier || 'Kunde', points: d.points || 0,
     club: d.club_name ? {name: d.club_name, pct: d.club_pct || 0} : null, fields: d.fields && typeof d.fields === 'object' ? d.fields : {},
-    consent: !!d.consent, note: d.note || '', visits: d.visits || 0, revenue: (d.revenue || 0) / 100,
+    consent: !!d.consent, note: d.note || '', visits: d.visits || 0, revenue: (d.revenue || 0) / 100, street: d.street || '', zip: d.zip || '', city: d.city || '', country: d.country || 'AT', uid: d.uid || '',
     lastVisit: d.last_visit ? new Date(d.last_visit) : null, created: d.created_at ? new Date(d.created_at) : null});
 }
 const custToDb = c => ({id: c.id || '', name: c.name, email: c.email || '', phone: c.phone || '', tier: c.tier || 'Kunde', points: c.points || 0,
-  club_name: c.club?.name || null, club_pct: c.club ? +c.club.pct || 0 : null, fields: c.fields || {}, consent: !!c.consent, note: c.note || ''});
+  club_name: c.club?.name || null, club_pct: c.club ? +c.club.pct || 0 : null, fields: c.fields || {}, consent: !!c.consent, note: c.note || '',
+  street: c.street || '', zip: c.zip || '', city: c.city || '', country: c.country || 'AT', uid: c.uid || ''});
 function replaceCustomers(list) { CUSTOMERS.length = 0; list.forEach(d => CUSTOMERS.push(custFromDb(d))); }
 const custById = id => CUSTOMERS.find(c => c.id === id);
 
@@ -75,8 +76,8 @@ function renderKuTable() {
 function openCustomerEditor(c, {prefill = '', onSaved} = {}) {
   const isNew = !c;
   const pre = prefill.trim(), preMail = pre.includes('@');
-  const st = c ? {name: c.name, email: c.email, phone: c.phone, tier: c.tier, clubName: c.club?.name || '', clubPct: c.club ? String(c.club.pct) : '', consent: c.consent, note: c.note || '', fields: Object.entries(c.fields || {})}
-    : {name: preMail ? '' : pre, email: preMail ? pre : '', phone: '', tier: 'Kunde', clubName: '', clubPct: '', consent: false, note: '', fields: []};
+  const st = c ? {street: c.street || '', zip: c.zip || '', city: c.city || '', country: c.country || 'AT', uid: c.uid || '', name: c.name, email: c.email, phone: c.phone, tier: c.tier, clubName: c.club?.name || '', clubPct: c.club ? String(c.club.pct) : '', consent: c.consent, note: c.note || '', fields: Object.entries(c.fields || {})}
+    : {street: '', zip: '', city: '', country: 'AT', uid: '', name: preMail ? '' : pre, email: preMail ? pre : '', phone: '', tier: 'Kunde', clubName: '', clubPct: '', consent: false, note: '', fields: []};
   const el = openLayer(`<div class="drawer-panel" style="width:min(580px,100%)" role="dialog" aria-modal="true" aria-label="${isNew ? 'Neuer Kunde' : 'Kunde bearbeiten'}"><div id="ceHead"></div><div class="drawer-body" id="ceBody"></div>
     <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">${isNew ? '' : `<button class="btn btn-danger" id="ceDel">${ic('trash', 'i-sm')}Deaktivieren</button>`}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="ceSave">${ic('check', 'i-sm')}${isNew && onSaved ? 'Anlegen & zuordnen' : 'Speichern'}</button></div></div>`, {cls: 'drawer', focus: st.name ? '[data-f="email"]' : '[data-f="name"]'});
   const collect = () => {
@@ -91,6 +92,9 @@ function openCustomerEditor(c, {prefill = '', onSaved} = {}) {
         <label class="field full"><span>Name <b class="req">*</b></span><input class="input" data-f="name" value="${esc(st.name)}" placeholder="Vor- und Nachname" autocomplete="off"></label>
         <label class="field"><span>E-Mail</span><input class="input" data-f="email" type="email" value="${esc(st.email)}" placeholder="für digitale Belege" autocomplete="off"></label>
         <label class="field"><span>Telefon</span><input class="input" data-f="phone" value="${esc(st.phone)}" autocomplete="off"></label>
+        <label class="field full"><span>Straße</span><input class="input" data-f="street" value="${esc(st.street)}" autocomplete="off"></label>
+        <label class="field"><span>PLZ / Ort</span><span style="display:flex;gap:6px"><input class="input" data-f="zip" value="${esc(st.zip)}" style="width:90px"><input class="input" data-f="city" value="${esc(st.city)}"></span></label>
+        <label class="field"><span>Land / UID (Firmen)</span><span style="display:flex;gap:6px"><input class="input" data-f="country" value="${esc(st.country)}" style="width:70px"><input class="input" data-f="uid" value="${esc(st.uid)}" placeholder="ATU…"></span></label>
         <label class="field"><span>Kundenstufe</span><select class="input select" data-f="tier">${tiers.map(t => `<option ${t === st.tier ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
         <div></div>
         <label class="field"><span>Verein</span><input class="input" data-f="clubName" value="${esc(st.clubName)}" placeholder="z. B. SV Inntal"></label>
@@ -122,7 +126,8 @@ function openCustomerEditor(c, {prefill = '', onSaved} = {}) {
       const pct = st.clubName.trim() ? parseInt(st.clubPct || '0', 10) : null;
       if (st.clubName.trim() && !(pct >= 0 && pct <= 50)) return fail('Vereinsrabatt: 0 bis 50 %');
       const data = {id: c?.id || '', name: st.name.trim(), email: st.email.trim(), phone: st.phone.trim(), tier: st.tier, points: c?.points || 0,
-        club: st.clubName.trim() ? {name: st.clubName.trim(), pct} : null, consent: st.consent, note: st.note.trim(), fields: Object.fromEntries(st.fields.filter(([k]) => k))};
+        club: st.clubName.trim() ? {name: st.clubName.trim(), pct} : null, consent: st.consent, note: st.note.trim(), fields: Object.fromEntries(st.fields.filter(([k]) => k)),
+        street: st.street.trim(), zip: st.zip.trim(), city: st.city.trim(), country: st.country.trim() || 'AT', uid: st.uid.trim()};
       const btn = $('#ceSave', el); btn.disabled = true;
       let saved;
       try {

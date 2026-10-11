@@ -1,11 +1,11 @@
-## Neu in 0.7.0
-- Anmeldung mit persönlicher PIN beim Start und beim Benutzerwechsel – Erst-PINs: Lena 1111, David 2222 (Administrator), Miriam 3333. Bitte sofort unter Einstellungen → Benutzer ändern
-- Freigaben (Rabatt, Storno, Entnahme, Kassendifferenz, Punkte) nur noch mit PIN von Filialleitung oder Administrator, Sperre nach 5 Fehlversuchen
-- Benutzerverwaltung mit Rollen: Kasse, Verkauf, Filialleitung, Administrator
-- RKSV im Testmodus: Startbeleg, Signaturkette, verschlüsselter Umsatzzähler, echter QR-Code auf jedem Beleg, Null- und Monatsbelege, DEP-Export
-- Bondrucker (ESC/POS) über Netzwerk oder Windows-Drucker, Kassenlade am Drucker, Testdruck, automatischer Bondruck
-- Gutscheine mit echtem Code: Verkauf, Einlösung mit Restwert, Erstattung als Gutschein, Übersicht offener Gutscheine
-- Kassenbuch (Einlage, Entnahme, Wechselgeld), X-Bericht und Tagesabschluss mit Kassensturz (Stückelung) und Z-Bericht
-- Einkauf: Lieferanten, Bestellungen, Bestellvorschlag nach Mindestbestand und Abverkauf, Wareneingang (auch Teillieferungen), CSV-Export
-- Artikel: Einkaufspreis mit Spanne, Lieferant, Mindestbestand
-- Berichte: Tage, Warengruppen, Artikel, Zahlungsarten, Steuern, Kassier:innen, Tagesabschlüsse, Gutscheine – jeweils als CSV für Excel
+## Neu in 0.8.0
+- Artikelbilder: im Artikel „Bild wählen …“ – erscheinen in Kasse, Artikelliste und Bestand
+- Preisaktionen mit Zeitraum (z. B. −20 % auf Jacken vom 1. bis 15.): die Kasse nimmt automatisch den günstigsten Preis, Bon zeigt „Sie sparen heute“
+- Geführte Inventur: Zählliste je Warengruppe/Marke, Zählen per Scanner, Differenzen in Stück, VK und EK, Abschluss mit Freigabe – Verkäufe während der Zählung werden berücksichtigt
+- Etiketten mit EAN-13-Barcode: A4-Bögen über den Druckdialog oder Etikettendrucker (ZPL, z. B. Zebra); nach dem Wareneingang direkt drucken
+- Rechnung und Lieferschein im A4-Format zu jedem Beleg, Bestellung als A4 für den Lieferanten
+- Beleg, Rechnung und Bestellung per E-Mail über den eigenen Mailserver (inkl. RKSV-QR-Code)
+- Bon & Belege: eigenes Logo (auch auf dem Thermodrucker), Vorlage, Zusatzzeile, Fußzeilen, Artikelnummern
+- Datensicherung jetzt verschlüsselt möglich (AES-256) und inklusive Artikelbilder und Logo
+- Update-Kanal wählbar: Stable oder Beta; Sicherheitsupdates werden hervorgehoben
+- Kunden mit Anschrift und UID für Rechnungen

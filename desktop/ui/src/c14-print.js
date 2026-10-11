@@ -20,7 +20,7 @@ async function openDrawer(reason, auto) {
   catch (e) { toast('Kassenlade nicht erreichbar', {t2: String(e), type: 'warn', icon: 'cash'}); }
 }
 function headOps() {
-  return [{t: 'text', s: CFG['firma.marke'], a: 'c', b: true, big: true}, {t: 'text', s: CFG['firma.zusatz'], a: 'c'}, {t: 'text', s: `${CFG['firma.adresse']}\nUID ${CFG['firma.uid']} · Tel. ${CFG['firma.telefon']}`, a: 'c'}, {t: 'line'}];
+  return [...(CFG['bon.logo'] && CFG['bon.logoDruck'] ? [{t: 'logo'}] : []), {t: 'text', s: CFG['firma.marke'], a: 'c', b: true, big: true}, {t: 'text', s: CFG['firma.zusatz'], a: 'c'}, {t: 'text', s: `${CFG['firma.adresse']}\nUID ${CFG['firma.uid']} · Tel. ${CFG['firma.telefon']}`, a: 'c'}, ...(CFG['bon.kopf'] ? [{t: 'text', s: CFG['bon.kopf'], a: 'c'}] : []), {t: 'line'}];
 }
 function receiptOps(rec) {
   const ops = headOps(), dt = rec.date;
@@ -35,12 +35,14 @@ function receiptOps(rec) {
     ops.push({t: 'lr', l: `${neg ? '-' : ''}${l.qty} x ${l.name}`, r: m2(amount)});
     const v = l.service ? (l.meta || '') : `${COLORS[l.c]?.[0] || l.c || ''}${l.s && l.s !== 'Einheitsgröße' ? ' · ' + l.s : ''}`;
     if (v) ops.push({t: 'text', s: '  ' + v});
+    if (CFG['bon.artikelnr'] && l.sku) ops.push({t: 'text', s: '  Art.-Nr. ' + l.sku});
     if (!neg && l.disc) ops.push({t: 'lr', l: `  Rabatt ${l.disc.pct} %`, r: '-' + m2(r2(r2(l.unit * l.qty) * l.disc.pct / 100))});
   });
   if (!neg && rec.billDisc) ops.push({t: 'lr', l: `Bonrabatt ${rec.billDisc.pct} %`, r: '-' + m2(r2(rec.t.disc - (rec.lines || []).reduce((s, l) => s + (l.disc ? r2(r2(l.unit * l.qty) * l.disc.pct / 100) : 0), 0)))});
   ops.push({t: 'line'}, {t: 'lr', l: neg ? 'ERSTATTUNG EUR' : 'SUMME EUR', r: m2(rec.t.total), b: true}, {t: 'line'});
   (rec.parts || []).forEach(p => ops.push({t: 'lr', l: p.label + (p.code ? ' ' + p.code : ''), r: m2(p.given || p.amount)}));
   if (rec.change > 0) ops.push({t: 'lr', l: 'Rückgeld', r: m2(rec.change)});
+  if (!neg && CFG['bon.ersparnis'] && savingsOf(rec) > 0) ops.push({t: 'lr', l: 'Sie sparen heute', r: m2(savingsOf(rec)), b: true});
   if ((rec.t.vat || []).length || rec.t.zero) {
     ops.push({t: 'line'}, {t: 'lr', l: 'MwSt', r: 'Netto  Steuer  Brutto'});
     (rec.t.vat || []).forEach(v => ops.push({t: 'lr', l: `${v.rate} %`, r: `${m2(v.net)}  ${m2(v.tax)}  ${m2(v.gross)}`}));

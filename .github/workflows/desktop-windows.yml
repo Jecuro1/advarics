@@ -66,9 +66,22 @@ jobs:
           # Text auch für „Was ist neu“ im Programm (latest.json)
           releaseBody: ${{ steps.meta.outputs.notes }}
           releaseDraft: false
-          prerelease: false
+          # Versionen mit Bindestrich (z. B. 0.9.0-beta.1) erscheinen nur im Beta-Kanal
+          prerelease: ${{ contains(steps.meta.outputs.version, '-') }}
           includeUpdaterJson: true
           updaterJsonPreferNsis: true
+
+      - name: Beta-Kanal aktualisieren (Feed enthält jede neue Version)
+        if: steps.meta.outputs.signed == 'true' && steps.meta.outputs.released == 'false'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V="v${{ steps.meta.outputs.version }}"
+          mkdir -p feed
+          gh release download "$V" -p latest.json -D feed --clobber -R "$GITHUB_REPOSITORY"
+          gh release view beta-feed -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create beta-feed -R "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" --title "Beta-Kanal (Update-Feed)" --notes "Technischer Update-Feed für den Beta-Kanal von Kontor. Nicht manuell installieren."
+          gh release upload beta-feed feed/latest.json --clobber -R "$GITHUB_REPOSITORY"
 
       - name: Bauen ohne Veröffentlichung (Version existiert schon oder Signatur-Secret fehlt)
         if: steps.meta.outputs.signed != 'true' || steps.meta.outputs.released == 'true'

@@ -17,14 +17,14 @@ function finishArt(a) {
 function artFromDb(d) {
   return finishArt({id: d.id, name: d.name, brand: d.brand, cat: d.category, g: d.glyph || 'shirt', price: d.price / 100, sale: d.sale_price ? d.sale_price / 100 : undefined,
     vat: d.vat, tag: d.tag || undefined, pop: d.popularity, colors: d.colors, sizes: d.sizes, fields: d.fields || {}, prompts: Array.isArray(d.prompts) ? d.prompts : undefined,
-    cost: d.cost != null ? d.cost / 100 : null, supplierId: d.supplier_id || '', minStock: d.min_stock ?? 2,
+    cost: d.cost != null ? d.cost / 100 : null, supplierId: d.supplier_id || '', minStock: d.min_stock ?? 2, image: d.image || null, baseSale: d.sale_price ? d.sale_price / 100 : null,
     variants: d.variants.map(v => ({vid: v.id, c: v.color, s: v.size, ean: v.ean, q: v.stock, other: null}))});
 }
-const artToDb = a => ({id: a.id, name: a.name, brand: a.brand || '', category: a.cat, glyph: a.g, price: Math.round(a.price * 100), sale_price: a.sale ? Math.round(a.sale * 100) : null,
+const artToDb = a => { const sale = 'baseSale' in a ? a.baseSale : a.sale; return {id: a.id, name: a.name, brand: a.brand || '', category: a.cat, glyph: a.g, price: Math.round(a.price * 100), sale_price: sale ? Math.round(sale * 100) : null,
   vat: a.vat ?? 20, tag: a.tag || null, popularity: a.pop || 0, colors: a.colors, sizes: a.sizes, fields: a.fields || {}, prompts: a.prompts || null,
   cost: a.cost != null ? Math.round(a.cost * 100) : null, supplier_id: a.supplierId || null, min_stock: a.minStock ?? 2,
-  variants: a.variants.map(v => ({color: v.c, size: v.s, ean: v.ean, stock: v.q || 0}))});
-function replaceCatalog(list) { ART.length = 0; list.forEach(d => ART.push(artFromDb(d))); }
+  variants: a.variants.map(v => ({color: v.c, size: v.s, ean: v.ean, stock: v.q || 0}))}; };
+function replaceCatalog(list) { ART.length = 0; list.forEach(d => ART.push(artFromDb(d))); applyPromos(); }
 async function loadCatalog() {
   if (!DESKTOP) return;
   try {
@@ -83,10 +83,10 @@ function renderArtTable() {
   $('#artCount').textContent = `${list.length} von ${ART.length} Artikeln · ${num(ART.reduce((s, a) => s + a.variants.length, 0))} Varianten`;
   $('#artTable').innerHTML = list.length ? `<table class="tbl art-tbl"><thead><tr><th style="padding-left:16px;width:56px"></th><th>Artikel</th><th>Warengruppe</th><th class="r">Preis</th><th>Varianten</th><th class="r">Bestand</th><th>Eigene Felder</th><th></th></tr></thead><tbody>${list.map(a => {
     const c = COLORS[a.colors[0]]?.[1] || '#888', st = a.stock;
-    return `<tr data-art="${esc(a.id)}"><td style="padding-left:16px"><span class="thumb" style="--c:${c}">${glyph(a.g, c)}</span></td>
+    return `<tr data-art="${esc(a.id)}"><td style="padding-left:16px"><span class="thumb" style="--c:${c}">${artVisual(a, c)}</span></td>
       <td><div style="font-weight:600">${esc(a.name)}${a.tag ? ` <span class="pill accent" style="height:18px;font-size:10.5px">${esc(a.tag)}</span>` : ''}</div><div class="muted" style="font-size:12px">${esc(a.brand)} · ${esc(a.id)}</div></td>
       <td>${esc(catName(a.cat))}</td>
-      <td class="r"><b>${eur(a.sale || a.price)}</b>${a.sale ? `<div class="muted" style="font-size:11.5px;text-decoration:line-through">${eur(a.price)}</div>` : ''}</td>
+      <td class="r"><b>${eur(a.sale || a.price)}</b>${a.promo ? `<div><span class="pill accent" style="height:17px;font-size:10px">${esc(a.promo)}</span></div>` : ''}${a.sale ? `<div class="muted" style="font-size:11.5px;text-decoration:line-through">${eur(a.price)}</div>` : ''}</td>
       <td><span style="display:inline-flex;gap:3px;vertical-align:middle;margin-right:6px">${a.colors.slice(0, 5).map(k => `<i style="width:10px;height:10px;border-radius:50%;background:${COLORS[k]?.[1]}"></i>`).join('')}</span><span class="muted">${a.colors.length} × ${a.sizes.length}</span></td>
       <td class="r"><span class="stock ${st <= 0 ? 'out' : st <= 6 ? 'low' : 'ok'}" style="justify-content:flex-end"><span class="dot"></span>${num(st)}</span></td>
       <td class="muted">${Object.keys(a.fields || {}).length || '–'}${a.prompts ? ' · Kassen-Pflichtfelder' : ''}</td>
@@ -103,7 +103,7 @@ function newEan(artId, used) {
 /* ── Artikel-Editor ── */
 function openEditor(a) {
   const isNew = !a;
-  const st = a ? {id: a.id, name: a.name, brand: a.brand, cat: a.cat, g: a.g, price: num(a.price, 2), sale: a.sale ? num(a.sale, 2) : '', vat: a.vat ?? 20, tag: a.tag || '', colors: [...a.colors], sizes: a.sizes.join(', '), fields: Object.entries(a.fields || {}), ski: !!a.prompts, pop: a.pop || 50, cost: a.cost != null ? num(a.cost, 2) : '', supplierId: a.supplierId || '', minStock: String(a.minStock ?? 2)}
+  const st = a ? {id: a.id, name: a.name, brand: a.brand, cat: a.cat, g: a.g, price: num(a.price, 2), sale: (a.baseSale ?? a.sale) ? num(a.baseSale ?? a.sale, 2) : '', vat: a.vat ?? 20, tag: a.tag || '', colors: [...a.colors], sizes: a.sizes.join(', '), fields: Object.entries(a.fields || {}), ski: !!a.prompts, pop: a.pop || 50, cost: a.cost != null ? num(a.cost, 2) : '', supplierId: a.supplierId || '', minStock: String(a.minStock ?? 2)}
     : {id: nextArtId(), name: '', brand: '', cat: AV.cat !== 'alle' ? AV.cat : 'jacken', g: 'jacket', price: '', sale: '', vat: 20, tag: '', colors: [], sizes: 'S, M, L, XL', fields: [], ski: false, pop: 50, cost: '', supplierId: '', minStock: '2'};
   const el = openLayer(`<div class="drawer-panel" style="width:min(600px,100%)" role="dialog" aria-modal="true" aria-label="Artikel bearbeiten"><div id="edHead"></div><div class="drawer-body" id="edBody"></div>
     <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">${isNew ? '' : `<button class="btn btn-danger" id="edDel">${ic('trash', 'i-sm')}Deaktivieren</button>`}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="edSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {cls: 'drawer', focus: '[data-f="name"]'});
@@ -114,7 +114,7 @@ function openEditor(a) {
   const sizesArr = () => [...new Set(String(st.sizes).split(',').map(s => s.trim()).filter(Boolean))];
   const render = () => {
     const c = COLORS[st.colors[0]]?.[1] || '#888', sizes = sizesArr();
-    $('#edHead', el).innerHTML = `<div class="m-head" style="padding-bottom:14px"><span class="thumb" style="--c:${c};width:46px;height:46px;border-radius:12px">${glyph(st.g, c)}</span><div><h2>${isNew ? 'Neuer Artikel' : esc(st.name)}</h2><p>${esc(st.id)} · ${st.colors.length * sizes.length} Varianten${isNew ? '' : ` · Bestand ${num(a.stock)}`}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>`;
+    $('#edHead', el).innerHTML = `<div class="m-head" style="padding-bottom:14px"><span class="thumb" style="--c:${c};width:46px;height:46px;border-radius:12px">${a ? artVisual(a, c) : glyph(st.g, c)}</span><div><h2>${isNew ? 'Neuer Artikel' : esc(st.name)}</h2><p>${esc(st.id)} · ${st.colors.length * sizes.length} Varianten${isNew ? '' : ` · Bestand ${num(a.stock)}`}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>`;
     $('#edBody', el).innerHTML = `
       <div class="ed-grid">
         <label class="field full"><span>Bezeichnung <b class="req">*</b></span><input class="input" data-f="name" value="${esc(st.name)}" placeholder="z. B. Grat Hardshell Jacke"></label>
@@ -130,6 +130,7 @@ function openEditor(a) {
         <label class="field"><span>Mindestbestand je Variante</span><input class="input num" data-f="minStock" inputmode="numeric" value="${esc(st.minStock)}"></label>
         <label class="field"><span>Kennzeichnung</span><select class="input select" data-f="tag"><option value="" ${!st.tag ? 'selected' : ''}>keine</option><option ${st.tag === 'Neu' ? 'selected' : ''}>Neu</option><option ${st.tag === 'Bestseller' ? 'selected' : ''}>Bestseller</option><option ${st.tag === 'Auslauf' ? 'selected' : ''}>Auslauf</option></select></label>
       </div>
+      ${DESKTOP ? `<div class="ed-sec"><div class="lab">Bild <span class="muted">JPEG, PNG oder WebP · wird verkleinert gespeichert</span></div>${a ? `<div style="display:flex;gap:12px;align-items:center"><span class="thumb" style="--c:${c};width:84px;height:84px;border-radius:12px">${artVisual(a, c)}</span><button type="button" class="btn btn-secondary btn-sm" id="edImg">${ic('edit', 'i-sm')}${a.image ? 'Bild ändern' : 'Bild wählen …'}</button>${a.image ? `<button type="button" class="btn btn-ghost btn-sm" id="edImgRm">${ic('trash', 'i-sm')}Entfernen</button>` : ''}<span class="sp"></span><button type="button" class="btn btn-secondary btn-sm" id="edLbl">${ic('tag', 'i-sm')}Etiketten</button></div>` : '<div class="muted" style="font-size:12.5px">Nach dem ersten Speichern kann ein Bild gewählt werden.</div>'}</div>` : ''}
       <div class="ed-sec"><div class="lab">Farben <span class="muted">Reihenfolge = Anzeige · erste Farbe = Kachelbild</span></div><div class="cpick">${COLOR_KEYS.map(k => { const i = st.colors.indexOf(k); return `<button type="button" data-col="${k}" aria-pressed="${i >= 0}" style="--sw:${COLORS[k][1]}"><i></i>${COLORS[k][0]}${i >= 0 ? `<span class="ord">${i + 1}</span>` : ''}</button>`; }).join('')}</div></div>
       <div class="ed-sec"><div class="lab">Größen <span class="muted">durch Komma getrennt</span></div><input class="input" data-f="sizes" value="${esc(st.sizes)}"><div class="reasons" style="margin-top:8px">${SIZE_PRESETS.map(([l, val]) => `<button type="button" class="chip" data-sz="${esc(val)}">${l}</button>`).join('')}</div>
         <div class="prompt-hint">${ic('info', 'i-xs')}${st.colors.length * sizes.length} Varianten · EAN werden automatisch vergeben, bestehende bleiben erhalten · neue Varianten starten mit Bestand 0</div></div>
@@ -144,6 +145,9 @@ function openEditor(a) {
     if (t.closest('#edAddF')) { collect(); st.fields.push(['', '']); render(); $$('[data-fk]', el).pop()?.focus(); return; }
     const rmf = t.closest('[data-rmf]'); if (rmf) { collect(); st.fields.splice($$('.frow', el).indexOf(rmf.closest('.frow')), 1); return render(); }
     if (t.closest('#edSki')) { st.ski = !st.ski; $('#edSki', el).setAttribute('aria-checked', st.ski); return; }
+    if (t.closest('#edImg')) { collect(); try { const n = await invoke('article_image_pick', {id: a.id}); if (n) { a.image = n; render(); renderArtTable(); toast('Bild übernommen', {t2: a.name, type: 'pos', icon: 'check'}); } } catch (err) { toast('Bild nicht übernommen', {t2: String(err), type: 'warn'}); } return; }
+    if (t.closest('#edImgRm')) { collect(); try { await invoke('article_image_remove', {id: a.id}); a.image = null; render(); renderArtTable(); } catch (err) { toast('Fehler', {t2: String(err), type: 'warn'}); } return; }
+    if (t.closest('#edLbl')) return openLabels(a.variants.map(v => ({a, v, n: 1})));
     if (t.closest('#edDel')) {
       try { await stepUp({title: 'Artikel deaktivieren', text: `${a.name} wird aus Kasse und Liste entfernt. Belege und Historie bleiben erhalten.`}); } catch { return; }
       if (DESKTOP) { try { await invoke('article_delete', {id: a.id, user: S.user.name}); } catch (err) { return toast('Fehler', {t2: String(err), type: 'warn'}); } }
@@ -203,7 +207,7 @@ function renderInvList() {
   const list = ART.filter(a => toks.every(t => a.hay.includes(t)) && (INV.f === 'alle' || a.variants.some(x => INV.f === 'aus' ? x.q <= 0 : x.q > 0 && x.q <= 2)));
   $('#invList').innerHTML = list.length ? list.map(a => {
     const c = COLORS[a.colors[0]]?.[1] || '#888';
-    return `<div class="card inv-card" data-inv="${esc(a.id)}"><div class="inv-h"><span class="thumb" style="--c:${c}">${glyph(a.g, c)}</span><div style="flex:1;min-width:0"><div style="font-weight:600">${esc(a.name)}</div><div class="muted" style="font-size:12px">${esc(a.brand)} · ${esc(a.id)} · ${eur(a.sale || a.price)}</div></div><span class="stock ${a.stock <= 0 ? 'out' : a.stock <= 6 ? 'low' : 'ok'}"><span class="dot"></span>${num(a.stock)} Stk.</span></div>
+    return `<div class="card inv-card" data-inv="${esc(a.id)}"><div class="inv-h"><span class="thumb" style="--c:${c}">${artVisual(a, c)}</span><div style="flex:1;min-width:0"><div style="font-weight:600">${esc(a.name)}</div><div class="muted" style="font-size:12px">${esc(a.brand)} · ${esc(a.id)} · ${eur(a.sale || a.price)}</div></div><span class="stock ${a.stock <= 0 ? 'out' : a.stock <= 6 ? 'low' : 'ok'}"><span class="dot"></span>${num(a.stock)} Stk.</span><button class="btn btn-ghost btn-sm btn-icon" data-lbl="${esc(a.id)}" data-tip="Etiketten (Anzahl = Bestand)" aria-label="Etiketten">${ic('tag', 'i-sm')}</button></div>
       <div style="overflow-x:auto"><table class="mx"><thead><tr><th></th>${a.sizes.map(s => `<th>${esc(s === 'Einheitsgröße' ? 'Einheitsgr.' : s)}</th>`).join('')}</tr></thead><tbody>${a.colors.map(col => `<tr><th class="c"><i style="background:${COLORS[col]?.[1]}"></i>${esc(COLORS[col]?.[0] || col)}</th>${a.sizes.map(s => { const x = a.variants.find(v => v.c === col && v.s === s); return x ? `<td><button class="mxc ${x.q <= 0 ? 'out' : x.q <= 2 ? 'low' : ''}" data-vk="${esc(x.ean)}" title="EAN ${esc(x.ean)}">${x.q}</button></td>` : '<td></td>'; }).join('')}</tr>`).join('')}</tbody></table></div></div>`;
   }).join('') : `<div class="card"><div class="empty" style="padding:56px 20px"><div class="empty-icon">${ic('boxes')}</div><h3>Nichts gefunden</h3><p>${INV.f === 'alle' ? 'Suche anpassen.' : 'Keine Varianten in diesem Filter – gut so.'}</p></div></div>`;
 }
@@ -258,6 +262,7 @@ function bindCatalog() {
   const bv = $('#view-bestand');
   bv.addEventListener('input', e => { if (e.target.id === 'invQ') { INV.q = e.target.value; renderInvList(); } });
   bv.addEventListener('click', e => {
+    const lb = e.target.closest('[data-lbl]'); if (lb) { const a = artById(lb.dataset.lbl); return openLabels(a.variants.map(v => ({a, v, n: Math.max(0, v.q)}))); }
     const cell = e.target.closest('[data-vk]'); if (!cell) return;
     for (const a of ART) { const v = a.variants.find(x => x.ean === cell.dataset.vk); if (v) return openBooking(a, v); }
   });

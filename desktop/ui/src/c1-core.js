@@ -190,7 +190,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.7.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.8.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -302,6 +302,8 @@ const NAV = [
   {g: 'Sortiment'},
   {id: 'artikel', label: 'Artikel', icon: 'tag'},
   {id: 'bestand', label: 'Bestand', icon: 'boxes'},
+  {id: 'inventur', label: 'Inventur', icon: 'layers'},
+  {id: 'aktionen', label: 'Preisaktionen', icon: 'percent'},
   {id: 'einkauf', label: 'Einkauf', icon: 'truck'},
   {g: 'Kunden & Analyse'},
   {id: 'kunden', label: 'Kunden', icon: 'users'},
@@ -311,7 +313,7 @@ const NAV = [
   {id: 'designsystem', label: 'Designsystem', icon: 'palette'},
   {id: 'einstellungen', label: 'Einstellungen', icon: 'sliders'},
 ];
-const TITLES = {dashboard: 'Dashboard', kasse: 'Kasse', artikel: 'Artikel', bestand: 'Bestand', einkauf: 'Einkauf', kunden: 'Kunden', berichte: 'Berichte', erweiterungen: 'Erweiterungen', designsystem: 'Designsystem', einstellungen: 'Einstellungen'};
+const TITLES = {dashboard: 'Dashboard', kasse: 'Kasse', artikel: 'Artikel', bestand: 'Bestand', inventur: 'Inventur', aktionen: 'Preisaktionen', einkauf: 'Einkauf', kunden: 'Kunden', berichte: 'Berichte', erweiterungen: 'Erweiterungen', designsystem: 'Designsystem', einstellungen: 'Einstellungen'};
 const PH_VIEWS = ['erweiterungen'];
 
 function renderNav() {
@@ -350,6 +352,8 @@ function go(view) {
   else if (view === 'bestand') renderBestand();
   else if (view === 'kunden') renderKunden();
   else if (view === 'einkauf') renderEinkauf();
+  else if (view === 'inventur') renderInventur();
+  else if (view === 'aktionen') renderAktionen();
   else if (view === 'berichte') renderBerichte();
   else renderPlaceholder(view);
   const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
@@ -367,7 +371,7 @@ function renderTopbar() {
     L.innerHTML = `<div class="tb-title"><h1>${esc(CFG['kasse.name'])}</h1><span class="tb-sub">${esc(CFG['kasse.id'])} · Bon ${belegNo()} · ${esc(S.user.name)}</span></div><div class="parked" id="parked"></div>`;
     renderParked();
   } else {
-    const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster', einstellungen: DESKTOP ? 'Lokale Datenbank' : 'Vorschau', artikel: `${ART.length} Artikel · ${DESKTOP ? 'Datenbank' : 'Vorschau, nicht gespeichert'}`, bestand: `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, kunden: `${num(CUSTOMERS.length)} Kund:innen · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, einkauf: 'Bestellungen & Wareneingang', berichte: 'Auswertungen & Abschlüsse'}[S.view] || 'In Vorbereitung';
+    const sub = {dashboard: `Filiale ${storeObj().name}`, designsystem: 'Tokens · Komponenten · Muster', einstellungen: DESKTOP ? 'Lokale Datenbank' : 'Vorschau', artikel: `${ART.length} Artikel · ${DESKTOP ? 'Datenbank' : 'Vorschau, nicht gespeichert'}`, bestand: `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, kunden: `${num(CUSTOMERS.length)} Kund:innen · ${DESKTOP ? 'Datenbank' : 'Vorschau'}`, einkauf: 'Bestellungen & Wareneingang', berichte: 'Auswertungen & Abschlüsse', inventur: 'Zählen & Differenzen buchen', aktionen: 'Zeitlich begrenzte Nachlässe'}[S.view] || 'In Vorbereitung';
     L.innerHTML = `<div class="tb-title"><h1>${TITLES[S.view]}</h1><span class="tb-sub">${esc(sub)}</span></div>`;
   }
 }
@@ -413,6 +417,8 @@ function cmdList() {
     c('Kasse', 'X-Bericht (Zwischenstand)', 'receipt', xReport, {kw: 'bericht tag'}),
     c('Kasse', 'Tagesabschluss (Z-Bericht)', 'lock', openClosing, {kw: 'kassensturz abschluss z bericht'}),
     c('Einkauf', 'Neue Bestellung', 'truck', () => { go('einkauf'); setTimeout(() => openPO(null), 120); }, {kw: 'bestellen lieferant'}),
+    c('Sortiment', 'Inventur', 'layers', () => go('inventur'), {kw: 'zählen inventur bestand'}),
+    c('Sortiment', 'Preisaktion anlegen', 'percent', () => { go('aktionen'); setTimeout(() => openPromo(null), 120); }, {kw: 'sale rabatt aktion'}),
     c('Einkauf', 'Bestellvorschlag', 'truck', () => { EK.tab = 'vorschlag'; go('einkauf'); }, {kw: 'nachbestellen mindestbestand'}),
     c('Navigation', 'Berichte & Abschlüsse', 'chart', () => go('berichte'), {kw: 'umsatz auswertung csv excel'}),
     c('System', 'Benutzer wechseln', 'user', lock, {kw: 'abmelden anmelden pin'}),

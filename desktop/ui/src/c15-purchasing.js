@@ -100,7 +100,7 @@ async function openPO(id, preset) {
       </div>
       <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">
         ${head && ['entwurf', 'bestellt'].includes(head.status) ? `<button class="btn btn-danger" id="poCancel">${ic('x', 'i-sm')}Stornieren</button>` : ''}
-        ${st.lines.length ? `<button class="btn btn-ghost" id="poCsv">${ic('download', 'i-sm')}CSV</button>` : ''}<span class="sp"></span>
+        ${st.lines.length ? `<button class="btn btn-ghost" id="poCsv">${ic('download', 'i-sm')}CSV</button><button class="btn btn-ghost" id="poPrint">${ic('printer', 'i-sm')}Drucken</button><button class="btn btn-ghost" id="poMail">${ic('mail', 'i-sm')}E-Mail</button>` : ''}<span class="sp"></span>
         ${draft ? `<button class="btn btn-secondary" id="poSave">${ic('check', 'i-sm')}Entwurf speichern</button><button class="btn btn-primary" id="poOrder">${ic('truck', 'i-sm')}Bestellen</button>`
           : ['bestellt', 'teilgeliefert'].includes(head.status) ? `<button class="btn btn-primary" id="poRecv">${ic('boxes', 'i-sm')}Wareneingang buchen</button>` : '<button class="btn btn-secondary" data-close>Schließen</button>'}</div>`;
     if (st.q) { const q = $('#poQ', box); q.focus(); q.setSelectionRange(st.q.length, st.q.length); }
@@ -140,6 +140,8 @@ async function openPO(id, preset) {
       return;
     }
     if (e.target.closest('#poRecv')) { closeLayer(el); openReceive(head, st.lines); }
+    if (e.target.closest('#poPrint')) { sync(); printHTML(poHTML(head ? {...head, note: st.note} : {no: 'Entwurf', note: st.note}, st.lines, SUPPLIERS.find(x => x.id === st.supplier)), `Bestellung ${head?.no || ''}`); }
+    if (e.target.closest('#poMail')) { sync(); mailPO(head ? {...head, note: st.note} : {no: 'Entwurf', note: st.note}, st.lines, SUPPLIERS.find(x => x.id === st.supplier)); }
   });
   render();
 }
@@ -157,7 +159,7 @@ function openReceive(head, lines) {
     if (!items.length) return toast('Keine Menge erfasst', {type: 'warn'});
     let r; try { r = await invoke('po_receive', {id: head.id, items, user: S.user.name}); } catch (e) { return toast('Wareneingang fehlgeschlagen', {t2: String(e), type: 'warn', dur: 7000}); }
     applyStocks(r); await loadPurchasing(); closeLayer(el);
-    toast('Wareneingang gebucht', {t2: `${head.no} · ${items.reduce((s, x) => s + x.qty, 0)} Stück`, type: 'pos', icon: 'boxes'});
+    toast('Wareneingang gebucht', {t2: `${head.no} · ${items.reduce((s, x) => s + x.qty, 0)} Stück`, type: 'pos', icon: 'boxes', dur: 8000, action: {label: 'Etiketten', run: () => openLabels(items.map(x => { const l = lines.find(y => y.id === x.line_id), vv = varById(l.variant_id); return vv ? {a: vv.a, v: vv.v, n: x.qty} : null; }).filter(Boolean))}});
     Hooks.emit('purchasing.goods.received', {bestellung: head.no, stueck: items.reduce((s, x) => s + x.qty, 0)});
     if (S.view === 'einkauf') renderEinkauf();
   };

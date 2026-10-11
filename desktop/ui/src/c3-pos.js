@@ -73,7 +73,7 @@ function tileHTML(a, i) {
   const badge = a.sale ? `<span class="tb sale">−${discOf(a)} %</span>` : a.tag ? `<span class="tb new">${a.tag}</span>` : '<span></span>';
   const sw = a.colors.length > 1 ? `<span class="swatches">${a.colors.slice(0, 4).map(k => `<i style="background:${COLORS[k][1]}"></i>`).join('')}</span>` : '';
   return `<button class="tile ${st <= 0 ? 'out' : ''}" data-id="${a.id}" role="listitem" style="--c:${c};animation-delay:${Math.min(i, 18) * 22}ms" aria-label="${esc(a.name)}, ${esc(eur(a.sale || a.price))}, ${txt}">
-    <div class="tile-media"><div class="tile-badges">${badge}${sw}</div>${glyph(a.g, c)}</div>
+    <div class="tile-media"><div class="tile-badges">${badge}${sw}</div>${artVisual(a, c)}</div>
     <div class="tile-body"><span class="tile-brand">${esc(a.brand)}</span><span class="tile-name">${esc(a.name)}</span>
       <span class="tile-foot"><span class="price" ${a.sale ? 'style="color:var(--accent)"' : ''}>${eur(a.sale || a.price)}</span><span class="stock ${cls}"><span class="dot"></span>${txt}</span></span></div></button>`;
 }
@@ -102,7 +102,7 @@ function lineHTML(l) {
     l.seller ? `<span class="pill" style="height:18px;font-size:10.5px;padding:0 6px">${ic('user')}${esc(l.seller.split(' ')[0])}</span>` : ''].join('');
   const cls = ['line', POS.sel === l.key ? 'sel' : '', POS.lastKey === l.key ? (POS.lastNew ? 'new' : 'flash') : ''].join(' ');
   return `<div class="${cls}" data-key="${esc(l.key)}" role="listitem" tabindex="0" aria-label="${esc(l.name)}, Menge ${l.qty}, ${esc(eur(g - d))}">
-    <span class="thumb" style="--c:${l.service ? 'var(--text-3)' : c}">${l.service ? ic(l.icon) : glyph(l.art.g, c)}</span>
+    <span class="thumb" style="--c:${l.service ? 'var(--text-3)' : c}">${l.service ? ic(l.icon) : artVisual(l.art, c)}</span>
     <div style="min-width:0"><div class="line-name">${esc(l.name)}</div><div class="line-var">${varTxt}${extra}</div></div>
     <div class="line-right"><div class="line-total">${eur(g - d)}${d || l.was ? `<s>${eur(l.was ? l.was * l.qty : g)}</s>` : ''}</div>
       <div class="qty"><button data-q="-1" aria-label="Menge verringern">${ic('minus', 'i-xs')}</button><span>${l.qty}</span><button data-q="1" aria-label="Menge erhöhen">${ic('plus', 'i-xs')}</button></div></div>
@@ -148,7 +148,7 @@ function updateNavBadge() { const b = $('#navCart'); if (!b) return; const n = c
 function fly(fromEl, color) {
   const target = $('#cartCount');
   if (!fromEl || !target || reduced() || !document.contains(fromEl) || !target.offsetParent) return;
-  const src = $('.tile-media svg', fromEl) || fromEl, a = src.getBoundingClientRect(), b = target.getBoundingClientRect();
+  const src = $('.tile-media svg, .tile-media img', fromEl) || fromEl, a = src.getBoundingClientRect(), b = target.getBoundingClientRect();
   const dot = document.createElement('div'); dot.className = 'fly'; dot.style.background = color;
   dot.style.left = (a.left + a.width / 2 - 9) + 'px'; dot.style.top = (a.top + a.height / 2 - 9) + 'px';
   document.body.appendChild(dot);
@@ -241,7 +241,7 @@ function openVariant(a, fromEl, preset) {
   const prompts = a.prompts && POS.flow.prompts ? a.prompts : null;
   const render = focusSel => {
     const c = COLORS[st.c][1], v = variant(a, st.c, st.s), price = a.sale || a.price;
-    box.innerHTML = `<div class="vp-media" style="--c:${c}">${a.sale ? `<span class="tb sale">−${discOf(a)} %</span>` : a.tag ? `<span class="tb new">${a.tag}</span>` : ''}${glyph(a.g, c)}<div class="fields">${Object.entries(a.fields || {}).map(([k, x]) => `<span>${esc(k)} <b>${esc(x)}</b></span>`).join('')}</div></div>
+    box.innerHTML = `<div class="vp-media" style="--c:${c}">${a.sale ? `<span class="tb sale">−${discOf(a)} %${a.promo ? ' · ' + esc(a.promo) : ''}</span>` : a.tag ? `<span class="tb new">${a.tag}</span>` : ''}${artVisual(a, c)}<div class="fields">${Object.entries(a.fields || {}).map(([k, x]) => `<span>${esc(k)} <b>${esc(x)}</b></span>`).join('')}</div></div>
       <div class="vp-main">
         <div style="display:flex;align-items:flex-start;gap:8px"><div style="flex:1;min-width:0"><div class="vp-brand">${esc(a.brand)} · ${a.id}</div><div class="vp-name">${esc(a.name)}</div></div><button class="btn btn-ghost btn-icon btn-sm" data-close aria-label="Schließen">${ic('x')}</button></div>
         <div class="vp-price">${eur(price)}${a.sale ? `<s>${eur(a.price)}</s>` : ''}</div>
@@ -659,7 +659,7 @@ function showDone(rec) {
     ${rec.change > 0 ? `<div class="change-big"><div class="l">Rückgeld</div><div class="v">${eur(rec.change)}</div></div>` : ''}
     ${rec.customer ? `<div class="note" style="margin-top:16px">${ic('star')}<span><b style="color:var(--text)">+${num(rec.pointsEarned ?? rec.t.points)} Gipfel-Punkte</b> für ${esc(rec.customer.name)} · neuer Stand ${num(rec.pointsAfter ?? rec.customer.points)}</span></div>` : ''}
     <div class="eyebrow" style="margin-top:26px">Beleg übergeben</div>
-    <div class="rcpt-opts"><button class="btn btn-secondary" data-r="print">${ic('printer')}Drucken</button>${DESKTOP ? '' : `<button class="btn btn-secondary" data-r="qr">${ic('qr')}Digital (QR)</button><button class="btn btn-secondary" data-r="mail">${ic('mail')}E-Mail</button>`}</div>
+    <div class="rcpt-opts"><button class="btn btn-secondary" data-r="print">${ic('printer')}Drucken</button>${DESKTOP ? `<button class="btn btn-secondary" data-r="mail">${ic('mail')}E-Mail</button><button class="btn btn-secondary" data-r="a4">${ic('receipt')}Rechnung A4</button>` : `<button class="btn btn-secondary" data-r="qr">${ic('qr')}Digital (QR)</button><button class="btn btn-secondary" data-r="mail">${ic('mail')}E-Mail</button>`}</div>
     <div class="note" style="margin-top:12px">${ic('shield')}<span>Belegerteilungspflicht: Beleg aushändigen.${DESKTOP ? (rec.rksv ? ' Signatur im DEP gespeichert (Testmodus).' : ' RKSV noch nicht in Betrieb.') : ` Signatur im DEP gespeichert${rec.offline ? ', Übertragung folgt nach Sync' : ''}.`}</span></div>
     <div style="margin-top:auto;display:flex;gap:8px;padding-top:22px"><button class="btn btn-ghost btn-lg" data-close>Schließen</button><button class="btn btn-primary btn-lg" id="newSale" style="flex:1">Neuer Verkauf<span class="kbd">↵</span></button></div>
   </div>
@@ -678,6 +678,8 @@ function showDone(rec) {
     const k = r.dataset.r;
     if (k === 'print') { if (DESKTOP) printReceipt(rec); else toast('Beleg gedruckt', {t2: `Bondrucker BD-1 · Vorlage „${{classic: 'Klassisch', modern: 'Modern', minimal: 'Minimal'}[prefs.tpl]}“`, type: 'pos', icon: 'printer'}); Hooks.emit('device.printer.receipt', {beleg: rec.no, vorlage: prefs.tpl}); }
     if (k === 'qr') { const w = $('#rcWrap', box); w.innerHTML = `<div style="text-align:center;padding-top:30px"><div class="qr" style="width:220px;height:220px;margin:0 auto">${pseudoQR('beleg|' + rec.no, 29)}</div><p style="margin-top:16px;font-size:13px;color:var(--text-2)">Kund:in scannt den Code am Kundendisplay.<br><span class="muted">Beleg wird über Ihr Kontor-Gateway bereitgestellt (24 h gültig).</span></p></div>`; Hooks.emit('pos.receipt.digital', {beleg: rec.no, kanal: 'qr'}); }
+    if (k === 'a4') return printInvoice(rec, 'rechnung');
+    if (k === 'mail' && DESKTOP) return mailReceipt(rec);
     if (k === 'mail') { const to = rec.customer?.email; toast(to ? 'Beleg per E-Mail gesendet' : 'E-Mail-Adresse erforderlich', {t2: to || 'Kund:in zuordnen oder Adresse eingeben', type: to ? 'pos' : 'warn', icon: 'mail'}); if (to) Hooks.emit('pos.receipt.digital', {beleg: rec.no, kanal: 'email'}); }
   });
 }
@@ -691,11 +693,16 @@ function pseudoQR(seed, N = 25) {
   let d = ''; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (m[y][x]) d += `M${x} ${y}h1v1h-1z`;
   return `<svg viewBox="-1 -1 ${N + 2} ${N + 2}" shape-rendering="crispEdges" aria-label="Maschinenlesbarer Code (Vorschau)"><rect x="-1" y="-1" width="${N + 2}" height="${N + 2}" fill="#fff"/><path d="${d}" fill="#141414"/></svg>`;
 }
-function receiptHead(tpl) {
+function receiptHeadBase(tpl) {
   return tpl === 'modern' ? `<div class="band"></div><div class="logo"><span class="mk"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.5v15"/><path d="M18 4.5 10.5 12 18 19.5"/></svg></span><b>${esc(CFG['firma.marke'])} ${esc(CFG['firma.zusatz'].split(' ')[0])}</b><span class="sm">${esc(CFG['firma.adresse'])}</span></div>`
     : tpl === 'minimal' ? `<div class="logo"><b>${esc(CFG['firma.marke'].toUpperCase())}</b><span class="sm">${esc(CFG['firma.adresse'].split(',').pop().trim())}</span></div>`
     : `<div class="logo"><b>${esc(CFG['firma.marke'].toUpperCase())}</b><span>${esc(CFG['firma.zusatz'])}</span><span class="sm">${esc(CFG['firma.adresse'])}<br>UID ${esc(CFG['firma.uid'])} · Tel. ${esc(CFG['firma.telefon'])}</span></div>`;
 }
+function receiptHead(tpl) {
+  const u = DESKTOP ? imgUrl(CFG['bon.logo']) : null;
+  return (u ? `<div class="c" style="margin-bottom:6px"><img src="${esc(u)}" alt="" style="max-width:70%;max-height:64px;filter:grayscale(1)"></div>` : '') + receiptHeadBase(tpl) + (CFG['bon.kopf'] ? `<div class="sm c">${esc(CFG['bon.kopf'])}</div>` : '');
+}
+const savingsOf = rec => r2((rec.lines || []).reduce((s, l) => s + (l.was && l.was > l.unit ? (l.was - l.unit) * l.qty : 0), 0) + (rec.t?.disc || 0));
 function receiptHTML(rec, tpl) {
   if (rec.kind === 'retoure' || rec.kind === 'storno') return returnReceiptHTML(rec, tpl);
   if (['startbeleg', 'nullbeleg', 'monatsbeleg'].includes(rec.kind)) return zeroReceiptHTML(rec, tpl);
@@ -704,7 +711,7 @@ function receiptHTML(rec, tpl) {
   const lines = rec.lines.map(l => {
     const g = r2(l.unit * l.qty), dd = l.disc ? r2(g * l.disc.pct / 100) : 0;
     const vtxt = l.service ? (l.meta && l.vat === 0 ? l.meta : '') : `${COLORS[l.c][0]}${l.s !== 'Einheitsgröße' ? ' · ' + l.s : ''}`;
-    return `<div class="r"><span>${l.qty} × ${esc(l.name)}</span><span>${money(g)}</span></div>${vtxt ? `<div class="sm">&nbsp;&nbsp;${esc(vtxt)}${l.vat === 0 ? ' · 0 %' : ''}</div>` : ''}${l.vals ? `<div class="sm">&nbsp;&nbsp;${Object.entries(l.vals).filter(([, v]) => v).map(([k, v]) => `${k === 'z' ? 'Z-Wert' : 'SN'} ${esc(v)}`).join(' · ')}</div>` : ''}${dd ? `<div class="r sm"><span>&nbsp;&nbsp;Rabatt ${l.disc.pct} % (${esc(l.disc.reason || '')})</span><span>−${money(dd)}</span></div>` : ''}`;
+    return `<div class="r"><span>${l.qty} × ${esc(l.name)}</span><span>${money(g)}</span></div>${CFG['bon.artikelnr'] && (l.sku || l.art?.id) ? `<div class="sm">&nbsp;&nbsp;Art.-Nr. ${esc(l.sku || l.art.id)}</div>` : ''}${vtxt ? `<div class="sm">&nbsp;&nbsp;${esc(vtxt)}${l.vat === 0 ? ' · 0 %' : ''}</div>` : ''}${l.vals ? `<div class="sm">&nbsp;&nbsp;${Object.entries(l.vals).filter(([, v]) => v).map(([k, v]) => `${k === 'z' ? 'Z-Wert' : 'SN'} ${esc(v)}`).join(' · ')}</div>` : ''}${dd ? `<div class="r sm"><span>&nbsp;&nbsp;Rabatt ${l.disc.pct} % (${esc(l.disc.reason || '')})</span><span>−${money(dd)}</span></div>` : ''}`;
   }).join('');
   const lineDisc = rec.lines.reduce((s, l) => s + (l.disc ? r2(r2(l.unit * l.qty) * l.disc.pct / 100) : 0), 0), billDisc = r2(rec.t.disc - lineDisc);
   const head = receiptHead(tpl);
@@ -714,6 +721,7 @@ function receiptHTML(rec, tpl) {
     ${billDisc > 0 && rec.billDisc ? `<div class="r sm"><span>Bonrabatt ${rec.billDisc.pct} %${rec.billDisc.reason ? ' · ' + esc(rec.billDisc.reason) : ''}</span><span>−${money(billDisc)}</span></div>` : ''}
     <hr><div class="r tot"><span>SUMME EUR</span><span>${money(rec.t.total)}</span></div><hr>
     ${rec.parts.map(p => `<div class="r"><span>${esc(p.label)}</span><span>${money(p.given || p.amount)}</span></div>`).join('')}
+    ${CFG['bon.ersparnis'] && savingsOf(rec) > 0 ? `<div class="r sm" style="font-weight:700"><span>Sie sparen heute</span><span>${money(savingsOf(rec))}</span></div>` : ''}
     ${rec.change > 0 ? `<div class="r"><span>Rückgeld</span><span>${money(rec.change)}</span></div>` : ''}<hr>
     <div class="r sm"><span>MwSt</span><span>Netto · Steuer · Brutto</span></div>
     ${rec.t.vat.map(v => `<div class="r sm"><span>${v.rate} %</span><span>${money(v.net)} · ${money(v.tax)} · ${money(v.gross)}</span></div>`).join('')}

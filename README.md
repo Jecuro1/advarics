@@ -34,7 +34,7 @@ cd src-tauri && cargo test   # Tests: Retoure, Storno, Punkte, Gutscheine, RKSV,
 Voraussetzungen zum Selberbauen: Node.js 22, Rust (stable), unter Windows zusätzlich die
 „Microsoft C++ Build Tools“. Nur zum Benutzen ist nichts davon nötig – nur der Installer.
 
-Stand 0.7.0 – alles mit lokaler Datenbank, ohne Server:
+Stand 0.8.0 – alles mit lokaler Datenbank, ohne Server:
 - **Anmeldung & Rechte:** persönliche PIN (Erst-PINs Lena 1111 · David 2222 (Admin) · Miriam 3333 – sofort ändern),
   Rollen Kasse/Verkauf/Filialleitung/Administrator, Freigaben per PIN, Sperre nach Fehlversuchen.
 - **Kasse:** Verkauf aus der Datenbank, Kunden & Bonuspunkte, Rabatte mit Freigabe, Retoure/Umtausch/Storno,
@@ -43,10 +43,13 @@ Stand 0.7.0 – alles mit lokaler Datenbank, ohne Server:
   Null-/Monats-/Jahresbelege, DEP-Export. Software-Schlüssel statt Signaturkarte – technisch vollständig, aber nicht
   bei FinanzOnline registrierbar. Für den Echtbetrieb wird nur die Signaturquelle getauscht.
 - **Hardware:** Bondrucker (ESC/POS) per Netzwerk oder Windows-Drucker, Kassenlade am Drucker.
-- **Sortiment & Einkauf:** Artikel mit Varianten, EK-Preis/Spanne, Lieferant, Mindestbestand; Bestand mit Journal;
-  Lieferanten, Bestellungen, Bestellvorschlag, Wareneingang.
+- **Sortiment & Einkauf:** Artikel mit Varianten, Bildern, EK-Preis/Spanne, Lieferant, Mindestbestand; Bestand mit
+  Journal; geführte Inventur; Preisaktionen mit Zeitraum; Etiketten (EAN-13, A4 oder ZPL); Lieferanten, Bestellungen,
+  Bestellvorschlag, Wareneingang.
+- **Belege & Dokumente:** Bon-Designer mit Logo, Rechnung/Lieferschein/Bestellung A4, Versand per E-Mail (eigener SMTP).
 - **Auswertung:** Dashboard mit echten Zahlen, Berichte mit CSV-Export für Excel.
-- **Betrieb:** Datensicherung mit Prüfung und Wiederherstellung, signierte Updates im Programm, Protokoll.
+- **Betrieb:** Datensicherung (optional AES-256-verschlüsselt, inkl. Bilder) mit Prüfung und Wiederherstellung,
+  signierte Updates im Programm (Kanal Stable oder Beta), Protokoll.
 - **Noch Vorschau** (als „Vorschau“ markiert): KI-Hinweise, Erweiterungs-Widgets, weitere Filialen/Server.
 
 Datenbank: `%APPDATA%\at.kontor.desktop\kontor.db` · Sicherungen standardmäßig: `Dokumente\Kontor-Sicherungen`.

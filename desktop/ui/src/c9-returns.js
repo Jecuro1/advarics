@@ -37,7 +37,7 @@ async function openReceipts(opts = {}) {
       : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('receipt')}</div><h3>${list.length ? 'Kein Treffer' : 'Noch keine Belege'}</h3><p>${list.length ? 'Suche anpassen.' : 'Abgeschlossene Verkäufe erscheinen hier.'}</p></div>`;
     const s = f[sel];
     const can = s && DESKTOP && (s.kind || 'verkauf') === 'verkauf' && !s.voided;
-    $('#rcActs', el).innerHTML = `<span class="eyebrow">${s ? kindLabel(s) : 'Beleg'}</span><span style="margin-left:auto;display:flex;gap:6px">${can ? `<button class="btn btn-secondary btn-sm" id="rcRet">${ic('undo', 'i-sm')}Retoure</button><button class="btn btn-secondary btn-sm" id="rcVoid">${ic('x', 'i-sm')}Storno</button>` : ''}<button class="btn btn-secondary btn-sm" id="rcCopy" ${s ? '' : 'disabled'}>${ic('printer', 'i-sm')}Kopie</button></span>`;
+    $('#rcActs', el).innerHTML = `<span class="eyebrow">${s ? kindLabel(s) : 'Beleg'}</span><span style="margin-left:auto;display:flex;gap:6px">${can ? `<button class="btn btn-secondary btn-sm" id="rcRet">${ic('undo', 'i-sm')}Retoure</button><button class="btn btn-secondary btn-sm" id="rcVoid">${ic('x', 'i-sm')}Storno</button>` : ''}<button class="btn btn-secondary btn-sm" id="rcCopy" ${s ? '' : 'disabled'}>${ic('printer', 'i-sm')}Kopie</button>${DESKTOP && s ? `<button class="btn btn-secondary btn-sm" id="rcMore" aria-haspopup="menu">${ic('chevron-down', 'i-sm')}</button>` : ''}</span>`;
     $('#rcView', el).innerHTML = s ? `<div class="receipt-wrap">${receiptHTML(recFromData(s.no, {...s.data, kind: s.kind || s.data?.kind}), prefs.tpl || 'classic')}</div>` : '';
     $('[aria-selected="true"]', el)?.scrollIntoView({block: 'nearest'});
   };
@@ -49,6 +49,8 @@ async function openReceipts(opts = {}) {
     const s = filtered()[sel];
     if (e.target.closest('#rcCopy') && s) { Hooks.emit('pos.receipt.copy', {beleg: s.no}); if (DESKTOP) printReceipt(recFromData(s.no, {...s.data, kind: s.kind || s.data?.kind}), {copy: true}); else toast(`Belegkopie ${s.no}`, {t2: 'Als „KOPIE“ gekennzeichnet', icon: 'printer'}); }
     if (e.target.closest('#rcRet') && s) openReturn(s.no, {onDone: after});
+    const mb = e.target.closest('#rcMore');
+    if (mb && s) { const rec = recFromData(s.no, {...s.data, kind: s.kind || s.data?.kind}); const pe = openPopover(mb, `<button class="pop-i" data-x="mail">${ic('mail')}Per E-Mail senden</button>${(s.kind || 'verkauf') === 'verkauf' ? `<button class="pop-i" data-x="rechnung">${ic('receipt')}Rechnung A4</button><button class="pop-i" data-x="lieferschein">${ic('truck')}Lieferschein A4</button>` : ''}`, {width: 230}); pe && pe.addEventListener('click', ev => { const b = ev.target.closest('[data-x]'); if (!b) return; closePopover(); if (b.dataset.x === 'mail') mailReceipt(rec); else printInvoice(rec, b.dataset.x); }); }
     if (e.target.closest('#rcVoid') && s) openReturn(s.no, {storno: true, onDone: after});
   });
   render();
