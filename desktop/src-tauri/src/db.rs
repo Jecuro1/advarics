@@ -279,6 +279,117 @@ const MIGRATIONS: &[&str] = &[
     );
     INSERT INTO counters(name, value) VALUES ('inventur', 0);
     "#,
+    // 6 · Anpassbarkeit (Felder, Objekte, Regeln, Skripte, Webhooks, API), Rechte, Zwei-Faktor, Terminal
+    r#"
+    CREATE TABLE field_defs (
+        id       INTEGER PRIMARY KEY AUTOINCREMENT,
+        object   TEXT NOT NULL,
+        key      TEXT NOT NULL,
+        label    TEXT NOT NULL,
+        type     TEXT NOT NULL DEFAULT 'text',
+        options  TEXT NOT NULL DEFAULT '[]',
+        required INTEGER NOT NULL DEFAULT 0,
+        at_pos   INTEGER NOT NULL DEFAULT 0,
+        help     TEXT NOT NULL DEFAULT '',
+        pos      INTEGER NOT NULL DEFAULT 0,
+        UNIQUE(object, key)
+    );
+    CREATE TABLE entities (
+        id          TEXT PRIMARY KEY,
+        name        TEXT NOT NULL,
+        plural      TEXT NOT NULL,
+        icon        TEXT NOT NULL DEFAULT 'layers',
+        title_field TEXT,
+        created_at  TEXT NOT NULL
+    );
+    CREATE TABLE records (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        entity     TEXT NOT NULL REFERENCES entities(id),
+        data       TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        user       TEXT
+    );
+    CREATE INDEX records_entity ON records(entity, id);
+    CREATE TABLE rules (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        name       TEXT NOT NULL,
+        trigger    TEXT NOT NULL,
+        conditions TEXT NOT NULL DEFAULT '[]',
+        actions    TEXT NOT NULL DEFAULT '[]',
+        active     INTEGER NOT NULL DEFAULT 1,
+        runs       INTEGER NOT NULL DEFAULT 0,
+        last_run   TEXT,
+        last_error TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    );
+    CREATE TABLE scripts (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        name       TEXT NOT NULL,
+        code       TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    );
+    CREATE TABLE webhooks (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        name       TEXT NOT NULL,
+        url        TEXT NOT NULL,
+        events     TEXT NOT NULL DEFAULT '[]',
+        secret     TEXT NOT NULL,
+        active     INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL
+    );
+    CREATE TABLE webhook_queue (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        webhook_id  INTEGER NOT NULL,
+        event       TEXT NOT NULL,
+        payload     TEXT NOT NULL,
+        attempts    INTEGER NOT NULL DEFAULT 0,
+        next_at     TEXT NOT NULL,
+        status      TEXT NOT NULL DEFAULT 'offen',
+        last_status INTEGER,
+        last_error  TEXT,
+        created_at  TEXT NOT NULL,
+        done_at     TEXT
+    );
+    CREATE INDEX webhook_queue_due ON webhook_queue(status, next_at);
+    CREATE TABLE api_keys (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        name       TEXT NOT NULL,
+        key_hash   TEXT NOT NULL UNIQUE,
+        prefix     TEXT NOT NULL,
+        scopes     TEXT NOT NULL DEFAULT '["lesen"]',
+        active     INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        last_used  TEXT
+    );
+    CREATE TABLE api_endpoints (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        slug       TEXT NOT NULL UNIQUE,
+        title      TEXT NOT NULL,
+        sql        TEXT NOT NULL,
+        params     TEXT NOT NULL DEFAULT '[]',
+        active     INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL
+    );
+    CREATE TABLE permissions (
+        role    TEXT NOT NULL,
+        perm    TEXT NOT NULL,
+        allowed INTEGER NOT NULL,
+        PRIMARY KEY (role, perm)
+    );
+    ALTER TABLE users ADD COLUMN totp_secret TEXT;
+    ALTER TABLE suppliers ADD COLUMN fields TEXT NOT NULL DEFAULT '{}';
+    CREATE TABLE terminal_log (
+        id     INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts     TEXT NOT NULL,
+        kind   TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        ok     INTEGER NOT NULL,
+        result TEXT NOT NULL
+    );
+    "#,
 ];
 
 pub fn schema_version() -> i64 {

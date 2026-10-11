@@ -2,8 +2,15 @@
 // Ohne Konsolenfenster im Release-Build.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod accounting;
+mod ai;
+mod api;
+mod automation;
 mod backup;
 mod catalog;
+mod custom;
+mod security;
+mod zvt;
 mod closing;
 mod customers;
 mod db;
@@ -137,7 +144,11 @@ fn settings_set(db: State<db::Db>, values: Map<String, Value>) -> Res<()> {
 
 #[tauri::command]
 fn audit_append(db: State<db::Db>, event: String, payload: Value) -> Res<()> {
-    db::audit_append(&db.conn.lock().unwrap(), &event, &payload).map_err(err)
+    let c = db.conn.lock().unwrap();
+    db::audit_append(&c, &event, &payload).map_err(err)?;
+    // Ereignis an passende Webhooks weiterreichen (Zustellung im Hintergrund)
+    automation::dispatch(&c, &event, &payload);
+    Ok(())
 }
 
 #[tauri::command]
@@ -427,9 +438,12 @@ fn users_default_pins(db: State<db::Db>) -> Vec<String> {
 }
 
 #[tauri::command]
-fn user_verify(db: State<db::Db>, id: String, pin: String, purpose: Option<String>) -> Res<users::User> {
+fn user_verify(db: State<db::Db>, id: String, pin: String, purpose: Option<String>, code: Option<String>) -> Res<users::User> {
     let c = db.conn.lock().unwrap();
-    let r = users::verify(&c, &id, &pin);
+    let r = users::verify(&c, &id, &pin, code.as_deref());
+    if matches!(&r, Err(e) if e == "TOTP") {
+        return Err("TOTP".into());
+    }
     let _ = db::audit_append(&c, if r.is_ok() { "auth.pin.ok" } else { "auth.pin.failed" }, &json!({ "benutzer": id, "zweck": purpose }));
     let u = r?;
     if purpose.as_deref() == Some("freigabe") && !users::can_approve(&u.role) {
@@ -548,6 +562,18 @@ fn qr_svg(text: String) -> Res<String> {
     use qrcode::{render::svg, EcLevel, QrCode};
     let code = QrCode::with_error_correction_level(text.as_bytes(), EcLevel::M).map_err(err)?;
     Ok(code.render::<svg::Color>().quiet_zone(true).min_dimensions(160, 160).dark_color(svg::Color("#141414")).light_color(svg::Color("#ffffff")).build())
+}
+
+/// Textdatei wählen und lesen (Import von Erweiterungspaketen u. Ä.)
+#[tauri::command]
+async fn open_text(app: AppHandle, title: Option<String>, ext: Option<String>) -> Res<Option<String>> {
+    let e = ext.unwrap_or_else(|| "json".into());
+    let Some(f) = app.dialog().file().set_title(title.unwrap_or_else(|| "Datei öffnen".into())).add_filter(e.to_uppercase(), &[e.as_str()]).blocking_pick_file() else { return Ok(None) };
+    let p = f.into_path().map_err(err)?;
+    if std::fs::metadata(&p).map(|m| m.len()).unwrap_or(0) > 20 * 1024 * 1024 {
+        return Err("Datei zu groß".into());
+    }
+    std::fs::read_to_string(&p).map(Some).map_err(|e| format!("Datei nicht lesbar: {e}"))
 }
 
 /// Text in eine vom Benutzer gewählte Datei schreiben (CSV-Export u. Ä.)
@@ -802,6 +828,370 @@ fn po_suggest(db: State<db::Db>) -> Res<Vec<Value>> {
     purchasing::suggest(&db.conn.lock().unwrap())
 }
 
+/* ── Anpassbarkeit: Felder, Objekte ── */
+
+#[tauri::command]
+fn fields_list(db: State<db::Db>, object: Option<String>) -> Res<Vec<custom::FieldDef>> {
+    custom::fields(&db.conn.lock().unwrap(), object.as_deref()).map_err(err)
+}
+#[tauri::command]
+fn field_save(db: State<db::Db>, field: custom::FieldDef) -> Res<Vec<custom::FieldDef>> {
+    let c = db.conn.lock().unwrap();
+    custom::field_save(&c, &field)?;
+    let _ = db::audit_append(&c, "config.field.saved", &json!({ "objekt": field.object, "feld": field.label }));
+    custom::fields(&c, None).map_err(err)
+}
+#[tauri::command]
+fn field_delete(db: State<db::Db>, id: i64) -> Res<Vec<custom::FieldDef>> {
+    let c = db.conn.lock().unwrap();
+    custom::field_delete(&c, id)?;
+    custom::fields(&c, None).map_err(err)
+}
+#[tauri::command]
+fn fields_validate(db: State<db::Db>, object: String, values: Value) -> Res<Value> {
+    custom::validate(&db.conn.lock().unwrap(), &object, &values)
+}
+#[tauri::command]
+fn entities_list(db: State<db::Db>) -> Res<Vec<custom::Entity>> {
+    custom::entities(&db.conn.lock().unwrap()).map_err(err)
+}
+#[tauri::command]
+fn entity_save(db: State<db::Db>, entity: custom::Entity) -> Res<Vec<custom::Entity>> {
+    let c = db.conn.lock().unwrap();
+    let id = custom::entity_save(&c, &entity)?;
+    let _ = db::audit_append(&c, "config.entity.saved", &json!({ "objekt": id }));
+    custom::entities(&c).map_err(err)
+}
+#[tauri::command]
+fn entity_delete(db: State<db::Db>, id: String) -> Res<Vec<custom::Entity>> {
+    let c = db.conn.lock().unwrap();
+    custom::entity_delete(&c, &id)?;
+    custom::entities(&c).map_err(err)
+}
+#[tauri::command]
+fn records_list(db: State<db::Db>, entity: String, q: Option<String>) -> Res<Vec<Value>> {
+    custom::records(&db.conn.lock().unwrap(), &entity, q.as_deref().filter(|s| !s.is_empty()), 2000).map_err(err)
+}
+#[tauri::command]
+fn record_save(db: State<db::Db>, entity: String, id: Option<i64>, data: Value, user: Option<String>) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    let id = custom::record_save(&c, &entity, id, &data, user.as_deref())?;
+    let _ = db::audit_append(&c, &format!("objekt.{entity}.saved"), &json!({ "id": id }));
+    automation::dispatch(&c, &format!("objekt.{entity}.saved"), &json!({ "id": id, "daten": data }));
+    custom::record_get(&c, &entity, id)
+}
+#[tauri::command]
+fn record_delete(db: State<db::Db>, entity: String, id: i64) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    custom::record_delete(&c, &entity, id)?;
+    let _ = db::audit_append(&c, &format!("objekt.{entity}.deleted"), &json!({ "id": id }));
+    Ok(())
+}
+#[tauri::command]
+fn supplier_fields_set(db: State<db::Db>, id: String, fields: Value) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    let v = custom::validate(&c, "lieferant", &fields)?;
+    c.execute("UPDATE suppliers SET fields = ?2 WHERE id = ?1", rusqlite::params![id, v.to_string()]).map_err(err)?;
+    Ok(())
+}
+#[tauri::command]
+fn supplier_fields_get(db: State<db::Db>) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    let mut st = c.prepare("SELECT id, fields FROM suppliers").map_err(err)?;
+    let m: serde_json::Map<String, Value> = st.query_map([], |r| Ok((r.get::<_, String>(0)?, serde_json::from_str::<Value>(&r.get::<_, String>(1)?).unwrap_or(json!({}))))).map_err(err)?.filter_map(Result::ok).collect();
+    Ok(Value::Object(m))
+}
+
+/* ── Regeln, Skripte, Webhooks ── */
+
+#[tauri::command]
+fn rules_list(db: State<db::Db>) -> Res<Vec<automation::Rule>> {
+    automation::rules(&db.conn.lock().unwrap()).map_err(err)
+}
+#[tauri::command]
+fn rule_save(db: State<db::Db>, rule: automation::Rule) -> Res<Vec<automation::Rule>> {
+    let c = db.conn.lock().unwrap();
+    automation::rule_save(&c, &rule)?;
+    let _ = db::audit_append(&c, "config.rule.saved", &json!({ "regel": rule.name, "ausloeser": rule.trigger }));
+    automation::rules(&c).map_err(err)
+}
+#[tauri::command]
+fn rule_delete(db: State<db::Db>, id: i64) -> Res<Vec<automation::Rule>> {
+    let c = db.conn.lock().unwrap();
+    c.execute("DELETE FROM rules WHERE id = ?1", [id]).map_err(err)?;
+    automation::rules(&c).map_err(err)
+}
+#[tauri::command]
+fn rule_ran(db: State<db::Db>, id: i64, error: Option<String>) {
+    automation::rule_ran(&db.conn.lock().unwrap(), id, error.as_deref());
+}
+#[tauri::command]
+fn scripts_list(db: State<db::Db>) -> Res<Vec<automation::Script>> {
+    automation::scripts(&db.conn.lock().unwrap()).map_err(err)
+}
+#[tauri::command]
+fn script_save(db: State<db::Db>, script: automation::Script) -> Res<Vec<automation::Script>> {
+    let c = db.conn.lock().unwrap();
+    automation::script_save(&c, &script)?;
+    let _ = db::audit_append(&c, "config.script.saved", &json!({ "skript": script.name }));
+    automation::scripts(&c).map_err(err)
+}
+#[tauri::command]
+fn script_delete(db: State<db::Db>, id: i64) -> Res<Vec<automation::Script>> {
+    let c = db.conn.lock().unwrap();
+    c.execute("DELETE FROM scripts WHERE id = ?1", [id]).map_err(err)?;
+    automation::scripts(&c).map_err(err)
+}
+#[tauri::command]
+fn webhooks_list(db: State<db::Db>) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    Ok(json!({ "hooks": automation::webhooks(&c).map_err(err)?, "queue": automation::queue(&c, 100).map_err(err)? }))
+}
+#[tauri::command]
+fn webhook_save(db: State<db::Db>, hook: automation::Webhook) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    automation::webhook_save(&c, &hook)?;
+    let _ = db::audit_append(&c, "config.webhook.saved", &json!({ "ziel": hook.url }));
+    Ok(json!({ "hooks": automation::webhooks(&c).map_err(err)?, "queue": automation::queue(&c, 100).map_err(err)? }))
+}
+#[tauri::command]
+fn webhook_delete(db: State<db::Db>, id: i64) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    c.execute("DELETE FROM webhook_queue WHERE webhook_id = ?1 AND status = 'offen'", [id]).map_err(err)?;
+    c.execute("DELETE FROM webhooks WHERE id = ?1", [id]).map_err(err)?;
+    Ok(())
+}
+#[tauri::command]
+fn webhook_test(db: State<db::Db>, id: i64) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    let ev: String = c.query_row("SELECT events FROM webhooks WHERE id = ?1", [id], |r| r.get(0)).map_err(err)?;
+    let _ = ev;
+    c.execute(
+        "INSERT INTO webhook_queue(webhook_id, event, payload, next_at, created_at) VALUES (?1,'test.ping',?2,?3,?3)",
+        rusqlite::params![id, json!({ "event": "test.ping", "zeit": db::now(), "daten": { "nachricht": "Testaufruf aus Kontor" } }).to_string(), db::now()],
+    )
+    .map_err(err)?;
+    Ok(())
+}
+#[tauri::command]
+fn webhook_retry(db: State<db::Db>, id: i64) -> Res<()> {
+    automation::retry(&db.conn.lock().unwrap(), id)
+}
+/// Regel-Aktion „Webhook“: an ein bestimmtes Ziel senden
+#[tauri::command]
+fn webhook_fire(db: State<db::Db>, id: i64, event: String, payload: Value) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    c.execute(
+        "INSERT INTO webhook_queue(webhook_id, event, payload, next_at, created_at) VALUES (?1,?2,?3,?4,?4)",
+        rusqlite::params![id, event, json!({ "event": event, "zeit": db::now(), "daten": payload }).to_string(), db::now()],
+    )
+    .map_err(err)?;
+    Ok(())
+}
+
+/* ── REST-API ── */
+
+#[tauri::command]
+fn api_status(app: AppHandle) -> Res<Value> {
+    let db = app.state::<db::Db>();
+    let c = db.conn.lock().unwrap();
+    Ok(json!({ "running": api::running(&app.state::<api::ApiState>()), "keys": api::keys(&c).map_err(err)?, "endpoints": api::endpoints(&c).map_err(err)?, "openapi": api::openapi() }))
+}
+#[tauri::command]
+fn api_toggle(app: AppHandle, on: bool, lan: bool, port: u16) -> Res<Option<String>> {
+    let db = app.state::<db::Db>();
+    {
+        let c = db.conn.lock().unwrap();
+        db::setting_set(&c, "api.aktiv", &json!(on)).map_err(err)?;
+        db::setting_set(&c, "api.lan", &json!(lan)).map_err(err)?;
+        db::setting_set(&c, "api.port", &json!(port)).map_err(err)?;
+        let _ = db::audit_append(&c, "config.api", &json!({ "aktiv": on, "netzwerk": lan, "port": port }));
+    }
+    let st = app.state::<api::ApiState>();
+    if on { api::start(&st, db.path.clone(), lan, port).map(Some) } else { api::stop(&st); Ok(None) }
+}
+#[tauri::command]
+fn api_key_create(db: State<db::Db>, name: String, scopes: Vec<String>) -> Res<String> {
+    let c = db.conn.lock().unwrap();
+    let k = api::key_create(&c, &name, &scopes)?;
+    let _ = db::audit_append(&c, "config.api.key.created", &json!({ "name": name, "rechte": scopes }));
+    Ok(k)
+}
+#[tauri::command]
+fn api_key_revoke(db: State<db::Db>, id: i64) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    api::key_revoke(&c, id)?;
+    let _ = db::audit_append(&c, "config.api.key.revoked", &json!({ "id": id }));
+    Ok(())
+}
+#[tauri::command]
+fn api_endpoint_save(db: State<db::Db>, id: Option<i64>, slug: String, title: String, sql: String, active: bool) -> Res<i64> {
+    let c = db.conn.lock().unwrap();
+    api::endpoint_save(&c, id, &slug, &title, &sql, active)
+}
+#[tauri::command]
+fn api_endpoint_delete(db: State<db::Db>, id: i64) -> Res<()> {
+    db.conn.lock().unwrap().execute("DELETE FROM api_endpoints WHERE id = ?1", [id]).map_err(err)?;
+    Ok(())
+}
+#[tauri::command]
+fn api_query_test(db: State<db::Db>, sql: String, args: Value) -> Res<Value> {
+    let sql = api::check_sql(&sql)?;
+    let a: Vec<(String, String)> = args.as_object().map(|m| m.iter().map(|(k, v)| (k.clone(), v.as_str().map(str::to_string).unwrap_or_else(|| v.to_string()))).collect()).unwrap_or_default();
+    api::run_query(&db.path, &sql, &a)
+}
+
+/* ── Rechte & Zwei-Faktor ── */
+
+#[tauri::command]
+fn permissions_get(db: State<db::Db>) -> Value {
+    security::matrix(&db.conn.lock().unwrap())
+}
+#[tauri::command]
+fn permission_set(db: State<db::Db>, role: String, perm: String, allowed: bool, by: Option<String>) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    security::set(&c, &role, &perm, allowed)?;
+    let _ = db::audit_append(&c, "config.permission", &json!({ "rolle": role, "recht": perm, "erlaubt": allowed, "durch": by }));
+    Ok(security::matrix(&c))
+}
+#[tauri::command]
+fn totp_begin(db: State<db::Db>, user: String) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    let name: String = c.query_row("SELECT name FROM users WHERE id = ?1", [&user], |r| r.get(0)).map_err(err)?;
+    let firm = db::setting_get(&c, "firma.marke").and_then(|v| v.as_str().map(str::to_string)).unwrap_or_else(|| "Kontor".into());
+    let (secret, uri) = security::totp_new(&name, &format!("Kontor {firm}"));
+    Ok(json!({ "secret": secret, "uri": uri }))
+}
+#[tauri::command]
+fn totp_enable(db: State<db::Db>, user: String, secret: String, code: String) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    security::totp_enable(&c, &user, &secret, &code)?;
+    let _ = db::audit_append(&c, "auth.totp.enabled", &json!({ "benutzer": user }));
+    Ok(())
+}
+#[tauri::command]
+fn totp_disable(db: State<db::Db>, user: String, by: Option<String>) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    security::totp_disable(&c, &user)?;
+    let _ = db::audit_append(&c, "auth.totp.disabled", &json!({ "benutzer": user, "durch": by }));
+    Ok(())
+}
+#[tauri::command]
+fn totp_users(db: State<db::Db>) -> Vec<String> {
+    let c = db.conn.lock().unwrap();
+    let Ok(mut st) = c.prepare("SELECT id FROM users WHERE totp_secret IS NOT NULL") else { return vec![] };
+    st.query_map([], |r| r.get(0)).map(|r| r.filter_map(Result::ok).collect()).unwrap_or_default()
+}
+
+/* ── Lokale KI ── */
+
+#[tauri::command]
+fn ai_forecast(db: State<db::Db>) -> Res<Vec<Value>> {
+    ai::forecast(&db.conn.lock().unwrap())
+}
+#[tauri::command]
+fn ai_reorder(db: State<db::Db>) -> Res<Vec<Value>> {
+    ai::reorder(&db.conn.lock().unwrap())
+}
+#[tauri::command]
+fn ai_insights(db: State<db::Db>) -> Res<Vec<Value>> {
+    ai::insights(&db.conn.lock().unwrap())
+}
+#[tauri::command]
+async fn ai_llm(app: AppHandle, system: String, prompt: String) -> Res<String> {
+    let (url, model) = {
+        let db = app.state::<db::Db>();
+        let c = db.conn.lock().unwrap();
+        let g = |k: &str| db::setting_get(&c, k).and_then(|v| v.as_str().map(str::to_string)).unwrap_or_default();
+        (g("ki.url"), g("ki.modell"))
+    };
+    if url.is_empty() || model.is_empty() {
+        return Err("Kein lokales Sprachmodell eingerichtet (Einstellungen → KI)".into());
+    }
+    tauri::async_runtime::spawn_blocking(move || ai::llm(&url, &model, &system, &prompt)).await.map_err(err)?
+}
+#[tauri::command]
+async fn ai_models(url: String) -> Res<Vec<String>> {
+    tauri::async_runtime::spawn_blocking(move || ai::llm_models(&url)).await.map_err(err)?
+}
+
+/* ── Buchhaltung ── */
+
+#[tauri::command]
+async fn fibu_export(app: AppHandle, von: String, bis: String, format: String) -> Res<Option<String>> {
+    let (text, n) = {
+        let db = app.state::<db::Db>();
+        let c = db.conn.lock().unwrap();
+        let ls = accounting::lines(&c, &von, &bis)?;
+        let t = if format == "datev" { accounting::datev(&c, &ls, &von, &bis) } else { accounting::journal_csv(&ls) };
+        (t, ls.len())
+    };
+    if n == 0 {
+        return Err("Keine Buchungen im Zeitraum".into());
+    }
+    let name = format!("{}_{}_{}.csv", if format == "datev" { "EXTF_Buchungsstapel" } else { "Kontor_Buchungsjournal" }, von, bis);
+    let Some(path) = app.dialog().file().set_title("Buchhaltungsexport speichern").set_file_name(&name).add_filter("CSV", &["csv"]).blocking_save_file() else { return Ok(None) };
+    let p = path.into_path().map_err(err)?;
+    // DATEV erwartet Windows-1252; Journal mit BOM für Excel/BMD
+    let bytes: Vec<u8> = if format == "datev" { text.chars().map(|ch| if (ch as u32) < 256 { ch as u8 } else if ch == '€' { 0x80 } else if ch == '–' { b'-' } else { b'?' }).collect() } else { format!("\u{feff}{text}").into_bytes() };
+    std::fs::write(&p, bytes).map_err(err)?;
+    let db = app.state::<db::Db>();
+    let _ = db::audit_append(&db.conn.lock().unwrap(), "fibu.exported", &json!({ "von": von, "bis": bis, "format": format, "zeilen": n }));
+    Ok(Some(p.display().to_string()))
+}
+#[tauri::command]
+fn fibu_preview(db: State<db::Db>, von: String, bis: String) -> Res<Vec<Value>> {
+    let c = db.conn.lock().unwrap();
+    Ok(accounting::lines(&c, &von, &bis)?
+        .into_iter()
+        .map(|l| json!({ "datum": l.date, "beleg": l.beleg, "soll": l.soll, "haben": l.haben, "betrag": l.betrag, "ust": l.ust, "steuer": l.steuer, "text": l.text }))
+        .collect())
+}
+
+/* ── Zahlungsterminal (ZVT) ── */
+
+fn terminal_cfg(c: &rusqlite::Connection) -> (String, String) {
+    let g = |k: &str| db::setting_get(c, k).map(|v| v.as_str().map(str::to_string).unwrap_or_else(|| v.to_string())).unwrap_or_default();
+    (g("terminal.adresse"), { let p = g("terminal.passwort"); if p.is_empty() { "000000".into() } else { p } })
+}
+fn terminal_log(app: &AppHandle, kind: &str, amount: i64, r: &Result<zvt::Result, String>) {
+    let db = app.state::<db::Db>();
+    let c = db.conn.lock().unwrap();
+    let ok = matches!(r, Ok(x) if x.ok);
+    let _ = c.execute(
+        "INSERT INTO terminal_log(ts, kind, amount, ok, result) VALUES (?1,?2,?3,?4,?5)",
+        rusqlite::params![db::now(), kind, amount, ok as i64, match r { Ok(x) => serde_json::to_string(x).unwrap(), Err(e) => e.clone() }],
+    );
+}
+#[tauri::command]
+async fn terminal_pay(app: AppHandle, amount: i64) -> Res<zvt::Result> {
+    let (addr, _) = { terminal_cfg(&app.state::<db::Db>().conn.lock().unwrap()) };
+    if addr.is_empty() {
+        return Err("Kein Zahlungsterminal eingerichtet".into());
+    }
+    let r = tauri::async_runtime::spawn_blocking(move || zvt::pay(&addr, amount)).await.map_err(err)?;
+    terminal_log(&app, "zahlung", amount, &r);
+    r
+}
+#[tauri::command]
+async fn terminal_admin(app: AppHandle, action: String, receipt: Option<String>) -> Res<zvt::Result> {
+    let (addr, pw) = { terminal_cfg(&app.state::<db::Db>().conn.lock().unwrap()) };
+    if addr.is_empty() {
+        return Err("Kein Zahlungsterminal eingerichtet".into());
+    }
+    let a = action.clone();
+    let r = tauri::async_runtime::spawn_blocking(move || match a.as_str() {
+        "anmelden" => zvt::register(&addr, &pw),
+        "kassenschnitt" => zvt::end_of_day(&addr, &pw),
+        "storno" => zvt::reversal(&addr, &pw, receipt.as_deref().unwrap_or("0")),
+        _ => Err("Unbekannte Aktion".into()),
+    })
+    .await
+    .map_err(err)?;
+    terminal_log(&app, &action, 0, &r);
+    r
+}
+
 /// Vollbild / Kassen-Kiosk ein- oder ausschalten.
 #[tauri::command]
 fn set_fullscreen(window: tauri::WebviewWindow, on: bool) -> Res<bool> {
@@ -829,6 +1219,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(updates::Pending::default())
+        .manage(api::ApiState::default())
         .setup(|app| {
             let dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&dir)?;
@@ -838,6 +1229,14 @@ fn main() {
             users::seed(&conn).map_err(|e| format!("Benutzer: {e}"))?;
             if db::count(&conn, "articles") > 0 {
                 purchasing::supplier_seed(&conn).map_err(|e| format!("Lieferanten: {e}"))?;
+            }
+            // Hintergrund-Dienste: Webhook-Zustellung, lokale REST-API (falls eingeschaltet)
+            automation::start_worker(path.clone());
+            let api_cfg = (db::setting_get(&conn, "api.aktiv").and_then(|v| v.as_bool()).unwrap_or(false), db::setting_get(&conn, "api.lan").and_then(|v| v.as_bool()).unwrap_or(false), db::setting_get(&conn, "api.port").and_then(|v| v.as_u64()).unwrap_or(8787) as u16);
+            if api_cfg.0 {
+                if let Err(e) = api::start(&app.state::<api::ApiState>(), path.clone(), api_cfg.1, api_cfg.2) {
+                    let _ = db::audit_append(&conn, "api.start.failed", &json!({ "fehler": e }));
+                }
             }
             app.manage(db::Db { conn: Mutex::new(conn), path });
             // Nur Entwicklungs-Builds: automatisierte Oberflächentests (Skript wird nach dem Start im Fenster ausgeführt).
@@ -879,6 +1278,53 @@ fn main() {
             promotions_list,
             promotion_save,
             promotion_delete,
+            fields_list,
+            field_save,
+            field_delete,
+            fields_validate,
+            entities_list,
+            entity_save,
+            entity_delete,
+            records_list,
+            record_save,
+            record_delete,
+            supplier_fields_set,
+            supplier_fields_get,
+            rules_list,
+            rule_save,
+            rule_delete,
+            rule_ran,
+            scripts_list,
+            script_save,
+            script_delete,
+            webhooks_list,
+            webhook_save,
+            webhook_delete,
+            webhook_test,
+            webhook_retry,
+            webhook_fire,
+            api_status,
+            api_toggle,
+            api_key_create,
+            api_key_revoke,
+            api_endpoint_save,
+            api_endpoint_delete,
+            api_query_test,
+            permissions_get,
+            permission_set,
+            totp_begin,
+            totp_enable,
+            totp_disable,
+            totp_users,
+            ai_forecast,
+            ai_reorder,
+            ai_insights,
+            ai_llm,
+            ai_models,
+            fibu_export,
+            fibu_preview,
+            terminal_pay,
+            terminal_admin,
             pick_folder,
             open_folder,
             set_fullscreen,
@@ -918,6 +1364,7 @@ fn main() {
             dep_export,
             qr_svg,
             save_text,
+            open_text,
             printer_print,
             printer_list,
             suppliers_list,

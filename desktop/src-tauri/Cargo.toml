@@ -33,6 +33,10 @@ pbkdf2 = { version = "0.12", default-features = false, features = ["hmac"] }
 hmac = "0.12"
 lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "rustls-tls", "hostname"] }
 url = "2"
+# Paket 6: Webhooks/KI-Modell (HTTP-Client), lokale REST-API (HTTP-Server), TOTP (HMAC-SHA1)
+ureq = { version = "2", default-features = false, features = ["tls", "json"] }
+tiny_http = "0.12"
+sha1 = "0.10"
 
 [target.'cfg(windows)'.dependencies]
 # Bondrucker über den Windows-Druckerspooler (RAW)

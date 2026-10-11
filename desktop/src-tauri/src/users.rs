@@ -128,7 +128,7 @@ pub fn deactivate(c: &Connection, id: &str) -> Result<(), String> {
 }
 
 /// PIN prüfen. Liefert den Benutzer oder eine verständliche Fehlermeldung (inkl. Sperre).
-pub fn verify(c: &Connection, id: &str, pin: &str) -> Result<User, String> {
+pub fn verify(c: &Connection, id: &str, pin: &str, code: Option<&str>) -> Result<User, String> {
     let row: Option<(String, String, String, String, i64, Option<String>)> = c
         .query_row("SELECT name, role, pin_hash, pin_salt, failed, locked_until FROM users WHERE id = ?1 AND active = 1", [id], |r| {
             Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?, r.get(5)?))
@@ -144,6 +144,17 @@ pub fn verify(c: &Connection, id: &str, pin: &str) -> Result<User, String> {
         }
     }
     if hash_pin(&salt, pin) == h {
+        // Zwei-Faktor: wenn eingerichtet, zusätzlich Code aus der Authenticator-App
+        if let Some(sec) = crate::security::totp_secret(c, id) {
+            match code {
+                None => return Err("TOTP".into()),
+                Some(k) if !crate::security::totp_check(&sec, k) => {
+                    let _ = c.execute("UPDATE users SET failed = failed + 1 WHERE id = ?1", [id]);
+                    return Err("Code aus der Authenticator-App stimmt nicht".into());
+                }
+                _ => {}
+            }
+        }
         c.execute("UPDATE users SET failed = 0, locked_until = NULL WHERE id = ?1", [id]).map_err(|e| e.to_string())?;
         return Ok(User { id: id.to_string(), name, role, active: true });
     }
@@ -201,17 +212,17 @@ mod tests {
         let c = Connection::open_in_memory().unwrap();
         db::migrate(&c).unwrap();
         seed(&c).unwrap();
-        assert_eq!(verify(&c, "dh", "2222").unwrap().role, "admin");
+        assert_eq!(verify(&c, "dh", "2222", None).unwrap().role, "admin");
         for _ in 0..4 {
-            assert!(verify(&c, "dh", "9999").is_err());
+            assert!(verify(&c, "dh", "9999", None).is_err());
         }
-        let e = verify(&c, "dh", "9999").unwrap_err();
+        let e = verify(&c, "dh", "9999", None).unwrap_err();
         assert!(e.contains("gesperrt"), "{e}");
-        assert!(verify(&c, "dh", "2222").unwrap_err().contains("gesperrt"));
+        assert!(verify(&c, "dh", "2222", None).unwrap_err().contains("gesperrt"));
         // letzter Admin bleibt
         assert!(deactivate(&c, "dh").is_err());
         let id = save(&c, &User { id: String::new(), name: "Neu Mensch".into(), role: "kasse".into(), active: true }, Some("4711")).unwrap();
-        assert_eq!(verify(&c, &id, "4711").unwrap().name, "Neu Mensch");
+        assert_eq!(verify(&c, &id, "4711", None).unwrap().name, "Neu Mensch");
         assert!(save(&c, &User { id: String::new(), name: "Ohne Pin".into(), role: "kasse".into(), active: true }, None).is_err());
         assert!(save(&c, &User { id: String::new(), name: "Pin X".into(), role: "kasse".into(), active: true }, Some("12a4")).is_err());
     }
