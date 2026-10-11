@@ -31,6 +31,16 @@ pub struct Customer {
     pub consent: bool,
     #[serde(default)]
     pub note: String,
+    #[serde(default)]
+    pub street: String,
+    #[serde(default)]
+    pub zip: String,
+    #[serde(default)]
+    pub city: String,
+    #[serde(default)]
+    pub country: String,
+    #[serde(default)]
+    pub uid: String,
     // nur lesend – aus den Belegen berechnet
     #[serde(default)]
     pub visits: i64,
@@ -42,7 +52,7 @@ pub struct Customer {
     pub created_at: Option<String>,
 }
 
-const SELECT: &str = "SELECT c.id, c.name, c.email, c.phone, c.tier, c.points, c.club_name, c.club_pct, c.fields, c.consent, c.note, c.created_at,
+const SELECT: &str = "SELECT c.id, c.name, c.email, c.phone, c.tier, c.points, c.club_name, c.club_pct, c.fields, c.consent, c.note, c.created_at, c.street, c.zip, c.city, c.country, c.uid,
     (SELECT COUNT(*) FROM sales s WHERE s.customer_id = c.id AND s.kind = 'verkauf' AND s.voided = 0),
     (SELECT COALESCE(SUM(s.total), 0) FROM sales s WHERE s.customer_id = c.id),
     (SELECT MAX(s.ts) FROM sales s WHERE s.customer_id = c.id AND s.kind = 'verkauf')
@@ -62,9 +72,14 @@ fn row(r: &rusqlite::Row) -> rusqlite::Result<Customer> {
         consent: r.get::<_, i64>(9)? != 0,
         note: r.get(10)?,
         created_at: r.get(11)?,
-        visits: r.get(12)?,
-        revenue: r.get(13)?,
-        last_visit: r.get(14)?,
+        street: r.get(12)?,
+        zip: r.get(13)?,
+        city: r.get(14)?,
+        country: r.get(15)?,
+        uid: r.get(16)?,
+        visits: r.get(17)?,
+        revenue: r.get(18)?,
+        last_visit: r.get(19)?,
     })
 }
 
@@ -108,15 +123,17 @@ pub fn save(c: &Connection, k: &Customer) -> Result<String, String> {
     };
     let club = k.club_name.as_deref().map(str::trim).filter(|s| !s.is_empty());
     c.execute(
-        "INSERT INTO customers(id, name, email, phone, tier, points, club_name, club_pct, fields, consent, note, active, created_at, updated_at)
-         VALUES (?1,?2,?3,?4,?5,0,?6,?7,?8,?9,?10,1,?11,?11)
+        "INSERT INTO customers(id, name, email, phone, tier, points, club_name, club_pct, fields, consent, note, active, created_at, updated_at, street, zip, city, country, uid)
+         VALUES (?1,?2,?3,?4,?5,0,?6,?7,?8,?9,?10,1,?11,?11,?12,?13,?14,?15,?16)
          ON CONFLICT(id) DO UPDATE SET name=excluded.name, email=excluded.email, phone=excluded.phone, tier=excluded.tier,
            club_name=excluded.club_name, club_pct=excluded.club_pct, fields=excluded.fields, consent=excluded.consent,
-           note=excluded.note, active=1, updated_at=excluded.updated_at",
+           note=excluded.note, active=1, updated_at=excluded.updated_at, street=excluded.street, zip=excluded.zip,
+           city=excluded.city, country=excluded.country, uid=excluded.uid",
         params![
             id, k.name.trim(), k.email.trim(), k.phone.trim(), if k.tier.trim().is_empty() { "Kunde" } else { k.tier.trim() },
             club, if club.is_some() { k.club_pct } else { None },
-            if k.fields.is_object() { k.fields.to_string() } else { "{}".into() }, k.consent as i64, k.note.trim(), now
+            if k.fields.is_object() { k.fields.to_string() } else { "{}".into() }, k.consent as i64, k.note.trim(), now,
+            k.street.trim(), k.zip.trim(), k.city.trim(), if k.country.trim().is_empty() { "AT" } else { k.country.trim() }, k.uid.trim()
         ],
     )
     .map_err(|e| e.to_string())?;

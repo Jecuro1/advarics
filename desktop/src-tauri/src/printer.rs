@@ -36,6 +36,8 @@ pub enum Op {
     },
     Cut,
     Drawer,
+    /// Firmenlogo (Rasterbild aus den Einstellungen)
+    Logo,
 }
 
 #[derive(Deserialize, Clone)]
@@ -84,7 +86,12 @@ fn fit(s: &str, w: usize) -> String {
     s.chars().take(w).collect()
 }
 
+#[cfg_attr(not(test), allow(dead_code))]
 pub fn encode(ops: &[Op], width: usize) -> Vec<u8> {
+    encode_with(ops, width, None)
+}
+
+pub fn encode_with(ops: &[Op], width: usize, logo: Option<&[u8]>) -> Vec<u8> {
     let w = if width == 0 { 48 } else { width.clamp(24, 64) };
     let mut out = vec![0x1B, 0x40, 0x1B, 0x74, 0x13]; // Init, Codepage PC858
     for op in ops {
@@ -129,6 +136,11 @@ pub fn encode(ops: &[Op], width: usize) -> Vec<u8> {
             Op::Feed { n } => out.extend([0x1B, 0x64, (*n).max(1)]),
             Op::Cut => out.extend([0x1D, 0x56, 0x42, 0x03]),
             Op::Drawer => out.extend([0x1B, 0x70, 0x00, 0x19, 0xFA]),
+            Op::Logo => {
+                if let Some(l) = logo {
+                    out.extend(l);
+                }
+            }
         }
     }
     out

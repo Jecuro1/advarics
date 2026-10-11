@@ -240,6 +240,45 @@ const MIGRATIONS: &[&str] = &[
     ALTER TABLE articles ADD COLUMN min_stock INTEGER NOT NULL DEFAULT 2;
     INSERT INTO counters(name, value) VALUES ('bestellung', 0), ('abschluss', 0);
     "#,
+    // 5 · Bilder, Kundenadressen, Preisaktionen, Inventur
+    r#"
+    ALTER TABLE articles ADD COLUMN image TEXT;
+    ALTER TABLE customers ADD COLUMN street TEXT NOT NULL DEFAULT '';
+    ALTER TABLE customers ADD COLUMN zip TEXT NOT NULL DEFAULT '';
+    ALTER TABLE customers ADD COLUMN city TEXT NOT NULL DEFAULT '';
+    ALTER TABLE customers ADD COLUMN country TEXT NOT NULL DEFAULT 'AT';
+    ALTER TABLE customers ADD COLUMN uid TEXT NOT NULL DEFAULT '';
+    CREATE TABLE promotions (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        name        TEXT NOT NULL,
+        pct         INTEGER NOT NULL,
+        scope       TEXT NOT NULL DEFAULT 'alle',
+        scope_values TEXT NOT NULL DEFAULT '[]',
+        from_date   TEXT NOT NULL,
+        to_date     TEXT NOT NULL,
+        active      INTEGER NOT NULL DEFAULT 1,
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+    );
+    CREATE TABLE inventories (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        no         TEXT NOT NULL UNIQUE,
+        status     TEXT NOT NULL DEFAULT 'offen',
+        scope      TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL,
+        closed_at  TEXT,
+        user       TEXT,
+        result     TEXT
+    );
+    CREATE TABLE inventory_lines (
+        inv_id     INTEGER NOT NULL REFERENCES inventories(id),
+        variant_id INTEGER NOT NULL REFERENCES variants(id),
+        expected   INTEGER NOT NULL,
+        counted    INTEGER,
+        PRIMARY KEY (inv_id, variant_id)
+    );
+    INSERT INTO counters(name, value) VALUES ('inventur', 0);
+    "#,
 ];
 
 pub fn schema_version() -> i64 {

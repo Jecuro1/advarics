@@ -59,6 +59,9 @@ pub struct Article {
     pub supplier_id: Option<String>,
     #[serde(default = "two")]
     pub min_stock: i64,
+    /// Bilddatei im Ordner „bilder“ (nur lesend – gesetzt über article_image_set)
+    #[serde(default)]
+    pub image: Option<String>,
 }
 fn two() -> i64 {
     2
@@ -77,7 +80,7 @@ pub fn list(c: &Connection) -> rusqlite::Result<Vec<Article>> {
         }
     }
     let mut st = c.prepare(
-        "SELECT id, name, brand, category, glyph, price, sale_price, vat, tag, popularity, colors, sizes, fields, prompts, cost, supplier_id, min_stock
+        "SELECT id, name, brand, category, glyph, price, sale_price, vat, tag, popularity, colors, sizes, fields, prompts, cost, supplier_id, min_stock, image
          FROM articles WHERE active = 1 ORDER BY popularity DESC, name",
     )?;
     let rows = st.query_map([], |r| {
@@ -102,6 +105,7 @@ pub fn list(c: &Connection) -> rusqlite::Result<Vec<Article>> {
             cost: r.get(14)?,
             supplier_id: r.get(15)?,
             min_stock: r.get(16)?,
+            image: r.get(17)?,
         })
     })?;
     let mut out = vec![];

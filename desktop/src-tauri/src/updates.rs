@@ -20,11 +20,19 @@ pub struct Info {
     pub notes: Option<String>,
 }
 
+/// Stable: neuester regulärer Release. Beta: Feed mit Vorabversionen (enthält auch jede Stable-Version).
+const STABLE: &str = "https://github.com/Jecuro1/advarics/releases/latest/download/latest.json";
+const BETA: &str = "https://github.com/Jecuro1/advarics/releases/download/beta-feed/latest.json";
+
 #[tauri::command]
-pub async fn update_check(app: AppHandle) -> Result<Info, String> {
+pub async fn update_check(app: AppHandle, channel: Option<String>) -> Result<Info, String> {
     let current = app.package_info().version.to_string();
+    let url = if channel.as_deref() == Some("beta") { BETA } else { STABLE };
     let update = app
-        .updater()
+        .updater_builder()
+        .endpoints(vec![url::Url::parse(url).map_err(|e| e.to_string())?])
+        .map_err(|e| e.to_string())?
+        .build()
         .map_err(|e| e.to_string())?
         .check()
         .await
@@ -63,7 +71,7 @@ pub async fn update_install(app: AppHandle, user: Option<String>) -> Result<(), 
         let dir = crate::backup_dir(&app, &dbs);
         let res = {
             let c = dbs.conn.lock().unwrap();
-            backup::create(&c, &dir, "vor-update", &app.package_info().version.to_string())
+            backup::create(&c, &dir, "vor-update", &app.package_info().version.to_string(), Some(&crate::data_dir(&dbs)), crate::backup_password(&dbs).as_deref())
         };
         crate::log_backup(&dbs, "vor-update", &res);
         res.map_err(|e| format!("Sicherung vor dem Update fehlgeschlagen – Update abgebrochen: {e}"))?;

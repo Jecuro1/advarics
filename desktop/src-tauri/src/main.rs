@@ -7,7 +7,11 @@ mod catalog;
 mod closing;
 mod customers;
 mod db;
+mod images;
+mod inventory;
+mod mail;
 mod printer;
+mod promotions;
 mod purchasing;
 mod rksv;
 mod sales;
@@ -56,6 +60,38 @@ pub(crate) fn backup_dir(app: &AppHandle, db: &db::Db) -> PathBuf {
         .document_dir()
         .unwrap_or_else(|_| db.path.parent().unwrap().to_path_buf())
         .join("Kontor-Sicherungen")
+}
+
+/// Datenverzeichnis (Datenbank, Bilder, Sicherungspasswort)
+pub(crate) fn data_dir(db: &db::Db) -> PathBuf {
+    db.path.parent().unwrap().to_path_buf()
+}
+
+/// Sicherungspasswort liegt bewusst NICHT in der Datenbank (sonst stünde es in jeder Sicherung),
+/// sondern als Datei im Datenverzeichnis dieses Rechners.
+pub(crate) fn backup_password(db: &db::Db) -> Option<String> {
+    std::fs::read_to_string(data_dir(db).join("backup-passwort")).ok().map(|s| s.trim_end_matches(['\r', '\n']).to_string()).filter(|s| !s.is_empty())
+}
+
+#[tauri::command]
+fn backup_password_set(db: State<db::Db>, password: String) -> Res<bool> {
+    let f = data_dir(&db).join("backup-passwort");
+    if password.is_empty() {
+        let _ = std::fs::remove_file(&f);
+        let _ = db::audit_append(&db.conn.lock().unwrap(), "backup.encryption.off", &json!({}));
+        return Ok(false);
+    }
+    if password.chars().count() < 8 {
+        return Err("Passwort: mindestens 8 Zeichen".into());
+    }
+    std::fs::write(&f, &password).map_err(err)?;
+    let _ = db::audit_append(&db.conn.lock().unwrap(), "backup.encryption.on", &json!({}));
+    Ok(true)
+}
+
+#[tauri::command]
+fn backup_password_status(db: State<db::Db>) -> bool {
+    backup_password(&db).is_some()
 }
 
 #[tauri::command]
@@ -142,7 +178,7 @@ async fn backup_create(app: AppHandle, kind: Option<String>) -> Res<backup::Entr
     let dir = backup_dir(&app, &db);
     let res = {
         let c = db.conn.lock().unwrap();
-        backup::create(&c, &dir, &kind, &version(&app))
+        backup::create(&c, &dir, &kind, &version(&app), Some(&data_dir(&db)), backup_password(&db).as_deref())
     };
     log_backup(&db, &kind, &res);
     if res.is_ok() && kind == "automatisch" {
@@ -161,15 +197,17 @@ fn backup_list(app: AppHandle, db: State<db::Db>) -> Vec<backup::Entry> {
 }
 
 #[tauri::command]
-async fn backup_verify(path: String) -> backup::Check {
-    backup::verify(&PathBuf::from(path))
+async fn backup_verify(app: AppHandle, path: String, password: Option<String>) -> backup::Check {
+    let pw = password.filter(|p| !p.is_empty()).or_else(|| backup_password(&app.state::<db::Db>()));
+    backup::verify(&PathBuf::from(path), pw.as_deref())
 }
 
 #[tauri::command]
-async fn backup_restore(app: AppHandle, path: String) -> Res<Value> {
+async fn backup_restore(app: AppHandle, path: String, password: Option<String>) -> Res<Value> {
     let db = app.state::<db::Db>();
     let p = PathBuf::from(&path);
-    let check = backup::verify(&p);
+    let pw = password.filter(|p| !p.is_empty()).or_else(|| backup_password(&db));
+    let check = backup::verify(&p, pw.as_deref());
     if !check.ok {
         return Err(format!("Wiederherstellung abgebrochen: {}", check.message));
     }
@@ -178,13 +216,13 @@ async fn backup_restore(app: AppHandle, path: String) -> Res<Value> {
     let dir = backup_dir(&app, &db);
     let safety = {
         let c = db.conn.lock().unwrap();
-        backup::create(&c, &dir, "vor-wiederherstellung", &version(&app))
+        backup::create(&c, &dir, "vor-wiederherstellung", &version(&app), Some(&data_dir(&db)), backup_password(&db).as_deref())
     };
     log_backup(&db, "vor-wiederherstellung", &safety);
     let safety = safety?;
     {
         let mut c = db.conn.lock().unwrap();
-        backup::restore_into(&mut c, &p)?;
+        backup::restore_into(&mut c, &p, pw.as_deref(), Some(&data_dir(&db)))?;
         // Historie nachtragen: die wiederhergestellte DB kennt die Sicherheitskopie noch nicht.
         let m = safety.manifest.as_ref();
         let _ = c.execute(
@@ -536,8 +574,17 @@ fn printer_target(c: &rusqlite::Connection) -> printer::Target {
 
 #[tauri::command]
 async fn printer_print(app: AppHandle, ops: Vec<printer::Op>, purpose: Option<String>) -> Res<()> {
-    let t = { printer_target(&app.state::<db::Db>().conn.lock().unwrap()) };
-    let bytes = printer::encode(&ops, t.width);
+    let (t, logo) = {
+        let db = app.state::<db::Db>();
+        let c = db.conn.lock().unwrap();
+        let logo = db::setting_get(&c, "bon.logo").and_then(|v| v.as_str().map(str::to_string)).filter(|s| !s.is_empty());
+        (printer_target(&c), logo.map(|l| images::dir(&data_dir(&db)).join(l)))
+    };
+    let raster = match (&logo, ops.iter().any(|o| matches!(o, printer::Op::Logo))) {
+        (Some(p), true) => images::escpos_raster(p, if t.width <= 32 { 384 } else { 512 }).ok(),
+        _ => None,
+    };
+    let bytes = printer::encode_with(&ops, t.width, raster.as_deref());
     let r = printer::send(&t, &bytes);
     let db = app.state::<db::Db>();
     let _ = db::audit_append(&db.conn.lock().unwrap(), if r.is_ok() { "device.printer.printed" } else { "device.printer.failed" }, &json!({ "zweck": purpose, "fehler": r.as_ref().err() }));
@@ -547,6 +594,154 @@ async fn printer_print(app: AppHandle, ops: Vec<printer::Op>, purpose: Option<St
 #[tauri::command]
 fn printer_list() -> Vec<String> {
     printer::list_windows()
+}
+
+/* ── Etiketten (ZPL über Netzwerk / Windows-Drucker) ── */
+
+#[tauri::command]
+async fn label_print(app: AppHandle, data: String) -> Res<()> {
+    let t = {
+        let db = app.state::<db::Db>();
+        let c = db.conn.lock().unwrap();
+        let g = |k: &str| db::setting_get(&c, k).and_then(|v| v.as_str().map(str::to_string)).unwrap_or_default();
+        let kind = g("etikett.art");
+        printer::Target { addr: if kind == "windows" { g("etikett.name") } else { g("etikett.adresse") }, kind, width: 0 }
+    };
+    printer::send(&t, data.as_bytes())
+}
+
+/* ── Bilder ── */
+
+fn pick_image(app: &AppHandle, title: &str) -> Option<PathBuf> {
+    app.dialog().file().set_title(title).add_filter("Bilder", &["jpg", "jpeg", "png", "webp"]).blocking_pick_file().and_then(|f| f.into_path().ok())
+}
+
+#[tauri::command]
+async fn article_image_pick(app: AppHandle, id: String) -> Res<Option<String>> {
+    let Some(src) = pick_image(&app, "Artikelbild wählen") else { return Ok(None) };
+    let db = app.state::<db::Db>();
+    let dd = data_dir(&db);
+    let name = images::import_article(&dd, &id, &src)?;
+    let c = db.conn.lock().unwrap();
+    let old: Option<String> = c.query_row("SELECT image FROM articles WHERE id = ?1", [&id], |r| r.get(0)).map_err(err)?;
+    c.execute("UPDATE articles SET image = ?2, updated_at = ?3 WHERE id = ?1", rusqlite::params![id, name, db::now()]).map_err(err)?;
+    if let Some(o) = old {
+        images::remove(&dd, &o);
+    }
+    let _ = db::audit_append(&c, "catalog.article.image", &json!({ "artikel": id, "datei": name }));
+    Ok(Some(name))
+}
+
+#[tauri::command]
+fn article_image_remove(db: State<db::Db>, id: String) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    let old: Option<String> = c.query_row("SELECT image FROM articles WHERE id = ?1", [&id], |r| r.get(0)).map_err(err)?;
+    c.execute("UPDATE articles SET image = NULL WHERE id = ?1", [&id]).map_err(err)?;
+    if let Some(o) = old {
+        images::remove(&data_dir(&db), &o);
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn logo_pick(app: AppHandle) -> Res<Option<String>> {
+    let Some(src) = pick_image(&app, "Logo wählen (PNG mit transparentem Hintergrund ideal)") else { return Ok(None) };
+    let db = app.state::<db::Db>();
+    let dd = data_dir(&db);
+    let name = images::import_logo(&dd, &src)?;
+    let c = db.conn.lock().unwrap();
+    if let Some(serde_json::Value::String(o)) = db::setting_get(&c, "bon.logo") {
+        images::remove(&dd, &o);
+    }
+    db::setting_set(&c, "bon.logo", &json!(name)).map_err(err)?;
+    Ok(Some(name))
+}
+
+/* ── E-Mail ── */
+
+fn mail_config(c: &rusqlite::Connection) -> mail::Config {
+    let g = |k: &str| db::setting_get(c, k).map(|v| v.as_str().map(str::to_string).unwrap_or_else(|| v.to_string())).unwrap_or_default();
+    mail::Config { host: g("mail.host"), port: g("mail.port").parse().unwrap_or(587), user: g("mail.user"), pass: g("mail.pass"), from: g("mail.from"), tls: g("mail.tls") }
+}
+
+#[tauri::command]
+async fn mail_send(app: AppHandle, to: String, subject: String, html: String, text: String, qr: Option<String>, purpose: Option<String>) -> Res<()> {
+    let cfg = { mail_config(&app.state::<db::Db>().conn.lock().unwrap()) };
+    let (to2, subj2) = (to.clone(), subject.clone());
+    let r = tauri::async_runtime::spawn_blocking(move || mail::send(&cfg, &mail::Mail { to: &to, subject: &subject, html: &html, text: &text, qr: qr.as_deref() }))
+        .await
+        .map_err(err)?;
+    let db = app.state::<db::Db>();
+    let _ = db::audit_append(&db.conn.lock().unwrap(), if r.is_ok() { "mail.sent" } else { "mail.failed" }, &json!({ "an": to2, "betreff": subj2, "zweck": purpose, "fehler": r.as_ref().err() }));
+    r
+}
+
+/* ── Inventur ── */
+
+#[tauri::command]
+fn inventory_start(db: State<db::Db>, scope: Value, user: String) -> Res<Value> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let id = inventory::start(&tx, &scope, &user)?;
+    db::audit_append(&tx, "inventory.started", &json!({ "inventur": id, "bereich": scope })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    inventory::get(&c, id)
+}
+
+#[tauri::command]
+fn inventory_count(db: State<db::Db>, id: i64, ean: Option<String>, variant_id: Option<i64>, qty: i64, add: bool) -> Res<Value> {
+    inventory::count(&db.conn.lock().unwrap(), id, ean.as_deref(), variant_id, qty, add)
+}
+
+#[tauri::command]
+fn inventory_get(db: State<db::Db>, id: i64) -> Res<Value> {
+    inventory::get(&db.conn.lock().unwrap(), id)
+}
+
+#[tauri::command]
+fn inventory_list(db: State<db::Db>) -> Res<Vec<Value>> {
+    inventory::list(&db.conn.lock().unwrap()).map_err(err)
+}
+
+#[tauri::command]
+fn inventory_finish(db: State<db::Db>, id: i64, zero_uncounted: bool, user: String, approved_by: Option<String>) -> Res<Value> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let r = inventory::finish(&tx, id, zero_uncounted, &user)?;
+    db::audit_append(&tx, "inventory.finished", &json!({ "inventur": id, "ergebnis": r, "freigabe": approved_by })).map_err(err)?;
+    tx.commit().map_err(err)?;
+    Ok(r)
+}
+
+#[tauri::command]
+fn inventory_discard(db: State<db::Db>, id: i64) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    inventory::discard(&c, id)?;
+    let _ = db::audit_append(&c, "inventory.discarded", &json!({ "inventur": id }));
+    Ok(())
+}
+
+/* ── Preisaktionen ── */
+
+#[tauri::command]
+fn promotions_list(db: State<db::Db>) -> Res<Vec<promotions::Promotion>> {
+    promotions::list(&db.conn.lock().unwrap()).map_err(err)
+}
+
+#[tauri::command]
+fn promotion_save(db: State<db::Db>, promotion: promotions::Promotion, user: Option<String>) -> Res<Vec<promotions::Promotion>> {
+    let c = db.conn.lock().unwrap();
+    let id = promotions::save(&c, &promotion)?;
+    db::audit_append(&c, "pricing.promotion.saved", &json!({ "aktion": id, "name": promotion.name, "prozent": promotion.pct, "benutzer": user })).map_err(err)?;
+    promotions::list(&c).map_err(err)
+}
+
+#[tauri::command]
+fn promotion_delete(db: State<db::Db>, id: i64) -> Res<Vec<promotions::Promotion>> {
+    let c = db.conn.lock().unwrap();
+    promotions::delete(&c, id)?;
+    let _ = db::audit_append(&c, "pricing.promotion.deleted", &json!({ "aktion": id }));
+    promotions::list(&c).map_err(err)
 }
 
 /* ── Einkauf ── */
@@ -668,6 +863,22 @@ fn main() {
             backup_list,
             backup_verify,
             backup_restore,
+            backup_password_set,
+            backup_password_status,
+            label_print,
+            article_image_pick,
+            article_image_remove,
+            logo_pick,
+            mail_send,
+            inventory_start,
+            inventory_count,
+            inventory_get,
+            inventory_list,
+            inventory_finish,
+            inventory_discard,
+            promotions_list,
+            promotion_save,
+            promotion_delete,
             pick_folder,
             open_folder,
             set_fullscreen,
