@@ -1,3 +1,8 @@
+## Neu in 0.26.3
+
+- Tabellen füllen jetzt die ganze Arbeitsfläche bis unten (vorher blieb unter der Tabelle leerer Platz).
+- Kompakterer Tabellenkopf: Gruppieren, Suche und Knöpfe in einer Zeile, „Filter erstellen“ in der Fußzeile.
+
 ## Neu in 0.26.2
 
 - Verleih / Rental Service komplett entfernt (Belegart, Tarife, Dashboard-Baustein, Vorlage).

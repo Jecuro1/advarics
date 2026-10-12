@@ -19,13 +19,12 @@ function agMount(key, v) {
         ${(cfg.extra || []).map(b => `<button class="ag-xbtn" data-ag="${b.k}">${ic(b.icon || 'plus', 'i-sm')}${esc(b.l)}</button>`).join('')}
         ${cfg.remove && !cfg.toolbar?.length ? `<button class="ag-xbtn ag-del" data-ag="del" hidden>${ic('trash', 'i-sm')}Löschen</button>` : ''}
         <label class="ag-search">${ic('search', 'i-sm')}<input data-agq placeholder="Suche …" value="${esc(st.q)}"></label>
-        <button class="ag-tbtn" data-ag="cols">${ic('list', 'i-sm')}Spalten-Auswahl</button>
-        <button class="ag-tbtn" data-ag="fit">${ic('swap', 'i-sm')}Automatische Spaltenbreite</button>
-        <button class="ag-tbtn" data-ag="export">${ic('upload', 'i-sm')}Exportieren</button>
-        <button class="ag-tbtn" data-ag="filter">${ic('filter', 'i-sm')}Filter öffnen</button></div>
+        <button class="ag-tbtn" data-ag="cols" title="Spalten-Auswahl">${ic('list', 'i-sm')}Spalten</button>
+        <button class="ag-tbtn" data-ag="fit" title="Automatische Spaltenbreite">${ic('swap', 'i-sm')}Spaltenbreite</button>
+        <button class="ag-tbtn" data-ag="export" title="Exportieren (CSV)">${ic('upload', 'i-sm')}Export</button>
+        <button class="ag-tbtn" data-ag="filter" title="Filterzeile ein-/ausblenden">${ic('filter', 'i-sm')}Filter</button></div>
       <div class="ag-scroll" data-agscroll><div class="ag-inner" data-aginner><div class="ag-head" data-aghead></div><div class="ag-filt" data-agfilt></div><div class="ag-rows" data-agrows></div></div></div>
-      <div class="ag-foot"><b data-agcount></b><span class="ag-sel" data-agselinfo></span><span class="ag-sel" data-agsums></span></div>
-      <div class="ag-foot2"><button class="ag-tbtn" data-ag="filter">${ic('filter', 'i-sm')}Filter erstellen</button></div></div>`;
+      <div class="ag-foot"><b data-agcount></b><span class="ag-sel" data-agselinfo></span><span class="ag-sel" data-agsums></span><button class="ag-tbtn ag-fbtn" data-ag="filter">${ic('filter', 'i-sm')}Filter erstellen</button></div></div>`;
   agBind(key, v);
   agApply(key, true);
 }

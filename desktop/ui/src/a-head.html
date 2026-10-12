@@ -1537,5 +1537,23 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .imgv-strip img[aria-current="true"]{border-color:var(--accent)}
 .imgv-cap{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;color:var(--text-2)}
 .zoom-b{font-weight:700;font-size:13px}
+/* Tabellen füllen die ganze Arbeitsfläche */
+.view.active:has(>.agrid:not(.ag-embed)){overflow:hidden}
+.view>.agrid:not(.ag-embed){height:100%;min-height:0;box-sizing:border-box;padding:12px 14px}
+/* kompakter Tabellenkopf: eine Zeile, mehr Platz für Daten */
+.view>.agrid:not(.ag-embed){gap:10px;padding:10px 14px 12px}
+.ag-bar{height:44px;border-radius:12px}
+.ag-btn{height:32px}
+.ag-tools{flex-wrap:nowrap;gap:8px}
+.ag-drop{min-width:0;height:36px;font-size:12.5px}
+.ag-search{height:36px}.ag-search input{width:130px}
+.ag-tbtn,.ag-xbtn{height:36px;padding:0 9px}
+.ag-fbtn{margin-left:auto;height:30px}
+.ag-foot{padding:6px 14px}
+.ag-filt .ag-c{height:38px;line-height:38px}
+.ag-filt input,.ag-filt select{height:28px}
+.ag-filt{top:46px}
+.ag-drop{min-width:200px}
+.ag-search input{width:110px}
 </style>
 </head>
