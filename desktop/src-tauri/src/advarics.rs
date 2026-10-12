@@ -310,6 +310,26 @@ pub fn wg_seed(c: &mut Connection) -> Result<(), String> {
     Ok(())
 }
 
+const GR_EINGEBAUT: &str = include_str!("../../demo-data/advarics_groessen.json");
+
+/// Eingebaute Advarics-Größenliste (Stammdaten › Größen › Größen) beim ersten Start übernehmen
+pub fn groessen_seed(c: &mut Connection) -> Result<(), String> {
+    if db::setting_get(c, "groessen.advarics.eingespielt").and_then(|v| v.as_bool()).unwrap_or(false) {
+        return Ok(());
+    }
+    let list: Vec<Value> = serde_json::from_str(GR_EINGEBAUT).map_err(|e| e.to_string())?;
+    let tx = c.transaction().map_err(|e| e.to_string())?;
+    let now = db::now();
+    for r in &list {
+        let (name, nr) = (r[0].as_str().unwrap_or(""), r[1].as_i64().unwrap_or(0));
+        if name.is_empty() { continue; }
+        tx.execute("INSERT OR IGNORE INTO stamm(kind, id, data, pos, active, updated_at) VALUES ('groesse', ?1, ?2, ?3, 1, ?4)", params![format!("gr-{nr}"), json!({ "name": name, "nr": nr, "g1": "", "g2": "" }).to_string(), nr, now]).map_err(|e| e.to_string())?;
+    }
+    tx.commit().map_err(|e| e.to_string())?;
+    db::setting_set(c, "groessen.advarics.eingespielt", &json!(true)).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 /// Artikel mit alten Standard-Warengruppen (Demo) den Advarics-Gruppen zuordnen
 pub fn wg_remap(c: &Connection) -> usize {
     let now = db::now();

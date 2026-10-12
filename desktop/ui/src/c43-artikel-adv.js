@@ -39,10 +39,11 @@ function aeForm(title, fields, vals = {}, {del} = {}) {
 const aeArt = ctx => ctx.a ? ART.find(x => x.id === ctx.a.id) || ctx.a : null;
 const aeEk = ctx => { const e = parseAmt(ctx.st.cost); return isFinite(e) && String(ctx.st.cost).trim() ? e : null; };
 const aeVk = ctx => { const p = parseAmt(ctx.st.price); return isFinite(p) ? p : null; };
+const grNr = s => { const r = stRows('groesse').find(x => String(x.name).toLowerCase() === String(s).toLowerCase()); return r ? +r.nr : null; };
 function aeVariantRows(ctx) {
   const a = aeArt(ctx); if (!a) return [];
   const order = a.sizes || [];
-  return a.variants.map(v => ({id: v.ean, ean: v.ean, size: v.s, color: colorName(v.c), gsort: (order.indexOf(v.s) + 1) * 100, g1: v.s, ek: aeEk(ctx), vk: aeVk(ctx), visu: aeVk(ctx), mwst: +ctx.st.vat === 0 ? 'Ohne MwSt.' : +ctx.st.vat === 10 || +ctx.st.vat === 13 ? 'Reduziert' : 'Standard', item: v.vid ?? '', stock: v.q, vid: v.vid}));
+  return a.variants.map(v => ({id: v.ean, ean: v.ean, size: v.s, color: colorName(v.c), gsort: grNr(v.s) ?? (order.indexOf(v.s) + 1) * 100, g1: v.s, ek: aeEk(ctx), vk: aeVk(ctx), visu: aeVk(ctx), mwst: +ctx.st.vat === 0 ? 'Ohne MwSt.' : +ctx.st.vat === 10 || +ctx.st.vat === 13 ? 'Reduziert' : 'Standard', item: v.vid ?? '', stock: v.q, vid: v.vid}));
 }
 const aeList = (ctx, k) => (ctx.st.d[k] ||= []);
 
@@ -303,3 +304,29 @@ agridPage('artikel', {
 VIEW_PERM.artikel ||= undefined; delete VIEW_PERM.artikel;
 renderArtikel = function () { PAGES.artikel.render(); };
 renderArtTable = function () { if (S.view === 'artikel') PAGES.artikel.render(); };
+
+/* ── Stammdaten › Größen › Größen (Advarics-Größenliste mit Sortierungsnr.) ── */
+STAMM_DEF.groesse = {t: 'Größen', ic: 'grid', sub: 'Alle Größen mit Sortierungsnummer', cols: [{k: 'name', l: 'Größe'}, {k: 'nr', l: 'Sortierungsnr.', t: 'num'}, {k: 'g1', l: 'Größe 1'}, {k: 'g2', l: 'Größe 2'}]};
+const grRows = () => stRows('groesse').map(r => ({id: r.id, name: r.name || '', nr: +r.nr || 0, g1: r.g1 || '', g2: r.g2 || '', _raw: r}));
+async function grEdit(id, done) {
+  const all = stRows('groesse'), r = id ? all.find(x => x.id === id) : null;
+  const o = await aeForm(r ? 'Größe bearbeiten' : 'Neue Größe', [{k: 'name', l: 'Größe', req: true, w: 'full'}, {k: 'nr', l: 'Sortierungsnr.', t: 'num', req: true}, {k: 'g1', l: 'Größe 1'}, {k: 'g2', l: 'Größe 2'}],
+    r ? {name: r.name, nr: String(r.nr ?? ''), g1: r.g1 || '', g2: r.g2 || ''} : {nr: String(Math.max(0, ...all.map(x => +x.nr || 0)) + 1)}, {del: !!r});
+  if (!o) return;
+  try {
+    await needPerm('einstellungen', 'Größen');
+    let list = all.map(x => ({...x}));
+    if (o._del) list = list.filter(x => x.id !== id);
+    else if (r) list = list.map(x => x.id === id ? {...x, name: o.name, nr: parseInt(o.nr, 10) || 0, g1: o.g1, g2: o.g2} : x);
+    else { if (list.some(x => String(x.name).toLowerCase() === o.name.toLowerCase())) return toast(`Größe „${o.name}“ gibt es schon`, {type: 'warn'}); list.push({id: 'gr-' + aeUid(), _aktiv: true, name: o.name, nr: parseInt(o.nr, 10) || 0, g1: o.g1, g2: o.g2}); }
+    await stammSave('groesse', list); done();
+  } catch (err) { if (String(err.message || err) !== 'abgebrochen') toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
+}
+agridPage('st-groesse', {
+  title: 'Größen', rows: grRows, count: () => stRows('groesse').length, sort: {k: 'nr', dir: 1},
+  toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}],
+  cols: [{k: 'name', l: 'Größe', w: 320}, {k: 'nr', l: 'Sortierungsnr.', t: 'num', w: 160}, {k: 'g1', l: 'Größe 1', w: 160}, {k: 'g2', l: 'Größe 2', w: 160}],
+  actions: {back: () => history.length > 1 ? history.back() : go('dashboard'), refresh: async () => { await loadStamm(true); PAGES['st-groesse'].render(); }, new: () => grEdit(null, () => PAGES['st-groesse'].render())},
+  edit: (id, done) => grEdit(id, done),
+  remove: async ids => { if (!await confirmBox(`${num(ids.length)} Größe${ids.length > 1 ? 'n' : ''} löschen?`, 'Löschen')) throw new Error('abgebrochen'); await needPerm('einstellungen', 'Größen'); const s = new Set(ids); await stammSave('groesse', stRows('groesse').filter(r => !s.has(r.id)).map(r => ({...r}))); },
+});

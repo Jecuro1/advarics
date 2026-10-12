@@ -1,3 +1,7 @@
+## Neu in 0.22.0
+
+- Stammdaten › Größen › Größen: die Advarics-Größenliste (1.023 Größen) ist eingebaut und wird beim ersten Start übernommen, mit Sortierungsnr. 1 bis 1.023 in logischer Reihenfolge (Bekleidung, Zahlen, Text, Gewichte). Datentabelle mit Größe, Sortierungsnr., Größe 1, Größe 2; Neu, Bearbeiten, Löschen. Die Sortierungsnr. dient als Größensort.-Nr. in der Artikelmaske.
+
 ## Neu in 0.21.2
 
 - Artikelmaske moderner: Karten mit großzügigem Abstand (Artikel, Preis, Lieferant & Bestand, Übersicht, Webshop, Werkzeuge), Felder mit Beschriftung am Rand, logische Gruppierung (EK/VK/MwSt. zusammen mit Spannenanzeige). Gilt für alle Reiter.

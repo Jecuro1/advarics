@@ -7,7 +7,7 @@ const AGRID_ROW = 24;
 const AG = {};   // Zustand je Tabelle
 
 function agNew(cfg) {
-  return {cfg, rows: [], view: [], cols: cfg.cols.map(c => ({...c, show: c.show !== false})), sort: null, filters: {}, q: '', group: [...(cfg.group || [])], collapsed: new Set(), sel: new Set(), filterRow: true};
+  return {cfg, rows: [], view: [], cols: cfg.cols.map(c => ({...c, show: c.show !== false})), sort: cfg.sort || null, filters: {}, q: '', group: [...(cfg.group || [])], collapsed: new Set(), sel: new Set(), filterRow: true};
 }
 /** Tabelle in einen beliebigen Container zeichnen (Seite oder Reiter) */
 function agMount(key, v) {

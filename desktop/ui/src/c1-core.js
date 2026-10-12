@@ -193,7 +193,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.21.2', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.22.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -382,7 +382,7 @@ const NAV = [
   {id: 'st-marke', label: 'Marken', icon: 'star'},
   {id: 'demo-marken', label: 'Marken-Demosortiment', icon: 'star'},
   {label: 'Warengruppen', icon: 'tag', kids: [{id: 'st-warengruppe', label: 'Warengruppen', icon: 'tag'}, {id: 'st-abteilung', label: 'Abteilungen', icon: 'layers'}, {id: 'st-hauptabteilung', label: 'Hauptabteilungen', icon: 'layers'}, {id: 'st-bereich', label: 'Bereiche', icon: 'layers'}, {id: 'st-hauptbereich', label: 'Hauptbereiche', icon: 'layers'}, {id: 'st-preislage', label: 'Preislagen', icon: 'tag'}, {label: 'FEDAS', icon: 'sync', kids: [{id: 'fedas-sync', label: 'FEDAS-Sync', icon: 'sync'}, {id: 'fedas-verbindung', label: 'Verbindung & Automatik', icon: 'link'}, {id: 'fedas-import', label: 'Datei-Import (CSV/JSON)', icon: 'download'}, {id: 'st-fedasklasse', label: 'FEDAS-Klassifikation', icon: 'list'}, {id: 'fedas-protokoll', label: 'Sync-Protokoll', icon: 'history'}]}]},
-  {label: 'Größen', icon: 'grid', kids: [{id: 'st-groessenschluessel', label: 'Größenschlüssel', icon: 'grid'}, {id: 'st-groessenfolge', label: 'Größen sortieren', icon: 'list'}]},
+  {label: 'Größen', icon: 'grid', kids: [{id: 'st-groesse', label: 'Größen', icon: 'grid'}, {id: 'st-groessenschluessel', label: 'Größenschlüssel', icon: 'grid'}, {id: 'st-groessenfolge', label: 'Größen sortieren', icon: 'list'}]},
   {id: 'st-flaeche', label: 'Flächen', icon: 'grid'},
   {label: 'Farben', icon: 'palette', kids: [{id: 'st-hausfarbe', label: 'Hausfarben', icon: 'palette'}, {id: 'st-farbuebersetzung', label: 'Übersetzung', icon: 'globe'}]},
   {label: 'Saisons', icon: 'calendar', kids: [{id: 'st-saison', label: 'Saisons', icon: 'calendar'}, {id: 'st-hauptsaison', label: 'Hauptsaison', icon: 'calendar'}, {id: 'st-saisonkategorie', label: 'Kategorie', icon: 'list'}]},
