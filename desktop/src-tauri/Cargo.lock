@@ -2630,7 +2630,7 @@ dependencies = [
 
 [[package]]
 name = "kontor"
-version = "0.23.3"
+version = "0.23.4"
 dependencies = [
  "aes",
  "aes-gcm",

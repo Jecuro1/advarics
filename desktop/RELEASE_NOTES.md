@@ -1,3 +1,7 @@
+## Neu in 0.23.5
+
+- Größenschlüssel „8 Schuhe Erw. Ski MP“ mit seinen 32 Größen (22/22.5 bis 32/32.5 und 220 bis 320 in 5er-Schritten).
+
 ## Neu in 0.23.4
 
 - Größenschlüssel „7 Schuhe Erw. UK“ mit seinen 24 Größen (3 bis 14,5 sowie 40 2/3, 42, 43 1/3, 44 2/3, 46, 47 1/3).
