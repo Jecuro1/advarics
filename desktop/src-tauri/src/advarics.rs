@@ -330,6 +330,27 @@ pub fn groessen_seed(c: &mut Connection) -> Result<(), String> {
     Ok(())
 }
 
+const GS_NAMEN: [&str; 34] = ["ohne Gr.", "Unisex", "Damen", "Herren", "Schuhe Kids EU", "Schuhe Erw. EU", "Schuhe Erw. UK", "Schuhe Erw. Ski MP", "Schuhe Kids Ski MP", "Helme Kids", "Helme Erw.", "Protektoren Kids", "Protektoren Erw.", "Handschuhe Kids / Junior", "Handschuhe Erw.", "Skistöcke Kids", "Skistöcke Erw.", "Snowboardbindungen", "Snowboard Länge Kids", "Snowboard Länge Erw.", "Ski Alpin Länge Kids", "Ski Alpin Länge Erw.", "Socken Kids", "Socken Erw.", "Schuhe Erw. Snowboard MP", "Schuhe Kids Snowboard MP", "Kinder", "Rucksäcke", "Bandagen", "Hosenträger", "Getränke", "Sprays & Pflegemittel", "xxxJKE 3 Sport Holding GmbH", "Sohlen"];
+
+/// Größenschlüssel aus Advarics (Nr. 1–34) beim ersten Start anlegen – nur wenn noch keine vorhanden sind
+pub fn groessenschluessel_seed(c: &mut Connection) -> Result<(), String> {
+    if db::setting_get(c, "groessenschluessel.advarics.eingespielt").and_then(|v| v.as_bool()).unwrap_or(false) {
+        return Ok(());
+    }
+    let n: i64 = c.query_row("SELECT COUNT(*) FROM stamm WHERE kind = 'groessenschluessel'", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    if n == 0 {
+        let tx = c.transaction().map_err(|e| e.to_string())?;
+        let now = db::now();
+        for (i, name) in GS_NAMEN.iter().enumerate() {
+            let nr = i as i64 + 1;
+            tx.execute("INSERT INTO stamm(kind, id, data, pos, active, updated_at) VALUES ('groessenschluessel', ?1, ?2, ?3, 1, ?4)", params![format!("gs-{nr}"), json!({ "name": name, "nr": nr, "sync": false, "groessen": [] }).to_string(), nr, now]).map_err(|e| e.to_string())?;
+        }
+        tx.commit().map_err(|e| e.to_string())?;
+    }
+    db::setting_set(c, "groessenschluessel.advarics.eingespielt", &json!(true)).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 /// Artikel mit alten Standard-Warengruppen (Demo) den Advarics-Gruppen zuordnen
 pub fn wg_remap(c: &Connection) -> usize {
     let now = db::now();

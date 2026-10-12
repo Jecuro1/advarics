@@ -2038,6 +2038,7 @@ fn main() {
             let mut conn = conn;
             if let Err(e) = advarics::wg_seed(&mut conn) { let _ = db::audit_append(&conn, "warengruppen.seed.failed", &json!({ "fehler": e })); }
             let _ = advarics::wg_remap(&conn);
+            let _ = advarics::groessenschluessel_seed(&mut conn);
             if let Err(e) = advarics::groessen_seed(&mut conn) { let _ = db::audit_append(&conn, "groessen.seed.failed", &json!({ "fehler": e })); }
             if db::count(&conn, "articles") > 0 {
                 purchasing::supplier_seed(&conn).map_err(|e| format!("Lieferanten: {e}"))?;

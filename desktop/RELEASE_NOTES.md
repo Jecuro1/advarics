@@ -1,3 +1,7 @@
+## Neu in 0.22.1
+
+- Stammdaten › Größen › Größenschlüssel als Datentabelle mit Nr., Name, Synchronisiert (+ Anzahl Größen). Die 34 Advarics-Größenschlüssel (ohne Gr., Unisex, Damen, Herren, Schuhe Kids EU … Sohlen) werden beim ersten Start angelegt. Doppelklick: Größen je Schlüssel in der gewünschten Reihenfolge zuordnen (auch aus der Größenliste).
+
 ## Neu in 0.22.0
 
 - Stammdaten › Größen › Größen: die Advarics-Größenliste (1.023 Größen) ist eingebaut und wird beim ersten Start übernommen, mit Sortierungsnr. 1 bis 1.023 in logischer Reihenfolge (Bekleidung, Zahlen, Text, Gewichte). Datentabelle mit Größe, Sortierungsnr., Größe 1, Größe 2; Neu, Bearbeiten, Löschen. Die Sortierungsnr. dient als Größensort.-Nr. in der Artikelmaske.

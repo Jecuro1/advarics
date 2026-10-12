@@ -330,3 +330,40 @@ agridPage('st-groesse', {
   edit: (id, done) => grEdit(id, done),
   remove: async ids => { if (!await confirmBox(`${num(ids.length)} Größe${ids.length > 1 ? 'n' : ''} löschen?`, 'Löschen')) throw new Error('abgebrochen'); await needPerm('einstellungen', 'Größen'); const s = new Set(ids); await stammSave('groesse', stRows('groesse').filter(r => !s.has(r.id)).map(r => ({...r}))); },
 });
+
+/* ── Stammdaten › Größen › Größenschlüssel ── */
+delete STAMM_DEF.groessenschluessel.seed;
+STAMM_DEF.groessenschluessel.cols = [{k: 'nr', l: 'Nr.', t: 'num'}, {k: 'name', l: 'Name'}, {k: 'sync', l: 'Synchronisiert', t: 'check'}, {k: 'groessen', l: 'Größen', t: 'list'}];
+const gsRows = () => stRows('groessenschluessel').map(r => ({id: r.id, nr: +r.nr || 0, name: r.name || '', sync: !!r.sync, anz: (r.groessen || []).length, groessen: (r.groessen || []).join(', '), _raw: r}));
+function gsEdit(id, done) {
+  const all = stRows('groessenschluessel'), r = id ? all.find(x => x.id === id) : null;
+  const sizes = [...stRows('groesse')].sort((a, b) => (+a.nr || 0) - (+b.nr || 0));
+  const el = openLayer(`<div class="modal" style="width:min(640px,100%)" role="dialog" aria-modal="true"><div class="m-head"><div class="m-ic">${ic('grid')}</div><div><h2>${r ? 'Größenschlüssel bearbeiten' : 'Neuer Größenschlüssel'}</h2><p>${r ? esc(r.nr + ' · ' + r.name) : 'Name und Größen in der gewünschten Reihenfolge'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body" style="display:grid;gap:22px;grid-template-columns:1fr 2fr">
+      <label class="field"><span>Nr.</span><input class="input num" data-gs="nr" value="${esc(r ? r.nr : Math.max(0, ...all.map(x => +x.nr || 0)) + 1)}"></label>
+      <label class="field"><span>Name *</span><input class="input" data-gs="name" value="${esc(r?.name || '')}"></label>
+      <label class="ae-sw2" style="grid-column:1/-1"><input type="checkbox" data-gs="sync" ${r?.sync ? 'checked' : ''}><span>Synchronisiert</span></label>
+      <label class="field" style="grid-column:1/-1"><span>Größen (eine je Zeile, in dieser Reihenfolge)</span><textarea class="input" data-gs="groessen" rows="8" style="height:auto">${esc((r?.groessen || []).join('\n'))}</textarea></label>
+      <label class="field" style="grid-column:1/-1"><span>Aus der Größenliste hinzufügen</span><input class="input" data-gsadd list="gsList" placeholder="Größe tippen und Enter …"></label><datalist id="gsList">${sizes.map(s => `<option value="${esc(s.name)}">`).join('')}</datalist></div>
+    <div class="m-foot">${r ? `<button class="btn btn-ghost" data-gsdel style="color:var(--neg)">${ic('trash', 'i-sm')}Löschen</button>` : ''}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" data-gsok>${ic('check', 'i-sm')}Speichern</button></div></div>`, {focus: '[data-gs="name"]'});
+  const f = k => $(`[data-gs="${k}"]`, el);
+  const add = $('[data-gsadd]', el);
+  add.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const v = add.value.trim(); if (v) { f('groessen').value = (f('groessen').value.trim() ? f('groessen').value.trim() + '\n' : '') + v; add.value = ''; } } });
+  const save = async list => { await needPerm('einstellungen', 'Größenschlüssel'); await stammSave('groessenschluessel', list); closeLayer(el); done(); };
+  $('[data-gsok]', el).onclick = async () => {
+    const name = f('name').value.trim(); if (!name) return toast('Name angeben', {type: 'warn'});
+    const data = {name, nr: parseInt(f('nr').value, 10) || 0, sync: f('sync').checked, groessen: f('groessen').value.split('\n').map(x => x.trim()).filter(Boolean)};
+    let list = all.map(x => ({...x}));
+    if (r) list = list.map(x => x.id === id ? {...x, ...data} : x); else list.push({id: 'gs-' + aeUid(), _aktiv: true, ...data});
+    try { await save(list); } catch (err) { if (String(err.message || err) !== 'abgebrochen') toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
+  };
+  const d = $('[data-gsdel]', el); if (d) d.onclick = async () => { if (!await confirmBox(`Größenschlüssel „${r.name}“ löschen?`, 'Löschen')) return; try { await save(all.filter(x => x.id !== id).map(x => ({...x}))); } catch { /* */ } };
+}
+agridPage('st-groessenschluessel', {
+  title: 'Größenschlüssel', rows: gsRows, count: () => stRows('groessenschluessel').length, sort: {k: 'nr', dir: 1},
+  toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}],
+  cols: [{k: 'nr', l: 'Nr.', t: 'num', w: 90}, {k: 'name', l: 'Name', w: 360}, {k: 'sync', l: 'Synchronisiert', t: 'check', w: 150}, {k: 'anz', l: 'Anzahl Größen', t: 'num', w: 130}, {k: 'groessen', l: 'Größen', w: 420, show: false}],
+  actions: {back: () => history.length > 1 ? history.back() : go('dashboard'), refresh: async () => { await loadStamm(true); PAGES['st-groessenschluessel'].render(); }, new: () => gsEdit(null, () => PAGES['st-groessenschluessel'].render())},
+  edit: (id, done) => gsEdit(id, done),
+  remove: async ids => { if (!await confirmBox(`${num(ids.length)} Größenschlüssel löschen?`, 'Löschen')) throw new Error('abgebrochen'); await needPerm('einstellungen', 'Größenschlüssel'); const s = new Set(ids); await stammSave('groessenschluessel', stRows('groessenschluessel').filter(r => !s.has(r.id)).map(r => ({...r}))); },
+});
