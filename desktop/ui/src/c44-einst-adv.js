@@ -14,12 +14,8 @@ const EA_DEFAULTS = {
 };
 const EA_GROUPS = () => [
   {h: 'Allgemein', f: [
-    {k: 'allg.gln', l: 'Unternehmens-GLN'}, {k: 'allg.startnr', l: 'Start-Nr. (Gr.,-Schl.)', t: 'num'},
-    {l: 'Globaler Domänen-Name', t: 'ro', v: () => (CFG['firma.name'] || 'kontor').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')},
-    {k: 'allg.belegservice', l: 'Globalen Belegservice nutzen', t: 'switch'},
-    {k: 'allg.gjmonat', l: '1. Monat des Geschäftsjahres', t: 'combo', o: () => EA_MONATE.map((m, i) => [String(i + 1), m]), nolink: true, req: true},
+    {k: 'allg.gln', l: 'Unternehmens-GLN'}, {k: 'allg.gjmonat', l: '1. Monat des Geschäftsjahres', t: 'combo', o: () => EA_MONATE.map((m, i) => [String(i + 1), m]), nolink: true, req: true},
     {k: 'allg.reservierung', l: 'Bezeichn. f. Reservierung / Ausfolgeschein'},
-    {k: 'allg.storno', l: 'Verkäufe stornieren mit Gegenbuchung', t: 'switch', dis: true},
     {k: 'allg.gutscheindruck', l: 'Gutscheindruck erlauben', t: 'switch'}]},
   {h: 'Internationalisierung', f: [
     {k: 'allg.land', l: 'Land', t: 'combo', req: true, o: () => { const r = stActive('land').map(x => [x.id, x.name || x.id]); return r.length ? r : [['AT', 'Österreich'], ['DE', 'Deutschland'], ['CH', 'Schweiz'], ['IT', 'Italien']]; }, page: 'st-land'},
@@ -51,10 +47,7 @@ const EA_GROUPS = () => [
     {k: 'allg.praemienschluessel', l: 'Standard-Prämienschlüssel', t: 'combo', o: eaStamm('praemienschluessel'), page: 'st-praemienschluessel'},
     {k: 'allg.altersbewertung', l: 'Standard-Altersbewertung', t: 'combo', o: eaStamm('altersbewertung', false), page: 'st-altersbewertung'}]},
   {h: 'Gutscheine', f: [
-    {k: 'allg.gs_tage', l: 'Verlängerung der Gültigkeit um Tage', t: 'num'}, {k: 'allg.gs_scancode', l: 'Länge automatischer Scancode', t: 'num'},
-    {l: 'Einzweckgutschein aktiviert von', t: 'ro', v: () => ''}, {l: 'Einzweckgutschein aktiviert am', t: 'ro', v: () => ''}]},
-  {h: 'Geräte-Registrierung', f: [{l: 'Anzahl O.P.I Lizenzen', t: 'ro', v: () => '0'}]},
-  {h: 'WebApp-Einstellungen', f: [{k: 'allg.webapp_ausklappen', l: 'mobile Liste immer ausklappen', t: 'switch'}]}
+    {k: 'allg.gs_tage', l: 'Verlängerung der Gültigkeit um Tage', t: 'num'}, {k: 'allg.gs_scancode', l: 'Länge automatischer Scancode', t: 'num'}]},
 ];
 const EA = {tab: 'allg', draft: null, dirty: false};
 const eaLoad = () => { const o = {}; for (const k in EA_DEFAULTS) o[k] = CFG[k] ?? EA_DEFAULTS[k]; return o; };
@@ -101,7 +94,7 @@ function eaRender() {
   const host = $('#view-einst-allgemein'); if (!host) return;
   const el = document.createElement('div'); el.className = 'ae'; host.replaceChildren(el);
   const btn = (a, icon, l, dis) => `<button class="ag-btn" data-ea-a="${a}" ${dis ? 'disabled' : ''}>${ic(icon, 'i-sm')}<span>${l}</span></button>`;
-  el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', 'Zurück')}${btn('refresh', 'sync', 'Aktualisieren')}${btn('save', 'check', 'Sichern', !EA.dirty)}${btn('undo', 'undo', 'Änderungen zurücknehmen', !EA.dirty)}${btn('trans', 'globe', 'Übersetzungen nachladen')}${btn('code', 'store', 'Filial-Code neu zuweisen')}${btn('codeoff', 'trash', 'Filial-Code zurücksetzen')}</div>
+  el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', 'Zurück')}${btn('refresh', 'sync', 'Aktualisieren')}${btn('save', 'check', 'Sichern', !EA.dirty)}${btn('undo', 'undo', 'Änderungen zurücknehmen', !EA.dirty)}</div>
     <div class="ae-tabsw"><div class="ed-tabs"><button type="button" class="ed-tab" data-ea-t="allg" aria-selected="${EA.tab === 'allg'}">Allgemein</button><button type="button" class="ed-tab" data-ea-t="mail" aria-selected="${EA.tab === 'mail'}">E-Mail-Fußzeile</button></div></div>
     <div class="ae-body"><div id="edBody">${EA.tab === 'allg'
       ? `<div class="ea-cols">${EA_GROUPS().map(g => `<div class="ae-card ea-card"><h4>${esc(g.h)}</h4><div class="ea-fields">${g.f.map(eaField).join('')}</div></div>`).join('')}</div>`

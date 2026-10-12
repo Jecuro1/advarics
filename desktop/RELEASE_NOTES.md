@@ -1,3 +1,8 @@
+## Neu in 0.29.3
+
+- Aufgeräumt: Nur noch, was für ein On-Premise-System Sinn ergibt. Entfernt wurden die Advarics-Cloud-Teile: Buchungslogik (interner Bewertungs-Dienst), Filial-Code und Geräte-Registrierung, Globaler Domänen-Name/Belegservice, WebApp-Einstellungen, Kassen-Synchronisierung (Sync-Name, MAC, Update-Paket, Zeitstempel), RFID, Kassen-Layouts (XML), Self-Checkout, EasyRent, Loyalty, Unterschriften-Pad, Externe Zahlungsart, Kd.-Filter sowie der EFT-Treiber-Block.
+- Kassen-Liste und Kassen-Maske zeigen nur noch Fil.-Nr., Filiale, Land, Kassen-Nr., Bezeichnung, Konfiguration, Aktiv, Region/Sprache und Design.
+
 ## Neu in 0.29.2
 
 - Stammdaten › Größen › Größen sortieren wie bei Advarics: Sichern, Neu, Änderungen zurücknehmen, Rauf, Runter, Automatisch sortieren.
