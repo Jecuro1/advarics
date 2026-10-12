@@ -113,7 +113,7 @@ function openAppearance(anchor) {
   if (!el) return;
   $$('.seg', el).forEach(s => initSeg(s, b => { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }));
   el.addEventListener('click', e => {
-    const z = e.target.closest('[data-z]'); if (z) { saveSettings({'anzeige.zoom': +z.dataset.z}, true); $$('[data-z]', el).forEach(b => b.setAttribute('aria-pressed', b === z)); return; }
+    const z = e.target.closest('[data-z]'); if (z) { saveSettings({'anzeige.zoom': +z.dataset.z, 'anzeige.zoom.auto': false}, true); $$('[data-z]', el).forEach(b => b.setAttribute('aria-pressed', b === z)); return; }
     const a = e.target.closest('[data-acc]');
     if (a) { prefs.accent = a.dataset.acc; applyPrefs(true); $$('[data-acc],.swb.custom', el).forEach(b => b.setAttribute('aria-pressed', b === a)); }
     if (e.target.closest('#apSave')) { closePopover(); toast('Design-Vorlage gespeichert', {t2: '„Alpenlicht · Eigene“ – zuweisbar an Mandant, Filiale oder Rolle', type: 'pos', icon: 'palette'}); Hooks.emit('config.theme.saved', {vorlage: 'Alpenlicht · Eigene', modus: prefs.theme, akzent: prefs.accent}); }

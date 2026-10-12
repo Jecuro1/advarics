@@ -8,7 +8,7 @@ const DEFAULTS = {
   'firma.adresse': 'Maria-Theresien-Str. 18, 6020 Innsbruck', 'firma.uid': 'ATU00000000', 'firma.telefon': '0512 000000',
   'kasse.id': 'INN-K01', 'kasse.name': 'Kasse 1', 'kasse.freigabe': true, 'kasse.rabattGrenze': 20,
   'kasse.vereinsregel': true, 'kasse.retoureGrenze': 100, 'ziel.tag': 2500, 'kasse.pflichtfelder': true, 'kasse.bonFuss': 'Danke für Ihren Einkauf! Umtausch innerhalb von 30 Tagen mit Beleg.',
-  'anzeige.zoom': 1.25, 'anzeige.zoom.v2': false, 'backup.dir': '', 'backup.auto': true, 'backup.keep': 14, 'update.kanal': 'stable', 'update.auto': true, 'update.freigabe': null,
+  'anzeige.zoom': 1.25, 'anzeige.zoom.v2': false, 'anzeige.zoom.auto': true, 'backup.dir': '', 'backup.auto': true, 'backup.keep': 14, 'update.kanal': 'stable', 'update.auto': true, 'update.freigabe': null,
   'drucker.art': 'aus', 'drucker.adresse': '', 'drucker.name': '', 'drucker.breite': 48, 'drucker.auto': false, 'drucker.lade': false, 'gutschein.jahre': 3,
   'bon.logo': '', 'bon.logoDruck': true, 'bon.ersparnis': true, 'bon.artikelnr': false, 'bon.kopf': '', 'bon.fussA4': '',
   'mail.host': '', 'mail.port': 587, 'mail.tls': 'starttls', 'mail.user': '', 'mail.pass': '', 'mail.from': '', 'etikett.art': 'a4', 'etikett.adresse': '', 'etikett.name': '', 'etikett.format': '3x8',
@@ -35,9 +35,11 @@ function applySettings() {
   const t = $('.brand-tenant'); if (t) t.textContent = CFG['firma.name'];
   // 0.25.2: größere Anzeige als neuer Standard (einmalig)
   if (!CFG['anzeige.zoom.v2']) { CFG['anzeige.zoom.v2'] = true; CFG['anzeige.zoom'] = Math.max(+CFG['anzeige.zoom'] || 1, 1.25); try { saveSettings({'anzeige.zoom.v2': true, 'anzeige.zoom': CFG['anzeige.zoom']}, true); } catch { /* */ } }
-  applyZoom(+CFG['anzeige.zoom'] || 1.25);
+  applyZoom(CFG['anzeige.zoom.auto'] === false ? (+CFG['anzeige.zoom'] || 1.25) : autoZoom());
   if (S.view) renderTopbar();
 }
+/** Größe passend zum Bildschirm, solange sie nicht von Hand eingestellt wurde (A−/A+) */
+const autoZoom = () => { const w = Math.max(window.screen?.width || 0, window.innerWidth || 0); return w >= 3000 ? 1.5 : w >= 2500 ? 1.4 : w >= 1900 ? 1.25 : 1.1; };
 function applyZoom(f) {
   f = clamp(Math.round(f * 100) / 100, .7, 2);
   if (DESKTOP) invoke('set_zoom', {factor: f}).catch(() => {});
@@ -47,7 +49,7 @@ function stepZoom(dir) {
   const steps = [.8, .9, 1, 1.1, 1.25, 1.4, 1.5, 1.75];
   const cur = +CFG['anzeige.zoom'] || 1, i = steps.findIndex(s => s >= cur - .001);
   const next = dir === 0 ? 1 : steps[clamp((i < 0 ? 2 : i) + dir, 0, steps.length - 1)];
-  saveSettings({'anzeige.zoom': next}, true); toast(`Anzeigegröße ${Math.round(next * 100)} %`, {icon: 'eye', dur: 1400});
+  saveSettings({'anzeige.zoom': next, 'anzeige.zoom.auto': false}, true); toast(`Anzeigegröße ${Math.round(next * 100)} %`, {icon: 'eye', dur: 1400});
   if (S.view === 'einstellungen') $$('#zoomSeg button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.v === next));
 }
 
@@ -134,7 +136,7 @@ function renderSettings() {
       </section>
     </div></div>`;
   $$('.seg', v).forEach(s => initSeg(s, b => {
-    if (s.id === 'zoomSeg') return saveSettings({'anzeige.zoom': +b.dataset.v}, true);
+    if (s.id === 'zoomSeg') return saveSettings({'anzeige.zoom': +b.dataset.v, 'anzeige.zoom.auto': false}, true);
     if (s.id === 'chanSeg') return saveSettings({'update.kanal': b.dataset.v});
     if (s.dataset.pref) { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }
   }));

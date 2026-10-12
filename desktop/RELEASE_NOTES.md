@@ -1,3 +1,10 @@
+## Neu in 0.34.1
+
+- Layout: Das Artikelraster der Kasse wurde auf breiten Bildschirmen (z. B. 3440 × 1440) von den Tabellen-Stilen überlagert – behoben.
+- Tabellen und Listen (Artikel, Kassen, Bonus Systeme …) füllen jetzt die gesamte Breite, Spalten werden nicht mehr abgeschnitten.
+- Die Anzeigegröße passt sich automatisch an große Bildschirme an. Wer A−/A+ benutzt, schaltet damit auf feste Größe um.
+- Einstellungs-Karten verteilen sich auf mehrere Spalten statt rechts leer zu bleiben.
+
 ## Neu in 0.34.0
 
 - Kassen › MwSt.-Sätze, Zahlungsarten, Kassen-Summen: die FiBu-Konten für Erlöse je Steuersatz, Bar, Karten/Wallets, Gutscheine, Geldtransit und Bank sind hier einstellbar und werden im Buchungsjournal und im DATEV-Export (Berichte › Buchhaltung) verwendet – auch die Konten je Zahlungsart, die es bisher nirgends zu einstellen gab.

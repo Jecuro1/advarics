@@ -13,7 +13,7 @@ function agNew(cfg) {
 function agMount(key, v) {
   const st = AG[key], cfg = st.cfg;
   st.rows = cfg.rows();
-  v.innerHTML = `<div class="agrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
+  v.innerHTML = `<div class="dgrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
       ${cfg.toolbar?.length ? `<div class="ag-bar">${cfg.toolbar.map(b => `<button class="ag-btn" data-ag="${b.k}">${ic(b.icon, 'i-sm')}<span>${esc(b.l)}</span></button>`).join('')}<button class="ag-btn ag-del" data-ag="del" hidden>${ic('trash', 'i-sm')}<span>Löschen</span></button></div>` : ''}
       <div class="ag-tools"><div class="ag-drop" data-agdrop><span class="ag-ph">Zu gruppierende Spalten hierhin ziehen…</span></div>
         ${(cfg.extra || []).map(b => `<button class="ag-xbtn" data-ag="${b.k}">${ic(b.icon || 'plus', 'i-sm')}${esc(b.l)}</button>`).join('')}
@@ -82,7 +82,7 @@ function agApply(page, resetScroll) {
 
 function agHead(page, v, vis) {
   const st = AG[page];
-  const cols = `44px ${vis.map(c => agWidth(c) + 'px').join(' ')}`;
+  const cols = `44px ${vis.map(c => `minmax(${agWidth(c)}px, ${agWidth(c)}fr)`).join(' ')}`;
   const inner = $('[data-aginner]', v);
   inner.style.setProperty('--cols', cols);
   inner.style.minWidth = (44 + vis.reduce((s, c) => s + agWidth(c), 0)) + 'px';

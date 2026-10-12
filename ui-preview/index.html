@@ -1291,7 +1291,7 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .nav-hit{height:auto;min-height:36px}
 .nav-none{padding:14px 12px;color:var(--text-3);font-size:13px}
 /* Datentabelle im Advarics-Stil */
-.agrid{display:flex;flex-direction:column;height:calc(100vh - 165px);min-height:420px;font-size:12px;color:var(--text)}
+.dgrid{display:flex;flex-direction:column;height:calc(100vh - 165px);min-height:420px;font-size:12px;color:var(--text)}
 .ag-bar{display:flex;gap:2px;align-items:center;background:#22384d;border-radius:8px;padding:0 6px;height:34px;flex:none}
 .ag-btn{display:flex;align-items:center;gap:7px;height:28px;padding:0 12px;border-radius:5px;color:#fff;font-size:12px;font-weight:600}
 .ag-btn[hidden]{display:none}
@@ -1343,7 +1343,7 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .ag-menu{display:grid;gap:2px;padding:6px;max-height:340px;overflow:auto}
 .ag-menu label{display:flex;gap:8px;align-items:center;padding:5px 8px;border-radius:5px;font-size:13px;cursor:pointer}
 .ag-menu label:hover{background:var(--surface-2)}
-.agrid.ag-embed{height:auto;min-height:380px;flex:1}
+.dgrid.ag-embed{height:auto;min-height:380px;flex:1}
 .ag-xbtn{display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);white-space:nowrap}
 .ag-xbtn:hover{background:var(--surface-2)}
 .ae{display:flex;flex-direction:column;gap:8px;min-height:calc(100vh - 150px)}
@@ -1405,8 +1405,8 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .ae-two .ag-tools .ag-tbtn{font-size:0;gap:0;padding:0 8px}
 .ae-two .ag-tools .ag-search input{width:90px}
 /* Aufgeräumte, großzügige Datentabellen (v0.24) */
-.agrid{font-size:13.5px;gap:14px;height:calc(100vh - 150px)}
-.agrid.ag-embed{gap:12px}
+.dgrid{font-size:13.5px;gap:14px;height:calc(100vh - 150px)}
+.dgrid.ag-embed{gap:12px}
 .ag-bar{height:52px;padding:0 10px;border-radius:14px;gap:6px}
 .ag-btn{height:36px;padding:0 14px;border-radius:10px;font-size:13.5px;font-weight:600;gap:8px}
 .ag-tools{padding:0;gap:10px;flex-wrap:wrap}
@@ -1538,10 +1538,10 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .imgv-cap{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;color:var(--text-2)}
 .zoom-b{font-weight:700;font-size:13px}
 /* Tabellen füllen die ganze Arbeitsfläche */
-.view.active:has(>.agrid:not(.ag-embed)){overflow:hidden}
-.view>.agrid:not(.ag-embed){height:100%;min-height:0;box-sizing:border-box;padding:12px 14px}
+.view.active:has(>.dgrid:not(.ag-embed)){overflow:hidden}
+.view>.dgrid:not(.ag-embed){height:100%;min-height:0;box-sizing:border-box;padding:12px 14px}
 /* kompakter Tabellenkopf: eine Zeile, mehr Platz für Daten */
-.view>.agrid:not(.ag-embed){gap:10px;padding:10px 14px 12px}
+.view>.dgrid:not(.ag-embed){gap:10px;padding:10px 14px 12px}
 .ag-bar{height:44px;border-radius:12px}
 .ag-btn{height:32px}
 .ag-tools{flex-wrap:nowrap;gap:8px}
@@ -1591,6 +1591,8 @@ input.ea-ro{width:100%}
 .ea-cols>.ea-card{max-width:none;flex:none}
 .ea-pick .ph{color:var(--text-3)}
 .ea-pick{align-items:center}
+.ag-inner{width:100%;box-sizing:border-box}
+.ea-cols{grid-template-columns:repeat(auto-fill,minmax(380px,640px))}
 </style>
 </head>
 <body>
@@ -1968,7 +1970,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.34.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.34.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -3930,7 +3932,7 @@ const DEFAULTS = {
   'firma.adresse': 'Maria-Theresien-Str. 18, 6020 Innsbruck', 'firma.uid': 'ATU00000000', 'firma.telefon': '0512 000000',
   'kasse.id': 'INN-K01', 'kasse.name': 'Kasse 1', 'kasse.freigabe': true, 'kasse.rabattGrenze': 20,
   'kasse.vereinsregel': true, 'kasse.retoureGrenze': 100, 'ziel.tag': 2500, 'kasse.pflichtfelder': true, 'kasse.bonFuss': 'Danke für Ihren Einkauf! Umtausch innerhalb von 30 Tagen mit Beleg.',
-  'anzeige.zoom': 1.25, 'anzeige.zoom.v2': false, 'backup.dir': '', 'backup.auto': true, 'backup.keep': 14, 'update.kanal': 'stable', 'update.auto': true, 'update.freigabe': null,
+  'anzeige.zoom': 1.25, 'anzeige.zoom.v2': false, 'anzeige.zoom.auto': true, 'backup.dir': '', 'backup.auto': true, 'backup.keep': 14, 'update.kanal': 'stable', 'update.auto': true, 'update.freigabe': null,
   'drucker.art': 'aus', 'drucker.adresse': '', 'drucker.name': '', 'drucker.breite': 48, 'drucker.auto': false, 'drucker.lade': false, 'gutschein.jahre': 3,
   'bon.logo': '', 'bon.logoDruck': true, 'bon.ersparnis': true, 'bon.artikelnr': false, 'bon.kopf': '', 'bon.fussA4': '',
   'mail.host': '', 'mail.port': 587, 'mail.tls': 'starttls', 'mail.user': '', 'mail.pass': '', 'mail.from': '', 'etikett.art': 'a4', 'etikett.adresse': '', 'etikett.name': '', 'etikett.format': '3x8',
@@ -3957,9 +3959,11 @@ function applySettings() {
   const t = $('.brand-tenant'); if (t) t.textContent = CFG['firma.name'];
   // 0.25.2: größere Anzeige als neuer Standard (einmalig)
   if (!CFG['anzeige.zoom.v2']) { CFG['anzeige.zoom.v2'] = true; CFG['anzeige.zoom'] = Math.max(+CFG['anzeige.zoom'] || 1, 1.25); try { saveSettings({'anzeige.zoom.v2': true, 'anzeige.zoom': CFG['anzeige.zoom']}, true); } catch { /* */ } }
-  applyZoom(+CFG['anzeige.zoom'] || 1.25);
+  applyZoom(CFG['anzeige.zoom.auto'] === false ? (+CFG['anzeige.zoom'] || 1.25) : autoZoom());
   if (S.view) renderTopbar();
 }
+/** Größe passend zum Bildschirm, solange sie nicht von Hand eingestellt wurde (A−/A+) */
+const autoZoom = () => { const w = Math.max(window.screen?.width || 0, window.innerWidth || 0); return w >= 3000 ? 1.5 : w >= 2500 ? 1.4 : w >= 1900 ? 1.25 : 1.1; };
 function applyZoom(f) {
   f = clamp(Math.round(f * 100) / 100, .7, 2);
   if (DESKTOP) invoke('set_zoom', {factor: f}).catch(() => {});
@@ -3969,7 +3973,7 @@ function stepZoom(dir) {
   const steps = [.8, .9, 1, 1.1, 1.25, 1.4, 1.5, 1.75];
   const cur = +CFG['anzeige.zoom'] || 1, i = steps.findIndex(s => s >= cur - .001);
   const next = dir === 0 ? 1 : steps[clamp((i < 0 ? 2 : i) + dir, 0, steps.length - 1)];
-  saveSettings({'anzeige.zoom': next}, true); toast(`Anzeigegröße ${Math.round(next * 100)} %`, {icon: 'eye', dur: 1400});
+  saveSettings({'anzeige.zoom': next, 'anzeige.zoom.auto': false}, true); toast(`Anzeigegröße ${Math.round(next * 100)} %`, {icon: 'eye', dur: 1400});
   if (S.view === 'einstellungen') $$('#zoomSeg button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.v === next));
 }
 
@@ -4056,7 +4060,7 @@ function renderSettings() {
       </section>
     </div></div>`;
   $$('.seg', v).forEach(s => initSeg(s, b => {
-    if (s.id === 'zoomSeg') return saveSettings({'anzeige.zoom': +b.dataset.v}, true);
+    if (s.id === 'zoomSeg') return saveSettings({'anzeige.zoom': +b.dataset.v, 'anzeige.zoom.auto': false}, true);
     if (s.id === 'chanSeg') return saveSettings({'update.kanal': b.dataset.v});
     if (s.dataset.pref) { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }
   }));
@@ -13621,7 +13625,7 @@ function agNew(cfg) {
 function agMount(key, v) {
   const st = AG[key], cfg = st.cfg;
   st.rows = cfg.rows();
-  v.innerHTML = `<div class="agrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
+  v.innerHTML = `<div class="dgrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
       ${cfg.toolbar?.length ? `<div class="ag-bar">${cfg.toolbar.map(b => `<button class="ag-btn" data-ag="${b.k}">${ic(b.icon, 'i-sm')}<span>${esc(b.l)}</span></button>`).join('')}<button class="ag-btn ag-del" data-ag="del" hidden>${ic('trash', 'i-sm')}<span>Löschen</span></button></div>` : ''}
       <div class="ag-tools"><div class="ag-drop" data-agdrop><span class="ag-ph">Zu gruppierende Spalten hierhin ziehen…</span></div>
         ${(cfg.extra || []).map(b => `<button class="ag-xbtn" data-ag="${b.k}">${ic(b.icon || 'plus', 'i-sm')}${esc(b.l)}</button>`).join('')}
@@ -13690,7 +13694,7 @@ function agApply(page, resetScroll) {
 
 function agHead(page, v, vis) {
   const st = AG[page];
-  const cols = `44px ${vis.map(c => agWidth(c) + 'px').join(' ')}`;
+  const cols = `44px ${vis.map(c => `minmax(${agWidth(c)}px, ${agWidth(c)}fr)`).join(' ')}`;
   const inner = $('[data-aginner]', v);
   inner.style.setProperty('--cols', cols);
   inner.style.minWidth = (44 + vis.reduce((s, c) => s + agWidth(c), 0)) + 'px';
@@ -15320,7 +15324,7 @@ function openAppearance(anchor) {
   if (!el) return;
   $$('.seg', el).forEach(s => initSeg(s, b => { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }));
   el.addEventListener('click', e => {
-    const z = e.target.closest('[data-z]'); if (z) { saveSettings({'anzeige.zoom': +z.dataset.z}, true); $$('[data-z]', el).forEach(b => b.setAttribute('aria-pressed', b === z)); return; }
+    const z = e.target.closest('[data-z]'); if (z) { saveSettings({'anzeige.zoom': +z.dataset.z, 'anzeige.zoom.auto': false}, true); $$('[data-z]', el).forEach(b => b.setAttribute('aria-pressed', b === z)); return; }
     const a = e.target.closest('[data-acc]');
     if (a) { prefs.accent = a.dataset.acc; applyPrefs(true); $$('[data-acc],.swb.custom', el).forEach(b => b.setAttribute('aria-pressed', b === a)); }
     if (e.target.closest('#apSave')) { closePopover(); toast('Design-Vorlage gespeichert', {t2: '„Alpenlicht · Eigene“ – zuweisbar an Mandant, Filiale oder Rolle', type: 'pos', icon: 'palette'}); Hooks.emit('config.theme.saved', {vorlage: 'Alpenlicht · Eigene', modus: prefs.theme, akzent: prefs.accent}); }
