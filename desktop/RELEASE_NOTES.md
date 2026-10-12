@@ -1,3 +1,7 @@
+## Neu in 0.20.0
+
+- Warengruppen als Datentabelle im Advarics-Stil: Werkzeugleiste (Zurück, Aktualisieren, Neu, Fedas Synchronisierung), Gruppierleiste (Spalten hineinziehen), Suche, Spalten-Auswahl, automatische Spaltenbreite, Export, Filterzeile je Spalte, Sortierung, Auswahlkästchen, Spalten Hierarchie Ebene1–3 (Nr./Name), MwSt.-Typ, Etiketten-Typ, Inventur, Altersbewertung, Vorschl.-Spanne/Kalk. Doppelklick bearbeitet, flüssig auch mit 11.848 Zeilen.
+
 ## Neu in 0.19.2
 
 - Die Advarics-Warengruppen sind fest eingebaut (11.848 Gruppen mit Bereich › Hauptabteilung › Abteilung, MwSt., Etikettentyp, Inventur …) und werden beim ersten Start automatisch übernommen. Die bisherige Standardliste wird dabei ersetzt, Artikel werden zugeordnet. Kein Dateiimport mehr nötig.

@@ -1290,5 +1290,58 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .nav-hit small{font-size:11px;color:var(--text-4)}
 .nav-hit{height:auto;min-height:36px}
 .nav-none{padding:14px 12px;color:var(--text-3);font-size:13px}
+/* Datentabelle im Advarics-Stil */
+.agrid{display:flex;flex-direction:column;height:calc(100vh - 165px);min-height:420px;font-size:12px;color:var(--text)}
+.ag-bar{display:flex;gap:2px;align-items:center;background:#22384d;border-radius:8px;padding:0 6px;height:34px;flex:none}
+.ag-btn{display:flex;align-items:center;gap:7px;height:28px;padding:0 12px;border-radius:5px;color:#fff;font-size:12px;font-weight:600}
+.ag-btn[hidden]{display:none}
+.ag-btn:hover{background:rgba(255,255,255,.14)}
+.ag-btn .i{stroke:#fff}
+.ag-tools{display:flex;gap:8px;align-items:center;flex:none;padding:8px 2px}
+.ag-drop{flex:1;min-width:160px;height:30px;border:1px dashed var(--line-2);border-radius:6px;display:flex;align-items:center;gap:6px;padding:0 10px;color:var(--text-4);overflow:hidden;white-space:nowrap}
+.ag-drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.ag-chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:11px;background:var(--accent-soft);color:var(--accent);font-weight:600;cursor:pointer}
+.ag-search{display:flex;align-items:center;gap:6px;height:30px;padding:0 9px;border:1px solid var(--line-2);border-radius:6px;background:var(--surface)}
+.ag-search input{border:0;outline:0;background:transparent;width:150px;font-size:12px;color:var(--text)}
+.ag-tbtn{display:flex;align-items:center;gap:6px;height:30px;padding:0 9px;border-radius:6px;font-size:12px;color:var(--text-2);white-space:nowrap}
+.ag-tbtn:hover{background:var(--surface-2)}
+.ag-scroll{flex:1;overflow:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface);position:relative}
+.ag-inner{position:relative}
+.ag-head,.ag-filt,.ag-row{display:grid;grid-template-columns:var(--cols)}
+.ag-head{position:sticky;top:0;z-index:3;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.ag-filt{position:sticky;top:30px;z-index:3;background:var(--surface);border-bottom:1px solid var(--line)}
+.ag-filt[hidden]{display:none}
+.ag-c{padding:0 8px;height:24px;line-height:24px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative;min-width:0}
+.ag-c.r{text-align:right}
+.ag-h{height:30px;line-height:30px;font-weight:600;display:flex;align-items:center;gap:5px;cursor:grab;user-select:none}
+.ag-h.r{justify-content:flex-end}
+.ag-hl{cursor:pointer;overflow:hidden;text-overflow:ellipsis}
+.ag-fi{opacity:.45;cursor:pointer;display:grid}
+.ag-sort{font-size:9px;color:var(--accent)}
+.ag-rs{position:absolute;right:0;top:0;bottom:0;width:6px;cursor:col-resize}
+.ag-rs:hover{background:var(--accent-soft)}
+.ag-filt .ag-c{display:flex;align-items:center;gap:4px;height:28px;line-height:28px}
+.ag-filt input,.ag-filt select{width:100%;height:22px;border:0;border-bottom:1px solid var(--line-2);background:transparent;font-size:12px;outline:0;color:var(--text)}
+.ag-ck{display:grid;place-items:center;padding:0}
+.ag-rows{position:relative}
+.ag-row{position:absolute;left:0;right:0;height:24px;min-width:100%}
+.ag-row.alt{background:var(--surface-2)}
+.ag-row:hover{background:var(--accent-soft)}
+.ag-row.sel{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.ag-grp{display:flex;align-items:center;gap:6px;background:var(--surface-3);cursor:pointer;font-size:12px;grid-template-columns:none}
+.ag-n{color:var(--text-4)}
+.agchk{display:inline-block;width:13px;height:13px;border:1px solid var(--line-2);border-radius:3px;background:var(--surface);cursor:pointer;position:relative}
+.agchk.on{background:var(--accent);border-color:var(--accent)}
+.agchk.on::after{content:"";position:absolute;left:3.5px;top:0.5px;width:3px;height:7px;border:solid #fff;border-width:0 1.6px 1.6px 0;transform:rotate(45deg)}
+.agchk.ro{cursor:default;background:transparent;border-color:transparent}
+.agchk.ro.on{background:transparent}
+.agchk.ro.on::after{border-color:var(--text-2)}
+.ag-cc{display:grid;place-items:center}
+.ag-foot{flex:none;padding:6px 8px;border:1px solid var(--line);border-top:0;display:flex;gap:14px;align-items:center;background:var(--surface-2)}
+.ag-sel{color:var(--text-3)}
+.ag-foot2{flex:none;padding:4px 2px}
+.ag-menu{display:grid;gap:2px;padding:6px;max-height:340px;overflow:auto}
+.ag-menu label{display:flex;gap:8px;align-items:center;padding:5px 8px;border-radius:5px;font-size:13px;cursor:pointer}
+.ag-menu label:hover{background:var(--surface-2)}
 </style>
 </head>
