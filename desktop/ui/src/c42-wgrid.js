@@ -3,7 +3,7 @@
    Spaltenköpfe mit Filterzeile, Spaltenauswahl, automatische Spaltenbreite, Export,
    Auswahlkästchen und flüssiges Scrollen auch bei über 10.000 Zeilen (virtuelle Zeilen).
    ════════════════════════════════════════════════════════════════════ */
-const AGRID_ROW = 24;
+const AGRID_ROW = 40;
 const AG = {};   // Zustand je Tabelle
 
 function agNew(cfg) {
@@ -38,7 +38,7 @@ function agridPage(page, cfg) {
 
 const agVal = (r, c) => c.get ? c.get(r) : r[c.k];
 const agText = (r, c) => { const v = agVal(r, c); return c.fmt ? c.fmt(v, r) : v == null ? '' : String(v); };
-const agWidth = c => c.w || 120;
+const agWidth = c => Math.round((c.w || 120) * 1.15);
 
 function agApply(page, resetScroll) {
   const st = AG[page], v = $('#ag-' + page); if (!v) return;
@@ -83,12 +83,12 @@ function agApply(page, resetScroll) {
 
 function agHead(page, v, vis) {
   const st = AG[page];
-  const cols = `34px ${vis.map(c => agWidth(c) + 'px').join(' ')}`;
+  const cols = `44px ${vis.map(c => agWidth(c) + 'px').join(' ')}`;
   const inner = $('[data-aginner]', v);
   inner.style.setProperty('--cols', cols);
-  inner.style.minWidth = (34 + vis.reduce((s, c) => s + agWidth(c), 0)) + 'px';
+  inner.style.minWidth = (44 + vis.reduce((s, c) => s + agWidth(c), 0)) + 'px';
   const all = st.filtered && st.filtered.length && st.filtered.every(r => st.sel.has(r.id));
-  $('[data-aghead]', v).innerHTML = `<div class="ag-c ag-ck"><i class="agchk ${all ? 'on' : ''}" data-agall></i></div>${vis.map(c => `<div class="ag-c ag-h ${c.t === 'num' ? 'r' : ''}" draggable="true" data-agcol="${c.k}"><span class="ag-hl" data-agsort="${c.k}">${esc(c.l)}</span><span class="ag-fi" data-agfi="${c.k}">${ic('filter', 'i-xs')}</span>${st.sort?.k === c.k ? `<span class="ag-sort">${st.sort.dir > 0 ? '▲' : '▼'}</span>` : ''}<span class="ag-rs" data-agrs="${c.k}"></span></div>`).join('')}`;
+  $('[data-aghead]', v).innerHTML = `<div class="ag-c ag-ck"><i class="agchk ${all ? 'on' : ''}" data-agall></i></div>${vis.map(c => `<div class="ag-c ag-h ${c.t === 'num' ? 'r' : ''}" draggable="true" data-agcol="${c.k}"><span class="ag-hl" data-agsort="${c.k}">${esc(c.l)}</span>${c.l ? `<span class="ag-fi" data-agfi="${c.k}">${ic('filter', 'i-xs')}</span>` : ''}${st.sort?.k === c.k ? `<span class="ag-sort">${st.sort.dir > 0 ? '▲' : '▼'}</span>` : ''}<span class="ag-rs" data-agrs="${c.k}"></span></div>`).join('')}`;
   const f = $('[data-agfilt]', v);
   f.hidden = !st.filterRow;
   f.innerHTML = `<div class="ag-c ag-ck"></div>${vis.map(c => c.t === 'check'

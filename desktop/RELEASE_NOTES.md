@@ -1,3 +1,8 @@
+## Neu in 0.24.0
+
+- Größenschlüssel 34 Sohlen mit seinen 12 Größen (20 bis 31) – damit sind alle 34 von Hand angelegten Advarics-Größenschlüssel übernommen.
+- Datentabellen und Artikelmasken großzügiger und ruhiger: größere Zeilen und Schrift, mehr Abstand, runde Karten und Leisten, aufgeräumte Zuordnungs-Tabellen.
+
 ## Neu in 0.23.13
 
 - Größenschlüssel 1 ohne Gr. mit seinen 7 Advarics-Größen (*, One Size, OneSize, S, M, L, XL).
