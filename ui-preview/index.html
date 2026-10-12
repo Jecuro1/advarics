@@ -1402,6 +1402,8 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .ae-form .ae-card .btn{justify-content:flex-start}
 .ae-pane .ae-cards .ae-card{gap:22px}
 .ae-pane .ae-card .field{margin:0}
+.ae-two .ag-tools .ag-tbtn{font-size:0;gap:0;padding:0 8px}
+.ae-two .ag-tools .ag-search input{width:90px}
 </style>
 </head>
 <body>
@@ -1773,7 +1775,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.22.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.23.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -14055,10 +14057,76 @@ agridPage('st-groessenschluessel', {
   title: 'Größenschlüssel', rows: gsRows, count: () => stRows('groessenschluessel').length, sort: {k: 'nr', dir: 1},
   toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}],
   cols: [{k: 'nr', l: 'Nr.', t: 'num', w: 90}, {k: 'name', l: 'Name', w: 360}, {k: 'sync', l: 'Synchronisiert', t: 'check', w: 150}, {k: 'anz', l: 'Anzahl Größen', t: 'num', w: 130}, {k: 'groessen', l: 'Größen', w: 420, show: false}],
-  actions: {back: () => history.length > 1 ? history.back() : go('dashboard'), refresh: async () => { await loadStamm(true); PAGES['st-groessenschluessel'].render(); }, new: () => gsEdit(null, () => PAGES['st-groessenschluessel'].render())},
-  edit: (id, done) => gsEdit(id, done),
+  actions: {back: () => history.length > 1 ? history.back() : go('dashboard'), refresh: async () => { await loadStamm(true); PAGES['st-groessenschluessel'].render(); }, new: () => gseOpen(null, [])},
+  edit: id => gseOpen(id, (AG['st-groessenschluessel'].filtered || []).map(r => r.id)),
   remove: async ids => { if (!await confirmBox(`${num(ids.length)} Größenschlüssel löschen?`, 'Löschen')) throw new Error('abgebrochen'); await needPerm('einstellungen', 'Größenschlüssel'); const s = new Set(ids); await stammSave('groessenschluessel', stRows('groessenschluessel').filter(r => !s.has(r.id)).map(r => ({...r}))); },
 });
+
+/* ── Größenschlüssel bearbeiten: Allgemein (Zugeordnet / Nicht zugeordnet) und Statistikgrößen ── */
+const GSE = {id: null, ids: [], draft: null, tab: 'allg'};
+const gseLoad = id => { const r = id ? stRows('groessenschluessel').find(x => x.id === id) : null; return r ? {nr: String(r.nr ?? ''), name: r.name || '', sync: !!r.sync, groessen: [...(r.groessen || [])], stat: {...(r.stat || {})}} : {nr: String(Math.max(0, ...stRows('groessenschluessel').map(x => +x.nr || 0)) + 1), name: '', sync: false, groessen: [], stat: {}}; };
+function gseOpen(id, ids) {
+  GSE.id = id; GSE.ids = ids || GSE.ids; GSE.draft = gseLoad(id); GSE.tab = 'allg';
+  if (S.view === 'st-groessenschluessel-edit') PAGES['st-groessenschluessel-edit'].render(); else go('st-groessenschluessel-edit');
+}
+const gseInfo = nm => { const g = stRows('groesse').find(x => x.name === nm); return {nr: g ? +g.nr || 0 : 0, g1: g?.g1 || '', g2: g?.g2 || ''}; };
+function gseRender() {
+  const host = $('#view-st-groessenschluessel-edit'); if (!host) return;
+  const D = GSE.draft, isNew = !GSE.id, pos = GSE.ids.indexOf(GSE.id);
+  const el = document.createElement('div'); el.className = 'ae'; host.replaceChildren(el);
+  const total = stRows('groessenschluessel').length;
+  el.innerHTML = `<div class="ag-bar ae-bar"><button class="ag-btn" data-g="back">${ic('chevron-left', 'i-sm')}<span>Übersicht: Größenschlüssel</span></button><button class="ag-btn" data-g="refresh">${ic('sync', 'i-sm')}<span>Aktualisieren</span></button><button class="ag-btn" data-g="save">${ic('check', 'i-sm')}<span>Sichern</span></button><button class="ag-btn" data-g="new">${ic('plus', 'i-sm')}<span>Neu</span></button><button class="ag-btn" data-g="undo">${ic('undo', 'i-sm')}<span>Änderungen zurücknehmen</span></button>${isNew ? '' : `<button class="ag-btn" data-g="del">${ic('trash', 'i-sm')}<span>Löschen</span></button>`}<span style="flex:1"></span>${pos >= 0 ? `<span class="ae-nav"><button class="ag-btn" data-g="prev" ${pos <= 0 ? 'disabled' : ''}>${ic('chevron-left', 'i-sm')}</button><b>${pos + 1}/${GSE.ids.length}</b><button class="ag-btn" data-g="next" ${pos >= GSE.ids.length - 1 ? 'disabled' : ''}>${ic('chevron-right', 'i-sm')}</button></span>` : `<span class="ae-nav"><b>${total}</b></span>`}</div>
+    <div class="ae-tabsw"><div class="ed-tabs"><button type="button" class="ed-tab" data-gt="allg" aria-selected="${GSE.tab === 'allg'}">Allgemein</button><button type="button" class="ed-tab" data-gt="stat" aria-selected="${GSE.tab === 'stat'}">Statistikgrößen</button></div></div>
+    <div class="ae-body"><div id="edBody">${GSE.tab === 'allg'
+      ? `<div class="ae-pane"><div class="ae-card"><h4>Allgemein</h4><div style="display:grid;gap:22px;grid-template-columns:140px minmax(240px,420px)"><label class="field"><span>Nr.*</span><input class="input num" data-gf="nr" value="${esc(D.nr)}"></label><label class="field"><span>Bezeichnung</span><input class="input" data-gf="name" value="${esc(D.name)}"></label></div></div>
+        <div class="ae-pane ae-two"><div class="ae-card"><h4>Zugeordnet</h4><div data-gg="a"></div></div><div class="ae-card"><h4>Nicht zugeordnet</h4><div data-gg="b"></div></div></div></div>`
+      : `<div class="ae-pane"><div data-gg="s"></div></div>`}</div></div>`;
+  const mountAll = () => {
+    const assigned = () => D.groessen.map(n => ({id: n, name: n, ...gseInfo(n)})).sort((a, b) => a.nr - b.nr);
+    const free = () => { const has = new Set(D.groessen); return stRows('groesse').filter(g => !has.has(g.name)).map(g => ({id: g.name, name: g.name, nr: +g.nr || 0, g1: g.g1 || '', g2: g.g2 || ''})); };
+    const cols = [{k: 'name', l: 'Größe', w: 200}, {k: 'nr', l: 'Sortierungsnr.', t: 'num', w: 130}, {k: 'g1', l: 'Größe 1', w: 110}, {k: 'g2', l: 'Größe 2', w: 110}];
+    const mv = (names, add) => { const s = new Set(D.groessen); names.forEach(n => add ? s.add(n) : s.delete(n)); D.groessen = [...s]; if (!add) names.forEach(n => delete D.stat[n]); gseCollect(el); gseRender(); };
+    const mk = (key, host, cfg) => { if (!host) return; AG[key] = agNew({embed: true, ...cfg}); agMount(key, host); };
+    if (GSE.tab === 'allg') {
+      mk('gse-a', $('[data-gg="a"]', el), {title: 'Zugeordnet', cols, rows: assigned, sort: {k: 'nr', dir: 1}, edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const sel = [...AG['gse-a'].sel]; if (sel.length) mv(sel, false); }}});
+      mk('gse-b', $('[data-gg="b"]', el), {title: 'Nicht zugeordnet', cols, rows: free, sort: {k: 'nr', dir: 1}, edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const sel = [...AG['gse-b'].sel]; if (sel.length) mv(sel, true); }}});
+    } else {
+      mk('gse-s', $('[data-gg="s"]', el), {title: 'Statistikgrößen', cols: [{k: 'name', l: 'Größe', w: 260}, {k: 'stat', l: 'Statistik-Größe', w: 260}], rows: () => assigned().map(r => ({id: r.id, name: r.name, stat: D.stat[r.name] || ''})),
+        edit: async id => { const o = await aeForm('Statistik-Größe', [{k: 'name', l: 'Größe', ro: true}, {k: 'stat', l: 'Statistik-Größe'}], {name: id, stat: D.stat[id] || ''}); if (o) { if (o.stat) D.stat[id] = o.stat; else delete D.stat[id]; gseRender(); } }});
+    }
+  };
+  mountAll();
+  el.addEventListener('click', async e => {
+    const t = e.target, b = t.closest('[data-g]'), tb = t.closest('[data-gt]');
+    if (tb) { gseCollect(el); GSE.tab = tb.dataset.gt; return gseRender(); }
+    if (!b) return;
+    const k = b.dataset.g;
+    gseCollect(el);
+    if (k === 'back') return go('st-groessenschluessel');
+    if (k === 'refresh' || k === 'undo') { GSE.draft = gseLoad(GSE.id); return gseRender(); }
+    if (k === 'new') { GSE.id = null; GSE.draft = gseLoad(null); GSE.ids = []; return gseRender(); }
+    if (k === 'prev' || k === 'next') { const id = GSE.ids[GSE.ids.indexOf(GSE.id) + (k === 'next' ? 1 : -1)]; if (id) { GSE.id = id; GSE.draft = gseLoad(id); GSE.tab = 'allg'; gseRender(); } return; }
+    try {
+      await needPerm('einstellungen', 'Größenschlüssel');
+      const all = stRows('groessenschluessel').map(x => ({...x}));
+      if (k === 'save') {
+        const nr = parseInt(GSE.draft.nr, 10);
+        if (!(nr > 0)) return toast('Nr. angeben', {type: 'warn'});
+        if (!GSE.draft.name.trim()) return toast('Bezeichnung angeben', {type: 'warn'});
+        if (all.some(x => x.id !== GSE.id && +x.nr === nr)) return toast(`Nr. ${nr} ist schon vergeben`, {type: 'warn'});
+        const data = {nr, name: GSE.draft.name.trim(), sync: GSE.draft.sync, groessen: GSE.draft.groessen, stat: GSE.draft.stat};
+        if (GSE.id) { const i = all.findIndex(x => x.id === GSE.id); all[i] = {...all[i], ...data}; } else { GSE.id = 'gs-' + aeUid(); all.push({id: GSE.id, _aktiv: true, ...data}); }
+        await stammSave('groessenschluessel', all);
+        GSE.ids = all.sort((a, b) => (+a.nr || 0) - (+b.nr || 0)).map(x => x.id).filter(id => GSE.ids.includes(id) || id === GSE.id);
+        toast('Größenschlüssel gespeichert', {t2: `${data.groessen.length} Größen`, type: 'pos', icon: 'check'}); return gseRender();
+      }
+      if (k === 'del') { if (!await confirmBox(`Größenschlüssel „${GSE.draft.name}“ löschen?`, 'Löschen')) return; await stammSave('groessenschluessel', all.filter(x => x.id !== GSE.id)); go('st-groessenschluessel'); }
+    } catch (err) { if (String(err.message || err) !== 'abgebrochen') toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
+  });
+}
+function gseCollect(el) { const D = GSE.draft; $$('[data-gf]', el).forEach(i => { D[i.dataset.gf] = i.value; }); }
+registerPage('st-groessenschluessel-edit', {title: 'Größenschlüssel', sub: () => GSE.draft ? `${GSE.draft.name || 'neu'} (${GSE.draft.nr})` : '', render: () => { if (!GSE.draft) GSE.draft = gseLoad(GSE.id); gseRender(); }});
+VIEW_PERM['st-groessenschluessel-edit'] = 'einstellungen';
 
 /* ════════════════════════════════════════════════════════════════════
    12 · ANMELDUNG — Sperrbildschirm mit PIN, Windows Hello, FIDO2, SSO

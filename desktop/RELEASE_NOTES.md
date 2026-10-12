@@ -1,3 +1,7 @@
+## Neu in 0.23.0
+
+- Größenschlüssel bearbeiten wie in Advarics: eigene Seite mit Werkzeugleiste (Übersicht, Aktualisieren, Sichern, Neu, Änderungen zurücknehmen, Löschen), Navigation durch alle Schlüssel und den Reitern Allgemein (Nr., Bezeichnung, Zugeordnet / Nicht zugeordnet mit Größe, Sortierungsnr., Größe 1/2 – Doppelklick ordnet zu oder entfernt) und Statistikgrößen (Statistik-Größe je Größe).
+
 ## Neu in 0.22.1
 
 - Stammdaten › Größen › Größenschlüssel als Datentabelle mit Nr., Name, Synchronisiert (+ Anzahl Größen). Die 34 Advarics-Größenschlüssel (ohne Gr., Unisex, Damen, Herren, Schuhe Kids EU … Sohlen) werden beim ersten Start angelegt. Doppelklick: Größen je Schlüssel in der gewünschten Reihenfolge zuordnen (auch aus der Größenliste).
