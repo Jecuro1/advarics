@@ -186,7 +186,7 @@ function renderSettings() {
     if (s.dataset.pref) { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }
   }));
   if (DESKTOP) { renderBackups().then(renderBackupCrypt); renderSys(); }
-  renderUpdSection(); renderAudit(); renderUsersBox(); renderBonBox(); renderMailBox(); renderLabelBox(); renderPrinterBox(); renderRksvBox().then(renderSettingsKasseLock);
+  renderUpdSection(); renderAudit(); renderBonBox(); renderMailBox(); renderLabelBox(); renderPrinterBox(); renderRksvBox().then(renderSettingsKasseLock);
 }
 async function renderSys() {
   const i = await refreshInfo(); const box = $('#sysBox'); if (!i || !box) return;

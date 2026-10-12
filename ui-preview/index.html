@@ -1608,6 +1608,55 @@ input.ea-ro{width:100%}
 .set-page .set-only{margin:0}
 .set-page .set-desc{font-size:13.5px;color:var(--text-3);max-width:78ch;line-height:1.55;margin-top:6px}
 .set-page .set-foot{display:flex;align-items:center;gap:6px;margin-top:22px;font-size:12px;color:var(--text-3)}
+/* Benutzer (Stammdaten › Benutzer): Liste und Maske mit Reitern */
+.avatar.has-photo,.app .sidebar .avatar.has-photo{background-size:cover;background-position:center;background-repeat:no-repeat;color:transparent;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.ue-av{display:flex;align-items:center;height:100%;line-height:1}
+.ue-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+.ue-stack{display:grid;gap:16px;align-content:start;min-width:0}
+.ue-cols>.ea-card,.ue-stack>.ea-card{max-width:none;flex:none;min-width:0}
+.ue .ea-card .ea-fields{grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr));column-gap:22px;row-gap:20px}
+.ue .ea-card.ue-one .ea-fields{grid-template-columns:minmax(0,1fr)}
+.ue-cols2{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+.ue-cols2>.ea-card{max-width:none;flex:none;min-width:0}
+.ue-wide{max-width:1180px}
+.ue-login{grid-template-columns:minmax(0,420px) minmax(0,1fr)}
+.ue-person{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:start}
+.ue-pf,.ue-sub{display:grid;gap:20px;align-content:start;min-width:0}
+.ue-pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:20px 22px}
+.ue-sws{display:grid;gap:14px}
+.ue-sw{display:grid;gap:0}
+.ue-sw .ea-sw{min-height:30px}
+.ue-sw .ea-hint{margin:0 0 0 46px}
+.ue-cols2 .set-row{padding:12px 0;gap:16px}
+.ue-cols2 .set-c{flex-wrap:wrap;min-width:0}
+.ue-group{display:grid;gap:8px;align-content:start}
+.ue-lab{font-size:12.5px;font-weight:600;color:var(--text-2)}
+.ue-roles .chip{height:34px;padding:0 15px;font-size:13px}
+.ue-roles .chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:650}
+.ue-photo-col{display:grid;gap:8px;justify-items:start}
+.ue-photo{position:relative;width:128px;height:128px;border-radius:16px;border:1.5px dashed var(--line-3);background:var(--surface-2);display:grid;place-items:center;overflow:hidden;cursor:pointer;transition:border-color var(--d-1),background var(--d-1)}
+.ue-photo:hover,.ue-photo.over,.ue-photo:focus-visible{border-color:var(--accent);background:var(--accent-soft);outline:0}
+.ue-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.ue-ph{display:grid;gap:7px;justify-items:center;padding:10px;text-align:center;color:var(--text-3);font-size:11.5px;line-height:1.35}
+.ue-ph .i{width:24px;height:24px}
+.ue-photo-act{display:flex;gap:5px}
+.ue-photo-act .ea-ib{width:36px;height:36px;border-radius:9px}
+.ue-photo-act .ea-ib:disabled{opacity:.4;pointer-events:none}
+.ue-note{margin:0 0 4px}
+.ue-mhead,.ue-mrow{display:grid;grid-template-columns:minmax(200px,1.5fr) minmax(170px,1fr) minmax(200px,1.3fr) 38px;gap:10px;align-items:center}
+.ue-mhead{font-size:11.5px;font-weight:600;color:var(--text-3);padding:0 2px}
+.ue-mrow{margin-bottom:8px}
+.ue-mrow .input{height:40px;min-width:0}
+.ue-rights{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:6px 12px}
+.ue-right{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--surface-2);color:var(--text-3);font-size:13px}
+.ue-right .i{flex:none;color:var(--text-4)}
+.ue-right.on{color:var(--text);background:color-mix(in srgb,var(--pos) 11%,var(--surface))}
+.ue-right.on .i{color:var(--pos)}
+@media (max-width:1599px){.ue-cols{grid-template-columns:repeat(2,minmax(0,1fr))}.ue-cols>.ue-kontakt{grid-column:1/-1}}
+@media (max-width:1000px){.ue-login{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:899px){.ue-cols{grid-template-columns:minmax(0,1fr)}.ue-mhead{display:none}.ue-mrow{grid-template-columns:minmax(0,1fr) 38px;padding:10px;border:1px solid var(--line);border-radius:10px}.ue-mrow>:nth-child(-n+3){grid-column:1}.ue-mrow>.ea-ib{grid-column:2;grid-row:1}}
+@media (max-width:1000px){.ue .ae-bar .ag-btn:not([data-ue-a="back"]):not([data-ue-a="save"]) span{display:none}.ue .ae-bar .ag-btn{padding:0 10px}}
+@media (max-width:720px){.ue .ae-bar{gap:2px;padding:4px 6px}.ue .ae-bar .ag-btn{padding:0 10px}.ue .ae-bar .ag-btn span{display:none}.ue .ae-tabsw .ed-tabs{flex-wrap:nowrap;overflow-x:auto}.ue .ae-tabsw .ed-tab{flex:none;white-space:nowrap}.ue-person{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body>
@@ -1989,7 +2038,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.35.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.36.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2172,7 +2221,7 @@ const NAV = [
   {id: 'inventur-einstellungen', label: 'Einstellungen', icon: 'sliders'},
   {id: 'st-altersbewertung', label: 'Altersbewertung Prozentsätze', icon: 'percent'},
   {g: 'Stammdaten'},
-  {label: 'Benutzer', icon: 'users', kids: [{id: 'benutzer', label: 'Benutzer & Rechte', icon: 'shield'}, {id: 'st-benutzergruppe', label: 'Benutzergruppen', icon: 'users'}, {id: 'st-zugangsprofil', label: 'Zugangsprofil', icon: 'lock'}, {id: 'zeiterfassung', label: 'Zeiterfassung', icon: 'clock'}, {id: 'st-meldung', label: 'Zuordnung Meldungen', icon: 'bell'}]},
+  {label: 'Benutzer', icon: 'users', kids: [{id: 'benutzer', label: 'Benutzer', icon: 'user'}, {id: 'rollen', label: 'Rollen & Rechte', icon: 'shield'}, {id: 'st-benutzergruppe', label: 'Benutzergruppen', icon: 'users'}, {id: 'st-zugangsprofil', label: 'Zugangsprofil', icon: 'lock'}, {id: 'zeiterfassung', label: 'Zeiterfassung', icon: 'clock'}, {id: 'st-meldung', label: 'Zuordnung Meldungen', icon: 'bell'}]},
   {label: 'Filialen', icon: 'store', kids: [{id: 'filialen', label: 'Filialen', icon: 'store'}, {id: 'st-filialgruppe', label: 'Filialengruppe', icon: 'layers'}, {id: 'st-formular', label: 'Formulareinstellungen', icon: 'receipt'}, {id: 'st-verkaufsabteilung', label: 'Verkaufsabteilung', icon: 'grid'}]},
   {id: 'st-marke', label: 'Marken', icon: 'star'},
   {id: 'demo-marken', label: 'Marken-Demosortiment', icon: 'star'},
@@ -2241,7 +2290,10 @@ function registerPage(id, def) {
 const navClosed = new Set(persist.get('navClosed', []));
 const navOpen = new Set(persist.get('navOpen', []));
 /** Pfad im Menü: Gruppe und übergeordnete Menüpunkte, z. B. „Einkauf · Rechnungs-Management“ */
+/** Bearbeiten-Masken ohne eigenen Menüpunkt → Menüpunkt, zu dem sie gehören (Pfad in der Kopfzeile, Hervorhebung, Aufklappen) */
+const NAV_CHILD = {'benutzer-edit': 'benutzer', 'einst-kassen-edit': 'einst-kassen', 'einst-kassenkonfig-edit': 'einst-kassenkonfig', 'st-bonussystem-edit': 'st-bonussystem', 'st-groessenschluessel-edit': 'st-groessenschluessel', 'artikel-edit': 'artikel'};
 const navPath = id => {
+  id = NAV_CHILD[id] || id;
   let g = null;
   const walk = (list, path) => { for (const n of list) { if (n.id === id) return path; if (n.kids) { const r = walk(n.kids, [...path, n]); if (r) return r; } } return null; };
   for (const n of NAV) { if (n.g) { g = n.g; continue; } if (n.id === id) return {g, parents: []}; if (n.kids) { const r = walk(n.kids, [n]); if (r) return {g, parents: r}; } }
@@ -2301,7 +2353,7 @@ function navRecentAdd(view) {
 /** Menüsuche: tippen, Treffer anklicken */
 function navSearch(q) {
   const nav = $('#nav'); q = norm(q || '').trim();
-  if (!q) { renderNav(); permNav(); $$('.nav-item').forEach(n => n.dataset.view === S.view && n.setAttribute('aria-current', 'page')); return; }
+  if (!q) { renderNav(); permNav(); $$('.nav-item').forEach(n => n.dataset.view === (NAV_CHILD[S.view] || S.view) && n.setAttribute('aria-current', 'page')); return; }
   const hits = navFlat().filter(x => (!VIEW_PERM[x.id] || can(VIEW_PERM[x.id])) && norm(x.label + ' ' + (x.path || []).join(' ')).includes(q)).slice(0, 40);
   nav.innerHTML = hits.length ? hits.map(x => `<button class="nav-item nav-hit" data-view="${x.id}" style="--lvl:0">${ic(x.icon)}<span class="nav-label"><span>${esc(x.label)}</span><small>${esc((x.path || []).join(' › '))}</small></span></button>`).join('') : '<div class="nav-none">Nichts gefunden</div>';
 }
@@ -2341,7 +2393,7 @@ function navGroupToggle(g) {
 /** Zähler an Menüpunkten (z. B. offene Bestellungen) */
 function navBadge(id, n) { $$(`[data-nb="${id}"]`).forEach(b => { b.hidden = !n; b.textContent = n > 99 ? '99+' : n; }); }
 function renderMe() {
-  $('#meBtn').innerHTML = `<span class="avatar" style="--h:${S.user.hue}">${S.user.initials}</span><span class="meta fade-label" style="min-width:0"><span class="t1" style="display:block">${esc(S.user.name)}</span><span class="t2" style="display:block">${esc(S.user.role)} · Kasse 1</span></span>`;
+  $('#meBtn').innerHTML = `${avatarHTML(S.user)}<span class="meta fade-label" style="min-width:0"><span class="t1" style="display:block">${esc(S.user.name)}</span><span class="t2" style="display:block">${esc(S.user.role)} · Kasse 1</span></span>`;
 }
 function renderStore() {
   const s = storeObj();
@@ -2382,7 +2434,7 @@ function go(view) {
   else if (view.startsWith('obj-')) renderObj(view.slice(4));
   else renderPlaceholder(view);
   const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : view.startsWith('obj-') ? $('#view-obj') : view.startsWith('set-') ? $('#view-einstellungen') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
-  $$('.nav-item').forEach(n => n.dataset.view === view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
+  $$('.nav-item').forEach(n => n.dataset.view === (NAV_CHILD[view] || view) ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
   navReveal(view);
   renderTopbar(); applySidebar();
   document.body.classList.forEach(c => c.startsWith('at-') && document.body.classList.remove(c)); document.body.classList.add('at-' + view);
@@ -3856,7 +3908,7 @@ function receiptHTML(rec, tpl) {
   const lineDisc = rec.lines.reduce((s, l) => s + (l.disc ? r2(r2(l.unit * l.qty) * l.disc.pct / 100) : 0), 0), billDisc = r2(rec.t.disc - lineDisc);
   const head = receiptHead(tpl);
   return `<div class="receipt ${tpl}">${head}<hr>
-    <div class="r"><span>Bon ${rec.no}</span><span>Kasse ${esc(CFG['kasse.id'])}</span></div><div class="r sm"><span>${d}</span><span>${esc(rec.cashier.split(' ')[0])}</span></div><hr>
+    <div class="r"><span>Bon ${rec.no}</span><span>Kasse ${esc(CFG['kasse.id'])}</span></div><div class="r sm"><span>${d}</span><span>${esc(bonName(rec.cashier))}</span></div><hr>
     ${lines}
     ${billDisc > 0 && rec.billDisc ? `<div class="r sm"><span>Bonrabatt ${rec.billDisc.pct} %${rec.billDisc.reason ? ' · ' + esc(rec.billDisc.reason) : ''}</span><span>−${money(billDisc)}</span></div>` : ''}
     <hr><div class="r tot"><span>SUMME EUR</span><span>${money(rec.t.total)}</span></div><hr>
@@ -3891,7 +3943,7 @@ function bindPOS() {
         const l = POS.cart.find(x => x.key === key);
         if (la.dataset.la === 'rm') return removeLine(key);
         if (la.dataset.la === 'disc') { POS.sel = key; return openDiscount(); }
-        if (la.dataset.la === 'seller') { const i = (STAFF.findIndex(s => s.name === l.seller) + 1) % (STAFF.length + 1); l.seller = STAFF[i]?.name || null; renderCart(); selectLine(key); return toast(l.seller ? `Verkäufer:in: ${l.seller}` : 'Verkäufer:in entfernt', {t2: 'Für Provisions- und Leistungsauswertung', icon: 'user'}); }
+        if (la.dataset.la === 'seller') { const L = sellers(), i = (L.findIndex(s => s.name === l.seller) + 1) % (L.length + 1); l.seller = L[i]?.name || null; renderCart(); selectLine(key); return toast(l.seller ? `Verkäufer:in: ${l.seller}` : 'Verkäufer:in entfernt', {t2: 'Für Provisions- und Leistungsauswertung', icon: 'user'}); }
         if (la.dataset.la === 'variant') { const i = POS.cart.indexOf(l); POS.cart.splice(i, 1); renderCart(); return openVariant(l.art, null, {c: l.c, s: l.s}); }
       }
       return selectLine(key);
@@ -4129,7 +4181,7 @@ function renderSettings() {
     if (s.dataset.pref) { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }
   }));
   if (DESKTOP) { renderBackups().then(renderBackupCrypt); renderSys(); }
-  renderUpdSection(); renderAudit(); renderUsersBox(); renderBonBox(); renderMailBox(); renderLabelBox(); renderPrinterBox(); renderRksvBox().then(renderSettingsKasseLock);
+  renderUpdSection(); renderAudit(); renderBonBox(); renderMailBox(); renderLabelBox(); renderPrinterBox(); renderRksvBox().then(renderSettingsKasseLock);
 }
 async function renderSys() {
   const i = await refreshInfo(); const box = $('#sysBox'); if (!i || !box) return;
@@ -5031,7 +5083,7 @@ function returnReceiptHTML(rec, tpl) {
   }).join('');
   return `<div class="receipt ${tpl}">${receiptHead(tpl)}<hr>
     <div class="c" style="font-weight:700;letter-spacing:.08em">${rec.kind === 'storno' ? 'STORNO' : 'RETOURE'}</div><div class="sm c">zu Bon ${esc(rec.ref || '')} · ${esc(rec.reason || '')}</div><hr>
-    <div class="r"><span>Beleg ${rec.no}</span><span>Kasse ${esc(CFG['kasse.id'])}</span></div><div class="r sm"><span>${d}</span><span>${esc((rec.cashier || '').split(' ')[0])}</span></div><hr>
+    <div class="r"><span>Beleg ${rec.no}</span><span>Kasse ${esc(CFG['kasse.id'])}</span></div><div class="r sm"><span>${d}</span><span>${esc(bonName(rec.cashier))}</span></div><hr>
     ${lines}
     <hr><div class="r tot"><span>ERSTATTUNG EUR</span><span>${money(rec.t.total)}</span></div><hr>
     ${(rec.parts || []).map(p => `<div class="r"><span>${esc(p.label)}${p.m === 'bar' ? '' : ' (Rückbuchung)'}</span><span>${money(p.amount)}</span></div>`).join('')}<hr>
@@ -5214,12 +5266,34 @@ function realSystemHTML() {
    ════════════════════════════════════════════════════════════════════ */
 const ROLE_NAMES = {kasse: 'Kasse', verkauf: 'Verkauf', leitung: 'Filialleitung', admin: 'Administrator'};
 const canApprove = u => ['leitung', 'admin'].includes(u?.roleKey);
+/** Foto nur als eingebettetes Bild (data:image) akzeptieren – nie beliebige Adressen */
+const fotoOk = f => /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(f || '') ? f : '';
 function setUsers(list) {
   const cur = S.user?.id;
   STAFF.length = 0;
-  list.forEach(u => STAFF.push({id: u.id, name: u.name, role: ROLE_NAMES[u.role] || u.role, roleKey: u.role, hue: hash(u.id) % 360, initials: initials(u.name)}));
+  list.forEach(u => {
+    const p = u.profile || {};
+    STAFF.push({id: u.id, name: u.name, role: ROLE_NAMES[u.role] || u.role, roleKey: u.role, hue: hash(u.id) % 360, initials: initials(u.name),
+      nr: u.nr || 0, foto: fotoOk(p.foto), bon: String(p.bonname || '').trim(), verkaeufer: p.verkaeufer !== false, filialen: p.filialen || [], email: p.email || '', mobil: p.mobil !== false});
+  });
   S.user = STAFF.find(s => s.id === cur) || STAFF[0];
 }
+/** Runder Avatar: Foto, sonst Initialen */
+const avatarHTML = (u, cls = '', style = '') => u?.foto
+  ? `<span class="avatar has-photo ${cls}" style="--h:${u.hue};background-image:url('${u.foto}');${style}" role="img" aria-label="${esc(u.name)}"></span>`
+  : `<span class="avatar ${cls}" style="--h:${u?.hue ?? 26};${style}">${u?.initials ?? ''}</span>`;
+/** Name auf dem Bon: der gewählte Bonname, sonst der Vorname (fullFallback: sonst der ganze Name) */
+const bonName = (full, fullFallback = false) => { const u = STAFF.find(s => s.name === full); return u?.bon || (fullFallback ? String(full || '') : String(full || '').split(' ')[0]); };
+/** Personen, die als Verkäufer:in gewählt werden können (Standard: alle) */
+const sellers = () => STAFF.filter(s => s.verkaeufer !== false);
+/** Anmeldung nur an zugeordneten Filialen (Administratoren immer; unbekannte/gelöschte Filialen zählen nicht) */
+function userAtThisFiliale(u) {
+  if (!u || u.roleKey === 'admin') return true;
+  const f = (u.filialen || []).filter(id => STORES.some(s => s.id === id));
+  return !f.length || f.includes(S.store);
+}
+/** Anmeldeliste dieser Kasse (sperrt sich nie ganz aus) */
+const lockStaff = () => { const l = STAFF.filter(userAtThisFiliale); return l.length ? l : STAFF.slice(); };
 async function loadUsers() {
   if (!DESKTOP) { STAFF.forEach(s => { s.roleKey ||= s.role === 'Filialleitung' ? 'leitung' : 'verkauf'; }); return; }
   try { setUsers(await invoke('users_list')); } catch (e) { toast('Benutzer konnten nicht geladen werden', {t2: String(e), type: 'warn'}); }
@@ -5242,16 +5316,17 @@ function lock() {
   if (S.locked) return;
   closePopover(); [...layers].reverse().forEach(l => { if (!l.el.querySelector('.pay')) closeLayer(l.el); });
   S.locked = true;
-  let user = S.user, pin = '', busy = false;
+  const staff0 = lockStaff();
+  let user = staff0.includes(S.user) ? S.user : staff0[0] || S.user, pin = '', busy = false;
   const el = document.createElement('div'); el.className = 'lockscreen'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Kasse gesperrt');
   el.innerHTML = `<div class="lock-in">
     <div class="lock-time" id="lockTime">${clock()}</div>
     <div class="lock-date">${esc(DATE_LONG)} · ${esc(CFG['kasse.name'])} ${esc(CFG['kasse.id'])} ${S.started ? 'gesperrt' : '· Anmeldung'}</div>
-    <div class="lock-users">${STAFF.map(u => `<button class="lock-user" data-u="${u.id}" aria-pressed="${u.id === user.id}"><span class="avatar xl" style="--h:${u.hue}">${u.initials}</span>${esc(u.name.split(' ')[0])}</button>`).join('')}</div>
+    <div class="lock-users">${staff0.map(u => `<button class="lock-user" data-u="${u.id}" aria-pressed="${u.id === user.id}">${avatarHTML(u, 'xl')}${esc(u.name.split(' ')[0])}</button>`).join('')}</div>
     <div class="lock-card" id="lockCard"></div>
     <div class="lock-foot" id="lockFoot">${DESKTOP ? `<span style="display:inline-flex;gap:6px;align-items:center">${ic('shield', 'i-xs')}PIN-Anmeldung · lokal geprüft</span>` : `<span>Vorschau: jede PIN außer 0000</span>`}</div></div>`;
   document.body.appendChild(el);
-  if (DESKTOP) invoke('users_default_pins').then(l => { if (l.length && $('#lockFoot', el)) $('#lockFoot', el).insertAdjacentHTML('beforeend', `<span>·</span><span style="color:var(--warn)">Erst-PIN noch aktiv: ${esc(l.join(' · '))} – bitte unter Einstellungen → Benutzer ändern</span>`); }).catch(() => {});
+  if (DESKTOP) invoke('users_default_pins').then(l => { if (l.length && $('#lockFoot', el)) $('#lockFoot', el).insertAdjacentHTML('beforeend', `<span>·</span><span style="color:var(--warn)">Erst-PIN noch aktiv: ${esc(l.join(' · '))} – bitte unter Stammdaten → Benutzer ändern</span>`); }).catch(() => {});
   const card = $('#lockCard', el);
   const renderCard = msg => {
     card.innerHTML = `<div style="text-align:center;font-size:13px;color:var(--text-2)">PIN für <b style="color:var(--text)">${esc(user.name)}</b> · ${esc(user.role)}</div>
@@ -5264,6 +5339,7 @@ function lock() {
   const dots = () => $$('#lockDots i', el).forEach((d, i) => d.classList.toggle('on', i < pin.length));
   const unlock = method => {
     if (typeof accessAllowed === 'function' && !accessAllowed(user.name, user.roleKey)) { Hooks.emit('auth.denied', {benutzer: user.name, grund: 'Zugangsprofil'}); pin = ''; renderCard('Anmeldung zu dieser Zeit nicht erlaubt (Zugangsprofil)'); return; }
+    if (!userAtThisFiliale(user)) { Hooks.emit('auth.denied', {benutzer: user.name, grund: 'Filiale'}); pin = ''; renderCard('Keine Anmeldung an dieser Filiale (Zuordnung unter Benutzer › Zugeordnete Filialen)'); return; }
     busy = true; S.user = user; S.locked = false; S.started = true;
     Hooks.emit('auth.login', {benutzer: user.name, rolle: user.role, methode: method, kasse: CFG['kasse.id']});
     el.classList.add('closing'); setTimeout(() => el.remove(), 320);
@@ -5310,7 +5386,7 @@ function stepUp({title, text, rule, admin = false, roles = null, purpose = 'frei
     const render = msg => {
       box.innerHTML = `<div class="m-head"><div class="m-ic" style="color:var(--warn)">${ic('shield')}</div><div><h2>${esc(title)}</h2><p>${esc(text)}</p></div></div>
       <div class="m-body" id="suBody">
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${approvers.map(u => `<button class="chip" data-ap="${u.id}" aria-pressed="${u.id === ap.id}" style="height:34px"><span class="avatar" style="--h:${u.hue};width:22px;height:22px;font-size:9.5px">${u.initials}</span>${esc(u.name)} · ${esc(u.role)}</button>`).join('')}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${approvers.map(u => `<button class="chip" data-ap="${u.id}" aria-pressed="${u.id === ap.id}" style="height:34px">${avatarHTML(u, '', 'width:22px;height:22px;font-size:9.5px')}${esc(u.name)} · ${esc(u.role)}</button>`).join('')}</div>
         <div class="pin-dots" id="suDots" aria-label="PIN-Eingabe"><i></i><i></i><i></i><i></i></div>
         ${msg ? `<div style="text-align:center;font-size:12.5px;color:var(--neg);margin:-4px 0 10px">${esc(msg)}</div>` : ''}
         ${pinPad().replace('<span></span>', '<button class="fn" data-close>Abbr.</button>')}
@@ -5343,52 +5419,7 @@ function stepUp({title, text, rule, admin = false, roles = null, purpose = 'frei
 /* ── Einstellungen → Benutzer ── */
 function usersSectionHTML() {
   return `<section class="set-sec" id="sec-benutzer"><h2>Benutzer & Anmeldung</h2><p>Jede Person meldet sich mit eigener PIN an – auf Wunsch zusätzlich mit Code aus einer Authenticator-App (2FA). Was eine Rolle darf, steht unter „Rechte je Rolle“; fehlt ein Recht, gibt eine berechtigte Person per PIN frei. Rabatt- und Storno-Freigaben erteilen Filialleitung und Administrator. Nach 5 Fehlversuchen ist die PIN 2 Minuten gesperrt.</p>
-    <div class="card"><div class="set-row" style="border-bottom:0"><div><div class="set-l">Benutzer, PINs, Zwei-Faktor und Rechte</div><div class="set-h">Eigene Seite: System → Benutzer & Rechte</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-goto="benutzer">${ic('shield', 'i-sm')}Öffnen</button></div></div></div></section>`;
-}
-function renderUsersBox() {
-  const box = $('#usrBox'); if (!box) return;
-  box.innerHTML = STAFF.map(u => `<div class="set-row"><div style="display:flex;align-items:center;gap:12px"><span class="avatar" style="--h:${u.hue}">${u.initials}</span><div><div class="set-l">${esc(u.name)}${u.id === S.user.id ? ' <span class="pill accent" style="height:18px">angemeldet</span>' : ''}</div><div class="set-h">${esc(u.role)} · Kennung ${esc(u.id)}</div></div></div>
-      <div class="set-c" style="gap:6px"><button class="btn btn-secondary btn-sm" data-usr="${u.id}">${ic('sliders', 'i-sm')}Bearbeiten</button></div></div>`).join('')
-    + `<div class="set-row"><div><div class="set-l">Neue Person</div><div class="set-h">${DESKTOP ? 'Name, Rolle und Erst-PIN festlegen' : 'In der Vorschau nicht verfügbar'}</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-usr="" ${DESKTOP ? '' : 'disabled'}>${ic('user-plus', 'i-sm')}Benutzer anlegen</button></div></div>`;
-}
-async function openUserEditor(u) {
-  if (!DESKTOP) return toast('Nur in der Desktop-App', {type: 'warn'});
-  let by; try { by = (await stepUp({title: 'Administrator-Freigabe', text: u ? `${u.name} bearbeiten` : 'Neue Person anlegen', admin: true})).by; } catch { return; }
-  const st = {name: u?.name || '', role: u?.roleKey || 'kasse', pin: '', pin2: ''};
-  const el = openLayer(`<div class="modal" style="width:min(480px,100%)" role="dialog" aria-modal="true" aria-label="Benutzer"><div id="ueBody"></div></div>`, {focus: '[data-uf="name"]'});
-  const box = $('#ueBody', el);
-  const render = () => {
-    box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('user')}</div><div><h2>${u ? esc(u.name) : 'Neue Person'}</h2><p>${u ? 'PIN leer lassen, um sie nicht zu ändern' : 'Die PIN gibt die Person beim ersten Mal selbst ein'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
-      <div class="m-body" style="display:grid;gap:14px">
-        <label class="field"><span>Name</span><input class="input" data-uf="name" value="${esc(st.name)}" autocomplete="off"></label>
-        <div><div class="field"><span>Rolle</span></div><div class="reasons" style="margin-top:6px">${Object.entries(ROLE_NAMES).map(([k, l]) => `<button class="chip" data-role="${k}" aria-pressed="${k === st.role}">${l}</button>`).join('')}</div>
-          <div class="prompt-hint">${ic('info', 'i-xs')}Kasse/Verkauf: verkaufen, retournieren bis zur Grenze · Filialleitung: Freigaben, Abschluss · Administrator: zusätzlich Benutzer, RKSV, Wiederherstellung</div></div>
-        <div class="ed-grid"><label class="field"><span>${u ? 'Neue PIN (4 Ziffern)' : 'PIN (4 Ziffern)'}</span><input class="input num" data-uf="pin" type="password" inputmode="numeric" maxlength="4" value="${esc(st.pin)}" autocomplete="new-password"></label>
-          <label class="field"><span>PIN wiederholen</span><input class="input num" data-uf="pin2" type="password" inputmode="numeric" maxlength="4" value="${esc(st.pin2)}" autocomplete="new-password"></label></div>
-      </div>
-      <div class="m-foot">${u ? `<button class="btn btn-danger" id="ueDel">${ic('trash', 'i-sm')}Deaktivieren</button>` : ''}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="ueSave">${ic('check', 'i-sm')}Speichern</button></div>`;
-  };
-  const collect = () => $$('[data-uf]', el).forEach(i => { st[i.dataset.uf] = i.value.trim(); });
-  el.addEventListener('click', async e => {
-    const r = e.target.closest('[data-role]'); if (r) { collect(); st.role = r.dataset.role; return render(); }
-    if (e.target.closest('#ueDel')) {
-      if (u.id === S.user.id) return toast('Eigenes Konto kann nicht deaktiviert werden', {type: 'warn'});
-      try { setUsers(await invoke('user_delete', {id: u.id, by: by.name})); } catch (err) { return toast('Nicht möglich', {t2: String(err), type: 'warn'}); }
-      closeLayer(el); renderUsersBox(); renderMe(); toast('Benutzer deaktiviert', {t2: u.name, icon: 'trash'}); return;
-    }
-    if (e.target.closest('#ueSave')) {
-      collect();
-      if (st.name.length < 2) return toast('Name fehlt', {type: 'warn'});
-      if ((st.pin || !u) && !/^\d{4}$/.test(st.pin)) return toast('PIN: genau 4 Ziffern', {type: 'warn'});
-      if (st.pin !== st.pin2) return toast('PINs stimmen nicht überein', {type: 'warn'});
-      try { setUsers(await invoke('user_save', {user: {id: u?.id || '', name: st.name, role: st.role, active: true}, pin: st.pin || null, by: by.name})); }
-      catch (err) { return toast('Speichern fehlgeschlagen', {t2: String(err), type: 'warn'}); }
-      closeLayer(el); renderUsersBox(); renderMe();
-      toast(u ? 'Benutzer gespeichert' : 'Benutzer angelegt', {t2: `${st.name} · ${ROLE_NAMES[st.role]}${st.pin ? ' · neue PIN aktiv' : ''}`, type: 'pos', icon: 'user'});
-    }
-  });
-  el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); $('#ueSave', el).click(); } });
-  render();
+    <div class="card"><div class="set-row" style="border-bottom:0"><div><div class="set-l">Benutzer, PINs, Zwei-Faktor und Rechte</div><div class="set-h">Eigene Seite: Stammdaten → Benutzer</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-goto="benutzer">${ic('shield', 'i-sm')}Öffnen</button></div></div></div></section>`;
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -5656,7 +5687,7 @@ function receiptOps(rec) {
   const kind = rec.kind || 'verkauf';
   if (kind !== 'verkauf') ops.push({t: 'text', s: (rec.label || kindLabel(rec)).toUpperCase(), a: 'c', b: true, big: true}, ...(rec.ref ? [{t: 'text', s: `zu Bon ${rec.ref} · ${rec.reason || ''}`, a: 'c'}] : []));
   if (rec.copy) ops.push({t: 'text', s: '*** KOPIE ***', a: 'c', b: true});
-  ops.push({t: 'lr', l: `Bon ${rec.no}`, r: `Kasse ${CFG['kasse.id']}`}, {t: 'lr', l: d, r: (rec.cashier || '').split(' ')[0]}, {t: 'line'});
+  ops.push({t: 'lr', l: `Bon ${rec.no}`, r: `Kasse ${CFG['kasse.id']}`}, {t: 'lr', l: d, r: bonName(rec.cashier)}, {t: 'line'});
   const neg = kind === 'retoure' || kind === 'storno';
   (rec.lines || []).forEach(l => {
     const amount = neg ? -(l.refund || 0) / 100 : r2(l.unit * l.qty);
@@ -6035,7 +6066,6 @@ async function voucherPay(m, rem) {
 function bindExtraSettings() {
   const v = $('#view-einstellungen');
   v.addEventListener('click', async e => {
-    const u = e.target.closest('[data-usr]'); if (u) return openUserEditor(u.dataset.usr ? STAFF.find(s => s.id === u.dataset.usr) : null);
     if (e.target.closest('#rkStart')) return rksvStart();
     const rk = e.target.closest('[data-rk]'); if (rk) { try { await stepUp({title: rk.dataset.rk === 'monat' ? 'Monatsbeleg erstellen' : 'Nullbeleg erstellen', text: 'Wird signiert und im DEP gespeichert'}); } catch { return; } return rksvNull(rk.dataset.rk); }
     if (e.target.closest('#rkDep')) return depExport();
@@ -7381,7 +7411,7 @@ async function openTotp(u) {
   try { if (u.id !== S.user.id || on) await needPerm('system', on ? 'Zwei-Faktor ausschalten' : 'Zwei-Faktor einrichten', `${u.name} · Authenticator-App`); } catch { return; }
   if (on) {
     try { await invoke('totp_disable', {user: u.id, by: S.user.name}); SEC.totp.delete(u.id); } catch (e) { return toast('Fehler', {t2: String(e), type: 'warn'}); }
-    renderUsersBox(); toast('Zwei-Faktor ausgeschaltet', {t2: u.name, icon: 'shield'}); return;
+    usrRefresh(); toast('Zwei-Faktor ausgeschaltet', {t2: u.name, icon: 'shield'}); return;
   }
   let t, svg;
   try { t = await invoke('totp_begin', {user: u.id}); svg = await invoke('qr_svg', {text: t.uri}); } catch (e) { return toast('Fehler', {t2: String(e), type: 'warn'}); }
@@ -7398,33 +7428,12 @@ async function openTotp(u) {
   const ok = async () => {
     const code = $('#totpCode', el).value.replace(/\D/g, '');
     try { await invoke('totp_enable', {user: u.id, secret: t.secret, code}); } catch (e) { shakeEl($('#totpCode', el)); return toast('Code stimmt nicht', {t2: String(e), type: 'warn'}); }
-    SEC.totp.add(u.id); closeLayer(el); renderUsersBox(); toast('Zwei-Faktor aktiv', {t2: `${u.name} · ab der nächsten Anmeldung`, type: 'pos', icon: 'shield'});
+    SEC.totp.add(u.id); closeLayer(el); usrRefresh(); toast('Zwei-Faktor aktiv', {t2: `${u.name} · ab der nächsten Anmeldung`, type: 'pos', icon: 'shield'});
   };
   $('#totpOk', el).onclick = ok;
   el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ok(); } });
 }
 
-/* ── Einstellungen → Benutzer: 2FA je Person und Rechte-Matrix ── */
-const _renderUsersBox = renderUsersBox;
-renderUsersBox = function () {
-  _renderUsersBox();
-  const box = $('#usrBox'); if (!box || !DESKTOP) return;
-  STAFF.forEach(u => {
-    const b = $(`[data-usr="${u.id}"]`, box); if (!b) return;
-    const on = SEC.totp.has(u.id);
-    b.insertAdjacentHTML('beforebegin', `<button class="btn ${on ? 'btn-secondary' : 'btn-ghost'} btn-sm" data-totp="${u.id}" data-tip="${on ? 'Zwei-Faktor ist aktiv – klicken zum Ausschalten' : 'Authenticator-App als zweiten Faktor einrichten'}">${ic('shield', 'i-sm')}${on ? '2FA aktiv' : '2FA'}</button>`);
-  });
-  $('#permBox')?.remove();
-  box.insertAdjacentHTML('afterend', `<div class="card" id="permBox" style="margin-top:12px"><div class="set-row"><div><div class="set-l">Rechte je Rolle</div><div class="set-h">Fehlt ein Recht, kann eine berechtigte Person die Aktion per PIN freigeben. Änderungen erfordern einen Administrator.</div></div></div>
-    <table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Recht</th>${Object.values(ROLE_NAMES).map(n => `<th style="text-align:center">${esc(n)}</th>`).join('')}</tr></thead><tbody>${SEC.perms.map(p => `<tr><td style="padding-left:16px">${esc(p.label)}<div class="mono muted" style="font-size:11px">${esc(p.perm)}</div></td>${Object.keys(ROLE_NAMES).map(r => `<td style="text-align:center"><button class="switch" role="switch" data-perm="${esc(p.perm)}" data-role="${r}" aria-checked="${!!SEC.roles?.[r]?.[p.perm]}" aria-label="${esc(ROLE_NAMES[r] + ': ' + p.label)}" ${r === 'admin' && ['system', 'einstellungen'].includes(p.perm) ? 'disabled' : ''}></button></td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
-};
-function bindSecurity() {
-  $('#view-einstellungen').addEventListener('click', async e => {
-    const tb = e.target.closest('[data-totp]'); if (tb) { e.stopPropagation(); return openTotp(STAFF.find(s => s.id === tb.dataset.totp)); }
-    const pm = e.target.closest('[data-perm]'); if (!pm) return;
-    e.stopPropagation(); permToggle(pm);
-  }, true);
-}
 async function permToggle(pm) {
   {
     const allowed = pm.getAttribute('aria-checked') !== 'true';
@@ -8004,17 +8013,6 @@ async function kiAsk(q) {
   const b = $('#kiAct'); if (b) b.onclick = () => a.act.run();
 }
 
-/* ── Benutzer & Rechte ── */
-registerPage('benutzer', {title: 'Benutzer & Rechte', sub: () => `${STAFF.length} Personen`, render: renderBenutzer});
-async function renderBenutzer() {
-  const v = $('#view-benutzer');
-  v.innerHTML = `<div class="cv">${pageHead('Benutzer & Rechte', 'Personen, PINs, Zwei-Faktor-Anmeldung und was jede Rolle darf')}
-    <div id="usrWarn"></div><div class="card" id="usrBox"></div>
-    <div class="card" style="margin-top:12px"><div class="set-row"><div><div class="set-l">Anmeldemethoden</div><div class="set-h">PIN (4 Ziffern, gesalzen gespeichert, Sperre nach 5 Fehlversuchen) · zusätzlich Authenticator-App (2FA) je Person · Handy-App mit derselben PIN · Freigaben per PIN einer berechtigten Person</div></div></div></div></div>`;
-  renderUsersBox();
-  if (DESKTOP) invoke('users_default_pins').then(l => { if (l.length && $('#usrWarn')) $('#usrWarn').innerHTML = `<div class="rule-box" style="margin-bottom:12px;background:var(--warn-soft);border-color:transparent">${ic('alert')}<div><b style="color:var(--text)">Erst-PIN noch aktiv:</b> ${esc(l.join(' · '))} – bitte jetzt ändern („Bearbeiten“).</div></div>`; }).catch(() => {});
-}
-
 /* ── Protokoll ── */
 const PR = {cat: '', q: '', rows: [], more: true};
 const PR_CATS = [['', 'Alle'], ['pos.', 'Kasse'], ['auth.', 'Anmeldung'], ['inventory.', 'Bestand'], ['catalog.', 'Artikel'], ['customer.', 'Kunden'], ['cash.', 'Kassenbuch'], ['purchasing.', 'Einkauf'], ['config.', 'Einstellungen'], ['rksv.', 'RKSV'], ['backup.', 'Sicherung'], ['objekt.', 'Objekte'], ['rule.', 'Regeln']];
@@ -8117,7 +8115,6 @@ function bindPages() {
   $('#view-buchhaltung').addEventListener('change', e => { if (e.target.id === 'fbVon' || e.target.id === 'fbBis') { FB[e.target.id === 'fbVon' ? 'von' : 'bis'] = e.target.value; renderBuchhaltung(); } });
   on('ki', e => { const q = e.target.closest('[data-kiq]'); if (q) return kiAsk(q.dataset.kiq); const i = e.target.closest('[data-kiins]'); if (i) { const x = INSIGHTS.find(y => y.id === i.dataset.kiins); if (x) insightAction(x); } if (e.target.closest('[data-ki="ek"]')) { EK.tab = 'ki'; go('einkauf'); } });
   $('#view-ki').addEventListener('submit', e => { if (e.target.id === 'kiForm') { e.preventDefault(); kiAsk($('#kiQ').value); } });
-  on('benutzer', e => { const u = e.target.closest('[data-usr]'); if (u) return openUserEditor(u.dataset.usr ? STAFF.find(s => s.id === u.dataset.usr) : null); const tb = e.target.closest('[data-totp]'); if (tb) return openTotp(STAFF.find(s => s.id === tb.dataset.totp)); const pm = e.target.closest('[data-perm]'); if (pm) permToggle(pm); });
   on('protokoll', async e => {
     const c = e.target.closest('[data-prc]'); if (c) { PR.cat = c.dataset.prc; return renderProtokoll(); }
     const b = e.target.closest('[data-pr]'); if (!b) return;
@@ -8654,7 +8651,7 @@ function altAuthHTML(user) {
   if (IS_WIN && AUTH.methods[user.id]?.hello) b.push(['hello', 'faceid', 'Windows Hello']);
   if (ssoReady()) b.push(['sso', 'building', CFG['sso.name'] || 'Single Sign-On']);
   return b.length ? `<div class="or">oder anmelden mit</div><div class="auth-alt">${b.map(([k, i, l]) => `<button class="btn btn-secondary" data-m="${k}">${ic(i)}${esc(l)}</button>`).join('')}</div>`
-    : `<div class="or" style="margin-top:14px">Weitere Anmeldewege unter Benutzer & Rechte</div>`;
+    : `<div class="or" style="margin-top:14px">Weitere Anmeldewege unter Stammdaten › Benutzer</div>`;
 }
 async function altAuth(m, user, card, done, back) {
   const fail = e => { back(); toast('Anmeldung nicht möglich', {t2: String(e?.message || e), type: 'warn', dur: 7000}); Hooks.emit('auth.login.failed', {benutzer: user.name, methode: m}); };
@@ -8704,19 +8701,6 @@ async function altAuth(m, user, card, done, back) {
   }
 }
 
-/* ── Benutzer: Anmeldung je Person (Benutzername/Passwort, Windows Hello) ── */
-{
-  const _rub = renderUsersBox;
-  renderUsersBox = function () {
-    _rub();
-    const box = $('#usrBox'); if (!box || !DESKTOP) return;
-    STAFF.forEach(u => {
-      const b = $(`[data-usr="${u.id}"]`, box); if (!b) return;
-      const m = AUTH.methods[u.id] || {}, tags = [m.passwort && 'Passwort', m.hello && 'Hello', SEC.totp.has(u.id) && '2FA'].filter(Boolean);
-      b.insertAdjacentHTML('beforebegin', `<button class="btn btn-ghost btn-sm" data-login="${u.id}" data-tip="${esc(m.login || 'Benutzername, Passwort, Windows Hello')}">${ic('usbkey', 'i-sm')}Anmeldung${tags.length ? ` <span class="muted" style="font-size:11px">· ${tags.join(' · ')}</span>` : ''}</button>`);
-    });
-  };
-}
 async function openLoginEditor(u) {
   const self = u.id === S.user.id;
   let by; try { by = self ? {name: S.user.name} : (await stepUp({title: 'Anmeldung bearbeiten', text: u.name, admin: true})).by; } catch { return; }
@@ -8729,7 +8713,7 @@ async function openLoginEditor(u) {
       <div class="set-row" style="padding:10px 0;border-bottom:0"><div><div class="set-l">Windows Hello ${m.hello ? '<span class="pill pos" style="height:20px">aktiv</span>' : ''}</div><div class="set-h">${IS_WIN ? (self ? 'Gesicht, Fingerabdruck oder Geräte-PIN dieses PCs' : 'Kann nur die Person selbst an ihrem PC einrichten') : 'nur unter Windows'}</div></div><div class="set-c">${m.hello ? `<button class="btn btn-secondary btn-sm" id="leHelloOff">Ausschalten</button>` : `<button class="btn btn-secondary btn-sm" id="leHello" ${IS_WIN && self ? '' : 'disabled'}>${ic('faceid', 'i-sm')}Einrichten</button>`}</div></div>
     </div>
     <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="leSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {focus: '#leLogin'});
-  const after = async msg => { await loadAuth(); renderUsersBox(); if (msg) toast(msg, {type: 'pos', icon: 'usbkey', t2: u.name}); };
+  const after = async msg => { await loadAuth(); usrRefresh(); if (msg) toast(msg, {type: 'pos', icon: 'usbkey', t2: u.name}); };
   el.addEventListener('click', async e => {
     if (e.target.closest('#lePwOff')) { try { await invoke('auth_password_clear', {user: u.id, by: by.name}); } catch (err) { return toast('Fehler', {t2: String(err), type: 'warn'}); } closeLayer(el); return after('Passwort entfernt'); }
     if (e.target.closest('#leHello')) { try { await invoke('auth_hello', {user: u.id, enable: true}); } catch (err) { return toast('Windows Hello nicht eingerichtet', {t2: String(err), type: 'warn', dur: 7000}); } closeLayer(el); return after('Windows Hello eingerichtet'); }
@@ -8765,9 +8749,6 @@ function bindAuth() {
     toast('Browser öffnet sich …', {icon: 'building'});
     try { const u = await invoke('auth_sso'); toast('Single Sign-On funktioniert', {t2: `angemeldet als ${u.name}`, type: 'pos', icon: 'check'}); } catch (err) { toast('Single Sign-On fehlgeschlagen', {t2: String(err), type: 'warn', dur: 9000}); }
   });
-  const loginClick = e => { const b = e.target.closest('[data-login]'); if (b) { e.stopPropagation(); openLoginEditor(STAFF.find(s => s.id === b.dataset.login)); } };
-  $('#view-einstellungen').addEventListener('click', loginClick, true);
-  $('#view-benutzer').addEventListener('click', loginClick, true);
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -10381,7 +10362,7 @@ async function renderBonVerk() {
   v.innerHTML = `<div class="cv">${pageHead('Verkäufer-Bon-Zuordnung', 'Wer hat verkauft? Bons nachträglich der beratenden Person zuordnen – Grundlage für Sales-Aktionen und Provisionen')}
     <div class="ds-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:14px">${Object.entries(per).sort((a, b) => b[1].sum - a[1].sum).map(([k, x]) => `<div class="card" style="padding:14px"><div style="font-weight:650">${esc(k)}</div><div class="muted" style="font-size:12.5px">${num(x.bons)} Bons · Ø ${eur(x.sum / x.bons / 100)}</div><div style="font-size:20px;font-weight:650;margin-top:4px">${eur0(x.sum / 100)}</div></div>`).join('')}</div>
     <div class="filters"><input class="input" id="bzQ" placeholder="Beleg, Person, Kunde …" value="${esc(BZ.q)}" style="flex:1;max-width:360px"><div class="seg" id="bzSeg">${[['0', 'Heute'], ['7', '7 Tage'], ['30', '30 Tage'], ['alle', 'Alle']].map(([k, x]) => `<button data-v="${k}" aria-pressed="${BZ.range === k}">${x}</button>`).join('')}</div></div>
-    <div class="card">${f.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Beleg</th><th>Zeit</th><th>Kassier:in</th><th>Verkäufer:in</th><th>Kunde</th><th class="r" style="padding-right:16px">Betrag</th></tr></thead><tbody>${f.slice(0, 400).map(s => `<tr><td style="padding-left:16px" class="mono">${esc(s.no)}</td><td class="muted num">${esc(fmtTs(s.ts))}</td><td>${esc(s.cashier || '')}</td><td><select class="input select" data-bzs="${esc(s.no)}" style="height:30px;width:auto;min-width:150px"><option value="">= Kassier:in</option>${STAFF.map(u => `<option ${s.data?.seller === u.name ? 'selected' : ''}>${esc(u.name)}</option>`).join('')}</select></td><td>${esc(s.data?.customer?.name || '')}</td><td class="r num" style="padding-right:16px;font-weight:600">${eur(s.total / 100)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Keine Bons im Zeitraum.</p></div>'}</div></div>`;
+    <div class="card">${f.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Beleg</th><th>Zeit</th><th>Kassier:in</th><th>Verkäufer:in</th><th>Kunde</th><th class="r" style="padding-right:16px">Betrag</th></tr></thead><tbody>${f.slice(0, 400).map(s => `<tr><td style="padding-left:16px" class="mono">${esc(s.no)}</td><td class="muted num">${esc(fmtTs(s.ts))}</td><td>${esc(s.cashier || '')}</td><td><select class="input select" data-bzs="${esc(s.no)}" style="height:30px;width:auto;min-width:150px"><option value="">= Kassier:in</option>${sellers().concat(STAFF.filter(u => u.verkaeufer === false && u.name === s.data?.seller)).map(u => `<option ${s.data?.seller === u.name ? 'selected' : ''}>${esc(u.name)}</option>`).join('')}</select></td><td>${esc(s.data?.customer?.name || '')}</td><td class="r num" style="padding-right:16px;font-weight:600">${eur(s.total / 100)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Keine Bons im Zeitraum.</p></div>'}</div></div>`;
   initSeg($('#bzSeg', v), b => { BZ.range = b.dataset.v; renderBonVerk(); });
   $('#bzQ', v).onchange = e => { BZ.q = e.target.value; renderBonVerk(); };
 }
@@ -11518,10 +11499,10 @@ const userOpts = () => STAFF.map(u => [u.name, u.name]);
 /** Tabellen-Definitionen: Titel, Untertitel, Spalten (k, l, t, o, w) und Startwerte */
 const STAMM_DEF = {
   // ── Benutzer
-  benutzergruppe: {t: 'Benutzergruppen', ic: 'users', sub: 'Gruppen mit gemeinsamer Rolle und Filialzuordnung – Mitglieder erben die Rechte der Rolle', cols: [{k: 'name', l: 'Gruppe'}, {k: 'rolle', l: 'Rolle', t: 'select', o: () => Object.entries(ROLE_NAMES).map(([k, v]) => [k, v])}, {k: 'mitglieder', l: 'Mitglieder', t: 'list', w: 260}, {k: 'filialen', l: 'Filialen', t: 'list'}],
+  benutzergruppe: {t: 'Benutzergruppen', ic: 'users', sub: 'Gruppen von Personen (Mitglieder werden unter Benutzer zugeordnet) – die Rolle wird beim Zuordnen vorgeschlagen', cols: [{k: 'name', l: 'Gruppe'}, {k: 'rolle', l: 'Rolle', t: 'select', o: () => Object.entries(ROLE_NAMES).map(([k, v]) => [k, v])}, {k: 'mitglieder', l: 'Mitglieder', t: 'list', w: 260}, {k: 'filialen', l: 'Filialen', t: 'list'}],
     seed: [{id: 'KASSE', name: 'Kassenpersonal', rolle: 'verkauf', mitglieder: [], filialen: []}, {id: 'LEITUNG', name: 'Filialleitung', rolle: 'leitung', mitglieder: [], filialen: []}]},
   zugangsprofil: {t: 'Zugangsprofil', ic: 'lock', sub: 'Wann sich wer anmelden darf – Wochentage und Uhrzeiten; außerhalb wird die Anmeldung abgelehnt (Administratoren ausgenommen)', cols: [{k: 'name', l: 'Profil'}, {k: 'benutzer', l: 'Benutzer', t: 'list', w: 220}, {k: 'tage', l: 'Wochentage', t: 'list', ph: 'Mo,Di,Mi,Do,Fr,Sa'}, {k: 'von', l: 'von', t: 'time'}, {k: 'bis', l: 'bis', t: 'time'}]},
-  meldung: {t: 'Zuordnung Meldungen', ic: 'bell', sub: 'Wer bei welchem Ereignis benachrichtigt wird – Hinweis in Kontor oder E-Mail', cols: [{k: 'ereignis', l: 'Ereignis', t: 'select', o: () => MELD_EVT}, {k: 'empfaenger', l: 'Empfänger (Benutzer)', t: 'select', o: userOpts}, {k: 'email', l: 'E-Mail (optional)'}, {k: 'kanal', l: 'Kanal', t: 'select', o: [['hinweis', 'Hinweis'], ['mail', 'E-Mail'], ['beides', 'Hinweis + E-Mail']]}]},
+  meldung: {t: 'Zuordnung Meldungen', ic: 'bell', sub: 'Wer bei welchem Ereignis benachrichtigt wird – Hinweis in Kontor oder E-Mail', cols: [{k: 'ereignis', l: 'Ereignis', t: 'select', o: () => MELD_EVT}, {k: 'empfaenger', l: 'Empfänger (Benutzer)', t: 'select', o: userOpts}, {k: 'email', l: 'E-Mail (leer = E-Mail Firma der Person)'}, {k: 'kanal', l: 'Kanal', t: 'select', o: [['hinweis', 'Hinweis'], ['mail', 'E-Mail'], ['beides', 'Hinweis + E-Mail']]}]},
   // ── Filialen
   filialgruppe: {t: 'Filialengruppe', ic: 'store', sub: 'Filialen gruppieren (Region, Format) – für Auswertungen und Umlagerungen', cols: [{k: 'name', l: 'Gruppe'}, {k: 'filialen', l: 'Filialen (Kürzel)', t: 'list', w: 280}, {k: 'leitung', l: 'Verantwortlich'}]},
   formular: {t: 'Formulareinstellungen', ic: 'receipt', sub: 'Kopf- und Fußtexte je Formular (Rechnung, Lieferschein, Angebot, Abholschein …) – überschreibt die Firmendaten', cols: [{k: 'formular', l: 'Formular', t: 'select', o: [['Rechnung', 'Rechnung'], ['Angebot', 'Angebot'], ['Auftragsbestätigung', 'Auftragsbestätigung'], ['Lieferschein', 'Lieferschein'], ['Abholschein', 'Abholschein'], ['Auswahlschein', 'Auswahlschein'], ['Mahnung', 'Mahnung'], ['Versandetikett', 'Versandetikett'], ['Verleihvertrag', 'Verleihvertrag']]}, {k: 'kopf', l: 'Kopftext', t: 'area', w: 260}, {k: 'fuss', l: 'Fußtext', t: 'area', w: 260}]},
@@ -11794,7 +11775,8 @@ function bindMeldungen() {
       for (const m of stActive('meldung').filter(x => x.ereignis === evt)) {
         const txt = `${MELD_EVT.find(x => x[0] === evt)[1]}${payload?.no ? ' · ' + payload.no : ''}`;
         if (m.kanal !== 'mail' && (!m.empfaenger || m.empfaenger === S.user?.name)) toast(txt, {t2: 'Meldung', icon: 'bell', type: 'accent', dur: 7000});
-        if (m.kanal !== 'hinweis' && m.email && DESKTOP) invoke('mail_send', {to: m.email, subject: `Kontor · ${txt}`, html: `<p>${esc(txt)}</p><pre style="font-size:12px">${esc(JSON.stringify(payload || {}, null, 2))}</pre>`, text: txt, qr: null, purpose: 'meldung'}).catch(() => {});
+        const to = m.email || STAFF.find(s => s.name === m.empfaenger)?.email;   // keine eigene Adresse angegeben: E-Mail Firma der Person
+        if (m.kanal !== 'hinweis' && to && DESKTOP) invoke('mail_send', {to, subject: `Kontor · ${txt}`, html: `<p>${esc(txt)}</p><pre style="font-size:12px">${esc(JSON.stringify(payload || {}, null, 2))}</pre>`, text: txt, qr: null, purpose: 'meldung'}).catch(() => {});
       }
     });
   }
@@ -13674,10 +13656,10 @@ function agMount(key, v) {
   st.rows = cfg.rows();
   st.cols.forEach(c => { delete c.aw; });
   v.innerHTML = `<div class="datagrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
-      ${cfg.toolbar?.length ? `<div class="ag-bar">${cfg.toolbar.map(b => `<button class="ag-btn" data-ag="${b.k}">${ic(b.icon, 'i-sm')}<span>${esc(b.l)}</span></button>`).join('')}<button class="ag-btn ag-del" data-ag="del" hidden>${ic('trash', 'i-sm')}<span>Löschen</span></button></div>` : ''}
+      ${cfg.toolbar?.length ? `<div class="ag-bar">${cfg.toolbar.map(b => `<button class="ag-btn" data-ag="${b.k}">${ic(b.icon, 'i-sm')}<span>${esc(b.l)}</span></button>`).join('')}<button class="ag-btn ag-del" data-ag="del" hidden>${ic(cfg.removeIcon || 'trash', 'i-sm')}<span>${esc(cfg.removeLabel || 'Löschen')}</span></button></div>` : ''}
       <div class="ag-tools"><div class="ag-drop" data-agdrop><span class="ag-ph">Zu gruppierende Spalten hierhin ziehen…</span></div>
         ${(cfg.extra || []).map(b => `<button class="ag-xbtn" data-ag="${b.k}">${ic(b.icon || 'plus', 'i-sm')}${esc(b.l)}</button>`).join('')}
-        ${cfg.remove && !cfg.toolbar?.length ? `<button class="ag-xbtn ag-del" data-ag="del" hidden>${ic('trash', 'i-sm')}Löschen</button>` : ''}
+        ${cfg.remove && !cfg.toolbar?.length ? `<button class="ag-xbtn ag-del" data-ag="del" hidden>${ic(cfg.removeIcon || 'trash', 'i-sm')}${esc(cfg.removeLabel || 'Löschen')}</button>` : ''}
         <label class="ag-search">${ic('search', 'i-sm')}<input data-agq placeholder="Suche …" value="${esc(st.q)}"></label>
         <button class="ag-tbtn" data-ag="cols" title="Spalten-Auswahl">${ic('list', 'i-sm')}Spalten</button>
         <button class="ag-tbtn" data-ag="fit" title="Automatische Spaltenbreite">${ic('swap', 'i-sm')}Spaltenbreite</button>
@@ -15096,7 +15078,7 @@ const kkApplyFlow = () => { const c = kkActive(); if (c && c.rabLimit != null &&
     }
     if (kopf && kind === 'verkauf') { const i = ops.findIndex(o => o.t === 'lr' && /^Bon /.test(o.l)); if (i >= 0) ops.splice(i, 0, {t: 'text', s: kopf, a: 'c', b: true}); }
     if (kkOn('gesamtTeile') && !neg) { const i = ops.findIndex(o => o.t === 'lr' && o.l === 'SUMME EUR'); const n = (rec.lines || []).reduce((s, l) => s + (+l.qty || 0), 0); if (i >= 0) ops.splice(i + 2, 0, {t: 'lr', l: 'Anzahl Teile', r: String(n)}); }
-    if (kkOn('vkBelegende') && rec.cashier && kind === 'verkauf') { const i = ops.findIndex(o => o.t === 'feed' && o.n === 4); if (i >= 0) ops.splice(i, 0, {t: 'text', s: 'Es bediente Sie: ' + rec.cashier, a: 'c'}); }
+    if (kkOn('vkBelegende') && rec.cashier && kind === 'verkauf') { const i = ops.findIndex(o => o.t === 'feed' && o.n === 4); if (i >= 0) ops.splice(i, 0, {t: 'text', s: 'Es bediente Sie: ' + bonName(rec.cashier, true), a: 'c'}); }
     const agb = String(kkVal('agb', '')).trim();
     if (agb && kind === 'verkauf') { const i = ops.findIndex(o => o.t === 'feed' && o.n === 4); if (i >= 0) ops.splice(i, 0, {t: 'line'}, {t: 'text', s: agb}); }
     return ops;
@@ -15324,6 +15306,355 @@ function settingsPage(sec) {
   if (note) { const n = document.createElement('div'); n.className = 'set-foot'; n.innerHTML = note.innerHTML; page.append(n); }
   host.replaceChildren(page);
 }
+/* ═════════════════════════════════════════════════════════════════
+   54 · BENUTZER (Stammdaten › Benutzer › Benutzer) – Liste und Maske mit Reitern
+   Jede Angabe hat eine Wirkung im Programm:
+   • Foto ………………………… Anmeldebildschirm, Seitenleiste, Freigabe-Fenster, Liste
+   • Name auf dem Bon ……… Kassenbon, Bon-Mail (leer = Vorname)
+   • Verkäufer:in ………….. Auswahl je Position an der Kasse und bei der Bon-Zuordnung
+   • Kontor mobil ………….. Anmeldung am Handy/Tablet (Handy & Tablet)
+   • Benutzergruppe, Zugangsprofil, Meldungen … die gleichnamigen Stammdaten-Tabellen (Zuordnung nach Name)
+   • Filialen ………………….. Anmeldung nur an zugeordneten Filialen (Administratoren immer)
+   • E-Mail Firma …………… Empfänger von E-Mail-Meldungen
+   • Rolle ……………………….. Rechte-Matrix (Rollen & Rechte) · PIN, 2FA, Passwort, Windows Hello … Anmeldung
+   ═════════════════════════════════════════════════════════════════ */
+const USR = {all: [], defaults: new Set(), defaultsOk: false, defaultsBusy: false};
+const UE = {id: null, ids: [], d: null, orig: null, tab: 'allg', dirty: false, pin: '', pin2: ''};
+const UE_TABS = [['allg', 'Allgemein'], ['adresse', 'Haupt-Adresse'], ['filialen', 'Zugeordnete Filialen'], ['meldungen', 'Benachrichtigungen'], ['rechte', 'Rechte'], ['login', 'Anmeldung']];
+const UE_KANAL = [['hinweis', 'Hinweis in Kontor'], ['mail', 'E-Mail'], ['beides', 'Hinweis + E-Mail']];
+const usrName = d => `${d.vorname || ''} ${d.nachname || ''}`.replace(/\s+/g, ' ').trim();
+/** Vorname/Name: aus dem Profil, sonst aus dem gespeicherten Namen (ein einzelnes Wort gilt als Name) */
+const usrSplit = u => {
+  const p = u.profile || {}; if (p.vorname || p.nachname) return [p.vorname || '', p.nachname || ''];
+  const parts = String(u.name || '').trim().split(/\s+/).filter(Boolean); if (parts.length < 2) return ['', parts[0] || ''];
+  return [parts[0], parts.slice(1).join(' ')];
+};
+
+async function usrLoad(fresh) {
+  if (DESKTOP) {
+    try { USR.all = await invoke('users_all'); } catch (e) { USR.all = []; toast('Benutzer konnten nicht geladen werden', {t2: String(e), type: 'warn'}); }
+    usrDefaults(fresh);
+    await Promise.all([loadSecurity(), loadAuth()]);
+  } else USR.all = STAFF.map((s, i) => ({id: s.id, name: s.name, role: s.roleKey || 'verkauf', active: true, nr: 1001 + i, profile: {}}));
+  await loadStamm(true);   // Gruppen, Zugangsprofile und Meldungen immer frisch (auch nach Abgleich mit der Zentrale)
+}
+/** Wer noch die ausgelieferte Erst-PIN hat: rechenintensiv, darum im Hintergrund – nur beim ersten Mal, nach einer PIN-Änderung oder auf Wunsch */
+function usrDefaults(fresh) {
+  if (!DESKTOP || USR.defaultsBusy || (USR.defaultsOk && !fresh)) return;
+  USR.defaultsBusy = true;
+  invoke('users_default_pins').then(l => { USR.defaults = new Set(l.map(x => x.replace(/\s+\d+$/, ''))); USR.defaultsOk = true; })
+    .catch(() => { USR.defaults = new Set(); USR.defaultsOk = true; })   // kein stilles Dauerfeuer bei Fehlern – erneut nur auf Wunsch (Aktualisieren)
+    .finally(() => { USR.defaultsBusy = false; if (S.view === 'benutzer') PAGES.benutzer.render(); else if (S.view === 'benutzer-edit' && UE.tab === 'login') usrRender(); });
+}
+/** Gespeicherte Person → Arbeitsstand der Maske (Gruppe, Zugangsprofil und Meldungen kommen aus den Stammdaten) */
+function usrRec(u) {
+  const p = u.profile || {}, [vn, nn] = usrSplit(u), same = m => norm(m) === norm(u.name);
+  return {id: u.id, nr: u.nr || 0, vorname: vn, nachname: nn, bonname: p.bonname || '', foto: fotoOk(p.foto), active: u.active !== false, role: u.role || 'kasse', verkaeufer: p.verkaeufer !== false, mobil: p.mobil !== false,
+    tel: p.tel || '', handy: p.handy || '', email: p.email || '', telPriv: p.telPriv || '', handyPriv: p.handyPriv || '', emailPriv: p.emailPriv || '',
+    strasse: p.strasse || '', hausnr: p.hausnr || '', zusatz: p.zusatz || '', plz: p.plz || '', ort: p.ort || '', bundesland: p.bundesland || '', land: p.land || 'AT',
+    filialen: [...(p.filialen || [])],
+    gruppe: stRows('benutzergruppe').find(g => (g.mitglieder || []).some(same))?.id || '', zugang: stRows('zugangsprofil').find(z => (z.benutzer || []).some(same))?.id || '',
+    meldungen: stRows('meldung').filter(m => m.empfaenger === u.name).map(m => ({id: m.id, ereignis: m.ereignis, kanal: m.kanal || 'hinweis', email: m.email || ''})),
+    geaendert: u.updated || '', _name: u.name};
+}
+const usrNeu = () => ({id: '', nr: Math.max(1000, ...USR.all.map(u => u.nr || 0)) + 1, vorname: '', nachname: '', bonname: '', foto: '', active: true, role: 'kasse', verkaeufer: true, mobil: true,
+  tel: '', handy: '', email: '', telPriv: '', handyPriv: '', emailPriv: '', strasse: '', hausnr: '', zusatz: '', plz: '', ort: '', bundesland: '', land: 'AT', filialen: [], gruppe: '', zugang: '', meldungen: [], geaendert: '', _name: ''});
+const usrDraft = id => { const u = id ? USR.all.find(x => x.id === id) : null; return u ? usrRec(u) : usrNeu(); };
+const usrProfile = d => { const t = k => String(d[k] || '').trim(); return {vorname: t('vorname'), nachname: t('nachname'), bonname: t('bonname'), foto: d.foto || '', verkaeufer: !!d.verkaeufer, mobil: !!d.mobil,
+  tel: t('tel'), handy: t('handy'), email: t('email'), telPriv: t('telPriv'), handyPriv: t('handyPriv'), emailPriv: t('emailPriv'),
+  strasse: t('strasse'), hausnr: t('hausnr'), zusatz: t('zusatz'), plz: t('plz'), ort: t('ort'), bundesland: t('bundesland'), land: d.land || 'AT', filialen: [...d.filialen]}; };
+
+/* ── Liste ── */
+function usrRows() {
+  const grp = new Map(); stRows('benutzergruppe').forEach(g => (g.mitglieder || []).forEach(m => grp.set(norm(m), g)));
+  const stores = new Map(STORES.map(s => [s.id, s.name]));
+  return USR.all.map(u => {
+    const p = u.profile || {}, [vn, nn] = usrSplit(u), g = grp.get(norm(u.name)), me = AUTH.methods[u.id] || {}, zf = SEC.totp.has(u.id), er = USR.defaults.has(u.name);
+    const fil = (p.filialen || []).map(id => stores.get(id)).filter(Boolean);
+    return {id: u.id, nr: u.nr || 0, vorname: vn, nachname: nn, email: p.email || '', rolle: ROLE_NAMES[u.role] || u.role, gruppe: g?.name || '', filialen: fil.length ? fil.join(', ') : 'Alle',
+      active: u.active !== false, verkaeufer: p.verkaeufer !== false, mobil: p.mobil !== false, zf, anm: ['PIN', me.passwort && 'Passwort', me.hello && 'Windows Hello', zf && '2FA'].filter(Boolean).join(' · '), er,
+      _u: {id: u.id, name: u.name, foto: fotoOk(p.foto), hue: hash(u.id) % 360, initials: initials(u.name)}};
+  });
+}
+agridPage('benutzer', {
+  title: 'Benutzer', rows: usrRows, count: () => USR.all.length, sort: {k: 'nr', dir: 1}, rowH: 46,
+  toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}],
+  cols: [
+    {k: 'foto', l: '', w: 70, html: r => `<span class="ue-av">${avatarHTML(r._u, '', 'width:32px;height:32px;font-size:11.5px')}</span>`, get: () => ''},
+    {k: 'nr', l: 'Nr.', t: 'num', w: 80}, {k: 'vorname', l: 'Vorname', w: 150}, {k: 'nachname', l: 'Name', w: 170}, {k: 'email', l: 'E-Mail Firma', w: 240},
+    {k: 'rolle', l: 'Rolle', w: 130}, {k: 'gruppe', l: 'Benutzergruppe', w: 170}, {k: 'filialen', l: 'Filialen', w: 170, show: false},
+    {k: 'active', l: 'Aktiv', t: 'check', w: 80}, {k: 'verkaeufer', l: 'Verkäufer:in', t: 'check', w: 110}, {k: 'mobil', l: 'Kontor mobil', t: 'check', w: 120, show: false},
+    {k: 'anm', l: 'Anmeldung', w: 230, get: r => r.anm + (r.er ? ' Erst-PIN' : ''), html: r => `${esc(r.anm)}${r.er ? ' <span class="pill warn" style="height:20px" title="Diese Person verwendet noch die ausgelieferte Erst-PIN – bitte ändern">Erst-PIN</span>' : ''}`}],
+  remove: ids => usrRemove(ids), removeLabel: 'Deaktivieren', removeIcon: 'lock',
+  actions: {back: () => e2Back(), refresh: () => PAGES.benutzer.render(true), new: () => usrOpen(null, [])},
+  edit: id => usrOpen(id, (AG.benutzer.filtered || []).map(r => r.id)),
+});
+{ const p = PAGES.benutzer, _r = p.render; p.render = async fresh => { await usrLoad(fresh === true); await _r(); renderTopbar(); }; }
+VIEW_PERM.benutzer = 'system';
+
+/** Markierte Personen deaktivieren (Personen werden nie gelöscht: Belege und Protokoll verweisen auf sie) */
+async function usrRemove(ids) {
+  const todo = ids.map(id => USR.all.find(u => u.id === id)).filter(u => u && u.active !== false), abort = () => { throw new Error('abgebrochen'); };
+  if (!todo.length) { toast('Schon inaktiv', {t2: 'Die markierten Personen sind bereits deaktiviert', icon: 'user'}); abort(); }
+  if (todo.some(u => u.id === S.user?.id)) { toast('Das eigene Konto kann nicht deaktiviert werden', {t2: 'Bitte eine andere Administratorin / einen anderen Administrator bitten', type: 'warn'}); abort(); }
+  const wer = todo.length === 1 ? `„${todo[0].name}“` : `${todo.length} Personen`;
+  if (!await confirmBox(`${wer} deaktivieren? Die Person kann sich nicht mehr anmelden; Belege und Protokoll bleiben erhalten. Wieder aktivieren: in der Maske unter „Aktiv“.`, 'Deaktivieren')) abort();
+  const by = (await stepUp({title: 'Administrator-Freigabe', text: `${wer} deaktivieren`, admin: true}).catch(abort)).by;
+  try { for (const u of todo) await invoke('user_delete', {id: u.id, by: by.name}); }
+  catch (e) { toast('Deaktivieren nicht möglich', {t2: String(e), type: 'warn'}); await usrLoad(); return; }
+  await usrLoad(); renderMe(); renderTopbar();
+  toast(todo.length === 1 ? 'Deaktiviert' : `${todo.length} Personen deaktiviert`, {t2: todo.map(u => u.name).join(', '), icon: 'user', dur: 2400});
+}
+
+/* ── Maske ── */
+function usrOpen(id, ids) {
+  UE.id = id; UE.ids = ids?.length ? ids : UE.ids; UE.d = usrDraft(id); UE.orig = JSON.parse(JSON.stringify(UE.d)); UE.tab = 'allg'; UE.dirty = false; UE.pin = UE.pin2 = '';
+  if (S.view === 'benutzer-edit') usrRender(); else go('benutzer-edit');
+}
+registerPage('benutzer-edit', {title: 'Benutzer', sub: () => UE.d ? `${UE.d.nr || 'neu'} · ${usrName(UE.d) || 'Neue Person'}` : '', render: async () => {
+  if (!UE.d) { setTimeout(() => go('benutzer'), 0); return; }   // direkt aufgerufen (z. B. nach Neustart): zur Liste, erst nachdem diese Seite fertig geschaltet ist
+  $('#view-benutzer-edit').innerHTML = '<div class="muted" style="padding:24px">Lade …</div>';   // nicht kurz die zuvor geöffnete Person zeigen
+  await usrLoad(); usrRender(); renderTopbar();
+}});
+VIEW_PERM['benutzer-edit'] = 'system';
+/** Maske verlassen (Menü, Suche, Zurück-Taste) mit ungesicherten Änderungen: erst nachfragen */
+{ const _go = go;
+  go = function (view) {
+    if (S.view === 'benutzer-edit' && view !== 'benutzer-edit' && UE.dirty) {
+      confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen').then(ok => {
+        if (ok) { UE.dirty = false; go(view); }
+        else if (location.hash.slice(1) !== S.view) history.replaceState(null, '', '#' + S.view);
+      });
+      return;
+    }
+    return _go(view);
+  };
+}
+
+const ueIn = (k, l, o = {}) => `<label class="field"><span>${esc(l)}</span><input class="input ${o.num ? 'num' : ''}" ${o.type ? `type="${o.type}"` : ''} data-ue="${k}" value="${esc(UE.d[k] ?? '')}" ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.attr || ''} autocomplete="off">${o.hint ? `<small class="ea-hint">${esc(o.hint)}</small>` : ''}</label>`;
+const ueSw = (k, l, o = {}) => `<div class="ue-sw ${o.dis ? 'dis' : ''}"><label class="ea-sw ${o.dis ? 'dis' : ''}"><button type="button" class="switch" role="switch" ${o.dis ? 'disabled' : `data-ue-sw="${k}"`} aria-checked="${!!UE.d[k]}"></button><span>${esc(l)}</span></label>${o.hint ? `<small class="ea-hint">${esc(o.hint)}</small>` : ''}</div>`;
+const ueSel = (k, l, opts, o = {}) => `<div class="field"><span>${esc(l)}</span><div class="ea-cmb-row"><select class="input select" data-ue="${k}" style="flex:1;min-width:0">${o.leer ? `<option value="">${esc(o.leer)}</option>` : ''}${opts.map(([v, t]) => `<option value="${esc(v)}" ${String(UE.d[k]) === String(v) ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>${o.go ? `<button type="button" class="ea-ib" data-ue-go="${o.go}" title="Tabelle öffnen">${ic('edit', 'i-sm')}</button>` : ''}</div>${o.hint ? `<small class="ea-hint">${esc(o.hint)}</small>` : ''}</div>`;
+const ueCard = (h, inner, cls = '') => `<div class="ae-card ea-card ${cls}">${h ? `<h4>${esc(h)}</h4>` : ''}<div class="ea-fields">${inner}</div></div>`;
+const usrMiss = d => { const m = []; if (!String(d.nachname).trim()) m.push(['allg', 'Name']); if (!UE.id && !/^\d{4}$/.test(UE.pin)) m.push(['login', 'PIN (4 Ziffern)']); return m; };
+const ueSelf = () => !!UE.id && UE.id === S.user?.id;
+
+function usrAllg() {
+  const D = UE.d, gr = stRows('benutzergruppe'), zp = stRows('zugangsprofil'), g = gr.find(x => x.id === D.gruppe);
+  const photo = `<div class="ue-photo-col"><div class="ue-photo" data-ue-photo tabindex="0" title="Bild hierher ziehen, mit Strg+V einfügen oder anklicken">${D.foto ? `<img src="${D.foto}" alt="Foto ${esc(usrName(D))}">` : `<div class="ue-ph">${ic('image')}<span>Bild ziehen, einfügen oder anklicken</span></div>`}</div>
+      <div class="ue-photo-act"><button type="button" class="ea-ib" data-ue-a="foto" title="Bild wählen" aria-label="Bild wählen">${ic('upload', 'i-sm')}</button><button type="button" class="ea-ib" data-ue-a="fotoz" title="Vergrößern" aria-label="Bild vergrößern" ${D.foto ? '' : 'disabled'}>${ic('eye', 'i-sm')}</button><button type="button" class="ea-ib" data-ue-a="fotox" title="Bild entfernen" aria-label="Bild entfernen" ${D.foto ? '' : 'disabled'}>${ic('trash', 'i-sm')}</button></div>
+      <input type="file" accept="image/*" hidden data-ue-file></div>`;
+  const rolleHint = g?.rolle && g.rolle !== D.role ? `<small class="ea-hint">Die Gruppe „${esc(g.name)}“ hat die Rolle „${esc(ROLE_NAMES[g.rolle] || g.rolle)}“.</small>` : '';
+  const kontakt = (...k) => `<div class="ue-sub">${k.join('')}</div>`;
+  return {html: `<div class="ue-cols">
+    ${ueCard('Persönliches', `<div class="ue-person">${photo}<div class="ue-pf">${ueIn('nr', 'Nr.', {num: true, attr: 'inputmode="numeric" pattern="[0-9]*"'})}${ueIn('vorname', 'Vorname')}${ueIn('nachname', 'Name *')}${ueIn('bonname', 'Name auf dem Bon', {ph: D.vorname || 'Vorname'})}</div></div>
+      <small class="ea-hint">Die Nr. (Personalnummer) wird automatisch vergeben. Der Name auf dem Bon steht auf Kassenbons – leer = Vorname. Das Bild erscheint am Anmeldebildschirm, in der Seitenleiste und bei Freigaben.</small>
+      <div class="field"><span>Zuletzt geändert</span><input class="input ea-ro" readonly value="${esc(D.geaendert ? fmtTs(D.geaendert) : '–')}"></div>`, 'ue-one')}
+    <div class="ue-stack">
+    ${ueCard('Rolle', `<div class="ue-group"><div class="ue-lab">Rolle *</div><div class="reasons ue-roles">${Object.entries(ROLE_NAMES).map(([k, l]) => `<button type="button" class="chip" data-ue-role="${k}" aria-pressed="${D.role === k}">${esc(l)}</button>`).join('')}</div>${rolleHint}
+        <small class="ea-hint">Kasse/Verkauf: verkaufen, retournieren bis zur Grenze · Filialleitung: Freigaben, Abschluss · Administrator: zusätzlich Benutzer, RKSV, Wiederherstellung. Details im Reiter „Rechte“.</small></div>
+      <div class="ue-sws">${ueSw('active', 'Aktiv', {dis: ueSelf(), hint: ueSelf() ? 'Das eigene Konto kann nicht deaktiviert werden.' : 'Inaktive Personen können sich nicht anmelden; Belege und Protokoll bleiben erhalten.'})}
+      ${ueSw('verkaeufer', 'Verkäufer:in', {hint: 'Kann an der Kasse je Position und bei der Bon-Zuordnung als Verkäufer:in gewählt werden.'})}
+      ${ueSw('mobil', 'Kontor mobil', {hint: 'Darf sich am Handy/Tablet anmelden (Einstellungen › Handy & Tablet).'})}</div>`, 'ue-one')}
+    ${ueCard('Profil', `${ueSel('gruppe', 'Benutzergruppe', gr.map(x => [x.id, x.name || x.id]), {leer: '– keine –', go: 'st-benutzergruppe', hint: 'Beim Zuordnen wird die Rolle der Gruppe vorgeschlagen.'})}
+      ${ueSel('zugang', 'Zugangsprofil', zp.map(x => [x.id, x.name || x.id]), {leer: '– jederzeit –', go: 'st-zugangsprofil', hint: 'Legt fest, an welchen Wochentagen und zu welchen Uhrzeiten die Anmeldung möglich ist (Administratoren ausgenommen).'})}`, 'ue-one')}
+    </div>
+    ${ueCard('Kontaktdaten', `<div class="ue-pair">${kontakt(ueIn('tel', 'Telefon Firma'), ueIn('handy', 'Mobil Firma'), ueIn('email', 'E-Mail Firma', {type: 'email', hint: 'Empfängt E-Mail-Meldungen (Reiter „Benachrichtigungen“).'}))}${kontakt(ueIn('telPriv', 'Telefon privat'), ueIn('handyPriv', 'Mobil privat'), ueIn('emailPriv', 'E-Mail privat', {type: 'email'}))}</div>`, 'ue-kontakt ue-one')}
+  </div>`};
+}
+function usrAdresse() {
+  const D = UE.d, lander = stRows('land').map(l => [l.id, l.name || l.id]);
+  if (!lander.some(([id]) => id === D.land)) lander.unshift([D.land, D.land]);
+  return {html: `<div class="ue-cols2">${ueCard('Adresse', `${ueIn('strasse', 'Straße')}${ueIn('hausnr', 'Haus-Nr.')}${ueIn('zusatz', 'Adresszusatz')}${ueIn('plz', 'PLZ')}${ueIn('ort', 'Ort')}${ueIn('bundesland', 'Bundesland / Kanton / Provinz')}${ueSel('land', 'Land *', lander, {go: 'st-land'})}`, 'ue-wide')}</div>`};
+}
+const usrStoreRows = on => STORES.filter(s => UE.d.filialen.includes(s.id) === on).map(s => ({id: s.id, kurz: s.id, name: s.name, gruppe: stRows('filialgruppe').find(g => (g.filialen || []).some(f => norm(f) === norm(s.id)))?.name || ''}));
+function usrFilialenTab() {
+  return {html: `<p class="ea-hint ue-note">Keine Filiale zugeordnet = die Person kann sich an allen Filialen anmelden. Administratoren können sich immer anmelden. ${STORES.length < 2 ? 'Mit dem Filialverbund erscheinen hier alle Standorte.' : ''}</p>
+    <div class="ae-pane ae-two"><div class="ae-card"><h4>Zugeordnet</h4><div data-aeg="a"></div></div><div class="ae-card"><h4>Nicht zugeordnet</h4><div data-aeg="b"></div></div></div>`,
+    mount: el => {
+      const cols = [{k: 'kurz', l: 'Kurz-Name', w: 110}, {k: 'name', l: 'Filiale', w: 220}, {k: 'gruppe', l: 'Filial-Gruppe', w: 160}];
+      const mv = (ids, add) => { const s = new Set(UE.d.filialen); ids.forEach(i => add ? s.add(i) : s.delete(i)); UE.d.filialen = [...s]; ueDirty(el); usrRender(); };
+      const mk = (key, h, cfg) => { AG[key] = agNew({embed: true, cols, sort: {k: 'kurz', dir: 1}, ...cfg}); agMount(key, h); };
+      mk('ue-a', $('[data-aeg="a"]', el), {title: 'Zugeordnet', rows: () => usrStoreRows(true), edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const s = [...AG['ue-a'].sel]; if (s.length) mv(s, false); }}});
+      mk('ue-b', $('[data-aeg="b"]', el), {title: 'Nicht zugeordnet', rows: () => usrStoreRows(false), edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ue-b'].sel]; if (s.length) mv(s, true); }}});
+    }};
+}
+function usrMeldungen() {
+  const D = UE.d, evt = typeof MELD_EVT !== 'undefined' ? MELD_EVT : [];
+  const rows = D.meldungen.map((m, i) => `<div class="ue-mrow"><select class="input select" data-ue-m="${i}:ereignis" aria-label="Ereignis">${evt.map(([k, l]) => `<option value="${esc(k)}" ${m.ereignis === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>
+      <select class="input select" data-ue-m="${i}:kanal" aria-label="Kanal">${UE_KANAL.map(([k, l]) => `<option value="${k}" ${m.kanal === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      <input class="input" data-ue-m="${i}:email" value="${esc(m.email)}" placeholder="${esc(D.email || 'E-Mail Firma')}" aria-label="E-Mail" ${m.kanal === 'hinweis' ? 'disabled' : ''}>
+      <button type="button" class="ea-ib" data-ue-a="meldx" data-i="${i}" title="Entfernen">${ic('trash', 'i-sm')}</button></div>`).join('');
+  return {html: `<div class="ue-cols2"><div class="ae-card ea-card ue-wide"><h4>Meldungen an diese Person</h4>
+      <p class="ea-hint">Ereignisse, über die die Person informiert wird – als Hinweis in Kontor oder per E-Mail. Ohne eigene Adresse geht die E-Mail an die „E-Mail Firma“ der Person${D.email ? ` (${esc(D.email)})` : ' – bitte im Reiter „Allgemein“ eintragen'}.</p>
+      ${rows ? `<div class="ue-mhead"><span>Ereignis</span><span>Kanal</span><span>E-Mail (optional)</span><span></span></div>${rows}` : '<div class="empty" style="padding:22px 12px"><p>Diese Person erhält keine Meldungen.</p></div>'}
+      <div><button type="button" class="btn btn-secondary" data-ue-a="meldplus">${ic('plus', 'i-sm')}Meldung hinzufügen</button></div></div></div>`};
+}
+function usrRechte() {
+  const D = UE.d, perms = SEC.perms || [], ok = p => SEC.roles ? !!SEC.roles[D.role]?.[p] : can(p, {roleKey: D.role});
+  const rows = perms.map(p => `<div class="ue-right ${ok(p.perm) ? 'on' : ''}">${ic(ok(p.perm) ? 'check' : 'x', 'i-sm')}<span>${esc(p.label)}</span></div>`).join('');
+  return {html: `<div class="ue-cols2">
+    <div class="ae-card ea-card ue-wide"><h4>Rolle „${esc(ROLE_NAMES[D.role] || D.role)}“ darf</h4>${rows ? `<div class="ue-rights">${rows}</div>` : '<p class="ea-hint">Die Rechte-Matrix liegt in der Desktop-App.</p>'}
+      <p class="ea-hint">${canApprove({roleKey: D.role}) ? 'Diese Rolle darf Freigaben erteilen (Rabatt, Storno, Punkte, Kassenbuch …).' : 'Diese Rolle darf keine Freigaben erteilen – fehlt ein Recht, gibt eine berechtigte Person per PIN frei.'} Die Rolle wird im Reiter „Allgemein“ gewählt.</p>
+      <div><button type="button" class="btn btn-secondary" data-ue-go="rollen">${ic('shield', 'i-sm')}Rechte je Rolle bearbeiten</button></div></div></div>`};
+}
+function usrLogin() {
+  const D = UE.d, saved = !!UE.id, m = AUTH.methods[UE.id] || {}, on = SEC.totp.has(UE.id), er = USR.defaults.has(D._name);
+  const row = (l, h, c) => `<div class="set-row"><div><div class="set-l">${l}</div>${h ? `<div class="set-h">${h}</div>` : ''}</div><div class="set-c" style="min-width:0;gap:6px">${c}</div></div>`;
+  const pill = (t, tone) => `<span class="pill ${tone || ''}" style="height:20px">${t}</span>`;
+  const dis = saved ? '' : 'disabled';
+  return {html: `<div class="ue-cols2 ue-login">
+    ${ueCard('PIN', `${er ? `<div class="rule-box" style="background:var(--warn-soft);border-color:transparent">${ic('alert')}<div><b style="color:var(--text)">Erst-PIN noch aktiv</b> – bitte jetzt eine eigene PIN vergeben.</div></div>` : ''}
+      <label class="field"><span>${saved ? 'Neue PIN (4 Ziffern)' : 'PIN (4 Ziffern) *'}</span><input class="input num" data-ue="pin" type="password" inputmode="numeric" maxlength="4" value="${esc(UE.pin)}" autocomplete="new-password"><small class="ea-hint">${saved ? 'Leer lassen, um die PIN nicht zu ändern. ' : ''}Nach 5 Fehlversuchen ist die PIN 2 Minuten gesperrt.</small></label>
+      <label class="field"><span>PIN wiederholen</span><input class="input num" data-ue="pin2" type="password" inputmode="numeric" maxlength="4" value="${esc(UE.pin2)}" autocomplete="new-password"></label>`)}
+    <div class="ae-card ea-card"><h4>Weitere Anmeldewege</h4>${saved ? '' : '<p class="ea-hint">Erst die Person sichern – danach lassen sich weitere Anmeldewege einrichten.</p>'}
+      ${row('Zwei-Faktor (Authenticator-App)', on ? 'Bei jeder PIN-Anmeldung und Freigabe wird zusätzlich der Code abgefragt.' : 'Zusätzlicher Code aus einer Authenticator-App', `${pill(on ? 'aktiv' : 'aus', on ? 'pos' : '')}<button class="btn btn-secondary btn-sm" data-ue-a="totp" ${dis}>${ic('shield', 'i-sm')}${on ? 'Ausschalten' : 'Einrichten'}</button>`)}
+      ${row('Benutzername, Passwort, Windows Hello', m.login ? `Benutzername: ${esc(m.login)}` : 'Anmeldung mit Benutzername/E-Mail und Passwort, am PC mit Windows Hello', `${m.passwort ? pill('Passwort', 'pos') : ''}${m.hello ? pill('Windows Hello', 'pos') : ''}<button class="btn btn-secondary btn-sm" data-ue-a="login" ${dis}>${ic('usbkey', 'i-sm')}Bearbeiten …</button>`)}
+      ${row('Single Sign-On', ssoReady() ? `Aktiv über ${esc(CFG['sso.name'] || 'Single Sign-On')} – die Person wird über ihren Benutzernamen/ihre E-Mail zugeordnet.` : 'Anmeldung mit dem Firmenkonto (Microsoft Entra ID, Google …)', `${pill(ssoReady() ? 'eingerichtet' : 'nicht eingerichtet', ssoReady() ? 'pos' : '')}<button class="btn btn-ghost btn-sm" data-ue-go="set-sso">${ic('sliders', 'i-sm')}Einstellungen</button>`)}
+    </div></div>`};
+}
+
+function usrRender() {
+  const host = $('#view-benutzer-edit'); if (!host || !UE.d) return;
+  const D = UE.d, pos = UE.ids.indexOf(UE.id), el = document.createElement('div'); el.className = 'ae ue'; host.replaceChildren(el);
+  const btn = (a, icon, l, dis, text = true) => `<button class="ag-btn" data-ue-a="${a}" title="${esc(l)}" aria-label="${esc(l)}" ${dis ? 'disabled' : ''}>${ic(icon, 'i-sm')}${text ? `<span>${l}</span>` : ''}</button>`;
+  const miss = usrMiss(D);
+  const tab = ([k, l]) => { const n = miss.filter(m => m[0] === k).length; return `<button type="button" class="ed-tab" data-ue-t="${k}" aria-selected="${UE.tab === k}">${esc(l)}${n ? ` <span class="ed-badge">${n}</span>` : ''}</button>`; };
+  const body = ({allg: usrAllg, adresse: usrAdresse, filialen: usrFilialenTab, meldungen: usrMeldungen, rechte: usrRechte, login: usrLogin}[UE.tab] || usrAllg)();
+  el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', 'Übersicht: Benutzer')}${btn('refresh', 'sync', 'Aktualisieren', !UE.id)}${btn('save', 'check', 'Sichern', !UE.dirty)}${btn('new', 'plus', 'Neu', !UE.id)}${btn('undo', 'undo', 'Änderungen zurücknehmen', !UE.dirty)}
+      <span class="sp"></span>${UE.id && UE.ids.length > 1 ? `${btn('prev', 'chevron-left', 'Vorherige Person', pos <= 0, false)}<span class="ae-nr">${pos + 1}/${UE.ids.length}</span>${btn('next', 'chevron-right', 'Nächste Person', pos >= UE.ids.length - 1, false)}` : ''}</div>
+    <div class="ae-tabsw"><div class="ed-tabs" role="tablist">${UE_TABS.map(tab).join('')}</div></div>
+    <div class="ae-body"><div id="edBody">${body.html}</div></div>`;
+  body.mount?.(el);
+  el.addEventListener('input', e => { const t = e.target.closest('[data-ue],[data-ue-m]'); if (t) ueSet(t, el); });
+  el.addEventListener('change', async e => {
+    const t = e.target.closest('[data-ue],[data-ue-m]'); if (t) { ueSet(t, el); if (t.dataset.ue === 'gruppe') ueGruppe(); if (t.dataset.ueM && /:kanal$/.test(t.dataset.ueM)) usrRender(); if (t.dataset.ue === 'land') usrRender(); return; }
+    const f = e.target.closest('[data-ue-file]'); if (f?.files?.[0]) { const file = f.files[0]; f.value = ''; await ueFoto(file, el); }
+  });
+  const ph = $('[data-ue-photo]', el);
+  if (ph) {
+    ph.addEventListener('click', () => $('[data-ue-file]', el).click());
+    ph.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('[data-ue-file]', el).click(); } });
+    ph.addEventListener('dragover', e => { e.preventDefault(); ph.classList.add('over'); });
+    ph.addEventListener('dragleave', () => ph.classList.remove('over'));
+    ph.addEventListener('drop', async e => { e.preventDefault(); ph.classList.remove('over'); const f = [...(e.dataTransfer?.files || [])].find(x => x.type.startsWith('image/')); if (f) await ueFoto(f, el); });
+  }
+  el.addEventListener('click', async e => {
+    const t = e.target, sw = t.closest('[data-ue-sw]'), tb = t.closest('[data-ue-t]'), rl = t.closest('[data-ue-role]'), go_ = t.closest('[data-ue-go]'), b = t.closest('[data-ue-a]');
+    if (sw) { D[sw.dataset.ueSw] = !D[sw.dataset.ueSw]; ueDirty(el); return usrRender(); }
+    if (rl) { D.role = rl.dataset.ueRole; ueDirty(el); return usrRender(); }
+    if (tb) { UE.tab = tb.dataset.ueT; return usrRender(); }
+    const ask = async () => !UE.dirty || await confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen');
+    if (go_) { if (!await ask()) return; UE.dirty = false; return go(go_.dataset.ueGo); }
+    if (!b || b.disabled) return;
+    const a = b.dataset.ueA;
+    if (a === 'back') { if (!await ask()) return; UE.dirty = false; return go('benutzer'); }
+    if (a === 'refresh' || a === 'undo') { if (a === 'refresh' && !await ask()) return; await usrLoad(a === 'refresh'); UE.d = usrDraft(UE.id); UE.orig = JSON.parse(JSON.stringify(UE.d)); UE.dirty = false; UE.pin = UE.pin2 = ''; return usrRender(); }
+    if (a === 'new') { if (!await ask()) return; return usrOpen(null, UE.ids); }
+    if (a === 'prev' || a === 'next') { if (!await ask()) return; const id = UE.ids[pos + (a === 'next' ? 1 : -1)]; if (id) usrOpen(id); return; }
+    if (a === 'foto') return $('[data-ue-file]', el).click();
+    if (a === 'fotox') { D.foto = ''; ueDirty(el); return usrRender(); }
+    if (a === 'fotoz') return ueZoom(D);
+    if (a === 'meldplus') { D.meldungen.push({id: '', ereignis: (typeof MELD_EVT !== 'undefined' && MELD_EVT[0]?.[0]) || '', kanal: 'hinweis', email: ''}); ueDirty(el); return usrRender(); }
+    if (a === 'meldx') { D.meldungen.splice(+b.dataset.i, 1); ueDirty(el); return usrRender(); }
+    if (a === 'totp') { if (UE.dirty && !await confirmBox('Ungesicherte Änderungen bleiben erhalten – fortfahren?', 'Fortfahren')) return; return openTotp({id: UE.id, name: D._name}); }
+    if (a === 'login') return openLoginEditor({id: UE.id, name: D._name});
+    if (a === 'save') return usrSave();
+  });
+}
+function ueDirty(el) { UE.dirty = true; $$('[data-ue-a="save"],[data-ue-a="undo"]', el).forEach(b => { b.disabled = false; }); }
+/** Eingabefeld → Arbeitsstand */
+function ueSet(t, el) {
+  const D = UE.d;
+  if (t.dataset.ueM) { const [i, f] = t.dataset.ueM.split(':'); if (D.meldungen[+i]) D.meldungen[+i][f] = t.value; }
+  else { const k = t.dataset.ue; if (k === 'pin') UE.pin = t.value.replace(/\D/g, ''); else if (k === 'pin2') UE.pin2 = t.value.replace(/\D/g, ''); else D[k] = k === 'nr' ? (t.value === '' ? 0 : Math.max(0, parseInt(t.value, 10) || 0)) : t.value; }
+  ueDirty(el);
+  if (t.dataset.ue === 'vorname' || t.dataset.ue === 'nachname') { const b = $('[data-ue="bonname"]', el); if (b) b.placeholder = D.vorname || 'Vorname'; renderTopbar(); }
+}
+/** Gruppe gewählt: deren Rolle wird vorgeschlagen (ein Administrator bleibt Administrator) */
+function ueGruppe() {
+  const D = UE.d, g = stRows('benutzergruppe').find(x => x.id === D.gruppe);
+  if (g?.rolle && ROLE_NAMES[g.rolle] && g.rolle !== D.role && D.role !== 'admin') { D.role = g.rolle; toast('Rolle aus der Gruppe übernommen', {t2: ROLE_NAMES[g.rolle], icon: 'user'}); }
+  usrRender();
+}
+/** Foto → quadratisch zugeschnittenes JPEG (256 px) */
+async function usrFotoVon(blob) {
+  const bmp = await createImageBitmap(blob), n = 256, c = document.createElement('canvas'); c.width = c.height = n;
+  const s = Math.min(bmp.width, bmp.height), g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, n, n);
+  g.drawImage(bmp, (bmp.width - s) / 2, (bmp.height - s) / 2, s, s, 0, 0, n, n); bmp.close?.();
+  return c.toDataURL('image/jpeg', .86);
+}
+async function ueFoto(blob, el) {
+  try { UE.d.foto = await usrFotoVon(blob); } catch { return toast('Bild nicht lesbar', {t2: 'Bitte ein JPEG-, PNG- oder WebP-Bild wählen', type: 'warn'}); }
+  ueDirty(el); usrRender();
+}
+function ueZoom(D) {
+  openLayer(`<div class="modal" style="width:min(520px,100%)" role="dialog" aria-modal="true" aria-label="Foto"><div class="m-head"><div class="m-ic">${ic('image')}</div><div><h2>${esc(usrName(D) || 'Foto')}</h2></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div><div class="m-body" style="display:grid;place-items:center"><img src="${D.foto}" alt="" style="width:min(100%,380px);aspect-ratio:1;object-fit:cover;border-radius:16px"></div></div>`);
+}
+/* Bild aus der Zwischenablage (Strg+V) auf dem Reiter „Allgemein“ */
+document.addEventListener('paste', e => {
+  if (S.view !== 'benutzer-edit' || UE.tab !== 'allg') return;
+  const it = [...(e.clipboardData?.items || [])].find(x => x.type.startsWith('image/')); if (!it) return;
+  e.preventDefault(); const f = it.getAsFile(); if (f) ueFoto(f, $('#view-benutzer-edit .ae'));
+});
+
+/* ── Sichern ── */
+async function usrSave() {
+  const D = UE.d, isNew = !UE.id, name = usrName(D);
+  if (!DESKTOP) return toast('Nur in der Desktop-App', {t2: 'Benutzer werden in der lokalen Datenbank gespeichert', type: 'warn'});
+  const miss = usrMiss(D); if (miss.length) { UE.tab = miss[0][0]; usrRender(); return toast(`${miss[0][1]} angeben`, {t2: 'Pflichtfeld', type: 'warn'}); }
+  if (name.length < 2) { UE.tab = 'allg'; usrRender(); return toast('Name zu kurz', {type: 'warn'}); }
+  if (USR.all.some(x => x.id !== UE.id && norm(x.name) === norm(name))) { UE.tab = 'allg'; usrRender(); return toast('Diesen Namen gibt es schon', {t2: 'Meldungen, Gruppen und Zugangsprofile ordnen Personen über den Namen zu', type: 'warn'}); }
+  if (UE.pin && !/^\d{4}$/.test(UE.pin)) { UE.tab = 'login'; usrRender(); return toast('PIN: genau 4 Ziffern', {type: 'warn'}); }
+  if (UE.pin !== UE.pin2) { UE.tab = 'login'; usrRender(); return toast('PINs stimmen nicht überein', {type: 'warn'}); }
+  if (!D.land) D.land = 'AT';
+  const O = UE.orig, sensitive = isNew || D.role !== O.role || D.active !== O.active || !!UE.pin;
+  if (ueSelf() && D.role !== O.role && !await confirmBox(`Die eigene Rolle von „${ROLE_NAMES[O.role]}“ auf „${ROLE_NAMES[D.role]}“ ändern? Es können Rechte verloren gehen.`, 'Rolle ändern')) return;
+  let by = S.user;
+  if (sensitive) { try { by = (await stepUp({title: 'Administrator-Freigabe', text: isNew ? 'Neue Person anlegen' : `${name} ändern (Rolle, Status oder PIN)`, admin: true})).by; } catch { return; } }
+  try {
+    if (UE.pin) USR.defaultsOk = false;
+    setUsers(await invoke('user_save', {user: {id: UE.id || '', name, role: D.role, active: D.active, nr: +D.nr || 0, profile: usrProfile(D)}, pin: UE.pin || null, by: by.name}));
+    await usrLoad();
+    const saved = USR.all.find(x => (UE.id && x.id === UE.id) || (!UE.id && norm(x.name) === norm(name)));
+    if (!saved) throw new Error('Gespeicherte Person nicht gefunden');
+    await usrZuordnen(O._name, name, D);
+    if (isNew) UE.ids = [...UE.ids, saved.id];
+    UE.id = saved.id; UE.d = usrDraft(saved.id); UE.orig = JSON.parse(JSON.stringify(UE.d)); UE.dirty = false; UE.pin = UE.pin2 = '';
+  } catch (err) { return toast('Speichern fehlgeschlagen', {t2: String(err.message || err), type: 'warn'}); }
+  renderMe(); renderTopbar();
+  toast(isNew ? 'Person angelegt' : 'Gespeichert', {t2: `${name} · ${ROLE_NAMES[D.role]}${D.active ? '' : ' · inaktiv'}`, type: 'pos', icon: 'user', dur: 2200});
+  usrRender();
+}
+/** Gruppe, Zugangsprofil und Meldungen in den Stammdaten nachziehen (Zuordnung nach Name; Umbenennung folgt) */
+async function usrZuordnen(alt, neu, D) {
+  const is = n => m => norm(m) === norm(n), weg = m => !is(alt)(m) && !is(neu)(m), clone = k => stRows(k).map(r => ({...r}));
+  const gr = clone('benutzergruppe'); let chG = false;
+  gr.forEach(g => { const l = (g.mitglieder || []); const n = l.filter(weg); if (n.length !== l.length) { g.mitglieder = n; chG = true; } });
+  if (D.gruppe) { const g = gr.find(x => x.id === D.gruppe); if (g) { g.mitglieder = [...(g.mitglieder || []), neu]; chG = true; } }
+  const zp = clone('zugangsprofil'); let chZ = false;
+  zp.forEach(z => { const l = (z.benutzer || []); const n = l.filter(weg); if (n.length !== l.length) { z.benutzer = n; chZ = true; } });
+  if (D.zugang) { const z = zp.find(x => x.id === D.zugang); if (z) { z.benutzer = [...(z.benutzer || []), neu]; chZ = true; } }
+  const ml = clone('meldung').filter(m => !is(alt)(m.empfaenger) && !is(neu)(m.empfaenger));
+  const hatte = stRows('meldung').length !== ml.length;
+  D.meldungen.forEach(m => ml.push({id: m.id || 'ml-' + aeUid(), _aktiv: true, ereignis: m.ereignis, empfaenger: neu, kanal: m.kanal, email: m.kanal === 'hinweis' ? '' : String(m.email || '').trim()}));
+  if (chG) await stammSave('benutzergruppe', gr);
+  if (chZ) await stammSave('zugangsprofil', zp);
+  if (hatte || D.meldungen.length) await stammSave('meldung', ml);
+}
+
+/* ── Rollen & Rechte (Rechte-Matrix) ── */
+registerPage('rollen', {title: 'Rollen & Rechte', sub: () => 'Was jede Rolle darf', render: async () => {
+  await Promise.all([loadSecurity(), DESKTOP ? usrLoad() : Promise.resolve()]);
+  const v = $('#view-rollen'), n = r => STAFF.filter(s => s.roleKey === r).length;
+  v.innerHTML = `<div class="cv">${pageHead('Rollen & Rechte', 'Was jede Rolle darf. Fehlt ein Recht, kann eine berechtigte Person die Aktion per PIN freigeben. Änderungen erfordern einen Administrator.', `<button class="btn btn-secondary" data-ue-go="benutzer">${ic('users', 'i-sm')}Zu den Benutzern</button>`)}
+    <div class="card"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Recht</th>${Object.entries(ROLE_NAMES).map(([r, l]) => `<th style="text-align:center">${esc(l)}<div class="muted" style="font-weight:500;font-size:11.5px">${n(r)} ${n(r) === 1 ? 'Person' : 'Personen'}</div></th>`).join('')}</tr></thead>
+      <tbody>${(SEC.perms || []).map(p => `<tr><td style="padding-left:16px">${esc(p.label)}<div class="mono muted" style="font-size:11px">${esc(p.perm)}</div></td>${Object.keys(ROLE_NAMES).map(r => `<td style="text-align:center"><button class="switch" role="switch" data-perm="${esc(p.perm)}" data-role="${r}" aria-checked="${!!SEC.roles?.[r]?.[p.perm]}" aria-label="${esc(ROLE_NAMES[r] + ': ' + p.label)}" ${r === 'admin' && ['system', 'einstellungen'].includes(p.perm) ? 'disabled' : ''}></button></td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+}});
+VIEW_PERM.rollen = 'system';
+$('#view-rollen').addEventListener('click', e => { const pm = e.target.closest('[data-perm]'); if (pm) return permToggle(pm); const g = e.target.closest('[data-ue-go]'); if (g) go(g.dataset.ueGo); });
+
+/** Nach Änderungen an Zwei-Faktor/Passwort (c23, c28) die offene Seite auffrischen */
+function usrRefresh() { if (S.view === 'benutzer-edit') usrRender(); else if (S.view === 'benutzer') PAGES.benutzer.render(); }
 
 /* ════════════════════════════════════════════════════════════════════
    12 · ANMELDUNG — Sperrbildschirm mit PIN, Windows Hello, FIDO2, SSO
@@ -15544,7 +15875,7 @@ function renderDesign() {
         <div class="comp-row"><span class="lbl">Größen</span><button class="btn btn-secondary btn-sm">Klein</button><button class="btn btn-secondary">Standard</button><button class="btn btn-secondary btn-lg">Groß</button><button class="btn btn-primary btn-lg">Bezahlen<span class="kbd">F9</span></button></div>
         <div class="comp-row"><span class="lbl">Eingaben</span><input class="input" placeholder="Textfeld" style="width:200px"><div class="seg" id="dsSeg"><button aria-pressed="true">Heute</button><button aria-pressed="false">Woche</button><button aria-pressed="false">Monat</button></div><button class="switch" role="switch" aria-checked="true" id="dsSwitch" aria-label="Schalter"></button><button class="chip">Filter-Chip</button></div>
         <div class="comp-row"><span class="lbl">Status</span><span class="pill pos">${ic('check')}Online</span><span class="pill warn">${ic('alert')}Offline</span><span class="pill neg">${ic('alert')}Überfällig</span><span class="pill info">${ic('info')}Info</span><span class="pill accent">${ic('sparkle')}KI</span><span class="pill">Neutral</span><span class="kbds"><span class="kbd">${MOD}</span><span class="kbd">K</span></span></div>
-        <div class="comp-row"><span class="lbl">Identität</span>${STAFF.map(s => `<span class="avatar lg" style="--h:${s.hue}">${s.initials}</span>`).join('')}<span class="delta up">${ic('up')}+12,4 %</span><span class="delta down">${ic('down')}−2,1 %</span><div style="width:160px"><div class="meter"><i style="width:72%"></i></div></div></div>
+        <div class="comp-row"><span class="lbl">Identität</span>${STAFF.map(s => avatarHTML(s, 'lg')).join('')}<span class="delta up">${ic('up')}+12,4 %</span><span class="delta down">${ic('down')}−2,1 %</span><div style="width:160px"><div class="meter"><i style="width:72%"></i></div></div></div>
         <div class="comp-row"><span class="lbl">Rückmeldung</span><button class="btn btn-secondary" data-demo="toast">Toast zeigen</button><button class="btn btn-secondary" data-demo="modal">Freigabe-Dialog</button><button class="btn btn-secondary" data-tip="Tooltips erklären, ohne zu stören">Tooltip</button><button class="btn btn-secondary" data-demo="palette">Befehlspalette</button></div>
       </div></section>
 
@@ -15675,7 +16006,7 @@ async function init() {
   if (DESKTOP) { await refreshInfo(); Hooks.on('*', (p, e) => { if (!e.evt.startsWith('config.settings')) invoke('audit_append', {event: e.evt, payload: e.payload ?? {}}).catch(() => {}); }); }
   $('#palKbd').innerHTML = `<span class="kbd">${MOD}</span><span class="kbd">K</span>`;
   renderNav(); permNav(); renderMe(); renderStore(); renderStatus();
-  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings(); bindStockViews(); bindP5(); bindCustom(); bindAutomation(); bindSecurity(); bindAiFibu(); bindPages(); bindImportDisplay(); bindVerbund(); bindAuth(); bindExtensions(); bindMore(); bindDocs(); bindEinkauf2(); bindVerkauf2(); bindMarketing(); bindArtikel(); bindVerkauf3(); bindKundenService(); bindArtikel2();
+  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings(); bindStockViews(); bindP5(); bindCustom(); bindAutomation(); bindAiFibu(); bindPages(); bindImportDisplay(); bindVerbund(); bindAuth(); bindExtensions(); bindMore(); bindDocs(); bindEinkauf2(); bindVerkauf2(); bindMarketing(); bindArtikel(); bindVerkauf3(); bindKundenService(); bindArtikel2();
   go(location.hash.slice(1) || 'dashboard');
   if (DESKTOP) lock();   // Anmeldung mit PIN beim Start
   if (DESKTOP) { loadPurchasing().then(() => navBadge('wareneingang', EK.pos.filter(p => ['bestellt', 'teilgeliefert'].includes(p.status)).length)).catch(() => {}); if (CFG['display.auto']) setTimeout(() => toggleDisplay(true), 1500); }

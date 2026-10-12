@@ -130,11 +130,15 @@ pub fn handle(c: &Connection, mut req: Request, path: &str) {
         (Method::Get, "/mobil/api/benutzer") => {
             let l = users::list(c).unwrap_or_default();
             let firma = db::setting_get(c, "firma.name").and_then(|v| v.as_str().map(str::to_string)).unwrap_or_default();
-            return json_reply(req, 200, json!({ "firma": firma, "benutzer": l.iter().filter(|u| u.active).map(|u| json!({ "id": u.id, "name": u.name })).collect::<Vec<_>>() }));
+            return json_reply(req, 200, json!({ "firma": firma, "benutzer": l.iter().filter(|u| u.active && users::mobile_allowed(u)).map(|u| json!({ "id": u.id, "name": u.name })).collect::<Vec<_>>() }));
         }
         (Method::Post, "/mobil/api/login") => {
             let code = bj["code"].as_str().filter(|x| !x.is_empty());
             return match users::verify(c, &s("user"), &s("pin"), code) {
+                Ok(u) if !users::get(c, &u.id).map(|x| users::mobile_allowed(&x)).unwrap_or(true) => {
+                    let _ = db::audit_append(c, "auth.login.failed", &json!({ "benutzer": u.name, "methode": "PIN · Handy", "grund": "Kontor mobil nicht freigegeben" }));
+                    json_reply(req, 403, json!({ "fehler": "Für „Kontor mobil“ nicht freigegeben – bitte an die Administration wenden" }))
+                }
                 Ok(u) => {
                     let mut b = [0u8; 24];
                     OsRng.fill_bytes(&mut b);

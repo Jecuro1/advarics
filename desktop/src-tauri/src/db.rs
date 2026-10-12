@@ -562,7 +562,13 @@ const MIGRATIONS: &[&str] = &[
         user    TEXT
     );
     "#,
-
+    // 12 · Benutzer: Personalnummer und Profil (Kontaktdaten, Adresse, Foto, Merkmale, Filialen)
+    r#"
+    ALTER TABLE users ADD COLUMN nr INTEGER;
+    ALTER TABLE users ADD COLUMN profile TEXT NOT NULL DEFAULT '{}';
+    UPDATE users SET nr = 1000 + (SELECT COUNT(*) FROM users u2 WHERE u2.rowid <= users.rowid) WHERE nr IS NULL;
+    CREATE UNIQUE INDEX users_nr ON users(nr);
+    "#,
 ];
 
 pub fn schema_version() -> i64 {

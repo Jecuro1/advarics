@@ -84,7 +84,7 @@ const kkApplyFlow = () => { const c = kkActive(); if (c && c.rabLimit != null &&
     }
     if (kopf && kind === 'verkauf') { const i = ops.findIndex(o => o.t === 'lr' && /^Bon /.test(o.l)); if (i >= 0) ops.splice(i, 0, {t: 'text', s: kopf, a: 'c', b: true}); }
     if (kkOn('gesamtTeile') && !neg) { const i = ops.findIndex(o => o.t === 'lr' && o.l === 'SUMME EUR'); const n = (rec.lines || []).reduce((s, l) => s + (+l.qty || 0), 0); if (i >= 0) ops.splice(i + 2, 0, {t: 'lr', l: 'Anzahl Teile', r: String(n)}); }
-    if (kkOn('vkBelegende') && rec.cashier && kind === 'verkauf') { const i = ops.findIndex(o => o.t === 'feed' && o.n === 4); if (i >= 0) ops.splice(i, 0, {t: 'text', s: 'Es bediente Sie: ' + rec.cashier, a: 'c'}); }
+    if (kkOn('vkBelegende') && rec.cashier && kind === 'verkauf') { const i = ops.findIndex(o => o.t === 'feed' && o.n === 4); if (i >= 0) ops.splice(i, 0, {t: 'text', s: 'Es bediente Sie: ' + bonName(rec.cashier, true), a: 'c'}); }
     const agb = String(kkVal('agb', '')).trim();
     if (agb && kind === 'verkauf') { const i = ops.findIndex(o => o.t === 'feed' && o.n === 4); if (i >= 0) ops.splice(i, 0, {t: 'line'}, {t: 'text', s: agb}); }
     return ops;

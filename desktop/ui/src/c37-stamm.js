@@ -20,10 +20,10 @@ const userOpts = () => STAFF.map(u => [u.name, u.name]);
 /** Tabellen-Definitionen: Titel, Untertitel, Spalten (k, l, t, o, w) und Startwerte */
 const STAMM_DEF = {
   // ── Benutzer
-  benutzergruppe: {t: 'Benutzergruppen', ic: 'users', sub: 'Gruppen mit gemeinsamer Rolle und Filialzuordnung – Mitglieder erben die Rechte der Rolle', cols: [{k: 'name', l: 'Gruppe'}, {k: 'rolle', l: 'Rolle', t: 'select', o: () => Object.entries(ROLE_NAMES).map(([k, v]) => [k, v])}, {k: 'mitglieder', l: 'Mitglieder', t: 'list', w: 260}, {k: 'filialen', l: 'Filialen', t: 'list'}],
+  benutzergruppe: {t: 'Benutzergruppen', ic: 'users', sub: 'Gruppen von Personen (Mitglieder werden unter Benutzer zugeordnet) – die Rolle wird beim Zuordnen vorgeschlagen', cols: [{k: 'name', l: 'Gruppe'}, {k: 'rolle', l: 'Rolle', t: 'select', o: () => Object.entries(ROLE_NAMES).map(([k, v]) => [k, v])}, {k: 'mitglieder', l: 'Mitglieder', t: 'list', w: 260}, {k: 'filialen', l: 'Filialen', t: 'list'}],
     seed: [{id: 'KASSE', name: 'Kassenpersonal', rolle: 'verkauf', mitglieder: [], filialen: []}, {id: 'LEITUNG', name: 'Filialleitung', rolle: 'leitung', mitglieder: [], filialen: []}]},
   zugangsprofil: {t: 'Zugangsprofil', ic: 'lock', sub: 'Wann sich wer anmelden darf – Wochentage und Uhrzeiten; außerhalb wird die Anmeldung abgelehnt (Administratoren ausgenommen)', cols: [{k: 'name', l: 'Profil'}, {k: 'benutzer', l: 'Benutzer', t: 'list', w: 220}, {k: 'tage', l: 'Wochentage', t: 'list', ph: 'Mo,Di,Mi,Do,Fr,Sa'}, {k: 'von', l: 'von', t: 'time'}, {k: 'bis', l: 'bis', t: 'time'}]},
-  meldung: {t: 'Zuordnung Meldungen', ic: 'bell', sub: 'Wer bei welchem Ereignis benachrichtigt wird – Hinweis in Kontor oder E-Mail', cols: [{k: 'ereignis', l: 'Ereignis', t: 'select', o: () => MELD_EVT}, {k: 'empfaenger', l: 'Empfänger (Benutzer)', t: 'select', o: userOpts}, {k: 'email', l: 'E-Mail (optional)'}, {k: 'kanal', l: 'Kanal', t: 'select', o: [['hinweis', 'Hinweis'], ['mail', 'E-Mail'], ['beides', 'Hinweis + E-Mail']]}]},
+  meldung: {t: 'Zuordnung Meldungen', ic: 'bell', sub: 'Wer bei welchem Ereignis benachrichtigt wird – Hinweis in Kontor oder E-Mail', cols: [{k: 'ereignis', l: 'Ereignis', t: 'select', o: () => MELD_EVT}, {k: 'empfaenger', l: 'Empfänger (Benutzer)', t: 'select', o: userOpts}, {k: 'email', l: 'E-Mail (leer = E-Mail Firma der Person)'}, {k: 'kanal', l: 'Kanal', t: 'select', o: [['hinweis', 'Hinweis'], ['mail', 'E-Mail'], ['beides', 'Hinweis + E-Mail']]}]},
   // ── Filialen
   filialgruppe: {t: 'Filialengruppe', ic: 'store', sub: 'Filialen gruppieren (Region, Format) – für Auswertungen und Umlagerungen', cols: [{k: 'name', l: 'Gruppe'}, {k: 'filialen', l: 'Filialen (Kürzel)', t: 'list', w: 280}, {k: 'leitung', l: 'Verantwortlich'}]},
   formular: {t: 'Formulareinstellungen', ic: 'receipt', sub: 'Kopf- und Fußtexte je Formular (Rechnung, Lieferschein, Angebot, Abholschein …) – überschreibt die Firmendaten', cols: [{k: 'formular', l: 'Formular', t: 'select', o: [['Rechnung', 'Rechnung'], ['Angebot', 'Angebot'], ['Auftragsbestätigung', 'Auftragsbestätigung'], ['Lieferschein', 'Lieferschein'], ['Abholschein', 'Abholschein'], ['Auswahlschein', 'Auswahlschein'], ['Mahnung', 'Mahnung'], ['Versandetikett', 'Versandetikett'], ['Verleihvertrag', 'Verleihvertrag']]}, {k: 'kopf', l: 'Kopftext', t: 'area', w: 260}, {k: 'fuss', l: 'Fußtext', t: 'area', w: 260}]},
@@ -296,7 +296,8 @@ function bindMeldungen() {
       for (const m of stActive('meldung').filter(x => x.ereignis === evt)) {
         const txt = `${MELD_EVT.find(x => x[0] === evt)[1]}${payload?.no ? ' · ' + payload.no : ''}`;
         if (m.kanal !== 'mail' && (!m.empfaenger || m.empfaenger === S.user?.name)) toast(txt, {t2: 'Meldung', icon: 'bell', type: 'accent', dur: 7000});
-        if (m.kanal !== 'hinweis' && m.email && DESKTOP) invoke('mail_send', {to: m.email, subject: `Kontor · ${txt}`, html: `<p>${esc(txt)}</p><pre style="font-size:12px">${esc(JSON.stringify(payload || {}, null, 2))}</pre>`, text: txt, qr: null, purpose: 'meldung'}).catch(() => {});
+        const to = m.email || STAFF.find(s => s.name === m.empfaenger)?.email;   // keine eigene Adresse angegeben: E-Mail Firma der Person
+        if (m.kanal !== 'hinweis' && to && DESKTOP) invoke('mail_send', {to, subject: `Kontor · ${txt}`, html: `<p>${esc(txt)}</p><pre style="font-size:12px">${esc(JSON.stringify(payload || {}, null, 2))}</pre>`, text: txt, qr: null, purpose: 'meldung'}).catch(() => {});
       }
     });
   }

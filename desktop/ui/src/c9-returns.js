@@ -178,7 +178,7 @@ function returnReceiptHTML(rec, tpl) {
   }).join('');
   return `<div class="receipt ${tpl}">${receiptHead(tpl)}<hr>
     <div class="c" style="font-weight:700;letter-spacing:.08em">${rec.kind === 'storno' ? 'STORNO' : 'RETOURE'}</div><div class="sm c">zu Bon ${esc(rec.ref || '')} · ${esc(rec.reason || '')}</div><hr>
-    <div class="r"><span>Beleg ${rec.no}</span><span>Kasse ${esc(CFG['kasse.id'])}</span></div><div class="r sm"><span>${d}</span><span>${esc((rec.cashier || '').split(' ')[0])}</span></div><hr>
+    <div class="r"><span>Beleg ${rec.no}</span><span>Kasse ${esc(CFG['kasse.id'])}</span></div><div class="r sm"><span>${d}</span><span>${esc(bonName(rec.cashier))}</span></div><hr>
     ${lines}
     <hr><div class="r tot"><span>ERSTATTUNG EUR</span><span>${money(rec.t.total)}</span></div><hr>
     ${(rec.parts || []).map(p => `<div class="r"><span>${esc(p.label)}${p.m === 'bar' ? '' : ' (Rückbuchung)'}</span><span>${money(p.amount)}</span></div>`).join('')}<hr>

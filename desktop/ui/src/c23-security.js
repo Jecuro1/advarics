@@ -52,7 +52,7 @@ async function openTotp(u) {
   try { if (u.id !== S.user.id || on) await needPerm('system', on ? 'Zwei-Faktor ausschalten' : 'Zwei-Faktor einrichten', `${u.name} · Authenticator-App`); } catch { return; }
   if (on) {
     try { await invoke('totp_disable', {user: u.id, by: S.user.name}); SEC.totp.delete(u.id); } catch (e) { return toast('Fehler', {t2: String(e), type: 'warn'}); }
-    renderUsersBox(); toast('Zwei-Faktor ausgeschaltet', {t2: u.name, icon: 'shield'}); return;
+    usrRefresh(); toast('Zwei-Faktor ausgeschaltet', {t2: u.name, icon: 'shield'}); return;
   }
   let t, svg;
   try { t = await invoke('totp_begin', {user: u.id}); svg = await invoke('qr_svg', {text: t.uri}); } catch (e) { return toast('Fehler', {t2: String(e), type: 'warn'}); }
@@ -69,33 +69,12 @@ async function openTotp(u) {
   const ok = async () => {
     const code = $('#totpCode', el).value.replace(/\D/g, '');
     try { await invoke('totp_enable', {user: u.id, secret: t.secret, code}); } catch (e) { shakeEl($('#totpCode', el)); return toast('Code stimmt nicht', {t2: String(e), type: 'warn'}); }
-    SEC.totp.add(u.id); closeLayer(el); renderUsersBox(); toast('Zwei-Faktor aktiv', {t2: `${u.name} · ab der nächsten Anmeldung`, type: 'pos', icon: 'shield'});
+    SEC.totp.add(u.id); closeLayer(el); usrRefresh(); toast('Zwei-Faktor aktiv', {t2: `${u.name} · ab der nächsten Anmeldung`, type: 'pos', icon: 'shield'});
   };
   $('#totpOk', el).onclick = ok;
   el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ok(); } });
 }
 
-/* ── Einstellungen → Benutzer: 2FA je Person und Rechte-Matrix ── */
-const _renderUsersBox = renderUsersBox;
-renderUsersBox = function () {
-  _renderUsersBox();
-  const box = $('#usrBox'); if (!box || !DESKTOP) return;
-  STAFF.forEach(u => {
-    const b = $(`[data-usr="${u.id}"]`, box); if (!b) return;
-    const on = SEC.totp.has(u.id);
-    b.insertAdjacentHTML('beforebegin', `<button class="btn ${on ? 'btn-secondary' : 'btn-ghost'} btn-sm" data-totp="${u.id}" data-tip="${on ? 'Zwei-Faktor ist aktiv – klicken zum Ausschalten' : 'Authenticator-App als zweiten Faktor einrichten'}">${ic('shield', 'i-sm')}${on ? '2FA aktiv' : '2FA'}</button>`);
-  });
-  $('#permBox')?.remove();
-  box.insertAdjacentHTML('afterend', `<div class="card" id="permBox" style="margin-top:12px"><div class="set-row"><div><div class="set-l">Rechte je Rolle</div><div class="set-h">Fehlt ein Recht, kann eine berechtigte Person die Aktion per PIN freigeben. Änderungen erfordern einen Administrator.</div></div></div>
-    <table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Recht</th>${Object.values(ROLE_NAMES).map(n => `<th style="text-align:center">${esc(n)}</th>`).join('')}</tr></thead><tbody>${SEC.perms.map(p => `<tr><td style="padding-left:16px">${esc(p.label)}<div class="mono muted" style="font-size:11px">${esc(p.perm)}</div></td>${Object.keys(ROLE_NAMES).map(r => `<td style="text-align:center"><button class="switch" role="switch" data-perm="${esc(p.perm)}" data-role="${r}" aria-checked="${!!SEC.roles?.[r]?.[p.perm]}" aria-label="${esc(ROLE_NAMES[r] + ': ' + p.label)}" ${r === 'admin' && ['system', 'einstellungen'].includes(p.perm) ? 'disabled' : ''}></button></td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
-};
-function bindSecurity() {
-  $('#view-einstellungen').addEventListener('click', async e => {
-    const tb = e.target.closest('[data-totp]'); if (tb) { e.stopPropagation(); return openTotp(STAFF.find(s => s.id === tb.dataset.totp)); }
-    const pm = e.target.closest('[data-perm]'); if (!pm) return;
-    e.stopPropagation(); permToggle(pm);
-  }, true);
-}
 async function permToggle(pm) {
   {
     const allowed = pm.getAttribute('aria-checked') !== 'true';

@@ -241,17 +241,6 @@ async function kiAsk(q) {
   const b = $('#kiAct'); if (b) b.onclick = () => a.act.run();
 }
 
-/* ── Benutzer & Rechte ── */
-registerPage('benutzer', {title: 'Benutzer & Rechte', sub: () => `${STAFF.length} Personen`, render: renderBenutzer});
-async function renderBenutzer() {
-  const v = $('#view-benutzer');
-  v.innerHTML = `<div class="cv">${pageHead('Benutzer & Rechte', 'Personen, PINs, Zwei-Faktor-Anmeldung und was jede Rolle darf')}
-    <div id="usrWarn"></div><div class="card" id="usrBox"></div>
-    <div class="card" style="margin-top:12px"><div class="set-row"><div><div class="set-l">Anmeldemethoden</div><div class="set-h">PIN (4 Ziffern, gesalzen gespeichert, Sperre nach 5 Fehlversuchen) · zusätzlich Authenticator-App (2FA) je Person · Handy-App mit derselben PIN · Freigaben per PIN einer berechtigten Person</div></div></div></div></div>`;
-  renderUsersBox();
-  if (DESKTOP) invoke('users_default_pins').then(l => { if (l.length && $('#usrWarn')) $('#usrWarn').innerHTML = `<div class="rule-box" style="margin-bottom:12px;background:var(--warn-soft);border-color:transparent">${ic('alert')}<div><b style="color:var(--text)">Erst-PIN noch aktiv:</b> ${esc(l.join(' · '))} – bitte jetzt ändern („Bearbeiten“).</div></div>`; }).catch(() => {});
-}
-
 /* ── Protokoll ── */
 const PR = {cat: '', q: '', rows: [], more: true};
 const PR_CATS = [['', 'Alle'], ['pos.', 'Kasse'], ['auth.', 'Anmeldung'], ['inventory.', 'Bestand'], ['catalog.', 'Artikel'], ['customer.', 'Kunden'], ['cash.', 'Kassenbuch'], ['purchasing.', 'Einkauf'], ['config.', 'Einstellungen'], ['rksv.', 'RKSV'], ['backup.', 'Sicherung'], ['objekt.', 'Objekte'], ['rule.', 'Regeln']];
@@ -354,7 +343,6 @@ function bindPages() {
   $('#view-buchhaltung').addEventListener('change', e => { if (e.target.id === 'fbVon' || e.target.id === 'fbBis') { FB[e.target.id === 'fbVon' ? 'von' : 'bis'] = e.target.value; renderBuchhaltung(); } });
   on('ki', e => { const q = e.target.closest('[data-kiq]'); if (q) return kiAsk(q.dataset.kiq); const i = e.target.closest('[data-kiins]'); if (i) { const x = INSIGHTS.find(y => y.id === i.dataset.kiins); if (x) insightAction(x); } if (e.target.closest('[data-ki="ek"]')) { EK.tab = 'ki'; go('einkauf'); } });
   $('#view-ki').addEventListener('submit', e => { if (e.target.id === 'kiForm') { e.preventDefault(); kiAsk($('#kiQ').value); } });
-  on('benutzer', e => { const u = e.target.closest('[data-usr]'); if (u) return openUserEditor(u.dataset.usr ? STAFF.find(s => s.id === u.dataset.usr) : null); const tb = e.target.closest('[data-totp]'); if (tb) return openTotp(STAFF.find(s => s.id === tb.dataset.totp)); const pm = e.target.closest('[data-perm]'); if (pm) permToggle(pm); });
   on('protokoll', async e => {
     const c = e.target.closest('[data-prc]'); if (c) { PR.cat = c.dataset.prc; return renderProtokoll(); }
     const b = e.target.closest('[data-pr]'); if (!b) return;

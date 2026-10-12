@@ -202,7 +202,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.35.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.36.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -385,7 +385,7 @@ const NAV = [
   {id: 'inventur-einstellungen', label: 'Einstellungen', icon: 'sliders'},
   {id: 'st-altersbewertung', label: 'Altersbewertung Prozentsätze', icon: 'percent'},
   {g: 'Stammdaten'},
-  {label: 'Benutzer', icon: 'users', kids: [{id: 'benutzer', label: 'Benutzer & Rechte', icon: 'shield'}, {id: 'st-benutzergruppe', label: 'Benutzergruppen', icon: 'users'}, {id: 'st-zugangsprofil', label: 'Zugangsprofil', icon: 'lock'}, {id: 'zeiterfassung', label: 'Zeiterfassung', icon: 'clock'}, {id: 'st-meldung', label: 'Zuordnung Meldungen', icon: 'bell'}]},
+  {label: 'Benutzer', icon: 'users', kids: [{id: 'benutzer', label: 'Benutzer', icon: 'user'}, {id: 'rollen', label: 'Rollen & Rechte', icon: 'shield'}, {id: 'st-benutzergruppe', label: 'Benutzergruppen', icon: 'users'}, {id: 'st-zugangsprofil', label: 'Zugangsprofil', icon: 'lock'}, {id: 'zeiterfassung', label: 'Zeiterfassung', icon: 'clock'}, {id: 'st-meldung', label: 'Zuordnung Meldungen', icon: 'bell'}]},
   {label: 'Filialen', icon: 'store', kids: [{id: 'filialen', label: 'Filialen', icon: 'store'}, {id: 'st-filialgruppe', label: 'Filialengruppe', icon: 'layers'}, {id: 'st-formular', label: 'Formulareinstellungen', icon: 'receipt'}, {id: 'st-verkaufsabteilung', label: 'Verkaufsabteilung', icon: 'grid'}]},
   {id: 'st-marke', label: 'Marken', icon: 'star'},
   {id: 'demo-marken', label: 'Marken-Demosortiment', icon: 'star'},
@@ -454,7 +454,10 @@ function registerPage(id, def) {
 const navClosed = new Set(persist.get('navClosed', []));
 const navOpen = new Set(persist.get('navOpen', []));
 /** Pfad im Menü: Gruppe und übergeordnete Menüpunkte, z. B. „Einkauf · Rechnungs-Management“ */
+/** Bearbeiten-Masken ohne eigenen Menüpunkt → Menüpunkt, zu dem sie gehören (Pfad in der Kopfzeile, Hervorhebung, Aufklappen) */
+const NAV_CHILD = {'benutzer-edit': 'benutzer', 'einst-kassen-edit': 'einst-kassen', 'einst-kassenkonfig-edit': 'einst-kassenkonfig', 'st-bonussystem-edit': 'st-bonussystem', 'st-groessenschluessel-edit': 'st-groessenschluessel', 'artikel-edit': 'artikel'};
 const navPath = id => {
+  id = NAV_CHILD[id] || id;
   let g = null;
   const walk = (list, path) => { for (const n of list) { if (n.id === id) return path; if (n.kids) { const r = walk(n.kids, [...path, n]); if (r) return r; } } return null; };
   for (const n of NAV) { if (n.g) { g = n.g; continue; } if (n.id === id) return {g, parents: []}; if (n.kids) { const r = walk(n.kids, [n]); if (r) return {g, parents: r}; } }
@@ -514,7 +517,7 @@ function navRecentAdd(view) {
 /** Menüsuche: tippen, Treffer anklicken */
 function navSearch(q) {
   const nav = $('#nav'); q = norm(q || '').trim();
-  if (!q) { renderNav(); permNav(); $$('.nav-item').forEach(n => n.dataset.view === S.view && n.setAttribute('aria-current', 'page')); return; }
+  if (!q) { renderNav(); permNav(); $$('.nav-item').forEach(n => n.dataset.view === (NAV_CHILD[S.view] || S.view) && n.setAttribute('aria-current', 'page')); return; }
   const hits = navFlat().filter(x => (!VIEW_PERM[x.id] || can(VIEW_PERM[x.id])) && norm(x.label + ' ' + (x.path || []).join(' ')).includes(q)).slice(0, 40);
   nav.innerHTML = hits.length ? hits.map(x => `<button class="nav-item nav-hit" data-view="${x.id}" style="--lvl:0">${ic(x.icon)}<span class="nav-label"><span>${esc(x.label)}</span><small>${esc((x.path || []).join(' › '))}</small></span></button>`).join('') : '<div class="nav-none">Nichts gefunden</div>';
 }
@@ -554,7 +557,7 @@ function navGroupToggle(g) {
 /** Zähler an Menüpunkten (z. B. offene Bestellungen) */
 function navBadge(id, n) { $$(`[data-nb="${id}"]`).forEach(b => { b.hidden = !n; b.textContent = n > 99 ? '99+' : n; }); }
 function renderMe() {
-  $('#meBtn').innerHTML = `<span class="avatar" style="--h:${S.user.hue}">${S.user.initials}</span><span class="meta fade-label" style="min-width:0"><span class="t1" style="display:block">${esc(S.user.name)}</span><span class="t2" style="display:block">${esc(S.user.role)} · Kasse 1</span></span>`;
+  $('#meBtn').innerHTML = `${avatarHTML(S.user)}<span class="meta fade-label" style="min-width:0"><span class="t1" style="display:block">${esc(S.user.name)}</span><span class="t2" style="display:block">${esc(S.user.role)} · Kasse 1</span></span>`;
 }
 function renderStore() {
   const s = storeObj();
@@ -595,7 +598,7 @@ function go(view) {
   else if (view.startsWith('obj-')) renderObj(view.slice(4));
   else renderPlaceholder(view);
   const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : view.startsWith('obj-') ? $('#view-obj') : view.startsWith('set-') ? $('#view-einstellungen') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
-  $$('.nav-item').forEach(n => n.dataset.view === view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
+  $$('.nav-item').forEach(n => n.dataset.view === (NAV_CHILD[view] || view) ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
   navReveal(view);
   renderTopbar(); applySidebar();
   document.body.classList.forEach(c => c.startsWith('at-') && document.body.classList.remove(c)); document.body.classList.add('at-' + view);

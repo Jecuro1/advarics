@@ -15,10 +15,10 @@ function agMount(key, v) {
   st.rows = cfg.rows();
   st.cols.forEach(c => { delete c.aw; });
   v.innerHTML = `<div class="datagrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
-      ${cfg.toolbar?.length ? `<div class="ag-bar">${cfg.toolbar.map(b => `<button class="ag-btn" data-ag="${b.k}">${ic(b.icon, 'i-sm')}<span>${esc(b.l)}</span></button>`).join('')}<button class="ag-btn ag-del" data-ag="del" hidden>${ic('trash', 'i-sm')}<span>Löschen</span></button></div>` : ''}
+      ${cfg.toolbar?.length ? `<div class="ag-bar">${cfg.toolbar.map(b => `<button class="ag-btn" data-ag="${b.k}">${ic(b.icon, 'i-sm')}<span>${esc(b.l)}</span></button>`).join('')}<button class="ag-btn ag-del" data-ag="del" hidden>${ic(cfg.removeIcon || 'trash', 'i-sm')}<span>${esc(cfg.removeLabel || 'Löschen')}</span></button></div>` : ''}
       <div class="ag-tools"><div class="ag-drop" data-agdrop><span class="ag-ph">Zu gruppierende Spalten hierhin ziehen…</span></div>
         ${(cfg.extra || []).map(b => `<button class="ag-xbtn" data-ag="${b.k}">${ic(b.icon || 'plus', 'i-sm')}${esc(b.l)}</button>`).join('')}
-        ${cfg.remove && !cfg.toolbar?.length ? `<button class="ag-xbtn ag-del" data-ag="del" hidden>${ic('trash', 'i-sm')}Löschen</button>` : ''}
+        ${cfg.remove && !cfg.toolbar?.length ? `<button class="ag-xbtn ag-del" data-ag="del" hidden>${ic(cfg.removeIcon || 'trash', 'i-sm')}${esc(cfg.removeLabel || 'Löschen')}</button>` : ''}
         <label class="ag-search">${ic('search', 'i-sm')}<input data-agq placeholder="Suche …" value="${esc(st.q)}"></label>
         <button class="ag-tbtn" data-ag="cols" title="Spalten-Auswahl">${ic('list', 'i-sm')}Spalten</button>
         <button class="ag-tbtn" data-ag="fit" title="Automatische Spaltenbreite">${ic('swap', 'i-sm')}Spaltenbreite</button>

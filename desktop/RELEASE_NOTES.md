@@ -1,3 +1,17 @@
+## Neu in 0.36.0
+
+- **Stammdaten › Benutzer › Benutzer – neu nach dem Vorbild von Advarics.** Die Benutzerliste ist jetzt eine Tabelle mit Bild, Nr., Vorname, Name, E-Mail Firma, Rolle, Benutzergruppe, Aktiv, Verkäufer:in und Anmeldung (Filialen und „Kontor mobil“ lassen sich über „Spalten“ zuschalten) – mit Suche, Filter, Sortierung, Gruppierung und CSV-Export. Doppelklick oder „Neu“ öffnet die Benutzer-Maske mit den Reitern **Allgemein · Haupt-Adresse · Zugeordnete Filialen · Benachrichtigungen · Rechte · Anmeldung**. Oben: Übersicht · Aktualisieren · Sichern · Neu · Änderungen zurücknehmen und Blättern zwischen den Personen. Pflichtfelder sind markiert, ein roter Zähler am Reiter zeigt, wo etwas fehlt.
+- **Jede Angabe hat eine Wirkung** (nichts ist nur Deko):
+  - **Bild** (ziehen, mit Strg + V einfügen oder anklicken; wird auf 256 × 256 zugeschnitten): Anmeldebildschirm, Seitenleiste, Freigabe-Fenster, Liste.
+  - **Name auf dem Bon** steht auf dem Kassenbon und in der Bon-Mail (leer = Vorname). **Verkäufer:in** schaltet, ob die Person an der Kasse je Position und bei der Bon-Zuordnung gewählt werden kann. **Kontor mobil** erlaubt oder sperrt die Anmeldung am Handy/Tablet.
+  - **Benutzergruppe** und **Zugangsprofil** sind die gleichnamigen Stammdaten-Tabellen – die Auswahl in der Maske trägt die Person dort ein (die Rolle der Gruppe wird vorgeschlagen). **Zugeordnete Filialen:** die Person kann sich nur an diesen Filialen anmelden (Administratoren überall). **Benachrichtigungen:** Ereignisse, über die die Person als Hinweis oder per E-Mail informiert wird (Zuordnung Meldungen). **E-Mail Firma** ist der Empfänger.
+  - **Rechte:** zeigt, was die gewählte Rolle darf; die Rechte-Matrix selbst steht jetzt als eigene Seite **Rollen & Rechte** im Menü Benutzer. **Anmeldung:** PIN, Zwei-Faktor, Benutzername/Passwort/Windows Hello und Single Sign-On.
+  - Beim Umbenennen folgen Gruppe, Zugangsprofil und Meldungen dem neuen Namen. Personalnummer (automatisch, änderbar) und „Zuletzt geändert“ gehören dazu.
+- **Deaktivieren statt Löschen:** Personen werden nie gelöscht (Belege und Protokoll verweisen auf sie). In der Liste markieren und „Deaktivieren“, in der Maske mit dem Schalter „Aktiv“ wieder zurück. Das eigene Konto und der letzte Administrator sind geschützt.
+- **Sicherheit:** Neue Personen, Rollen-, Status- und PIN-Änderungen verlangen die Freigabe einer Administratorin / eines Administrators; Kontaktdaten, Bild, Adresse oder Zuordnungen ändern geht ohne Zusatz-PIN. Ungesicherte Änderungen werden beim Verlassen der Maske abgefragt. Wer noch die Erst-PIN hat, ist in der Liste und im Reiter „Anmeldung“ markiert (die Prüfung läuft im Hintergrund).
+- **Bewusst weggelassen**, weil ohne Wirkung in einem lokalen Kassen- und Warenwirtschaftssystem: Stil, Titel, Geburtstag, Region/Sprache, Verkaufs-Abteilung, Analyse-Manager, „Ist Kassierer/Einkäufer“, „Gesendete/Empfangene Benachrichtigungen“ und die Dokumenten-Archivierung. Sie lassen sich bei Bedarf nachrüsten, sobald es eine Funktion dazu gibt.
+- Intern: Die Prüfung auf Erst-PINs blockiert die Datenbank nicht mehr; Tabellen können ihre „Löschen“-Schaltfläche umbenennen (hier „Deaktivieren“).
+
 ## Neu in 0.35.0
 
 - **Jede Einstellung ist jetzt eine eigene Seite.** Die lange Sammelseite „Kontor-Einstellungen“ mit über 20 Abschnitten zum Scrollen gibt es nicht mehr. Im Menü unter Einstellungen gibt es vier Gruppen, jeder Punkt öffnet seine eigene Seite mit eigenem Titel und eigener Adresse:

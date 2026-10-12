@@ -28,7 +28,7 @@ function receiptOps(rec) {
   const kind = rec.kind || 'verkauf';
   if (kind !== 'verkauf') ops.push({t: 'text', s: (rec.label || kindLabel(rec)).toUpperCase(), a: 'c', b: true, big: true}, ...(rec.ref ? [{t: 'text', s: `zu Bon ${rec.ref} · ${rec.reason || ''}`, a: 'c'}] : []));
   if (rec.copy) ops.push({t: 'text', s: '*** KOPIE ***', a: 'c', b: true});
-  ops.push({t: 'lr', l: `Bon ${rec.no}`, r: `Kasse ${CFG['kasse.id']}`}, {t: 'lr', l: d, r: (rec.cashier || '').split(' ')[0]}, {t: 'line'});
+  ops.push({t: 'lr', l: `Bon ${rec.no}`, r: `Kasse ${CFG['kasse.id']}`}, {t: 'lr', l: d, r: bonName(rec.cashier)}, {t: 'line'});
   const neg = kind === 'retoure' || kind === 'storno';
   (rec.lines || []).forEach(l => {
     const amount = neg ? -(l.refund || 0) / 100 : r2(l.unit * l.qty);

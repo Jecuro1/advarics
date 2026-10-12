@@ -27,7 +27,6 @@ async function voucherPay(m, rem) {
 function bindExtraSettings() {
   const v = $('#view-einstellungen');
   v.addEventListener('click', async e => {
-    const u = e.target.closest('[data-usr]'); if (u) return openUserEditor(u.dataset.usr ? STAFF.find(s => s.id === u.dataset.usr) : null);
     if (e.target.closest('#rkStart')) return rksvStart();
     const rk = e.target.closest('[data-rk]'); if (rk) { try { await stepUp({title: rk.dataset.rk === 'monat' ? 'Monatsbeleg erstellen' : 'Nullbeleg erstellen', text: 'Wird signiert und im DEP gespeichert'}); } catch { return; } return rksvNull(rk.dataset.rk); }
     if (e.target.closest('#rkDep')) return depExport();

@@ -19,7 +19,7 @@ function altAuthHTML(user) {
   if (IS_WIN && AUTH.methods[user.id]?.hello) b.push(['hello', 'faceid', 'Windows Hello']);
   if (ssoReady()) b.push(['sso', 'building', CFG['sso.name'] || 'Single Sign-On']);
   return b.length ? `<div class="or">oder anmelden mit</div><div class="auth-alt">${b.map(([k, i, l]) => `<button class="btn btn-secondary" data-m="${k}">${ic(i)}${esc(l)}</button>`).join('')}</div>`
-    : `<div class="or" style="margin-top:14px">Weitere Anmeldewege unter Benutzer & Rechte</div>`;
+    : `<div class="or" style="margin-top:14px">Weitere Anmeldewege unter Stammdaten › Benutzer</div>`;
 }
 async function altAuth(m, user, card, done, back) {
   const fail = e => { back(); toast('Anmeldung nicht möglich', {t2: String(e?.message || e), type: 'warn', dur: 7000}); Hooks.emit('auth.login.failed', {benutzer: user.name, methode: m}); };
@@ -69,19 +69,6 @@ async function altAuth(m, user, card, done, back) {
   }
 }
 
-/* ── Benutzer: Anmeldung je Person (Benutzername/Passwort, Windows Hello) ── */
-{
-  const _rub = renderUsersBox;
-  renderUsersBox = function () {
-    _rub();
-    const box = $('#usrBox'); if (!box || !DESKTOP) return;
-    STAFF.forEach(u => {
-      const b = $(`[data-usr="${u.id}"]`, box); if (!b) return;
-      const m = AUTH.methods[u.id] || {}, tags = [m.passwort && 'Passwort', m.hello && 'Hello', SEC.totp.has(u.id) && '2FA'].filter(Boolean);
-      b.insertAdjacentHTML('beforebegin', `<button class="btn btn-ghost btn-sm" data-login="${u.id}" data-tip="${esc(m.login || 'Benutzername, Passwort, Windows Hello')}">${ic('usbkey', 'i-sm')}Anmeldung${tags.length ? ` <span class="muted" style="font-size:11px">· ${tags.join(' · ')}</span>` : ''}</button>`);
-    });
-  };
-}
 async function openLoginEditor(u) {
   const self = u.id === S.user.id;
   let by; try { by = self ? {name: S.user.name} : (await stepUp({title: 'Anmeldung bearbeiten', text: u.name, admin: true})).by; } catch { return; }
@@ -94,7 +81,7 @@ async function openLoginEditor(u) {
       <div class="set-row" style="padding:10px 0;border-bottom:0"><div><div class="set-l">Windows Hello ${m.hello ? '<span class="pill pos" style="height:20px">aktiv</span>' : ''}</div><div class="set-h">${IS_WIN ? (self ? 'Gesicht, Fingerabdruck oder Geräte-PIN dieses PCs' : 'Kann nur die Person selbst an ihrem PC einrichten') : 'nur unter Windows'}</div></div><div class="set-c">${m.hello ? `<button class="btn btn-secondary btn-sm" id="leHelloOff">Ausschalten</button>` : `<button class="btn btn-secondary btn-sm" id="leHello" ${IS_WIN && self ? '' : 'disabled'}>${ic('faceid', 'i-sm')}Einrichten</button>`}</div></div>
     </div>
     <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="leSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {focus: '#leLogin'});
-  const after = async msg => { await loadAuth(); renderUsersBox(); if (msg) toast(msg, {type: 'pos', icon: 'usbkey', t2: u.name}); };
+  const after = async msg => { await loadAuth(); usrRefresh(); if (msg) toast(msg, {type: 'pos', icon: 'usbkey', t2: u.name}); };
   el.addEventListener('click', async e => {
     if (e.target.closest('#lePwOff')) { try { await invoke('auth_password_clear', {user: u.id, by: by.name}); } catch (err) { return toast('Fehler', {t2: String(err), type: 'warn'}); } closeLayer(el); return after('Passwort entfernt'); }
     if (e.target.closest('#leHello')) { try { await invoke('auth_hello', {user: u.id, enable: true}); } catch (err) { return toast('Windows Hello nicht eingerichtet', {t2: String(err), type: 'warn', dur: 7000}); } closeLayer(el); return after('Windows Hello eingerichtet'); }
@@ -130,7 +117,4 @@ function bindAuth() {
     toast('Browser öffnet sich …', {icon: 'building'});
     try { const u = await invoke('auth_sso'); toast('Single Sign-On funktioniert', {t2: `angemeldet als ${u.name}`, type: 'pos', icon: 'check'}); } catch (err) { toast('Single Sign-On fehlgeschlagen', {t2: String(err), type: 'warn', dur: 9000}); }
   });
-  const loginClick = e => { const b = e.target.closest('[data-login]'); if (b) { e.stopPropagation(); openLoginEditor(STAFF.find(s => s.id === b.dataset.login)); } };
-  $('#view-einstellungen').addEventListener('click', loginClick, true);
-  $('#view-benutzer').addEventListener('click', loginClick, true);
 }

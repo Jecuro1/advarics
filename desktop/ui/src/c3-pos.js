@@ -718,7 +718,7 @@ function receiptHTML(rec, tpl) {
   const lineDisc = rec.lines.reduce((s, l) => s + (l.disc ? r2(r2(l.unit * l.qty) * l.disc.pct / 100) : 0), 0), billDisc = r2(rec.t.disc - lineDisc);
   const head = receiptHead(tpl);
   return `<div class="receipt ${tpl}">${head}<hr>
-    <div class="r"><span>Bon ${rec.no}</span><span>Kasse ${esc(CFG['kasse.id'])}</span></div><div class="r sm"><span>${d}</span><span>${esc(rec.cashier.split(' ')[0])}</span></div><hr>
+    <div class="r"><span>Bon ${rec.no}</span><span>Kasse ${esc(CFG['kasse.id'])}</span></div><div class="r sm"><span>${d}</span><span>${esc(bonName(rec.cashier))}</span></div><hr>
     ${lines}
     ${billDisc > 0 && rec.billDisc ? `<div class="r sm"><span>Bonrabatt ${rec.billDisc.pct} %${rec.billDisc.reason ? ' · ' + esc(rec.billDisc.reason) : ''}</span><span>−${money(billDisc)}</span></div>` : ''}
     <hr><div class="r tot"><span>SUMME EUR</span><span>${money(rec.t.total)}</span></div><hr>
@@ -753,7 +753,7 @@ function bindPOS() {
         const l = POS.cart.find(x => x.key === key);
         if (la.dataset.la === 'rm') return removeLine(key);
         if (la.dataset.la === 'disc') { POS.sel = key; return openDiscount(); }
-        if (la.dataset.la === 'seller') { const i = (STAFF.findIndex(s => s.name === l.seller) + 1) % (STAFF.length + 1); l.seller = STAFF[i]?.name || null; renderCart(); selectLine(key); return toast(l.seller ? `Verkäufer:in: ${l.seller}` : 'Verkäufer:in entfernt', {t2: 'Für Provisions- und Leistungsauswertung', icon: 'user'}); }
+        if (la.dataset.la === 'seller') { const L = sellers(), i = (L.findIndex(s => s.name === l.seller) + 1) % (L.length + 1); l.seller = L[i]?.name || null; renderCart(); selectLine(key); return toast(l.seller ? `Verkäufer:in: ${l.seller}` : 'Verkäufer:in entfernt', {t2: 'Für Provisions- und Leistungsauswertung', icon: 'user'}); }
         if (la.dataset.la === 'variant') { const i = POS.cart.indexOf(l); POS.cart.splice(i, 1); renderCart(); return openVariant(l.art, null, {c: l.c, s: l.s}); }
       }
       return selectLine(key);

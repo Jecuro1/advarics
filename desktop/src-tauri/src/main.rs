@@ -464,9 +464,17 @@ fn users_list(db: State<db::Db>) -> Res<Vec<users::User>> {
     users::list(&db.conn.lock().unwrap()).map_err(err)
 }
 
+/// Alle Personen inklusive deaktivierter (Stammdaten › Benutzer)
 #[tauri::command]
+fn users_all(db: State<db::Db>) -> Res<Vec<users::User>> {
+    users::list_all(&db.conn.lock().unwrap()).map_err(err)
+}
+
+#[tauri::command(async)]
 fn users_default_pins(db: State<db::Db>) -> Vec<String> {
-    users::default_pins(&db.conn.lock().unwrap())
+    // die Hashes werden ohne Datenbank-Sperre berechnet, damit andere Aufrufe nicht warten müssen
+    let cands = users::default_pin_candidates(&db.conn.lock().unwrap());
+    users::default_pins_check(cands)
 }
 
 #[tauri::command]
@@ -493,9 +501,11 @@ fn user_verify(db: State<db::Db>, id: String, pin: String, purpose: Option<Strin
 #[tauri::command]
 fn user_save(db: State<db::Db>, user: users::User, pin: Option<String>, by: Option<String>) -> Res<Vec<users::User>> {
     let mut c = db.conn.lock().unwrap();
-    let tx = c.transaction().map_err(err)?;
+    // sofort schreibend beginnen: das PIN-Hashing dauert, und ein Hintergrund-Job (Abgleich, EDI …) darf dazwischen nicht
+    // schreiben – sonst scheitert das spätere Hochstufen der Lese- zur Schreib-Transaktion mit „database is locked“
+    let tx = c.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate).map_err(err)?;
     let id = users::save(&tx, &user, pin.as_deref().filter(|p| !p.is_empty()))?;
-    db::audit_append(&tx, "user.saved", &json!({ "benutzer": id, "rolle": user.role, "pin_geaendert": pin.as_deref().map(|p| !p.is_empty()).unwrap_or(false), "durch": by })).map_err(err)?;
+    db::audit_append(&tx, "user.saved", &json!({ "benutzer": id, "rolle": user.role, "aktiv": user.active, "pin_geaendert": pin.as_deref().map(|p| !p.is_empty()).unwrap_or(false), "durch": by })).map_err(err)?;
     tx.commit().map_err(err)?;
     users::list(&c).map_err(err)
 }
@@ -2260,6 +2270,7 @@ fn main() {
             customer_detail,
             customer_points,
             users_list,
+            users_all,
             users_default_pins,
             user_verify,
             user_save,
