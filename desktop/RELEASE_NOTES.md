@@ -1,3 +1,7 @@
+## Neu in 0.18.1
+
+- Menüdesign wieder wie in 0.16.1 (freigegeben): Bereichstitel mit kleinem Farbsymbol. Ausblenden nach Rechten und FEDAS unter Stammdaten › Warengruppen bleiben.
+
 ## Neu in 0.18.0
 
 - Menü komplett neu gestaltet: ruhige, flache Liste ohne Farben und Symbolleisten, schlichte Bereichstitel, nur der aktive Punkt ist hervorgehoben.

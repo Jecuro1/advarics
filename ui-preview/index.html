@@ -1264,27 +1264,20 @@ button.nav-group .gl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .sb-collapsed button.nav-group{width:44px;height:38px;padding:0;margin:4px auto;justify-content:center;color:inherit}
 .sb-collapsed button.nav-group .gl{display:none}
 .sb-collapsed button.nav-group::after{display:none}
-/* Ruhiges, einfaches Menü (v0.18.0): flache Liste, schlichte Bereichstitel, keine Farben */
+/* Ruhiges Menü (v0.16.1, von Marcel freigegeben): schlichte Bereichstitel mit kleinem Farbsymbol */
 .nav-off{display:none !important}
-.nav-sec{margin-top:0;padding:0;border:0}
-button.nav-group.nav-group{display:flex;align-items:center;gap:0;height:30px;margin:10px 0 2px;padding:0 10px;border:0;border-radius:6px;background:transparent;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-4)}
-button.nav-group:hover{background:transparent;color:var(--text-2)}
-button.nav-group .gi{display:none}
-button.nav-group .gl{flex:1;text-align:left}
-.nav-sec:not([data-closed]) button.nav-group{background:transparent;border:0;color:var(--text-3);font-weight:600}
-.nav-sec:not([data-closed]){padding-bottom:4px;border:0;margin-bottom:0}
-.nav-sec:not([data-closed]) .nav-item{margin-left:0}
-.nav-item{height:32px;font-size:13.5px;font-weight:500;gap:10px;color:var(--text-2)}
+.nav-sec{margin-top:2px}
+button.nav-group.nav-group{height:32px;gap:9px;padding:0 10px;margin:1px 0;border-radius:8px;font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--text-2);background:transparent;border:0}
+button.nav-group:hover{background:var(--surface-2);color:var(--text)}
+button.nav-group .gi{width:20px;height:20px;border-radius:6px;background:hsl(var(--gh) 60% 50% / .14);color:hsl(var(--gh) 60% 42%)}
+button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
+.nav-sec:not([data-closed]) button.nav-group{background:transparent;border:0;color:var(--text);font-weight:700}
+.nav-sec:not([data-closed]){padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--line)}
+.nav-sec:not([data-closed]) .nav-item{margin-left:6px}
 .nav-parent{font-weight:500;color:var(--text-2)}
-.nav-item[style*="--lvl:1"] .i,.nav-item[style*="--lvl:2"] .i,.nav-item[style*="--lvl:3"] .i{display:none}
-.nav-item[style*="--lvl:1"],.nav-item[style*="--lvl:2"],.nav-item[style*="--lvl:3"]{height:30px;font-size:13px}
-.nav-item[aria-current="page"]{background:var(--accent-soft);box-shadow:none;color:var(--accent);font-weight:600}
-.nav-item[aria-current="page"]::before{display:none}
-.nav-kids::before{display:none}
-.sb-collapsed button.nav-group{height:10px;width:30px;margin:8px auto 4px;padding:0;position:relative}
-.sb-collapsed button.nav-group .gl,.sb-collapsed button.nav-group .chev{display:none}
-.sb-collapsed button.nav-group::after{display:block;content:"";position:absolute;left:0;right:0;top:4px;height:1px;background:var(--line-2)}
-.sb-collapsed .nav-item[style*="--lvl:1"] .i,.sb-collapsed .nav-item[style*="--lvl:2"] .i{display:block}
+.sb-collapsed button.nav-group{width:40px;height:34px;margin:3px auto}
+.sb-collapsed .nav-sec:not([data-closed]){border:0}
+.sb-collapsed .nav-sec:not([data-closed]) .nav-item{margin-left:auto}
 </style>
 </head>
 <body>
@@ -1655,7 +1648,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.18.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.18.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
