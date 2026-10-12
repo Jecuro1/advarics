@@ -1786,6 +1786,7 @@ async fn web_read_page(url: String) -> Res<Value> {
 fn demo_brands_seed(db: State<db::Db>) -> Res<Value> {
     let mut c = db.conn.lock().unwrap();
     let (n, i) = demo::seed(&mut c)?;
+    let _ = advarics::wg_remap(&c);
     Ok(json!({ "artikel": n, "bilder": i, "katalog": demo::count() }))
 }
 #[tauri::command]
@@ -2015,6 +2016,9 @@ fn main() {
             let conn = db::open(&path).map_err(|e| format!("Datenbank konnte nicht geöffnet werden: {e}"))?;
             let _ = db::audit_append(&conn, "system.started", &json!({ "version": app.package_info().version.to_string() }));
             users::seed(&conn).map_err(|e| format!("Benutzer: {e}"))?;
+            let mut conn = conn;
+            if let Err(e) = advarics::wg_seed(&mut conn) { let _ = db::audit_append(&conn, "warengruppen.seed.failed", &json!({ "fehler": e })); }
+            let _ = advarics::wg_remap(&conn);
             if db::count(&conn, "articles") > 0 {
                 purchasing::supplier_seed(&conn).map_err(|e| format!("Lieferanten: {e}"))?;
             }

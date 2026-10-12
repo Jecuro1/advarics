@@ -288,6 +288,43 @@ fn mwst_satz(t: &str) -> i64 {
 /// Warengruppen samt Hierarchie in die Stammdaten schreiben (bestehende Einträge werden ergänzt, nichts wird gelöscht)
 pub fn wg_import(c: &mut Connection, path: &Path) -> Result<Value, String> {
     let rows = wg_read(path)?.ok_or("Das ist keine Warengruppenliste (Spalten „Nr.“, „Name“, „Hierarchie Ebene1-Nr.“ fehlen)")?;
+    wg_apply(c, &rows)
+}
+
+const WG_EINGEBAUT: &str = include_str!("../../demo-data/advarics_warengruppen.json");
+
+/// Eingebaute Advarics-Warengruppenliste (11.848 Gruppen mit Hierarchie) beim ersten Start übernehmen
+pub fn wg_seed(c: &mut Connection) -> Result<(), String> {
+    if db::setting_get(c, "wg.advarics.eingespielt").and_then(|v| v.as_bool()).unwrap_or(false) {
+        return Ok(());
+    }
+    let list: Vec<Value> = serde_json::from_str(WG_EINGEBAUT).map_err(|e| e.to_string())?;
+    let lv = |v: &Value| (v[0].as_str().unwrap_or("").to_string(), v[1].as_str().unwrap_or("").to_string());
+    let rows: Vec<WgRow> = list.iter().map(|r| WgRow {
+        nr: r[0].as_str().unwrap_or("").into(), name: r[1].as_str().unwrap_or("").into(), e: [lv(&r[2]), lv(&r[3]), lv(&r[4])],
+        mwst: r[5].as_str().unwrap_or("").into(), etikett: r[6].as_str().unwrap_or("").into(), inventur: r[7].as_bool().unwrap_or(false),
+        alter: r[8].as_str().unwrap_or("").into(), spanne: r[9].as_f64(),
+    }).collect();
+    wg_apply(c, &rows)?;
+    db::setting_set(c, "wg.advarics.eingespielt", &json!(true)).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Artikel mit alten Standard-Warengruppen (Demo) den Advarics-Gruppen zuordnen
+pub fn wg_remap(c: &Connection) -> usize {
+    let now = db::now();
+    let mut n = 0;
+    for (alt, neu) in [("jacken", "adv-8000"), ("hosen", "adv-8000"), ("shirts", "adv-8000"), ("schuhe", "adv-8002"), ("ski", "adv-8001"), ("rucksaecke", "adv-8001"), ("acc", "adv-8003")] {
+        let da: bool = c.query_row("SELECT 1 FROM stamm WHERE kind = 'warengruppe' AND id = ?1", [neu], |_| Ok(true)).optional().ok().flatten().unwrap_or(false);
+        if da {
+            n += c.execute("UPDATE articles SET category = ?2, updated_at = ?3 WHERE category = ?1", params![alt, neu, now]).unwrap_or(0);
+        }
+    }
+    n
+}
+
+pub fn wg_apply(c: &mut Connection, rows: &[WgRow]) -> Result<Value, String> {
+    let rows = rows;
     let tx = c.transaction().map_err(|e| e.to_string())?;
     let now = db::now();
     let mut pos: HashMap<&str, i64> = HashMap::new();
@@ -313,7 +350,7 @@ pub fn wg_import(c: &mut Connection, path: &Path) -> Result<Value, String> {
         Ok(())
     };
     let mut done: std::collections::HashSet<String> = Default::default();
-    for r in &rows {
+    for r in rows {
         // Ebene 1 → Bereich, Ebene 2 → Hauptabteilung, Ebene 3 → Abteilung
         let mut parent = String::new();
         let mut pfad = String::new();

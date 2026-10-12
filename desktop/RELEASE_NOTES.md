@@ -1,3 +1,7 @@
+## Neu in 0.19.2
+
+- Die Advarics-Warengruppen sind fest eingebaut (11.848 Gruppen mit Bereich › Hauptabteilung › Abteilung, MwSt., Etikettentyp, Inventur …) und werden beim ersten Start automatisch übernommen. Die bisherige Standardliste wird dabei ersetzt, Artikel werden zugeordnet. Kein Dateiimport mehr nötig.
+
 ## Neu in 0.19.1
 
 - Warengruppen-Import ersetzt die bisherigen Warengruppen komplett: Demo-Liste (Jacken & Westen, Hosen, Schuhe …) und von Hand angelegte Ebenen werden entfernt, vorhandene Artikel werden den passenden Advarics-Gruppen zugeordnet (Textil, Hartware, Schuhe, Accessories). Kasse und Auswahllisten zeigen danach nur noch die Advarics-Warengruppen.
