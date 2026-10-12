@@ -29,9 +29,9 @@ function aeForm(title, fields, vals = {}, {del} = {}) {
     $('[data-afok]', el).onclick = () => {
       const o = {...vals}; $$('[data-af]', el).forEach(i => { o[i.dataset.af] = i.type === 'checkbox' ? i.checked : i.value.trim(); });
       const miss = fields.find(f => f.req && !String(o[f.k] ?? '').trim()); if (miss) { toast(`${miss.l} angeben`, {type: 'warn'}); return; }
-      el._done = true; closeLayer(el); res(o);
+      el._done = true; res(o); closeLayer(el);
     };
-    const d = $('[data-afdel]', el); if (d) d.onclick = () => { el._done = true; closeLayer(el); res({_del: true}); };
+    const d = $('[data-afdel]', el); if (d) d.onclick = () => { el._done = true; res({_del: true}); closeLayer(el); };
   });
 }
 

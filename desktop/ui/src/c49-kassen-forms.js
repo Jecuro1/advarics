@@ -1,35 +1,6 @@
 /* ═════════════════════════════════════════════════════════════════
    49 · KASSEN-FORMULARE (MwSt.-FiBu-Konto, Fiskalisierung) UND „GRÖSSEN SORTIEREN“
    ═════════════════════════════════════════════════════════════════ */
-/* MwSt.-FiBu-Konto: Karten wie bei Advarics */
-function fxMwstDialog(row, neu, mitWg) {
-  return new Promise(res => {
-    const D = {...fxAcc0(), ...row}; if (neu) D.mwst = D.mwst || (stActive('mwsttyp')[0]?.id || '');
-    const num0 = (k, l) => [k, l, 'num'];
-    const typ = stRows('mwsttyp').find(x => x.id === D.mwst) || stRows('mwsttyp').find(x => x.name === D.name);
-    const card = [
-      ['Allgemein', [...(mitWg ? [['wgnr', 'Warengruppe (Nr.) *'], ['wgname', 'Warengruppen-Name']] : []), ...(neu ? [['mwst', 'MwSt.-Typ *', 'select', () => stOpts('mwsttyp')]] : [['name', 'MwSt.-Typ', 'ro']]), ['_', 'MwSt.-Set', 'ro', () => 'Standard'], ['_', 'MwSt.-Prozent', 'ro', () => `${num(+(typ?.satz ?? D.pct) || 0)} %`]]],
-      ['Kasse', [num0('kWaren', 'Konto Waren Ums. Kasse'), num0('gkWaren', 'Gegen Konto Waren Ums. Kasse'), num0('kEinzweck', 'Konto Einzweck-Gutschein'), num0('kEinzweckGs', 'Konto Einzweck-Gutschrift')]],
-      ['Wareneingang', [num0('kWE', 'Konto WE'), num0('kWEvor', 'Konto WE Vorsteuer'), num0('kWEeu', 'WE-Konto EU'), num0('kWEdritt', 'Konto WE Drittland')]],
-      ['Retoure', [num0('kRet', 'Retouren-Konto'), num0('kRetEU', 'Retouren-Konto EU'), num0('kRetDritt', 'Retouren-Konto Drittland')]],
-      ['Zusatz-Info', [num0('kNeben', 'Konto Nebenkosten'), num0('gkNeben', 'Gegen-Konto Nebenkosten'), num0('kProz', 'Konto Prozesskosten'), num0('gkProz', 'Gegen-Konto Prozesskosten'), num0('kFracht', 'Konto Frachtkosten'), num0('gkFracht', 'Gegen-Konto Frachtkosten')]],
-      ['Zusatz-Info-EU', [num0('gkEU', 'Gegen Konto (Re.-) Ums. EU'), num0('kNebenEU', 'Konto Nebenkosten EU'), num0('gkNebenEU', 'Gegen-Konto Nebenkosten EU'), num0('kProzEU', 'Konto Prozesskosten EU'), num0('gkProzEU', 'Gegen-Konto Prozesskosten EU'), num0('kFrachtEU', 'Konto Frachtkosten EU'), num0('gkFrachtEU', 'Gegen-Konto Frachtkosten EU')]],
-      ['Zusatz-Info-Drittland', [num0('gkDritt', 'Gegen Konto (Re.-) Ums. Drittland'), num0('kNebenDr', 'Konto Nebenkosten Drittland'), num0('gkNebenDr', 'Gegen-Konto Nebenkosten Drittland'), num0('kProzDr', 'Konto Prozesskosten Drittland'), num0('gkProzDr', 'Gegen-Konto Prozesskosten Drittland'), num0('kFrachtDr', 'Konto Frachtkosten Drittland'), num0('gkFrachtDr', 'Gegen-Konto Frachtkosten Drittland')]],
-      ['Info', [num0('kTraeger', 'Kostenträger'), num0('kStelle', 'Kostenstelle'), ['bu', 'BU-Schlüssel Lief. Rechnung'], ['steuer', 'Steuerschlüssel G-Satz Lief. Rechnung'], ['uebertrag', 'Übertragung', 'check']]]
-    ];
-    const el = openLayer(`<div class="modal" style="width:min(1500px,96vw);max-height:92vh;overflow:auto" role="dialog" aria-modal="true"><div class="m-head"><div class="m-ic">${ic('percent')}</div><div><h2>MwSt.-FiBu-Konto${neu ? '' : ` [ ${esc(D.name || '')} ]`}</h2></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
-      <div class="m-body">${fxCards(D, card, 'flex:1 1 260px;max-width:340px')}</div>
-      <div class="m-foot">${neu ? '' : (mitWg ? `<button class="btn btn-ghost" data-mx="del" style="color:var(--neg)">${ic('trash', 'i-sm')}Löschen</button>` : '')}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" data-mx="ok">${ic('check', 'i-sm')}Sichern</button></div></div>`, {onClose: () => res(null)});
-    fxBind(el, D, () => {});
-    el.addEventListener('click', e => {
-      const b = e.target.closest('[data-mx]'); if (!b) return;
-      if (b.dataset.mx === 'del') { res({_del: true}); closeLayer(el); return; }
-      if (mitWg && !String(D.wgnr || '').trim()) return toast('Warengruppe angeben', {type: 'warn'});
-      const out = {...D}; res(out); closeLayer(el);
-    });
-  });
-}
-
 /* ── Stammdaten › Größen › Größen sortieren ── */
 const GF = {rows: null, sel: null, dirty: false};
 const gfLoad = () => { GF.rows = stRows('groesse').map(r => ({id: r.id, name: r.name || '', nr: +r.nr || 0, g1: r.g1 || '', g2: r.g2 || ''})).sort((a, b) => a.nr - b.nr || a.name.localeCompare(b.name, 'de', {numeric: true})); GF.dirty = false; };

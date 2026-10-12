@@ -1,3 +1,8 @@
+## Neu in 0.34.0
+
+- Kassen › MwSt.-Sätze, Zahlungsarten, Kassen-Summen: die FiBu-Konten für Erlöse je Steuersatz, Bar, Karten/Wallets, Gutscheine, Geldtransit und Bank sind hier einstellbar und werden im Buchungsjournal und im DATEV-Export (Berichte › Buchhaltung) verwendet – auch die Konten je Zahlungsart, die es bisher nirgends zu einstellen gab.
+- Fehler behoben: Kleine Bearbeiten-Fenster (z. B. Größe bearbeiten, Tabellenzeilen) haben beim Übernehmen die Eingabe verworfen. Jetzt wird sie gespeichert.
+
 ## Neu in 0.33.0
 
 - Bonus Systeme wirken beim Verkauf: Nach jedem Kassenverkauf werden die passenden Artikel nach Filter (Marke, Warengruppe, Abteilung, Haupt-Abteilung, Bereich; einschließend/ausschließend) und Kundenbedingungen (Kundennummer von/bis, nur registrierte Kunden) geprüft, die Staffel nach Summe gewählt und ein Bonus-Gutschein (Prozent oder Betrag, getrennt für Laufkundschaft und gespeicherte Kunden) mit der eingestellten Gültigkeit ausgestellt und – bei automatischem Druck – gedruckt.

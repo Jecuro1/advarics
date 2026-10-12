@@ -1968,7 +1968,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.33.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.34.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -13894,9 +13894,9 @@ function aeForm(title, fields, vals = {}, {del} = {}) {
     $('[data-afok]', el).onclick = () => {
       const o = {...vals}; $$('[data-af]', el).forEach(i => { o[i.dataset.af] = i.type === 'checkbox' ? i.checked : i.value.trim(); });
       const miss = fields.find(f => f.req && !String(o[f.k] ?? '').trim()); if (miss) { toast(`${miss.l} angeben`, {type: 'warn'}); return; }
-      el._done = true; closeLayer(el); res(o);
+      el._done = true; res(o); closeLayer(el);
     };
-    const d = $('[data-afdel]', el); if (d) d.onclick = () => { el._done = true; closeLayer(el); res({_del: true}); };
+    const d = $('[data-afdel]', el); if (d) d.onclick = () => { el._done = true; res({_del: true}); closeLayer(el); };
   });
 }
 
@@ -14576,7 +14576,7 @@ registerPage('st-bonussystem-edit', {title: 'Bonus Systeme', sub: () => BS.draft
 /* ═════════════════════════════════════════════════════════════════
    46 · KASSEN BEARBEITEN (Advarics: Reiter Allgemein … Positionsinfo Sortieren)
    ═════════════════════════════════════════════════════════════════ */
-const KAE_TABS_ALL = [['allg', 'Allgemein'], ['fisk', 'Fiskalisierung'], ['sig', 'Signatureinheit'], ['eft', 'Kartenterminal'], ['beleg', 'Beleg-Konfiguration'], ['icons', 'Menü „Mehr“ sortieren'], ['posinfo', 'Positionsinfo Sortieren']];
+const KAE_TABS_ALL = [['allg', 'Allgemein'], ['fisk', 'Fiskalisierung'], ['sig', 'Signatureinheit'], ['eft', 'Kartenterminal'], ['mwst', 'MwSt.-Sätze'], ['zahl', 'Zahlungsarten'], ['summen', 'Kassen-Summen'], ['beleg', 'Beleg-Konfiguration'], ['icons', 'Menü „Mehr“ sortieren'], ['posinfo', 'Positionsinfo Sortieren']];
 const kaeTabs = () => KAE_TABS_ALL.filter(t => t[0] !== 'eft' || KAE.draft?.lokal);
 const KAE_NEU = () => { const all = stRows('kasse'); return {filnr: '1', filname: STORES[0].name, filgrp: '', land: 'Österreich', nr: Math.max(0, ...all.map(x => +x.nr || 0)) + 1, bez: '', konfig: 'Standard', sync: false, core: false, inaktiv: false, kdStart: 1, kdEnde: 99999, reStart: 1, reEnde: 99999, letzteSync: '', mac: '', syncname: '', paket: '', langsam: false, region: 'de-AT', design: 'Kontor', ws: '', timer: 20, core: false, pw1: '', pw2: '', vfCode: '', extNr: '', sub: {}, rabatte: [], rfidUser: '', rfidPort: '', kostenstelle: 0, eftAktiv: false, eftConnector: 'PepperV2', eftTerminalTyp: 0, eftCom: 0, eftIp: '', eftSprache: 'German', eftOperator: '', eftCbEvent: 0, eftCbOption: 0, eftDevice: '', eftTimeout: 120, eftTid: '', eftMerchant: '', eftPass: '', eftConfigByte: 0, eftBaud: 0, eftTimeoutMs: 0, eftTrack: 0, eftKey: '', eftVorher: false}; };
 const KAE = {id: null, ids: [], draft: null, tab: 'allg', dirty: false};
@@ -14704,41 +14704,18 @@ function fxBind(el, S, dirty) {
 const fxRowForm = (title, fields, row, del) => aeForm(title, fields, row, {del});
 
 /* Tabellen mit Unterdatensätzen (in S.sub[tab] gespeichert) */
-const FX_EXTRA = ['kNeben:Konto Nebenkosten', 'gkNeben:Gegen-Konto Nebenkosten', 'kProz:Konto Prozesskosten', 'gkProz:Gegen-Konto Prozesskosten', 'kFracht:Konto Frachtkosten', 'gkFracht:Gegen-Konto Frachtkosten', 'kNebenEU:Konto Nebenkosten EU', 'gkNebenEU:Gegen-Konto Nebenkosten EU', 'kProzEU:Konto Prozesskosten EU', 'gkProzEU:Gegen-Konto Prozesskosten EU', 'kFrachtEU:Konto Frachtkosten EU', 'gkFrachtEU:Gegen-Konto Frachtkosten EU', 'kNebenDr:Konto Nebenkosten Drittland', 'gkNebenDr:Gegen-Konto Nebenkosten Drittland', 'kProzDr:Konto Prozesskosten Drittland', 'gkProzDr:Gegen-Konto Prozesskosten Drittland', 'kFrachtDr:Konto Frachtkosten Drittland', 'gkFrachtDr:Gegen-Konto Frachtkosten Drittland'];
-const FX_ACC = [['kWaren', 'Konto Waren Ums. Kasse'], ['gkWaren', 'Gegen Konto Waren Ums. Kasse'], ['kEinzweck', 'Konto Einzweck-Gutschein'], ['textWaren', 'Text Waren Ums. Kasse', 'text'], ['kEinzweckGs', 'Konto Einzweck-Gutschrift'], ['uebertrag', 'Übertrag. Waren Ums. Kasse', 'check'], ['gkEU', 'Gegen Konto (Re.-) Ums. EU'], ['gkDritt', 'Gegen Konto (Re.-) Ums. Drittland'], ['kWE', 'Konto WE'], ['kWEvor', 'Konto WE Vorsteuer'], ['kWEeu', 'WE-Konto EU'], ['kWEdritt', 'Konto WE Drittland'], ['kRet', 'Retouren-Konto'], ['kRetEU', 'Retouren-Konto EU'], ['kRetDritt', 'Retouren-Konto Drittland'], ['kTraeger', 'Kostenträger'], ['kStelle', 'Kostenstelle'], ['bu', 'BU-Schlüssel Warenumsatz Kasse', 'text'], ['steuer', 'Steuerschlüssel G-Satz Warenumsatz Kasse', 'text'], ['kGutschein', 'Gutschein-Konto']];
-const fxAccCols = () => FX_ACC.map(([k, l, t]) => ({k, l, w: 150, t: t === 'check' ? 'check' : t === 'text' ? undefined : 'num'}));
-const fxAccFields = () => FX_ACC.map(([k, l, t]) => ({k, l, t: t === 'check' ? 'check' : t === 'text' ? undefined : 'num'}));
-const FX_Z = ['Visa Debit', 'Mastercard Debit', 'Maestro', 'Bank', 'Mobiles Terminal', 'Bankomat', 'Alipay', 'PayPal', 'Gutschrift', 'Gutschein', 'V Pay', 'Visa Electron', 'CUP', 'JCB', 'AMEX', 'Diners', 'Visa', 'MasterCard', 'CHF', 'Bar'];
-const FX_SUMMEN = ['Bar-Entnahme', 'Externe Gutscheine Verkauf', 'Externe Gutscheine Einlösung', 'Bezahlte Fremdrechnung', 'Bezahlte Rechnung', 'Kredit-Verkauf / Rechnung', 'Gutschrift-Verkauf', 'Gutschein-Verkauf', 'Bar-Entnahme (Kassenbuch)', 'Abschöpfung', 'Einlage', 'Wechselgeld'];
 const FX_BELEGE = ['Geschenkbeleg', 'Rechnung', 'Auswahl', 'Gutschein-Verkauf', 'Tageseröffnung', 'Kunden-Bestellung', 'Verkaufsbeleg', 'Datenschutzrichtlinien', 'EFT-Händlerbeleg', 'Umlagerungs-Annahme', 'Bestandskorrektur', 'Reklamation', 'Tagesabschluss', 'Umlagerung', 'Nullbon', 'Standardbeleg'];
 const FX_MEHR = [['gs', 'Gutschein verkaufen'], ['ret', 'Retoure / Umtausch'], ['rcpts', 'Belege'], ['copy', 'Belegkopie drucken'], ['drawer', 'Lade öffnen'], ['book', 'Kassenbuch'], ['x', 'X-Bericht (Zwischenstand)'], ['z', 'Tagesabschluss'], ['flow', 'Kassenablauf bearbeiten']];
 const FX_ICONS = ['Kunden-Bearbeitung', 'Sperren', 'Journal', 'Parken', 'Löschen', 'Artikel-Info', 'Umtausch', 'Gutsch.-Verk.', 'Umlagerung', 'Bst.korrektur', 'Auswahl', 'Rechnung', 'Reklamation', 'Kd.-Bestellung', '<Ausfolgeschein>', 'ERent Kunden s.', 'Set', 'Loyalty', 'Coupon-Scan', 'Fremdrechng.', 'Nachdruck', 'Nachricht', 'Kass.wechsel', 'Steuerfrei', 'Zusatz-Info', 'RFID', 'Kd.-Filter', 'Hilfe-Menü'];
-const FX_LAYOUTS = ['Rechnung', 'Kunden-Verkauf', 'Reservierung', 'Retoure', 'Artikel-Info', 'Journal', 'Kassenlayout'];
 const FX_POSINFO = ['Artikelnr.', 'Farbe', 'EAN', 'Warengruppe', 'Marke', 'Seriennummer', 'Verkäufer'];
 const fxId = () => 'r' + Math.random().toString(36).slice(2, 8);
-const fxAcc0 = () => ({...Object.fromEntries(FX_ACC.map(([k, , t]) => [k, t === 'text' ? '' : t === 'check' ? false : 0])), ...Object.fromEntries(FX_EXTRA.map(x => [x.split(':')[0], 0]))});
 const FX_SUB = {
   sig: {cols: () => [{k: 'zdald', l: 'Zdald', w: 90}, {k: 'zert', l: 'Steuerliches Signatur-Zertifikat', w: 260}, {k: 'kette', l: 'Steuerliche Bescheinigungskette', w: 260}, {k: 'datum', l: 'Unterzeichnungsdatum der Registrierung', w: 250}, {k: 'ausfall', l: 'Signaturgerät-Ausfalldatum', w: 200}, {k: 'bis', l: 'Gültig bis', w: 160}, {k: 'serie', l: 'Seriennummer des Schlüssels', w: 220}, {k: 'key', l: 'Öffentlicher Schlüssel', w: 360}],
     template: () => S.rksv?.active ? [{id: 'AT1', zdald: 'AT1', zert: S.rksv.serial || '', kette: '', datum: S.rksv.started_at || '', ausfall: '', bis: '', serie: S.rksv.serial || '', key: S.rksv.public_key || ''}] : [], neu: true, fields: () => [{k: 'zdald', l: 'Zdald'}, {k: 'zert', l: 'Steuerliches Signatur-Zertifikat', w: 'full'}, {k: 'kette', l: 'Steuerliche Bescheinigungskette', w: 'full'}, {k: 'datum', l: 'Unterzeichnungsdatum der Registrierung'}, {k: 'ausfall', l: 'Signaturgerät-Ausfalldatum'}, {k: 'bis', l: 'Gültig bis'}, {k: 'serie', l: 'Seriennummer des Schlüssels'}, {k: 'key', l: 'Öffentlicher Schlüssel', w: 'full'}]},
-  mwst: {cols: () => [{k: 'nr', l: 'MwSt.-Typ-Nr.', t: 'num', w: 120}, {k: 'name', l: 'MwSt.-Typ-Name', w: 150}, {k: 'set', l: 'MwSt.-Set', w: 110}, {k: 'pct', l: 'MwSt.-Prozent', t: 'num', w: 120, fmt: v => num(v) + ' %'}, ...fxAccCols()],
-    template: () => stRows('mwsttyp').map((r, i) => ({id: r.id, nr: i + 1, name: r.name, set: 'Standard', pct: +r.satz || 0, ...fxAcc0()})), form: (r, neu) => fxMwstDialog(r, neu), fields: () => [{k: 'name', l: 'MwSt.-Typ-Name', ro: true}, {k: 'pct', l: 'MwSt.-Prozent', t: 'num', ro: true}, ...fxAccFields()]},
-  zahl: {cols: () => [{k: 'name', l: 'Zahlungsart', w: 170}, ...['konto:Konto', 'gk:Gegen-Konto', 'text:Buchhaltungs-Text', 'bu:BU-Schlüssel', 'steuer:Steuerschlüssel', 'kDiff:Konto-Nr. Diff.', 'gkDiff:Gegen-Konto-Diff.', 'kIst:Konto-Nr. Ist', 'gkIst:Gegen-Konto-Ist', 'traeger:Kostenträger', 'stelle:Kostenstelle'].map(s => { const [k, l] = s.split(':'); return {k, l, w: 140, t: ['text', 'bu', 'steuer'].includes(k) ? undefined : 'num'}; }), {k: 'uebertrag', l: 'Übertragung', t: 'check', w: 120}, {k: 'uebertrag2', l: 'Übertragung 2', t: 'check', w: 130}],
-    template: () => FX_Z.map(n => ({id: fxId(), name: n, konto: 0, gk: 0, text: n, bu: '', steuer: '', kDiff: 0, gkDiff: 0, kIst: 0, gkIst: 0, traeger: 0, stelle: 0, uebertrag: false, uebertrag2: false})),
-    fields: () => [{k: 'name', l: 'Zahlungsart', ro: true}, {k: 'konto', l: 'Konto', t: 'num'}, {k: 'gk', l: 'Gegen-Konto', t: 'num'}, {k: 'text', l: 'Buchhaltungs-Text'}, {k: 'bu', l: 'BU-Schlüssel'}, {k: 'steuer', l: 'Steuerschlüssel'}, {k: 'kDiff', l: 'Konto-Nr. Diff.', t: 'num'}, {k: 'gkDiff', l: 'Gegen-Konto-Diff.', t: 'num'}, {k: 'kIst', l: 'Konto-Nr. Ist', t: 'num'}, {k: 'gkIst', l: 'Gegen-Konto-Ist', t: 'num'}, {k: 'traeger', l: 'Kostenträger', t: 'num'}, {k: 'stelle', l: 'Kostenstelle', t: 'num'}, {k: 'uebertrag', l: 'Übertragung', t: 'check'}, {k: 'uebertrag2', l: 'Übertragung 2', t: 'check'}]},
-  zusatz: {cols: () => [{k: 'nr', l: 'Zus.-Buchg.-Typ', t: 'num', w: 130}, {k: 'name', l: 'Zusatz Buchungstyp', w: 200}, {k: 'konto', l: 'Konto', t: 'num', w: 110}, {k: 'gk', l: 'Gegen-Konto', t: 'num', w: 120}, {k: 'text', l: 'Buchhaltungs-Text', w: 170}, {k: 'bu', l: 'BU-Schlüssel', w: 130}, {k: 'steuer', l: 'Steuerschlüssel', w: 140}, {k: 'traeger', l: 'Kostenträger', t: 'num', w: 120}, {k: 'stelle', l: 'Kostenstelle', t: 'num', w: 120}, {k: 'uebertrag', l: 'Übertragung', t: 'check', w: 120}, {k: 'mKonto', l: 'MwSt-Konto', t: 'num', w: 120}, {k: 'mGk', l: 'MwSt-Gegen-Konto', t: 'num', w: 150}],
-    template: () => stRows('zusatzbuchung').map((r, i) => ({id: r.id, nr: i + 1, name: r.name, konto: +r.konto || 0, gk: 0, text: '', bu: '', steuer: '', traeger: 0, stelle: 0, uebertrag: false, mKonto: 0, mGk: 0})),
-    fields: () => [{k: 'name', l: 'Zusatz Buchungstyp', ro: true}, {k: 'konto', l: 'Konto', t: 'num'}, {k: 'gk', l: 'Gegen-Konto', t: 'num'}, {k: 'text', l: 'Buchhaltungs-Text'}, {k: 'bu', l: 'BU-Schlüssel'}, {k: 'steuer', l: 'Steuerschlüssel'}, {k: 'traeger', l: 'Kostenträger', t: 'num'}, {k: 'stelle', l: 'Kostenstelle', t: 'num'}, {k: 'uebertrag', l: 'Übertragung', t: 'check'}, {k: 'mKonto', l: 'MwSt-Konto', t: 'num'}, {k: 'mGk', l: 'MwSt-Gegen-Konto', t: 'num'}]},
-  summen: {cols: () => [{k: 'name', l: 'Summe Kassen', w: 220}, {k: 'konto', l: 'Konto', t: 'num', w: 110}, {k: 'gk', l: 'Gegen-Konto', t: 'num', w: 120}, {k: 'text', l: 'Buchhaltungs-Text', w: 170}, {k: 'bu', l: 'BU-Schlüssel', w: 130}, {k: 'steuer', l: 'Steuerschlüssel', w: 140}, {k: 'traeger', l: 'Kostenträger', t: 'num', w: 120}, {k: 'stelle', l: 'Kostenstelle', t: 'num', w: 120}, {k: 'uebertrag', l: 'Übertragung', t: 'check', w: 120}, {k: 'umrechnen', l: 'Umrechnen in', t: 'check', w: 130}],
-    template: () => FX_SUMMEN.map(n => ({id: fxId(), name: n, konto: 0, gk: 0, text: '', bu: '', steuer: '', traeger: 0, stelle: 0, uebertrag: false, umrechnen: false})),
-    fields: () => [{k: 'name', l: 'Summe Kassen', ro: true}, {k: 'konto', l: 'Konto', t: 'num'}, {k: 'gk', l: 'Gegen-Konto', t: 'num'}, {k: 'text', l: 'Buchhaltungs-Text'}, {k: 'bu', l: 'BU-Schlüssel'}, {k: 'steuer', l: 'Steuerschlüssel'}, {k: 'traeger', l: 'Kostenträger', t: 'num'}, {k: 'stelle', l: 'Kostenstelle', t: 'num'}, {k: 'uebertrag', l: 'Übertragung', t: 'check'}, {k: 'umrechnen', l: 'Umrechnen in', t: 'check'}]},
-  wgrmwst: {cols: () => [{k: 'wgnr', l: 'Wgr.-Nr.', w: 100}, {k: 'wgname', l: 'Wgr. Name', w: 180}, {k: 'nr', l: 'MwSt.-Typ-Nr.', t: 'num', w: 120}, {k: 'name', l: 'MwSt.-Typ-Name', w: 150}, {k: 'set', l: 'MwSt.-Set', w: 110}, {k: 'pct', l: 'MwSt.-Prozent', t: 'num', w: 120, fmt: v => num(v) + ' %'}, ...fxAccCols()],
-    template: () => [], neu: true, del: true, form: (r, neu) => fxMwstDialog(r, neu, true), newRow: o => { const m = stRows('mwsttyp').find(x => x.id === o.mwst); return {...fxAcc0(), ...o, nr: Math.max(0, ...stRows('mwsttyp').map((x, i) => i)) + 1, name: m?.name || '', set: 'Standard', pct: +m?.satz || 0}; },
-    fields: () => [{k: 'wgnr', l: 'Wgr.-Nr.', req: true}, {k: 'wgname', l: 'Wgr. Name'}, {k: 'mwst', l: 'MwSt.-Typ', t: 'select', o: () => stOpts('mwsttyp')}, ...fxAccFields()]},
   beleg: {cols: () => [{k: 'name', l: 'Belegtyp', w: 220}, {k: 'anz', l: 'Anzahl Ausdrucke', t: 'num', w: 160}],
     template: () => [{id: fxId(), name: 'Verkaufsbeleg', anz: 1}, {id: fxId(), name: 'Standardbeleg', anz: 1}], neu: true, del: true,
     newRow: o => ({...o}), validate: (o, rows, id) => rows.some(r => r.id !== id && r.name === o.name) ? 'Der Belegtyp ist für diese Kasse schon angelegt.' : (+o.anz >= 1 && +o.anz <= 5 ? '' : 'Anzahl Ausdrucke: 1 bis 5'),
     fields: () => [{k: 'name', l: 'Belegtyp', t: 'select', o: () => [['Verkaufsbeleg', 'Verkaufsbeleg (Kassenbon)'], ['Standardbeleg', 'Standardbeleg (Retoure, Storno)']], req: true}, {k: 'anz', l: 'Anzahl Ausdrucke (1–5)', t: 'num', req: true}]},
-  layout: {cols: () => [{k: 'name', l: 'Kassen-Layout', w: 260}, {k: 'xml', l: 'Layout', w: 320}], template: () => FX_LAYOUTS.map(n => ({id: fxId(), name: n, xml: 'Kontor-Standard'})), fields: () => [{k: 'name', l: 'Kassen-Layout', ro: true}, {k: 'xml', l: 'Layout'}]},
   icons: {cols: () => [{k: 'name', l: 'Eintrag im Menü „Mehr“', w: 280}, {k: 'sort', l: 'Sortierungsnr.', t: 'num', w: 140}], template: () => FX_MEHR.map(([id, n], i) => ({id, name: n, sort: i + 1})), order: true, fields: () => [{k: 'name', l: 'Eintrag im Menü „Mehr“', ro: true}, {k: 'sort', l: 'Sortierungsnr.', t: 'num'}]},
   posinfo: {cols: () => [{k: 'name', l: 'Positionsinformation', w: 240}, {k: 'zeile', l: 'Zeilen-Nr.', t: 'num', w: 120}, {k: 'sort', l: 'Sortierungsnr.', t: 'num', w: 140}], template: () => [], neu: true, del: true, newRow: o => ({...o}),
     fields: () => [{k: 'name', l: 'Positionsinformation', t: 'select', o: () => FX_POSINFO.map(x => [x, x]), req: true}, {k: 'zeile', l: 'Zeilen-Nr.', t: 'num'}, {k: 'sort', l: 'Sortierungsnr.', t: 'num'}]}
@@ -14941,35 +14918,6 @@ const kkSha = async s => [...new Uint8Array(await crypto.subtle.digest('SHA-256'
 /* ═════════════════════════════════════════════════════════════════
    49 · KASSEN-FORMULARE (MwSt.-FiBu-Konto, Fiskalisierung) UND „GRÖSSEN SORTIEREN“
    ═════════════════════════════════════════════════════════════════ */
-/* MwSt.-FiBu-Konto: Karten wie bei Advarics */
-function fxMwstDialog(row, neu, mitWg) {
-  return new Promise(res => {
-    const D = {...fxAcc0(), ...row}; if (neu) D.mwst = D.mwst || (stActive('mwsttyp')[0]?.id || '');
-    const num0 = (k, l) => [k, l, 'num'];
-    const typ = stRows('mwsttyp').find(x => x.id === D.mwst) || stRows('mwsttyp').find(x => x.name === D.name);
-    const card = [
-      ['Allgemein', [...(mitWg ? [['wgnr', 'Warengruppe (Nr.) *'], ['wgname', 'Warengruppen-Name']] : []), ...(neu ? [['mwst', 'MwSt.-Typ *', 'select', () => stOpts('mwsttyp')]] : [['name', 'MwSt.-Typ', 'ro']]), ['_', 'MwSt.-Set', 'ro', () => 'Standard'], ['_', 'MwSt.-Prozent', 'ro', () => `${num(+(typ?.satz ?? D.pct) || 0)} %`]]],
-      ['Kasse', [num0('kWaren', 'Konto Waren Ums. Kasse'), num0('gkWaren', 'Gegen Konto Waren Ums. Kasse'), num0('kEinzweck', 'Konto Einzweck-Gutschein'), num0('kEinzweckGs', 'Konto Einzweck-Gutschrift')]],
-      ['Wareneingang', [num0('kWE', 'Konto WE'), num0('kWEvor', 'Konto WE Vorsteuer'), num0('kWEeu', 'WE-Konto EU'), num0('kWEdritt', 'Konto WE Drittland')]],
-      ['Retoure', [num0('kRet', 'Retouren-Konto'), num0('kRetEU', 'Retouren-Konto EU'), num0('kRetDritt', 'Retouren-Konto Drittland')]],
-      ['Zusatz-Info', [num0('kNeben', 'Konto Nebenkosten'), num0('gkNeben', 'Gegen-Konto Nebenkosten'), num0('kProz', 'Konto Prozesskosten'), num0('gkProz', 'Gegen-Konto Prozesskosten'), num0('kFracht', 'Konto Frachtkosten'), num0('gkFracht', 'Gegen-Konto Frachtkosten')]],
-      ['Zusatz-Info-EU', [num0('gkEU', 'Gegen Konto (Re.-) Ums. EU'), num0('kNebenEU', 'Konto Nebenkosten EU'), num0('gkNebenEU', 'Gegen-Konto Nebenkosten EU'), num0('kProzEU', 'Konto Prozesskosten EU'), num0('gkProzEU', 'Gegen-Konto Prozesskosten EU'), num0('kFrachtEU', 'Konto Frachtkosten EU'), num0('gkFrachtEU', 'Gegen-Konto Frachtkosten EU')]],
-      ['Zusatz-Info-Drittland', [num0('gkDritt', 'Gegen Konto (Re.-) Ums. Drittland'), num0('kNebenDr', 'Konto Nebenkosten Drittland'), num0('gkNebenDr', 'Gegen-Konto Nebenkosten Drittland'), num0('kProzDr', 'Konto Prozesskosten Drittland'), num0('gkProzDr', 'Gegen-Konto Prozesskosten Drittland'), num0('kFrachtDr', 'Konto Frachtkosten Drittland'), num0('gkFrachtDr', 'Gegen-Konto Frachtkosten Drittland')]],
-      ['Info', [num0('kTraeger', 'Kostenträger'), num0('kStelle', 'Kostenstelle'), ['bu', 'BU-Schlüssel Lief. Rechnung'], ['steuer', 'Steuerschlüssel G-Satz Lief. Rechnung'], ['uebertrag', 'Übertragung', 'check']]]
-    ];
-    const el = openLayer(`<div class="modal" style="width:min(1500px,96vw);max-height:92vh;overflow:auto" role="dialog" aria-modal="true"><div class="m-head"><div class="m-ic">${ic('percent')}</div><div><h2>MwSt.-FiBu-Konto${neu ? '' : ` [ ${esc(D.name || '')} ]`}</h2></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
-      <div class="m-body">${fxCards(D, card, 'flex:1 1 260px;max-width:340px')}</div>
-      <div class="m-foot">${neu ? '' : (mitWg ? `<button class="btn btn-ghost" data-mx="del" style="color:var(--neg)">${ic('trash', 'i-sm')}Löschen</button>` : '')}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" data-mx="ok">${ic('check', 'i-sm')}Sichern</button></div></div>`, {onClose: () => res(null)});
-    fxBind(el, D, () => {});
-    el.addEventListener('click', e => {
-      const b = e.target.closest('[data-mx]'); if (!b) return;
-      if (b.dataset.mx === 'del') { res({_del: true}); closeLayer(el); return; }
-      if (mitWg && !String(D.wgnr || '').trim()) return toast('Warengruppe angeben', {type: 'warn'});
-      const out = {...D}; res(out); closeLayer(el);
-    });
-  });
-}
-
 /* ── Stammdaten › Größen › Größen sortieren ── */
 const GF = {rows: null, sel: null, dirty: false};
 const gfLoad = () => { GF.rows = stRows('groesse').map(r => ({id: r.id, name: r.name || '', nr: +r.nr || 0, g1: r.g1 || '', g2: r.g2 || ''})).sort((a, b) => a.nr - b.nr || a.name.localeCompare(b.name, 'de', {numeric: true})); GF.dirty = false; };
@@ -15231,6 +15179,32 @@ async function kkBonus(rec) {
   }
 }
 { const _sd = showDone; showDone = function (rec) { const r = _sd.apply(this, arguments); kkBonus(rec); return r; }; }
+/* ═════════════════════════════════════════════════════════════════
+   52 · KASSEN › FIBU-KONTEN – wirken auf Buchungsjournal und DATEV-Export (Berichte › Buchhaltung)
+   ═════════════════════════════════════════════════════════════════ */
+const FK_DEF = {
+  mwst: {titel: 'Erlöskonten je MwSt.-Satz', kopf: 'MwSt.-Satz', rows: () => [['fibu.erloes20', 'Normalsatz 20 %', '4000'], ['fibu.erloes13', 'Ermäßigt 13 %', '4030'], ['fibu.erloes10', 'Ermäßigt 10 %', '4010'], ['fibu.erloes0', 'Steuerfrei 0 %', '4090']]},
+  zahl: {titel: 'Konten je Zahlungsart', kopf: 'Zahlungsart', rows: () => [['fibu.kasse', 'Bar (Kasse)', '2700'], ...[['bankomat', 'Bankomat'], ['kredit', 'Kreditkarte'], ['apple', 'Apple Pay'], ['google', 'Google Pay'], ['paypal', 'PayPal'], ['klarna', 'Klarna']].map(([id, n]) => ['fibu.zahlart.' + id, n, CFG['fibu.transit'] || '2880']), ['fibu.gutschein', 'Gutschein (Verbindlichkeit)', '3630']]},
+  summen: {titel: 'Sammelkonten', kopf: 'Sammelkonto', rows: () => [['fibu.transit', 'Geldtransit / Kartenzahlungen (Standard für alle unbaren Zahlarten)', '2880'], ['fibu.bank', 'Bank (Entnahmen zur Bank)', '2800']]}
+};
+function fkRender(tab) {
+  const D = FK_DEF[tab];
+  const rows = () => D.rows().map(([k, name, d]) => ({id: k, name, konto: String(CFG[k] || '') || d, standard: !CFG[k]}));
+  return {html: `<p class="ea-hint" style="margin:0 0 8px">${esc(D.titel)} für Buchungsjournal und DATEV-Export. Die Konten gelten für alle Kassen. Doppelklick auf eine Zeile zum Ändern; Vorgaben nach Einheitskontenrahmen mit der Steuerberatung abstimmen.</p><div data-kx style="flex:1;min-height:260px;display:flex;flex-direction:column"></div>`,
+    mount: el => {
+      const key = 'fk-' + tab;
+      AG[key] = agNew({embed: true, title: D.titel, rows, sort: undefined,
+        cols: [{k: 'name', l: D.kopf, w: 420}, {k: 'konto', l: 'Konto', w: 140}, {k: 'standard', l: 'Vorgabe', t: 'check', w: 110}],
+        edit: async id => {
+          const r = rows().find(x => x.id === id); if (!r) return;
+          const o = await aeForm(r.name, [{k: 'konto', l: 'Konto', req: true}], {konto: r.konto}); if (!o) return;
+          if (!/^\d{3,9}$/.test(o.konto)) return toast('Konto: 3 bis 9 Ziffern', {type: 'warn'});
+          try { await needPerm('einstellungen', 'FiBu-Konten'); await saveSettings({[id]: o.konto}, true); toast('Konto gespeichert', {t2: `${r.name} · ${o.konto}`, type: 'pos', icon: 'check', dur: 1800}); AG[key].rows = rows(); kaeRender(); } catch (err) { if (err && String(err.message || err) !== 'abgebrochen') toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
+        }});
+      agMount(key, $('[data-kx]', el));
+    }};
+}
+KAE_RENDER.mwst = () => fkRender('mwst'); KAE_RENDER.zahl = () => fkRender('zahl'); KAE_RENDER.summen = () => fkRender('summen');
 
 /* ════════════════════════════════════════════════════════════════════
    12 · ANMELDUNG — Sperrbildschirm mit PIN, Windows Hello, FIDO2, SSO
