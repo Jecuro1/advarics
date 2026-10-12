@@ -225,6 +225,10 @@ for (const [k, label, kind, key, src] of [['attr', 'Attribut', 'Attribut', 'attr
 /** Nach dem Zeichnen eines Reiters: Tabellen einhängen, Daten der Reiter laden */
 function aeAfter(ctx, tab) {
   const spec = AE_GRIDS[tab];
+  if (tab === 'stamm') {
+    const calc = () => { const m = $('#edMargin', ctx.el); if (!m) return; const vk = parseAmt($('[data-f="price"]', ctx.el)?.value || ''), ek = parseAmt($('[data-f="cost"]', ctx.el)?.value || ''), vat = +($('[data-f="vat"]', ctx.el)?.value || 20); if (vk > 0 && ek > 0) { const net = vk / (1 + vat / 100); m.textContent = `Spanne ${num((net - ek) / net * 100, 1)} % · Aufschlag ${num((net - ek) / ek * 100, 1)} %`; } else m.textContent = ''; };
+    ['price', 'cost', 'vat'].forEach(k => $(`[data-f="${k}"]`, ctx.el)?.addEventListener('input', calc)); calc(); return;
+  }
   if (tab === 'karte') { $('#aeKarteRef', ctx.el)?.addEventListener('click', () => ctx.setTab('karte')); return; }
   if (!spec) return;
   const mount = () => {

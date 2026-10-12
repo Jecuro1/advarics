@@ -1,3 +1,7 @@
+## Neu in 0.21.2
+
+- Artikelmaske moderner: Karten mit großzügigem Abstand (Artikel, Preis, Lieferant & Bestand, Übersicht, Webshop, Werkzeuge), Felder mit Beschriftung am Rand, logische Gruppierung (EK/VK/MwSt. zusammen mit Spannenanzeige). Gilt für alle Reiter.
+
 ## Neu in 0.21.1
 
 - Datentabellen (Warengruppen, Artikel) und Artikelmaske im eigenen Kontor-Stil: helle Werkzeugleiste und Reiter in der Designfarbe statt dunkelblau/orange. Alle Funktionen bleiben.

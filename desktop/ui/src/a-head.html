@@ -1380,5 +1380,27 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .ae-nav{color:var(--text-2)}
 .ae-tabsw .ed-tab[aria-selected="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600;border-radius:8px}
 .ae-tabsw .ed-tab:hover{background:var(--surface-2)}
+/* Moderne Maske: Karten, großzügige Abstände, Felder mit Beschriftung am Rand */
+.ae-body #edBody{background:transparent;border:0;padding:0;gap:18px}
+.ae .ae-cards{gap:22px;grid-template-columns:repeat(auto-fill,minmax(310px,1fr))}
+.ae .ae-card{padding:20px 22px;gap:22px;border-radius:14px;box-shadow:var(--shadow-1)}
+.ae .ae-card h4{font-size:14px;font-weight:700;margin:0;padding-bottom:12px}
+.ae-pane .ae-card.ae-row{padding:16px 22px}
+.ae .field{position:relative;display:block;margin:0}
+.ae .field>span:first-child{position:absolute;top:-8px;left:12px;padding:0 6px;background:var(--surface);font-size:11.5px;color:var(--text-3);z-index:1;line-height:1.2}
+.ae .field .input{height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);width:100%}
+.ae .field textarea.input{padding:14px}
+.ae .field .input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.ae .field .input[disabled]{background:var(--surface-2)}
+.ae .ed-sec{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:22px;box-shadow:var(--shadow-1)}
+.ae .ed-sec .lab{font-size:14px;font-weight:700;padding-bottom:12px;margin-bottom:22px;border-bottom:1px solid var(--line)}
+.ae .ed-grid{gap:26px 22px}
+.ae-kv{display:flex;justify-content:space-between;font-size:13.5px;padding:2px 0}
+.ae-kv span{color:var(--text-3)}
+.ae-sw2{display:flex;align-items:center;gap:12px;font-size:13.5px;cursor:pointer}
+.ae-sw2 input{width:18px;height:18px}
+.ae-form .ae-card .btn{justify-content:flex-start}
+.ae-pane .ae-cards .ae-card{gap:22px}
+.ae-pane .ae-card .field{margin:0}
 </style>
 </head>

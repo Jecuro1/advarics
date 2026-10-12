@@ -1380,6 +1380,28 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .ae-nav{color:var(--text-2)}
 .ae-tabsw .ed-tab[aria-selected="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600;border-radius:8px}
 .ae-tabsw .ed-tab:hover{background:var(--surface-2)}
+/* Moderne Maske: Karten, großzügige Abstände, Felder mit Beschriftung am Rand */
+.ae-body #edBody{background:transparent;border:0;padding:0;gap:18px}
+.ae .ae-cards{gap:22px;grid-template-columns:repeat(auto-fill,minmax(310px,1fr))}
+.ae .ae-card{padding:20px 22px;gap:22px;border-radius:14px;box-shadow:var(--shadow-1)}
+.ae .ae-card h4{font-size:14px;font-weight:700;margin:0;padding-bottom:12px}
+.ae-pane .ae-card.ae-row{padding:16px 22px}
+.ae .field{position:relative;display:block;margin:0}
+.ae .field>span:first-child{position:absolute;top:-8px;left:12px;padding:0 6px;background:var(--surface);font-size:11.5px;color:var(--text-3);z-index:1;line-height:1.2}
+.ae .field .input{height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);width:100%}
+.ae .field textarea.input{padding:14px}
+.ae .field .input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.ae .field .input[disabled]{background:var(--surface-2)}
+.ae .ed-sec{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:22px;box-shadow:var(--shadow-1)}
+.ae .ed-sec .lab{font-size:14px;font-weight:700;padding-bottom:12px;margin-bottom:22px;border-bottom:1px solid var(--line)}
+.ae .ed-grid{gap:26px 22px}
+.ae-kv{display:flex;justify-content:space-between;font-size:13.5px;padding:2px 0}
+.ae-kv span{color:var(--text-3)}
+.ae-sw2{display:flex;align-items:center;gap:12px;font-size:13.5px;cursor:pointer}
+.ae-sw2 input{width:18px;height:18px}
+.ae-form .ae-card .btn{justify-content:flex-start}
+.ae-pane .ae-cards .ae-card{gap:22px}
+.ae-pane .ae-card .field{margin:0}
 </style>
 </head>
 <body>
@@ -1751,7 +1773,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.21.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.21.2', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -13059,21 +13081,36 @@ function artEditorMount(host, a, tab0) {
   const tabBody = () => {
     if (AE_GRID_TABS[tab]) return AE_GRID_TABS[tab](ctx);
     const c = COLORS[st.colors[0]]?.[1] || '#888';
-    if (tab === 'stamm') return `<div class="ed-grid">
-        <label class="field full"><span>Bezeichnung <b class="req">*</b></span><input class="input" data-f="name" value="${esc(st.name)}" placeholder="z. B. Grat Hardshell Jacke"></label>
-        <label class="field"><span>Marke</span><input class="input" data-f="brand" value="${esc(st.brand)}" list="brandList"></label><datalist id="brandList">${[...new Set(ART.map(x => x.brand).filter(Boolean))].map(b => `<option value="${esc(b)}">`).join('')}</datalist>
-        <label class="field"><span>Artikelnummer</span><input class="input" data-f="id" value="${esc(st.id)}" ${isNew ? '' : 'readonly style="opacity:.6"'}></label>
-        <label class="field"><span>Warengruppe</span><select class="input select" data-f="cat">${CATS.filter(x => x.id !== 'alle').map(x => `<option value="${x.id}" ${x.id === st.cat ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
-        <label class="field"><span>Darstellung (ohne Bild)</span><select class="input select" data-f="g">${GLYPHS.map(([k, l]) => `<option value="${k}" ${k === st.g ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-        <label class="field"><span>Verkaufspreis (UVP) € <b class="req">*</b></span><input class="input num" data-f="price" inputmode="decimal" value="${esc(st.price)}"></label>
-        <label class="field"><span>Aktionspreis €</span><input class="input num" data-f="sale" inputmode="decimal" value="${esc(st.sale)}" placeholder="leer = kein Aktionspreis"></label>
-        <label class="field"><span>Steuersatz</span><select class="input select" data-f="vat">${[20, 13, 10, 0].map(r => `<option value="${r}" ${+st.vat === r ? 'selected' : ''}>${r} %</option>`).join('')}</select></label>
-        <label class="field"><span>Einkaufspreis netto € <span class="muted" id="edMargin"></span></span><input class="input num" data-f="cost" inputmode="decimal" value="${esc(st.cost)}" placeholder="für Spanne & Bestellung"></label>
-        <label class="field"><span>Lieferant</span><select class="input select" data-f="supplierId"><option value="">–</option>${SUPPLIERS.map(x => `<option value="${esc(x.id)}" ${x.id === st.supplierId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
-        <label class="field"><span>Mindestbestand je Variante</span><input class="input num" data-f="minStock" inputmode="numeric" value="${esc(st.minStock)}"></label>
-        <label class="field"><span>Kennzeichnung</span><select class="input select" data-f="tag"><option value="" ${!st.tag ? 'selected' : ''}>keine</option><option ${st.tag === 'Neu' ? 'selected' : ''}>Neu</option><option ${st.tag === 'Bestseller' ? 'selected' : ''}>Bestseller</option><option ${st.tag === 'Auslauf' ? 'selected' : ''}>Auslauf</option></select></label>
-      </div>
-      <div class="ed-sec" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button type="button" class="btn btn-secondary btn-sm" id="edPage">${ic('globe', 'i-sm')}Aus Produktseite übernehmen …</button>${DESKTOP ? `<button type="button" class="btn btn-secondary btn-sm" id="edAi">${ic('sparkle', 'i-sm')}Beschreibung mit KI</button>` : ''}${a ? `<button type="button" class="btn btn-secondary btn-sm" id="edLbl">${ic('tag', 'i-sm')}Etiketten</button>` : ''}<span class="sp"></span><span class="muted" style="font-size:12.5px">Vollständigkeit der Produktdaten: <b>${detFilled(st.d)[0]} / ${detFilled(st.d)[1]}</b> Felder</span></div>`;
+    if (tab === 'stamm') {
+      const catOpt = CATS.filter(x => x.id !== 'alle').map(x => `<option value="${esc(x.id)}" ${x.id === st.cat ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
+      const tags = [['', 'keine'], ['Neu', 'Neu'], ['Bestseller', 'Bestseller'], ['Auslauf', 'Auslauf']].map(([v, l]) => `<option value="${esc(v)}" ${(st.tag || '') === v ? 'selected' : ''}>${l}</option>`).join('');
+      const nVar = isNew ? st.colors.length * sizesArr().length : a.variants.length;
+      return `<div class="ae-cards ae-form">
+        <div class="ae-card"><h4>Artikel</h4>
+          <label class="field"><span>Artikelnummer</span><input class="input" data-f="id" value="${esc(st.id)}" ${isNew ? '' : 'readonly style="opacity:.65"'}></label>
+          <label class="field"><span>Bezeichnung *</span><input class="input" data-f="name" value="${esc(st.name)}" placeholder="z. B. Grat Hardshell Jacke"></label>
+          <label class="field"><span>Marke</span><input class="input" data-f="brand" value="${esc(st.brand)}" list="brandList"></label><datalist id="brandList">${[...new Set(ART.map(x => x.brand).filter(Boolean))].map(b => `<option value="${esc(b)}">`).join('')}</datalist>
+          <label class="field"><span>Warengruppe</span><select class="input select" data-f="cat">${catOpt}</select></label>
+          <label class="field"><span>Kennzeichnung</span><select class="input select" data-f="tag">${tags}</select></label></div>
+        <div class="ae-card"><h4>Preis</h4>
+          <label class="field"><span>EK netto €</span><input class="input num" data-f="cost" inputmode="decimal" value="${esc(st.cost)}"></label>
+          <label class="field"><span>VK (UVP) € *</span><input class="input num" data-f="price" inputmode="decimal" value="${esc(st.price)}"></label>
+          <label class="field"><span>Aktionspreis €</span><input class="input num" data-f="sale" inputmode="decimal" value="${esc(st.sale)}" placeholder="leer = kein Aktionspreis"></label>
+          <label class="field"><span>MwSt.-Typ</span><select class="input select" data-f="vat">${[[20, 'Standard 20 %'], [13, 'Reduziert 13 %'], [10, 'Reduziert 10 %'], [0, 'Ohne MwSt. 0 %']].map(([r, l]) => `<option value="${r}" ${+st.vat === r ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+          <div class="muted" id="edMargin" style="font-size:12px"></div></div>
+        <div class="ae-card"><h4>Lieferant & Bestand</h4>
+          <label class="field"><span>Lieferant</span><select class="input select" data-f="supplierId"><option value="">–</option>${SUPPLIERS.map(x => `<option value="${esc(x.id)}" ${x.id === st.supplierId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
+          <label class="field"><span>Mindestbestand je Variante</span><input class="input num" data-f="minStock" inputmode="numeric" value="${esc(st.minStock)}"></label>
+          <label class="field"><span>Darstellung (ohne Bild)</span><select class="input select" data-f="g">${GLYPHS.map(([k, l]) => `<option value="${k}" ${k === st.g ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+        <div class="ae-card"><h4>Übersicht</h4>
+          <div class="ae-kv"><span>Varianten</span><b>${nVar}</b></div>
+          <div class="ae-kv"><span>Bestand</span><b>${isNew ? '–' : num(a.stock)}</b></div>
+          <div class="ae-kv"><span>Farben</span><b>${st.colors.length}</b></div>
+          <div class="ae-kv"><span>Produktdaten</span><b>${detFilled(st.d)[0]} / ${detFilled(st.d)[1]}</b></div></div>
+        <div class="ae-card"><h4>Webshop</h4>
+          <label class="ae-sw2"><input type="checkbox" data-d="web_sichtbar" data-t="check" ${st.d.web_sichtbar ? 'checked' : ''}><span>Im Webshop und Schaufenster anzeigen</span></label></div>
+        <div class="ae-card"><h4>Werkzeuge</h4><div style="display:grid;gap:8px"><button type="button" class="btn btn-secondary btn-sm" id="edPage">${ic('globe', 'i-sm')}Aus Produktseite übernehmen …</button>${DESKTOP ? `<button type="button" class="btn btn-secondary btn-sm" id="edAi">${ic('sparkle', 'i-sm')}Beschreibung mit KI</button>` : ''}${a ? `<button type="button" class="btn btn-secondary btn-sm" id="edLbl">${ic('tag', 'i-sm')}Etiketten</button>` : ''}</div></div></div>`;
+    }
     if (tab === 'bilder') {
       if (!DESKTOP) return '<div class="empty" style="padding:40px"><h3>Bilder nur in der Desktop-App</h3></div>';
       const ms = media(), pend = st.pending;
@@ -13880,6 +13917,10 @@ for (const [k, label, kind, key, src] of [['attr', 'Attribut', 'Attribut', 'attr
 /** Nach dem Zeichnen eines Reiters: Tabellen einhängen, Daten der Reiter laden */
 function aeAfter(ctx, tab) {
   const spec = AE_GRIDS[tab];
+  if (tab === 'stamm') {
+    const calc = () => { const m = $('#edMargin', ctx.el); if (!m) return; const vk = parseAmt($('[data-f="price"]', ctx.el)?.value || ''), ek = parseAmt($('[data-f="cost"]', ctx.el)?.value || ''), vat = +($('[data-f="vat"]', ctx.el)?.value || 20); if (vk > 0 && ek > 0) { const net = vk / (1 + vat / 100); m.textContent = `Spanne ${num((net - ek) / net * 100, 1)} % · Aufschlag ${num((net - ek) / ek * 100, 1)} %`; } else m.textContent = ''; };
+    ['price', 'cost', 'vat'].forEach(k => $(`[data-f="${k}"]`, ctx.el)?.addEventListener('input', calc)); calc(); return;
+  }
   if (tab === 'karte') { $('#aeKarteRef', ctx.el)?.addEventListener('click', () => ctx.setTab('karte')); return; }
   if (!spec) return;
   const mount = () => {

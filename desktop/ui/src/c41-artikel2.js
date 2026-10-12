@@ -117,21 +117,36 @@ function artEditorMount(host, a, tab0) {
   const tabBody = () => {
     if (AE_GRID_TABS[tab]) return AE_GRID_TABS[tab](ctx);
     const c = COLORS[st.colors[0]]?.[1] || '#888';
-    if (tab === 'stamm') return `<div class="ed-grid">
-        <label class="field full"><span>Bezeichnung <b class="req">*</b></span><input class="input" data-f="name" value="${esc(st.name)}" placeholder="z. B. Grat Hardshell Jacke"></label>
-        <label class="field"><span>Marke</span><input class="input" data-f="brand" value="${esc(st.brand)}" list="brandList"></label><datalist id="brandList">${[...new Set(ART.map(x => x.brand).filter(Boolean))].map(b => `<option value="${esc(b)}">`).join('')}</datalist>
-        <label class="field"><span>Artikelnummer</span><input class="input" data-f="id" value="${esc(st.id)}" ${isNew ? '' : 'readonly style="opacity:.6"'}></label>
-        <label class="field"><span>Warengruppe</span><select class="input select" data-f="cat">${CATS.filter(x => x.id !== 'alle').map(x => `<option value="${x.id}" ${x.id === st.cat ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
-        <label class="field"><span>Darstellung (ohne Bild)</span><select class="input select" data-f="g">${GLYPHS.map(([k, l]) => `<option value="${k}" ${k === st.g ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-        <label class="field"><span>Verkaufspreis (UVP) € <b class="req">*</b></span><input class="input num" data-f="price" inputmode="decimal" value="${esc(st.price)}"></label>
-        <label class="field"><span>Aktionspreis €</span><input class="input num" data-f="sale" inputmode="decimal" value="${esc(st.sale)}" placeholder="leer = kein Aktionspreis"></label>
-        <label class="field"><span>Steuersatz</span><select class="input select" data-f="vat">${[20, 13, 10, 0].map(r => `<option value="${r}" ${+st.vat === r ? 'selected' : ''}>${r} %</option>`).join('')}</select></label>
-        <label class="field"><span>Einkaufspreis netto € <span class="muted" id="edMargin"></span></span><input class="input num" data-f="cost" inputmode="decimal" value="${esc(st.cost)}" placeholder="für Spanne & Bestellung"></label>
-        <label class="field"><span>Lieferant</span><select class="input select" data-f="supplierId"><option value="">–</option>${SUPPLIERS.map(x => `<option value="${esc(x.id)}" ${x.id === st.supplierId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
-        <label class="field"><span>Mindestbestand je Variante</span><input class="input num" data-f="minStock" inputmode="numeric" value="${esc(st.minStock)}"></label>
-        <label class="field"><span>Kennzeichnung</span><select class="input select" data-f="tag"><option value="" ${!st.tag ? 'selected' : ''}>keine</option><option ${st.tag === 'Neu' ? 'selected' : ''}>Neu</option><option ${st.tag === 'Bestseller' ? 'selected' : ''}>Bestseller</option><option ${st.tag === 'Auslauf' ? 'selected' : ''}>Auslauf</option></select></label>
-      </div>
-      <div class="ed-sec" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button type="button" class="btn btn-secondary btn-sm" id="edPage">${ic('globe', 'i-sm')}Aus Produktseite übernehmen …</button>${DESKTOP ? `<button type="button" class="btn btn-secondary btn-sm" id="edAi">${ic('sparkle', 'i-sm')}Beschreibung mit KI</button>` : ''}${a ? `<button type="button" class="btn btn-secondary btn-sm" id="edLbl">${ic('tag', 'i-sm')}Etiketten</button>` : ''}<span class="sp"></span><span class="muted" style="font-size:12.5px">Vollständigkeit der Produktdaten: <b>${detFilled(st.d)[0]} / ${detFilled(st.d)[1]}</b> Felder</span></div>`;
+    if (tab === 'stamm') {
+      const catOpt = CATS.filter(x => x.id !== 'alle').map(x => `<option value="${esc(x.id)}" ${x.id === st.cat ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
+      const tags = [['', 'keine'], ['Neu', 'Neu'], ['Bestseller', 'Bestseller'], ['Auslauf', 'Auslauf']].map(([v, l]) => `<option value="${esc(v)}" ${(st.tag || '') === v ? 'selected' : ''}>${l}</option>`).join('');
+      const nVar = isNew ? st.colors.length * sizesArr().length : a.variants.length;
+      return `<div class="ae-cards ae-form">
+        <div class="ae-card"><h4>Artikel</h4>
+          <label class="field"><span>Artikelnummer</span><input class="input" data-f="id" value="${esc(st.id)}" ${isNew ? '' : 'readonly style="opacity:.65"'}></label>
+          <label class="field"><span>Bezeichnung *</span><input class="input" data-f="name" value="${esc(st.name)}" placeholder="z. B. Grat Hardshell Jacke"></label>
+          <label class="field"><span>Marke</span><input class="input" data-f="brand" value="${esc(st.brand)}" list="brandList"></label><datalist id="brandList">${[...new Set(ART.map(x => x.brand).filter(Boolean))].map(b => `<option value="${esc(b)}">`).join('')}</datalist>
+          <label class="field"><span>Warengruppe</span><select class="input select" data-f="cat">${catOpt}</select></label>
+          <label class="field"><span>Kennzeichnung</span><select class="input select" data-f="tag">${tags}</select></label></div>
+        <div class="ae-card"><h4>Preis</h4>
+          <label class="field"><span>EK netto €</span><input class="input num" data-f="cost" inputmode="decimal" value="${esc(st.cost)}"></label>
+          <label class="field"><span>VK (UVP) € *</span><input class="input num" data-f="price" inputmode="decimal" value="${esc(st.price)}"></label>
+          <label class="field"><span>Aktionspreis €</span><input class="input num" data-f="sale" inputmode="decimal" value="${esc(st.sale)}" placeholder="leer = kein Aktionspreis"></label>
+          <label class="field"><span>MwSt.-Typ</span><select class="input select" data-f="vat">${[[20, 'Standard 20 %'], [13, 'Reduziert 13 %'], [10, 'Reduziert 10 %'], [0, 'Ohne MwSt. 0 %']].map(([r, l]) => `<option value="${r}" ${+st.vat === r ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+          <div class="muted" id="edMargin" style="font-size:12px"></div></div>
+        <div class="ae-card"><h4>Lieferant & Bestand</h4>
+          <label class="field"><span>Lieferant</span><select class="input select" data-f="supplierId"><option value="">–</option>${SUPPLIERS.map(x => `<option value="${esc(x.id)}" ${x.id === st.supplierId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
+          <label class="field"><span>Mindestbestand je Variante</span><input class="input num" data-f="minStock" inputmode="numeric" value="${esc(st.minStock)}"></label>
+          <label class="field"><span>Darstellung (ohne Bild)</span><select class="input select" data-f="g">${GLYPHS.map(([k, l]) => `<option value="${k}" ${k === st.g ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+        <div class="ae-card"><h4>Übersicht</h4>
+          <div class="ae-kv"><span>Varianten</span><b>${nVar}</b></div>
+          <div class="ae-kv"><span>Bestand</span><b>${isNew ? '–' : num(a.stock)}</b></div>
+          <div class="ae-kv"><span>Farben</span><b>${st.colors.length}</b></div>
+          <div class="ae-kv"><span>Produktdaten</span><b>${detFilled(st.d)[0]} / ${detFilled(st.d)[1]}</b></div></div>
+        <div class="ae-card"><h4>Webshop</h4>
+          <label class="ae-sw2"><input type="checkbox" data-d="web_sichtbar" data-t="check" ${st.d.web_sichtbar ? 'checked' : ''}><span>Im Webshop und Schaufenster anzeigen</span></label></div>
+        <div class="ae-card"><h4>Werkzeuge</h4><div style="display:grid;gap:8px"><button type="button" class="btn btn-secondary btn-sm" id="edPage">${ic('globe', 'i-sm')}Aus Produktseite übernehmen …</button>${DESKTOP ? `<button type="button" class="btn btn-secondary btn-sm" id="edAi">${ic('sparkle', 'i-sm')}Beschreibung mit KI</button>` : ''}${a ? `<button type="button" class="btn btn-secondary btn-sm" id="edLbl">${ic('tag', 'i-sm')}Etiketten</button>` : ''}</div></div></div>`;
+    }
     if (tab === 'bilder') {
       if (!DESKTOP) return '<div class="empty" style="padding:40px"><h3>Bilder nur in der Desktop-App</h3></div>';
       const ms = media(), pend = st.pending;
