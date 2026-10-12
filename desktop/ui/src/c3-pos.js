@@ -247,7 +247,7 @@ function openVariant(a, fromEl, preset) {
         <div class="vp-price">${eur(price)}${a.sale ? `<s>${eur(a.price)}</s>` : ''}</div>
         ${a.colors.length > 1 ? `<div class="vp-sec"><div class="lab">Farbe <span>${COLORS[st.c][0]} · <span class="kbd">↑</span><span class="kbd">↓</span></span></div><div class="colors">${a.colors.map(k => `<button class="cbtn" data-c="${k}" aria-pressed="${k === st.c}" style="--sw:${COLORS[k][1]}"><i></i>${COLORS[k][0]}</button>`).join('')}</div></div>` : ''}
         ${!oneSize ? `<div class="vp-sec"><div class="lab">Größe <span>Bestand Innsbruck · <span class="kbd">←</span><span class="kbd">→</span></span></div><div class="sizes">${a.sizes.map(s => { const x = variant(a, st.c, s); return `<button class="sbtn ${x.q <= 0 ? 'so' : ''}" data-s="${esc(s)}" aria-pressed="${s === st.s}"><span class="sz">${esc(s)}</span><small class="${x.q > 0 && x.q <= 2 ? 'low' : ''}">${x.q <= 0 ? 'ausverkauft' : x.q + ' Stk.'}</small></button>`; }).join('')}</div></div>` : ''}
-        <div class="elsewhere">${ic('store', 'i-xs')}${v.other ? `${oneSize ? `Innsbruck <b style="color:var(--text);margin:0 4px">${v.q}</b> ·` : `Gr. ${esc(st.s)} in`} anderen Filialen: ${OTHER_STORES.map((s, i) => `<span>${s.name} <b>${v.other[i]}</b></span>`).join('')}` : `Bestand hier: <b style="color:var(--text);margin:0 4px">${v.q}</b> · EAN ${esc(v.ean)} · andere Filialen sichtbar, sobald der Filial-Server verbunden ist`}</div>
+        <div class="elsewhere">${ic('store', 'i-xs')}${v.other ? `${oneSize ? `${esc(storeObj().name)} <b style="color:var(--text);margin:0 4px">${v.q}</b> ·` : `Gr. ${esc(st.s)} in`} anderen Filialen: ${OTHER_STORES.map((s, i) => `<span>${s.name} <b>${v.other[i]}</b></span>`).join('')}` : `Bestand hier: <b style="color:var(--text);margin:0 4px">${v.q}</b> · EAN ${esc(v.ean)} · ${DESKTOP ? 'Einzelplatz · Filialverbund unter Einstellungen' : 'andere Filialen sichtbar, sobald der Filial-Server verbunden ist'}`}</div>
         ${prompts ? `<div class="vp-sec"><div class="lab">Kassenablauf „Skiverkauf“ <span>benutzerdefinierte Felder</span></div><div class="prompts">${prompts.map(p => `<label class="field"><span>${esc(p.label)}${p.req ? ' <b class="req">*</b>' : ''}</span><input class="input" data-p="${p.key}" placeholder="${esc(p.ph)}" value="${esc(st.vals[p.key] || '')}" ${p.type === 'number' ? 'inputmode="decimal"' : ''}></label>`).join('')}</div><div class="prompt-hint">${ic('flow', 'i-xs')}Pflichtfelder je Warengruppe – im Kassenablauf konfiguriert, ohne Code.</div></div>` : ''}
         <div class="vp-foot">
           <div class="qty" style="height:48px;border-radius:12px"><button data-q="-1" style="width:44px;height:46px" aria-label="Menge verringern">${ic('minus', 'i-sm')}</button><span style="min-width:28px;font-size:15px">${st.qty}</span><button data-q="1" style="width:44px;height:46px" aria-label="Menge erhöhen">${ic('plus', 'i-sm')}</button></div>
@@ -258,8 +258,8 @@ function openVariant(a, fromEl, preset) {
   };
   const add = () => {
     const v = variant(a, st.c, st.s);
-    if (v.q <= 0 && !v.other) { closeLayer(el); toast('Nicht lagernd', {t2: 'Umlagerungen zwischen Filialen folgen mit dem Filial-Server · Bestand unter „Bestand“ buchen', type: 'warn', icon: 'boxes'}); return; }
-    if (v.q <= 0) { const best = OTHER_STORES.map((s, i) => [s, v.other[i]]).sort((x, y) => y[1] - x[1])[0]; closeLayer(el); toast('Umlagerung angefragt', {t2: `${a.name} · ${COLORS[st.c][0]} ${st.s} · ${best[0].name} → Innsbruck`, type: 'pos', icon: 'swap'}); Hooks.emit('inventory.transfer.requested', {sku: a.id, von: best[0].id, nach: 'INN', menge: 1}); return; }
+    if (v.q <= 0 && !v.other) { closeLayer(el); toast('Nicht lagernd', {t2: DESKTOP ? 'Bestand unter „Bestand“ oder „Wareneingang“ buchen' : 'Umlagerungen zwischen Filialen folgen mit dem Filial-Server · Bestand unter „Bestand“ buchen', type: 'warn', icon: 'boxes'}); return; }
+    if (v.q <= 0) { const best = OTHER_STORES.map((s, i) => [s, v.other[i]]).sort((x, y) => y[1] - x[1])[0]; closeLayer(el); if (DESKTOP) { if (best && best[1] > 0) requestTransfer(a, v, best[0].id); else toast('Nirgends lagernd', {t2: 'Auch in den anderen Filialen kein Bestand', type: 'warn', icon: 'boxes'}); return; } toast('Umlagerung angefragt', {t2: `${a.name} · ${COLORS[st.c][0]} ${st.s} · ${best[0].name} → Innsbruck`, type: 'pos', icon: 'swap'}); Hooks.emit('inventory.transfer.requested', {sku: a.id, von: best[0].id, nach: 'INN', menge: 1}); return; }
     if (prompts) {
       $$('[data-p]', box).forEach(i => { st.vals[i.dataset.p] = i.value.trim(); });
       const miss = prompts.find(p => p.req && !st.vals[p.key]);
@@ -424,7 +424,7 @@ function openFlow() {
     ['receipt', 'Beleg', 'Druck, QR oder E-Mail · Vorlage wählbar', null],
   ];
   const el = openLayer(`<div class="modal" style="width:min(620px,100%)" role="dialog" aria-modal="true" aria-label="Kassenablauf">
-    <div class="m-head"><div class="m-ic">${ic('flow')}</div><div><h2>Kassenablauf · Standard</h2><p>Gilt für Kasse INN-K01 · Version 14 · zuletzt geändert von David Huber</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-head"><div class="m-ic">${ic('flow')}</div><div><h2>Kassenablauf · Standard</h2><p>Gilt für Kasse ${esc(CFG['kasse.id'] || 'INN-K01')} · Version 14 · zuletzt geändert von David Huber</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
     <div class="m-body" style="display:grid;gap:8px">${steps.map(([i, t, d, k], n) => `<div class="ops-row" style="padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)"><span class="reg-ic" style="width:30px;height:30px">${ic(i, 'i-sm')}</span><div class="k"><b>${n + 1} · ${t}</b>${d}</div>${k === 'lock' ? `<span class="pill">${ic('lock')}fix</span>` : k ? `<button class="switch" role="switch" data-flow="${k}" aria-checked="${f[k]}" aria-label="${t}"></button>` : '<span class="pill plain">Standard</span>'}</div>`).join('')}
       <div class="prompt-hint" style="margin-top:6px">${ic('braces', 'i-xs')}Jeder Schritt feuert Hooks – eigene Skripte, Regeln und Webhooks können eingreifen.</div></div>
     <div class="m-foot"><button class="btn btn-ghost" id="flowJson">${ic('code', 'i-sm')}Als JSON</button><span class="sp"></span><button class="btn btn-primary" data-close>Fertig</button></div></div>`);
@@ -504,14 +504,14 @@ function renderPayLeft() {
     <div class="pay-due ${rem === 0 ? 'zero' : ''}">${eur(rem)}</div>
     <div class="pay-prog"><i style="width:${Math.min(100, p / PAY.total * 100)}%"></i></div>
     <div class="pay-lines" aria-label="Positionen">${POS.cart.map(l => { const c = l.c ? COLORS[l.c][1] : 'var(--text-3)'; const g = r2(l.unit * l.qty), d = l.disc ? r2(g * l.disc.pct / 100) : 0; return `<div class="wl-row"><span class="thumb" style="--c:${c}">${l.service ? ic(l.icon, 'i-sm') : glyph(l.art.g, c)}</span><div class="wl-main"><div class="wl-t">${l.qty > 1 ? l.qty + ' × ' : ''}${esc(l.name)}</div><div class="wl-s">${l.service ? esc(l.meta || '') : COLORS[l.c][0] + (l.s !== 'Einheitsgröße' ? ' · ' + esc(l.s) : '')}</div></div><div class="wl-v">${eur(g - d)}</div></div>`; }).join('')}</div>
-    <div class="pay-parts">${PAY.parts.map(x => `<div class="ppart"><span class="reg-ic">${ic(METHODS.find(m => m.id === x.m).icon, 'i-sm')}</span><span><span style="display:block;font-weight:550">${esc(x.label)}</span><span class="muted" style="font-size:11.5px">${esc(x.ref)}</span></span><b>${eur(x.amount)}</b></div>`).join('')}</div>
+    <div class="pay-parts">${PAY.parts.map(x => `<div class="ppart"><span class="reg-ic">${ic(METHODS.find(m => m.id === x.m)?.icon || 'card', 'i-sm')}</span><span><span style="display:block;font-weight:550">${esc(x.label)}</span><span class="muted" style="font-size:11.5px">${esc(x.ref)}</span></span><b>${eur(x.amount)}</b></div>`).join('')}</div>
     <div class="pay-sum"><div class="trow"><span>${cartCount()} Artikel${POS.customer ? ` · ${esc(POS.customer.name)}` : ''}</span><b>${eur(PAY.total)}</b></div>
       ${PAY.t.disc > 0 ? `<div class="trow disc"><span>darin Rabatt</span><b>− ${eur(PAY.t.disc)}</b></div>` : ''}
       <div class="trow"><span>Bezahlt</span><b>${eur(p)}</b></div>
-      ${!S.online ? `<div class="trow" style="color:var(--warn)"><span style="display:flex;gap:6px;align-items:center">${ic('wifi-off', 'i-xs')}Offline – Signatur lokal, Sync folgt</span></div>` : `<div class="trow"><span style="display:flex;gap:6px;align-items:center">${ic('shield', 'i-xs')}RKSV · Signatureinheit bereit</span></div>`}</div>`;
+      ${!S.online ? `<div class="trow" style="color:var(--warn)"><span style="display:flex;gap:6px;align-items:center">${ic('wifi-off', 'i-xs')}Offline – Signatur lokal, Sync folgt</span></div>` : `<div class="trow"><span style="display:flex;gap:6px;align-items:center">${ic('shield', 'i-xs')}${!DESKTOP ? 'RKSV · Signatureinheit bereit' : S.rksv?.active ? `RKSV-Testmodus · ${esc(S.rksv.kassen_id || '')}` : 'Beleg wird gespeichert · RKSV nicht in Betrieb'}</span></div>`}</div>`;
 }
 function renderMethods() {
-  $('#methods').innerHTML = METHODS.map((m, i) => { const dis = m.online && !S.online; return `<button class="mbtn" data-m="${m.id}" aria-pressed="${PAY.method === m.id}" ${dis ? 'disabled' : ''}>${ic(m.icon)}<span><span class="ml" style="display:block">${m.label}</span><span class="ms" style="display:block">${dis ? 'offline nicht verfügbar' : m.sub}</span></span><span class="kbd">${i + 1}</span></button>`; }).join('');
+  $('#methods').innerHTML = METHODS.filter(m => !m.hidden).map((m, i) => { const dis = m.online && !S.online; return `<button class="mbtn" data-m="${m.id}" aria-pressed="${PAY.method === m.id}" ${dis ? 'disabled' : ''}>${ic(m.icon)}<span><span class="ml" style="display:block">${m.label}</span><span class="ms" style="display:block">${dis ? 'offline nicht verfügbar' : m.sub}</span></span><span class="kbd">${i + 1}</span></button>`; }).join('');
 }
 function nextNotes(v) { const c = [5, 10, 20, 50, 100].map(s => Math.ceil((v + .001) / s) * s); return [...new Set(c)].filter(x => x > v).slice(0, 3); }
 function renderMethodPanel() {
@@ -608,7 +608,7 @@ function payKeys(e) {
   if (!PAY || PAY.done) return;
   const inInput = isTyping(e.target);
   if (e.key === 'Enter' && !e.target.closest('[data-close]')) { e.preventDefault(); return payGo(); }
-  if (!inInput && /^[1-8]$/.test(e.key) && !PAY.busy) { const m = METHODS[+e.key - 1]; if (m.online && !S.online) return; PAY.vcheck = null; PAY.method = m.id; renderMethods(); renderMethodPanel(); focusPay(); e.preventDefault(); }
+  if (!inInput && /^[1-8]$/.test(e.key) && !PAY.busy) { const m = METHODS.filter(x => !x.hidden)[+e.key - 1]; if (!m) return; if (m.online && !S.online) return; PAY.vcheck = null; PAY.method = m.id; renderMethods(); renderMethodPanel(); focusPay(); e.preventDefault(); }
   if (inInput && e.target.id === 'payAmtIn') setTimeout(updateChange, 0);
 }
 async function finalizePayment() {
@@ -640,7 +640,7 @@ async function finalizePayment() {
   POS.last = {no: rec.no, total: t.total}; POS.lastRec = rec;
   if (DESKTOP && CFG['drucker.auto']) printReceipt(rec, {quiet: true});
   if (rec.parts.some(p => p.m === 'bar')) openDrawer('Barzahlung', true);
-  Hooks.emit('rksv.receipt.signed', {beleg: rec.no, kassenId: 'INN-K01', betragSatzNormal: t.vat.find(v => v.rate === 20)?.gross || 0, betragSatzNull: t.zero, signatur: 'ES256 · …' + rec.sig.slice(-8), offline: rec.offline});
+  Hooks.emit('rksv.receipt.signed', {beleg: rec.no, kassenId: S.rksv?.kassen_id || CFG['kasse.id'] || 'INN-K01', betragSatzNormal: t.vat.find(v => v.rate === 20)?.gross || 0, betragSatzNull: t.zero, signatur: 'ES256 · …' + rec.sig.slice(-8), offline: rec.offline});
   if (!S.online) { S.queue++; renderStatus(); updateQueueInfo(); }
   Dash.session.rev += t.total; Dash.session.bons++;
   Hooks.emit('pos.sale.completed', {beleg: rec.no, summe: t.total, positionen: rec.lines.length, zahlungen: rec.parts.map(p => p.m), kunde: rec.customer?.id || null});
@@ -655,7 +655,7 @@ function showDone(rec) {
     <div class="done-title">Bezahlt · ${eur(rec.t.total)}</div>
     <div class="done-sub">Bon ${rec.no} · ${rec.lines.reduce((s, l) => s + l.qty, 0)} Artikel · ${DESKTOP ? (rec.rksv ? 'RKSV-signiert (Testmodus)' : 'gespeichert') : 'RKSV-signiert'} ${clock(true)}${rec.offline ? ' · offline erfasst, Sync folgt' : ''}</div>
     ${rec.lines.some(l => l.codes?.length) ? `<div class="note" style="margin-top:14px">${ic('gift')}<span>Gutschein-Code: <b style="color:var(--text)" class="mono">${esc(rec.lines.flatMap(l => l.codes || []).join(', '))}</b></span></div>` : ''}
-    <div class="pay-parts" style="margin-top:18px">${rec.parts.map(x => `<div class="ppart"><span class="reg-ic">${ic(METHODS.find(m => m.id === x.m).icon, 'i-sm')}</span><span><span style="display:block;font-weight:550">${esc(x.label)}</span><span class="muted" style="font-size:11.5px">${esc(x.ref)}</span></span><b>${eur(x.given || x.amount)}</b></div>`).join('')}</div>
+    <div class="pay-parts" style="margin-top:18px">${rec.parts.map(x => `<div class="ppart"><span class="reg-ic">${ic(METHODS.find(m => m.id === x.m)?.icon || 'card', 'i-sm')}</span><span><span style="display:block;font-weight:550">${esc(x.label)}</span><span class="muted" style="font-size:11.5px">${esc(x.ref)}</span></span><b>${eur(x.given || x.amount)}</b></div>`).join('')}</div>
     ${rec.change > 0 ? `<div class="change-big"><div class="l">Rückgeld</div><div class="v">${eur(rec.change)}</div></div>` : ''}
     ${rec.customer ? `<div class="note" style="margin-top:16px">${ic('star')}<span><b style="color:var(--text)">+${num(rec.pointsEarned ?? rec.t.points)} Gipfel-Punkte</b> für ${esc(rec.customer.name)} · neuer Stand ${num(rec.pointsAfter ?? rec.customer.points)}</span></div>` : ''}
     <div class="eyebrow" style="margin-top:26px">Beleg übergeben</div>

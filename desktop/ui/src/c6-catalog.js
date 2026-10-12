@@ -42,7 +42,7 @@ function recData(rec) {
   return {date: rec.date.toISOString(), cashier: rec.cashier, offline: rec.offline, sig: rec.sig, change: rec.change, billDisc: rec.billDisc || null, t: rec.t,
     parts: rec.parts.map(p => ({m: p.m, label: p.label, amount: p.amount, ref: p.ref, given: p.given || null, change: p.change || 0, code: p.code || null})),
     customer: rec.customer ? {id: rec.customer.id, name: rec.customer.name, points: rec.customer.points, email: rec.customer.email} : null,
-    lines: rec.lines.map(l => ({name: l.name, sku: l.art?.id || null, glyph: l.art?.g || null, c: l.c || null, s: l.s || null, qty: l.qty, unit: l.unit, was: l.was || null, vat: l.vat, disc: l.disc || null, service: !!l.service, voucher: !!l.voucher, icon: l.icon || null, meta: l.meta || null, vals: l.vals || null}))};
+    lines: rec.lines.map(l => ({name: l.name, sku: l.art?.id || null, ean: l.art && l.art.variants ? variant(l.art, l.c, l.s)?.ean || null : null, glyph: l.art?.g || null, c: l.c || null, s: l.s || null, qty: l.qty, unit: l.unit, was: l.was || null, vat: l.vat, disc: l.disc || null, service: !!l.service, voucher: !!l.voucher, icon: l.icon || null, meta: l.meta || null, vals: l.vals || null}))};
 }
 const recFromData = (no, d) => ({...d, no, date: new Date(d.date), lines: d.lines.map(l => ({...l, art: l.sku ? (artById(l.sku) || {g: l.glyph, id: l.sku}) : null}))});
 async function commitSale(rec) {

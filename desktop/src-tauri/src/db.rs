@@ -390,6 +390,70 @@ const MIGRATIONS: &[&str] = &[
         result TEXT NOT NULL
     );
     "#,
+    // 7 · Filialverbund, Erweiterungen, weitere Anmeldemethoden
+    r#"
+    CREATE TABLE stores (
+        id         TEXT PRIMARY KEY,
+        name       TEXT NOT NULL,
+        addr       TEXT NOT NULL DEFAULT '',
+        key_hash   TEXT,
+        created_at TEXT NOT NULL,
+        last_sync  TEXT,
+        last_ip    TEXT,
+        info       TEXT NOT NULL DEFAULT '{}',
+        active     INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE TABLE store_sales (
+        store       TEXT NOT NULL,
+        beleg_no    TEXT NOT NULL,
+        ts          TEXT NOT NULL,
+        total       INTEGER NOT NULL,
+        kind        TEXT NOT NULL,
+        cashier     TEXT,
+        customer_id TEXT,
+        data        TEXT NOT NULL,
+        PRIMARY KEY (store, beleg_no)
+    );
+    CREATE INDEX store_sales_ts ON store_sales(ts);
+    CREATE TABLE store_stock (
+        store      TEXT NOT NULL,
+        ean        TEXT NOT NULL,
+        stock      INTEGER NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (store, ean)
+    );
+    CREATE TABLE store_points (store TEXT NOT NULL, log_id INTEGER NOT NULL, PRIMARY KEY (store, log_id));
+    CREATE TABLE verbund_pulled (customer_id TEXT PRIMARY KEY, updated_at TEXT NOT NULL);
+    CREATE TABLE transfers (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        no         TEXT NOT NULL UNIQUE,
+        from_store TEXT NOT NULL,
+        to_store   TEXT NOT NULL,
+        status     TEXT NOT NULL DEFAULT 'angefordert',
+        lines      TEXT NOT NULL DEFAULT '[]',
+        note       TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        user       TEXT,
+        booked_out INTEGER NOT NULL DEFAULT 0,
+        booked_in  INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE extensions (
+        id           TEXT PRIMARY KEY,
+        name         TEXT NOT NULL,
+        version      TEXT NOT NULL,
+        author       TEXT NOT NULL DEFAULT '',
+        manifest     TEXT NOT NULL,
+        enabled      INTEGER NOT NULL DEFAULT 1,
+        installed_at TEXT NOT NULL
+    );
+    ALTER TABLE users ADD COLUMN login TEXT;
+    ALTER TABLE users ADD COLUMN pw_hash TEXT;
+    ALTER TABLE users ADD COLUMN pw_salt TEXT;
+    ALTER TABLE users ADD COLUMN hello INTEGER NOT NULL DEFAULT 0;
+    INSERT INTO counters(name, value) VALUES ('umlagerung', 0);
+    "#,
+
 ];
 
 pub fn schema_version() -> i64 {

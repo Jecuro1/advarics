@@ -807,6 +807,8 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
 .opt.lock::after{content:"";position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--warn)}
 .reasons{display:flex;gap:6px;flex-wrap:wrap}
 .reasons .chip[aria-pressed="true"]{border-color:var(--text);color:var(--text);background:var(--surface-2)}
+#zahlBox .chip[aria-pressed="true"]{border-color:color-mix(in oklab,var(--accent) 45%,var(--line));color:var(--text);background:color-mix(in oklab,var(--accent) 9%,transparent)}
+#zahlBox .chip[aria-pressed="false"]{color:var(--text-3);text-decoration:line-through;opacity:.75}
 .preview-box{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);font-size:13px}
 .preview-box b{font-size:18px;font-weight:650;font-variant-numeric:tabular-nums}
 .rule-box{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 22%,transparent);font-size:12.5px;color:var(--text-2);line-height:1.5}

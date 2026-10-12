@@ -807,6 +807,8 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
 .opt.lock::after{content:"";position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--warn)}
 .reasons{display:flex;gap:6px;flex-wrap:wrap}
 .reasons .chip[aria-pressed="true"]{border-color:var(--text);color:var(--text);background:var(--surface-2)}
+#zahlBox .chip[aria-pressed="true"]{border-color:color-mix(in oklab,var(--accent) 45%,var(--line));color:var(--text);background:color-mix(in oklab,var(--accent) 9%,transparent)}
+#zahlBox .chip[aria-pressed="false"]{color:var(--text-3);text-decoration:line-through;opacity:.75}
 .preview-box{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);font-size:13px}
 .preview-box b{font-size:18px;font-weight:650;font-variant-numeric:tabular-nums}
 .rule-box{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 22%,transparent);font-size:12.5px;color:var(--text-2);line-height:1.5}
@@ -1594,7 +1596,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.10.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.11.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1774,7 +1776,6 @@ function toggleSidebar() {
 }
 
 function go(view) {
-  if (view === 'erweiterungen' && DESKTOP) view = 'anpassen';
   if (!TITLES[view]) view = 'dashboard';
   if (S.view === view) return;
   if (S.view === 'dashboard' && Dash.editing) setEditing(false, true);
@@ -1820,7 +1821,7 @@ function renderTopbar() {
 function renderStatus() {
   const off = !S.online;
   $('#statusbar').innerHTML = `
-    ${DESKTOP ? `<span class="sbi ok"><span class="dot live"></span>Einzelplatz · lokale Datenbank</span>
+    ${DESKTOP ? `${(() => { const v = typeof vbStatus === 'function' ? vbStatus() : null; return v ? `<button class="sbi ${v.ok ? 'ok' : 'off'}" id="sbVerbund" data-tip="${esc(v.tip)}"><span class="dot ${v.ok ? 'live' : ''}"></span>${esc(v.text)}</button>` : '<span class="sbi ok"><span class="dot live"></span>Einzelplatz · lokale Datenbank</span>'; })()}
     <span class="sb-sep"></span>
     <span class="sbi hide-sm ${S.rksv?.active ? '' : 'off'}">${ic('shield')}${S.rksv?.active ? `RKSV-Testmodus · ${esc(S.rksv.kassen_id)}` : 'RKSV nicht in Betrieb'}</span>` : `<button class="sbi ${off ? 'off' : 'ok'}" id="sbConn" data-tip="${off ? 'Klicken: Verbindung wiederherstellen' : 'Klicken: Offline-Modus simulieren'}"><span class="dot ${off ? '' : 'live'}"></span>${off ? 'Server nicht erreichbar · lokaler Betrieb' : 'KONTOR-SRV01 · lokal · 4 ms'}</button>
     <span class="sb-sep"></span>
@@ -2269,7 +2270,7 @@ const W = {
       if (DESKTOP) return realRegistersHTML();
       const k1 = S.online ? statusPill(['Online', 'pos']) : statusPill(['Offline', 'warn']);
       return `<div style="flex:1;min-height:0;overflow:auto">
-        <div class="reg"><span class="reg-ic">${ic('register', 'i-sm')}</span><div class="wl-main"><div class="wl-t">Kasse 1 · INN-K01</div><div class="wl-s">${esc(S.user.name)} · ${num(118 + Dash.session.bons)} Bons${S.queue ? ` · ${S.queue} in Warteschlange` : ''}</div></div>${k1}</div>
+        <div class="reg"><span class="reg-ic">${ic('register', 'i-sm')}</span><div class="wl-main"><div class="wl-t">${esc(CFG['kasse.name'] || 'Kasse 1')} · ${esc(CFG['kasse.id'] || 'INN-K01')}</div><div class="wl-s">${esc(S.user.name)} · ${num(118 + Dash.session.bons)} Bons${S.queue ? ` · ${S.queue} in Warteschlange` : ''}</div></div>${k1}</div>
         <div class="reg"><span class="reg-ic">${ic('register', 'i-sm')}</span><div class="wl-main"><div class="wl-t">Kasse 2 · INN-K02</div><div class="wl-s">Offline seit 12 min · 3 Belege lokal signiert</div></div>${statusPill(['Offline', 'warn'])}</div>
         <div class="reg"><span class="reg-ic">${ic('phone-pay', 'i-sm')}</span><div class="wl-main"><div class="wl-t">Mobile Kasse · INN-M01</div><div class="wl-s">Tablet · Verkaufsfläche</div></div>${statusPill(['Bereit', ''])}</div>
       </div><div class="note" style="margin-top:10px">${ic('shield')}<span>Monatsbeleg Oktober fällig am 31.10. · Signatureinheiten gültig bis 03/2029.</span><button class="btn btn-secondary btn-sm" data-act="dep" style="margin-left:auto;flex:none">DEP-Export</button></div>`;
@@ -2455,7 +2456,7 @@ function openLibrary() {
   const el = openLayer(`<div class="drawer-panel" role="dialog" aria-modal="true" aria-label="Widget-Bibliothek">
     <div class="m-head" style="padding-bottom:14px"><div class="m-ic">${ic('layout')}</div><div><h2>Widget-Bibliothek</h2><p>Kern-Widgets, Widgets aus Erweiterungen und eigene Abfragen.</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
     <div class="drawer-body"><input class="input lib-search" id="libQ" placeholder="Widgets durchsuchen …" style="height:40px"><div id="libList"></div>
-      <div class="lib-i" style="border-style:dashed;margin-top:18px"><span class="reg-ic">${ic('code')}</span><div style="min-width:0"><div class="t1">Eigenes Widget</div><div class="t2">Abfrage auf beliebige Entitäten (auch eigene) + Darstellung als Kennzahl, Liste oder Diagramm. Wird als JSON versioniert.</div></div><button class="btn btn-secondary btn-sm" id="libCustom">Erstellen</button></div>
+      <div class="lib-i" style="border-style:dashed;margin-top:18px"><span class="reg-ic">${ic('code')}</span><div style="min-width:0"><div class="t1">Eigenes Widget</div><div class="t2">Abfrage auf beliebige Entitäten (auch eigene) + Darstellung als Kennzahl, Liste oder Tabelle. Wird als JSON versioniert.</div></div><button class="btn btn-secondary btn-sm" id="libCustom">Erstellen</button></div>
     </div></div>`, {cls: 'drawer', focus: '#libQ'});
   const render = () => {
     const q = norm($('#libQ', el).value.trim()); const used = new Set(Dash.layout.map(x => x.t));
@@ -2808,7 +2809,7 @@ function openVariant(a, fromEl, preset) {
         <div class="vp-price">${eur(price)}${a.sale ? `<s>${eur(a.price)}</s>` : ''}</div>
         ${a.colors.length > 1 ? `<div class="vp-sec"><div class="lab">Farbe <span>${COLORS[st.c][0]} · <span class="kbd">↑</span><span class="kbd">↓</span></span></div><div class="colors">${a.colors.map(k => `<button class="cbtn" data-c="${k}" aria-pressed="${k === st.c}" style="--sw:${COLORS[k][1]}"><i></i>${COLORS[k][0]}</button>`).join('')}</div></div>` : ''}
         ${!oneSize ? `<div class="vp-sec"><div class="lab">Größe <span>Bestand Innsbruck · <span class="kbd">←</span><span class="kbd">→</span></span></div><div class="sizes">${a.sizes.map(s => { const x = variant(a, st.c, s); return `<button class="sbtn ${x.q <= 0 ? 'so' : ''}" data-s="${esc(s)}" aria-pressed="${s === st.s}"><span class="sz">${esc(s)}</span><small class="${x.q > 0 && x.q <= 2 ? 'low' : ''}">${x.q <= 0 ? 'ausverkauft' : x.q + ' Stk.'}</small></button>`; }).join('')}</div></div>` : ''}
-        <div class="elsewhere">${ic('store', 'i-xs')}${v.other ? `${oneSize ? `Innsbruck <b style="color:var(--text);margin:0 4px">${v.q}</b> ·` : `Gr. ${esc(st.s)} in`} anderen Filialen: ${OTHER_STORES.map((s, i) => `<span>${s.name} <b>${v.other[i]}</b></span>`).join('')}` : `Bestand hier: <b style="color:var(--text);margin:0 4px">${v.q}</b> · EAN ${esc(v.ean)} · andere Filialen sichtbar, sobald der Filial-Server verbunden ist`}</div>
+        <div class="elsewhere">${ic('store', 'i-xs')}${v.other ? `${oneSize ? `${esc(storeObj().name)} <b style="color:var(--text);margin:0 4px">${v.q}</b> ·` : `Gr. ${esc(st.s)} in`} anderen Filialen: ${OTHER_STORES.map((s, i) => `<span>${s.name} <b>${v.other[i]}</b></span>`).join('')}` : `Bestand hier: <b style="color:var(--text);margin:0 4px">${v.q}</b> · EAN ${esc(v.ean)} · ${DESKTOP ? 'Einzelplatz · Filialverbund unter Einstellungen' : 'andere Filialen sichtbar, sobald der Filial-Server verbunden ist'}`}</div>
         ${prompts ? `<div class="vp-sec"><div class="lab">Kassenablauf „Skiverkauf“ <span>benutzerdefinierte Felder</span></div><div class="prompts">${prompts.map(p => `<label class="field"><span>${esc(p.label)}${p.req ? ' <b class="req">*</b>' : ''}</span><input class="input" data-p="${p.key}" placeholder="${esc(p.ph)}" value="${esc(st.vals[p.key] || '')}" ${p.type === 'number' ? 'inputmode="decimal"' : ''}></label>`).join('')}</div><div class="prompt-hint">${ic('flow', 'i-xs')}Pflichtfelder je Warengruppe – im Kassenablauf konfiguriert, ohne Code.</div></div>` : ''}
         <div class="vp-foot">
           <div class="qty" style="height:48px;border-radius:12px"><button data-q="-1" style="width:44px;height:46px" aria-label="Menge verringern">${ic('minus', 'i-sm')}</button><span style="min-width:28px;font-size:15px">${st.qty}</span><button data-q="1" style="width:44px;height:46px" aria-label="Menge erhöhen">${ic('plus', 'i-sm')}</button></div>
@@ -2819,8 +2820,8 @@ function openVariant(a, fromEl, preset) {
   };
   const add = () => {
     const v = variant(a, st.c, st.s);
-    if (v.q <= 0 && !v.other) { closeLayer(el); toast('Nicht lagernd', {t2: 'Umlagerungen zwischen Filialen folgen mit dem Filial-Server · Bestand unter „Bestand“ buchen', type: 'warn', icon: 'boxes'}); return; }
-    if (v.q <= 0) { const best = OTHER_STORES.map((s, i) => [s, v.other[i]]).sort((x, y) => y[1] - x[1])[0]; closeLayer(el); toast('Umlagerung angefragt', {t2: `${a.name} · ${COLORS[st.c][0]} ${st.s} · ${best[0].name} → Innsbruck`, type: 'pos', icon: 'swap'}); Hooks.emit('inventory.transfer.requested', {sku: a.id, von: best[0].id, nach: 'INN', menge: 1}); return; }
+    if (v.q <= 0 && !v.other) { closeLayer(el); toast('Nicht lagernd', {t2: DESKTOP ? 'Bestand unter „Bestand“ oder „Wareneingang“ buchen' : 'Umlagerungen zwischen Filialen folgen mit dem Filial-Server · Bestand unter „Bestand“ buchen', type: 'warn', icon: 'boxes'}); return; }
+    if (v.q <= 0) { const best = OTHER_STORES.map((s, i) => [s, v.other[i]]).sort((x, y) => y[1] - x[1])[0]; closeLayer(el); if (DESKTOP) { if (best && best[1] > 0) requestTransfer(a, v, best[0].id); else toast('Nirgends lagernd', {t2: 'Auch in den anderen Filialen kein Bestand', type: 'warn', icon: 'boxes'}); return; } toast('Umlagerung angefragt', {t2: `${a.name} · ${COLORS[st.c][0]} ${st.s} · ${best[0].name} → Innsbruck`, type: 'pos', icon: 'swap'}); Hooks.emit('inventory.transfer.requested', {sku: a.id, von: best[0].id, nach: 'INN', menge: 1}); return; }
     if (prompts) {
       $$('[data-p]', box).forEach(i => { st.vals[i.dataset.p] = i.value.trim(); });
       const miss = prompts.find(p => p.req && !st.vals[p.key]);
@@ -2985,7 +2986,7 @@ function openFlow() {
     ['receipt', 'Beleg', 'Druck, QR oder E-Mail · Vorlage wählbar', null],
   ];
   const el = openLayer(`<div class="modal" style="width:min(620px,100%)" role="dialog" aria-modal="true" aria-label="Kassenablauf">
-    <div class="m-head"><div class="m-ic">${ic('flow')}</div><div><h2>Kassenablauf · Standard</h2><p>Gilt für Kasse INN-K01 · Version 14 · zuletzt geändert von David Huber</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-head"><div class="m-ic">${ic('flow')}</div><div><h2>Kassenablauf · Standard</h2><p>Gilt für Kasse ${esc(CFG['kasse.id'] || 'INN-K01')} · Version 14 · zuletzt geändert von David Huber</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
     <div class="m-body" style="display:grid;gap:8px">${steps.map(([i, t, d, k], n) => `<div class="ops-row" style="padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)"><span class="reg-ic" style="width:30px;height:30px">${ic(i, 'i-sm')}</span><div class="k"><b>${n + 1} · ${t}</b>${d}</div>${k === 'lock' ? `<span class="pill">${ic('lock')}fix</span>` : k ? `<button class="switch" role="switch" data-flow="${k}" aria-checked="${f[k]}" aria-label="${t}"></button>` : '<span class="pill plain">Standard</span>'}</div>`).join('')}
       <div class="prompt-hint" style="margin-top:6px">${ic('braces', 'i-xs')}Jeder Schritt feuert Hooks – eigene Skripte, Regeln und Webhooks können eingreifen.</div></div>
     <div class="m-foot"><button class="btn btn-ghost" id="flowJson">${ic('code', 'i-sm')}Als JSON</button><span class="sp"></span><button class="btn btn-primary" data-close>Fertig</button></div></div>`);
@@ -3065,14 +3066,14 @@ function renderPayLeft() {
     <div class="pay-due ${rem === 0 ? 'zero' : ''}">${eur(rem)}</div>
     <div class="pay-prog"><i style="width:${Math.min(100, p / PAY.total * 100)}%"></i></div>
     <div class="pay-lines" aria-label="Positionen">${POS.cart.map(l => { const c = l.c ? COLORS[l.c][1] : 'var(--text-3)'; const g = r2(l.unit * l.qty), d = l.disc ? r2(g * l.disc.pct / 100) : 0; return `<div class="wl-row"><span class="thumb" style="--c:${c}">${l.service ? ic(l.icon, 'i-sm') : glyph(l.art.g, c)}</span><div class="wl-main"><div class="wl-t">${l.qty > 1 ? l.qty + ' × ' : ''}${esc(l.name)}</div><div class="wl-s">${l.service ? esc(l.meta || '') : COLORS[l.c][0] + (l.s !== 'Einheitsgröße' ? ' · ' + esc(l.s) : '')}</div></div><div class="wl-v">${eur(g - d)}</div></div>`; }).join('')}</div>
-    <div class="pay-parts">${PAY.parts.map(x => `<div class="ppart"><span class="reg-ic">${ic(METHODS.find(m => m.id === x.m).icon, 'i-sm')}</span><span><span style="display:block;font-weight:550">${esc(x.label)}</span><span class="muted" style="font-size:11.5px">${esc(x.ref)}</span></span><b>${eur(x.amount)}</b></div>`).join('')}</div>
+    <div class="pay-parts">${PAY.parts.map(x => `<div class="ppart"><span class="reg-ic">${ic(METHODS.find(m => m.id === x.m)?.icon || 'card', 'i-sm')}</span><span><span style="display:block;font-weight:550">${esc(x.label)}</span><span class="muted" style="font-size:11.5px">${esc(x.ref)}</span></span><b>${eur(x.amount)}</b></div>`).join('')}</div>
     <div class="pay-sum"><div class="trow"><span>${cartCount()} Artikel${POS.customer ? ` · ${esc(POS.customer.name)}` : ''}</span><b>${eur(PAY.total)}</b></div>
       ${PAY.t.disc > 0 ? `<div class="trow disc"><span>darin Rabatt</span><b>− ${eur(PAY.t.disc)}</b></div>` : ''}
       <div class="trow"><span>Bezahlt</span><b>${eur(p)}</b></div>
-      ${!S.online ? `<div class="trow" style="color:var(--warn)"><span style="display:flex;gap:6px;align-items:center">${ic('wifi-off', 'i-xs')}Offline – Signatur lokal, Sync folgt</span></div>` : `<div class="trow"><span style="display:flex;gap:6px;align-items:center">${ic('shield', 'i-xs')}RKSV · Signatureinheit bereit</span></div>`}</div>`;
+      ${!S.online ? `<div class="trow" style="color:var(--warn)"><span style="display:flex;gap:6px;align-items:center">${ic('wifi-off', 'i-xs')}Offline – Signatur lokal, Sync folgt</span></div>` : `<div class="trow"><span style="display:flex;gap:6px;align-items:center">${ic('shield', 'i-xs')}${!DESKTOP ? 'RKSV · Signatureinheit bereit' : S.rksv?.active ? `RKSV-Testmodus · ${esc(S.rksv.kassen_id || '')}` : 'Beleg wird gespeichert · RKSV nicht in Betrieb'}</span></div>`}</div>`;
 }
 function renderMethods() {
-  $('#methods').innerHTML = METHODS.map((m, i) => { const dis = m.online && !S.online; return `<button class="mbtn" data-m="${m.id}" aria-pressed="${PAY.method === m.id}" ${dis ? 'disabled' : ''}>${ic(m.icon)}<span><span class="ml" style="display:block">${m.label}</span><span class="ms" style="display:block">${dis ? 'offline nicht verfügbar' : m.sub}</span></span><span class="kbd">${i + 1}</span></button>`; }).join('');
+  $('#methods').innerHTML = METHODS.filter(m => !m.hidden).map((m, i) => { const dis = m.online && !S.online; return `<button class="mbtn" data-m="${m.id}" aria-pressed="${PAY.method === m.id}" ${dis ? 'disabled' : ''}>${ic(m.icon)}<span><span class="ml" style="display:block">${m.label}</span><span class="ms" style="display:block">${dis ? 'offline nicht verfügbar' : m.sub}</span></span><span class="kbd">${i + 1}</span></button>`; }).join('');
 }
 function nextNotes(v) { const c = [5, 10, 20, 50, 100].map(s => Math.ceil((v + .001) / s) * s); return [...new Set(c)].filter(x => x > v).slice(0, 3); }
 function renderMethodPanel() {
@@ -3169,7 +3170,7 @@ function payKeys(e) {
   if (!PAY || PAY.done) return;
   const inInput = isTyping(e.target);
   if (e.key === 'Enter' && !e.target.closest('[data-close]')) { e.preventDefault(); return payGo(); }
-  if (!inInput && /^[1-8]$/.test(e.key) && !PAY.busy) { const m = METHODS[+e.key - 1]; if (m.online && !S.online) return; PAY.vcheck = null; PAY.method = m.id; renderMethods(); renderMethodPanel(); focusPay(); e.preventDefault(); }
+  if (!inInput && /^[1-8]$/.test(e.key) && !PAY.busy) { const m = METHODS.filter(x => !x.hidden)[+e.key - 1]; if (!m) return; if (m.online && !S.online) return; PAY.vcheck = null; PAY.method = m.id; renderMethods(); renderMethodPanel(); focusPay(); e.preventDefault(); }
   if (inInput && e.target.id === 'payAmtIn') setTimeout(updateChange, 0);
 }
 async function finalizePayment() {
@@ -3201,7 +3202,7 @@ async function finalizePayment() {
   POS.last = {no: rec.no, total: t.total}; POS.lastRec = rec;
   if (DESKTOP && CFG['drucker.auto']) printReceipt(rec, {quiet: true});
   if (rec.parts.some(p => p.m === 'bar')) openDrawer('Barzahlung', true);
-  Hooks.emit('rksv.receipt.signed', {beleg: rec.no, kassenId: 'INN-K01', betragSatzNormal: t.vat.find(v => v.rate === 20)?.gross || 0, betragSatzNull: t.zero, signatur: 'ES256 · …' + rec.sig.slice(-8), offline: rec.offline});
+  Hooks.emit('rksv.receipt.signed', {beleg: rec.no, kassenId: S.rksv?.kassen_id || CFG['kasse.id'] || 'INN-K01', betragSatzNormal: t.vat.find(v => v.rate === 20)?.gross || 0, betragSatzNull: t.zero, signatur: 'ES256 · …' + rec.sig.slice(-8), offline: rec.offline});
   if (!S.online) { S.queue++; renderStatus(); updateQueueInfo(); }
   Dash.session.rev += t.total; Dash.session.bons++;
   Hooks.emit('pos.sale.completed', {beleg: rec.no, summe: t.total, positionen: rec.lines.length, zahlungen: rec.parts.map(p => p.m), kunde: rec.customer?.id || null});
@@ -3216,7 +3217,7 @@ function showDone(rec) {
     <div class="done-title">Bezahlt · ${eur(rec.t.total)}</div>
     <div class="done-sub">Bon ${rec.no} · ${rec.lines.reduce((s, l) => s + l.qty, 0)} Artikel · ${DESKTOP ? (rec.rksv ? 'RKSV-signiert (Testmodus)' : 'gespeichert') : 'RKSV-signiert'} ${clock(true)}${rec.offline ? ' · offline erfasst, Sync folgt' : ''}</div>
     ${rec.lines.some(l => l.codes?.length) ? `<div class="note" style="margin-top:14px">${ic('gift')}<span>Gutschein-Code: <b style="color:var(--text)" class="mono">${esc(rec.lines.flatMap(l => l.codes || []).join(', '))}</b></span></div>` : ''}
-    <div class="pay-parts" style="margin-top:18px">${rec.parts.map(x => `<div class="ppart"><span class="reg-ic">${ic(METHODS.find(m => m.id === x.m).icon, 'i-sm')}</span><span><span style="display:block;font-weight:550">${esc(x.label)}</span><span class="muted" style="font-size:11.5px">${esc(x.ref)}</span></span><b>${eur(x.given || x.amount)}</b></div>`).join('')}</div>
+    <div class="pay-parts" style="margin-top:18px">${rec.parts.map(x => `<div class="ppart"><span class="reg-ic">${ic(METHODS.find(m => m.id === x.m)?.icon || 'card', 'i-sm')}</span><span><span style="display:block;font-weight:550">${esc(x.label)}</span><span class="muted" style="font-size:11.5px">${esc(x.ref)}</span></span><b>${eur(x.given || x.amount)}</b></div>`).join('')}</div>
     ${rec.change > 0 ? `<div class="change-big"><div class="l">Rückgeld</div><div class="v">${eur(rec.change)}</div></div>` : ''}
     ${rec.customer ? `<div class="note" style="margin-top:16px">${ic('star')}<span><b style="color:var(--text)">+${num(rec.pointsEarned ?? rec.t.points)} Gipfel-Punkte</b> für ${esc(rec.customer.name)} · neuer Stand ${num(rec.pointsAfter ?? rec.customer.points)}</span></div>` : ''}
     <div class="eyebrow" style="margin-top:26px">Beleg übergeben</div>
@@ -3622,7 +3623,7 @@ function recData(rec) {
   return {date: rec.date.toISOString(), cashier: rec.cashier, offline: rec.offline, sig: rec.sig, change: rec.change, billDisc: rec.billDisc || null, t: rec.t,
     parts: rec.parts.map(p => ({m: p.m, label: p.label, amount: p.amount, ref: p.ref, given: p.given || null, change: p.change || 0, code: p.code || null})),
     customer: rec.customer ? {id: rec.customer.id, name: rec.customer.name, points: rec.customer.points, email: rec.customer.email} : null,
-    lines: rec.lines.map(l => ({name: l.name, sku: l.art?.id || null, glyph: l.art?.g || null, c: l.c || null, s: l.s || null, qty: l.qty, unit: l.unit, was: l.was || null, vat: l.vat, disc: l.disc || null, service: !!l.service, voucher: !!l.voucher, icon: l.icon || null, meta: l.meta || null, vals: l.vals || null}))};
+    lines: rec.lines.map(l => ({name: l.name, sku: l.art?.id || null, ean: l.art && l.art.variants ? variant(l.art, l.c, l.s)?.ean || null : null, glyph: l.art?.g || null, c: l.c || null, s: l.s || null, qty: l.qty, unit: l.unit, was: l.was || null, vat: l.vat, disc: l.disc || null, service: !!l.service, voucher: !!l.voucher, icon: l.icon || null, meta: l.meta || null, vals: l.vals || null}))};
 }
 const recFromData = (no, d) => ({...d, no, date: new Date(d.date), lines: d.lines.map(l => ({...l, art: l.sku ? (artById(l.sku) || {g: l.glyph, id: l.sku}) : null}))});
 async function commitSale(rec) {
@@ -4558,7 +4559,8 @@ function realRegistersHTML() {
   const d = ST.cache.heute;
   return `<div style="flex:1;min-height:0;overflow:auto">
     <div class="reg"><span class="reg-ic">${ic('register', 'i-sm')}</span><div class="wl-main"><div class="wl-t">${esc(CFG['kasse.name'])} · ${esc(CFG['kasse.id'])}</div><div class="wl-s">${esc(S.user.name)} · heute ${d ? num(d.bons) : '…'} Bons · ${d ? eur0(d.rev) : '…'}</div></div>${statusPill(['Diese Kasse', 'pos'])}</div>
-    <div class="reg" style="opacity:.6"><span class="reg-ic">${ic('server', 'i-sm')}</span><div class="wl-main"><div class="wl-t">Weitere Kassen</div><div class="wl-s">erscheinen mit dem Filial-Server</div></div>${statusPill(['Geplant', ''])}</div>
+    ${typeof vbOn === 'function' && vbOn() ? (VB.info?.stores || []).filter(x => x.id !== vbOwn()).map(x => { const ago = x.last_sync ? (Date.now() - new Date(x.last_sync)) / 60000 : Infinity; return `<div class="reg"><span class="reg-ic">${ic('store', 'i-sm')}</span><div class="wl-main"><div class="wl-t">${esc(x.name)} · ${esc(x.id)}</div><div class="wl-s">${x.last_sync ? `heute ${num(x.sales_today || 0)} Bons · ${eur0((x.revenue_today || 0) / 100)} · Abgleich ${esc(fmtTs(x.last_sync))}` : 'noch nicht verbunden'}</div></div>${statusPill(x.active === false ? ['inaktiv', ''] : ago < 3 ? ['online', 'pos'] : x.last_sync ? ['offline', 'warn'] : ['wartet', ''])}</div>`; }).join('') || '<div class="muted" style="font-size:12.5px;padding:8px 2px">Noch keine Filiale angelegt – unter Filialen.</div>'
+      : `<div class="reg" style="opacity:.75"><span class="reg-ic">${ic('server', 'i-sm')}</span><div class="wl-main"><div class="wl-t">Weitere Kassen</div><div class="wl-s">Einzelplatz · Filialverbund unter Einstellungen</div></div><button class="btn btn-ghost btn-sm" data-goto="einstellungen">Einrichten</button></div>`}
   </div><div class="note" style="margin-top:10px">${ic('shield')}<span>${S.rksv?.active ? `RKSV-Testmodus aktiv · Kassen-ID ${esc(S.rksv.kassen_id)} · Software-Schlüssel (nicht registrierbar)` : 'RKSV nicht in Betrieb – Einstellungen → RKSV → Testbetrieb starten'}</span>${S.rksv?.active ? `<button class="btn btn-secondary btn-sm" data-act="dep" style="margin-left:auto;flex:none">DEP-Export</button>` : ''}</div>`;
 }
 function realSystemHTML() {
@@ -4566,7 +4568,7 @@ function realSystemHTML() {
   return `<div style="flex:1;min-height:0;overflow:auto">
     <div class="ops-row">${ic('database', 'i-sm')}<div class="k"><b>${esc(backupLabel())}</b>Datenbank ${i.db_bytes ? fmtBytes(i.db_bytes) : ''} · Prüfsumme & Integrität bei jeder Sicherung</div><button class="btn btn-secondary btn-sm" data-act="backup">Jetzt sichern</button></div>
     ${updWidgetRow()}
-    <div class="ops-row">${ic('server', 'i-sm')}<div class="k"><b>Einzelplatz</b>${esc(i.data_dir || 'lokales Datenverzeichnis')}</div></div>
+    <div class="ops-row">${ic('server', 'i-sm')}<div class="k"><b>${typeof vbStatus === 'function' && vbStatus() ? esc(vbStatus().text) : 'Einzelplatz'}</b>${esc(i.data_dir || 'lokales Datenverzeichnis')}</div></div>
     <div class="ops-row" style="opacity:.6">${ic('sparkle', 'i-sm')}<div class="k"><b>KI lokal</b>Vorschau – Modell wird in einem späteren Paket angebunden</div></div>
   </div><div class="wl-foot" style="margin-top:6px">${ic('info', 'i-xs')} Backups liegen in Ihrer Verantwortung – Kontor stellt die Werkzeuge.</div>`;
 }
@@ -4624,7 +4626,7 @@ function lock() {
       <div class="pin-dots" id="lockDots" style="margin:14px 0 ${msg ? 6 : 16}px"><i></i><i></i><i></i><i></i></div>
       ${msg ? `<div style="text-align:center;font-size:12.5px;color:var(--neg);margin-bottom:10px">${esc(msg)}</div>` : ''}
       ${pinPad()}
-      ${DESKTOP ? '<div class="or" style="margin-top:14px">Windows Hello, Sicherheitsschlüssel und SSO folgen</div>' : `<div class="or">oder anmelden mit</div>
+      ${DESKTOP ? altAuthHTML(user) : `<div class="or">oder anmelden mit</div>
       <div class="auth-alt"><button class="btn btn-secondary" data-m="hello">${ic('faceid')}Windows Hello</button><button class="btn btn-secondary" data-m="fido">${ic('usbkey')}Sicherheitsschlüssel</button><button class="btn btn-secondary" data-m="nfc">${ic('idcard')}Mitarbeiterkarte</button><button class="btn btn-secondary" data-m="sso">${ic('building')}Entra ID · SSO</button></div>`}`;
   };
   const dots = () => $$('#lockDots i', el).forEach((d, i) => d.classList.toggle('on', i < pin.length));
@@ -4655,6 +4657,7 @@ function lock() {
     const u = e.target.closest('[data-u]'); if (u && !busy) { user = STAFF.find(s => s.id === u.dataset.u); pin = ''; $$('.lock-user', el).forEach(b => b.setAttribute('aria-pressed', b === u)); renderCard(); return; }
     const k = e.target.closest('[data-k]'); if (k) return key(k.dataset.k);
     const m = e.target.closest('[data-m]'); if (!m) return;
+    if (DESKTOP) { if (busy) return; return altAuth(m.dataset.m, user, card, (u, method) => { user = u; unlock(method); }, () => renderCard()); }
     ({hello: () => waitFor('faceid', 'Windows Hello · Gesicht wird erkannt …', 'Windows Hello'), fido: () => waitFor('usbkey', 'Sicherheitsschlüssel einstecken und berühren …', 'FIDO2'),
       nfc: () => waitFor('idcard', 'Mitarbeiterkarte an den Leser halten …', 'NFC-Karte'), sso: () => waitFor('building', 'Weiterleitung an Ihren Identitätsanbieter (OIDC) …', 'Entra ID')})[m.dataset.m]();
   });
@@ -7767,6 +7770,835 @@ function bindImportDisplay() {
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   37 · FILIALVERBUND — Zentrale und Filialen. Jede Kasse arbeitet mit
+   eigener Datenbank (offline-fähig), der Abgleich läuft im Hintergrund.
+   ════════════════════════════════════════════════════════════════════ */
+const VB = {info: null, stock: null, transfers: [], sug: [], tab: 'uebersicht', q: ''};
+const vbRole = () => VB.info?.rolle || 'einzel';
+const vbOn = () => DESKTOP && vbRole() !== 'einzel';
+const vbOwn = () => VB.info?.filiale || 'ZENTRALE';
+const storeName = id => (VB.info?.stores || []).find(s => s.id === id)?.name || id;
+const TR_STATE = {angefordert: ['angefordert', 'warn'], versendet: ['unterwegs', 'info'], empfangen: ['eingegangen', 'pos'], storniert: ['storniert', '']};
+
+async function loadVerbund() {
+  if (!DESKTOP) return;
+  try { VB.info = await invoke('verbund_info'); } catch (e) { console.error(e); return; }
+  // Filialen im Kopf, in der Filialauswahl und an der Kasse (Verfügbarkeit in anderen Filialen)
+  const own = {id: vbOwn(), name: VB.info.name || CFG['firma.name'], addr: CFG['firma.adresse'] || '', f: 1};
+  STORES.length = 0; OTHER_STORES.length = 0;
+  STORES.push(own);
+  if (vbOn()) (VB.info.stores || []).filter(s => s.id !== own.id).forEach(s => { const x = {id: s.id, name: s.name, addr: s.addr || '', f: 1}; STORES.push(x); OTHER_STORES.push(x); });
+  S.store = own.id;
+  if (vbOn()) { try { VB.stock = await invoke('verbund_stock'); } catch { VB.stock = null; } }
+  ART.forEach(a => a.variants.forEach(v => { v.other = vbOn() && OTHER_STORES.length ? OTHER_STORES.map(s => VB.stock?.[s.id]?.[v.ean] ?? 0) : null; }));
+  if ($('#storeName')) renderStore();
+  navBadge('umlagerungen', 0);
+  renderStatus();
+  if (vbOn()) { try { VB.transfers = await invoke('verbund_transfers'); navBadge('umlagerungen', VB.transfers.filter(t => (t.status === 'angefordert' && t.from === vbOwn()) || (t.status === 'versendet' && t.to === vbOwn())).length); } catch { /* */ } }
+}
+/** Statusleiste: Rolle und letzter Abgleich (null = Einzelplatz) */
+function vbStatus() {
+  if (!vbOn()) return null;
+  const i = VB.info, st = i.status || {};
+  if (vbRole() === 'zentrale') { const n = (i.stores || []).filter(s => s.id !== vbOwn() && s.active !== false).length; return {ok: true, text: `Zentrale ${vbOwn()} · ${n} Filiale${n === 1 ? '' : 'n'}`, tip: 'Klicken: Filialen öffnen'}; }
+  const t = st.zeit ? new Date(st.zeit).toLocaleTimeString('de-AT', {hour: '2-digit', minute: '2-digit'}) : '';
+  return st.ok === false ? {ok: false, text: `Filiale ${vbOwn()} · Zentrale nicht erreichbar · lokaler Betrieb`, tip: String(st.fehler || 'Abgleich wird automatisch wiederholt')}
+    : {ok: true, text: `Filiale ${vbOwn()} · ${t ? 'abgeglichen ' + t : 'verbunden'}`, tip: 'Klicken: Filialen öffnen'};
+}
+// Verfügbarkeit nach jedem Katalog-Neuladen wieder ergänzen
+{ const _rc = replaceCatalog; replaceCatalog = function (list) { _rc(list); if (vbOn()) ART.forEach(a => a.variants.forEach(v => { v.other = OTHER_STORES.length ? OTHER_STORES.map(s => VB.stock?.[s.id]?.[v.ean] ?? 0) : null; })); }; }
+
+/** Kasse: Artikel nicht lagernd → Umlagerung aus der Filiale mit dem meisten Bestand anfordern */
+async function requestTransfer(a, v, from) {
+  try {
+    const t = await invoke('verbund_transfer_create', {from, to: vbOwn(), lines: [{ean: v.ean, qty: 1, name: `${a.name} · ${colorName(v.c)} · ${v.s}`}], note: 'von der Kasse angefordert', user: S.user.name});
+    toast('Umlagerung angefordert', {t2: `${t.no} · ${a.name} aus ${storeName(from)}`, type: 'pos', icon: 'swap'});
+    Hooks.emit('verbund.transfer.requested', {nr: t.no, von: from, sku: a.id});
+    loadVerbund();
+  } catch (e) { toast('Umlagerung nicht möglich', {t2: String(e), type: 'warn', dur: 7000}); }
+}
+
+/* ── Einstellungen → Filialverbund ── */
+SET_SECTIONS.splice(SET_SECTIONS.findIndex(s => s[0] === 'handy'), 0, ['verbund', 'Filialverbund', 'building']);
+{
+  const _rs = renderSettings;
+  renderSettings = function () {
+    _rs();
+    const a = $('#sec-handy'); if (!a) return;
+    a.insertAdjacentHTML('beforebegin', `<section class="set-sec" id="sec-verbund"><h2>Filialverbund</h2><p>Mehrere Filialen bzw. Kassen arbeiten zusammen: Eine Installation ist die <b>Zentrale</b> (Artikel, Preise, Aktionen, Kunden), die anderen sind <b>Filialen</b>. Jede Kasse verkauft mit eigener Datenbank weiter – auch ohne Verbindung – und gleicht sich alle 30 Sekunden mit der Zentrale ab.</p><div class="card" id="vbBox"></div></section>`);
+    renderVbBox();
+  };
+}
+async function renderVbBox() {
+  const box = $('#vbBox'); if (!box) return;
+  if (!DESKTOP) { box.innerHTML = '<div class="empty" style="padding:24px"><p>Nur in der Desktop-App.</p></div>'; return; }
+  await loadVerbund();
+  const i = VB.info || {}, r = i.rolle || 'einzel', st = i.status || {};
+  box.innerHTML = `<div class="set-row"><div><div class="set-l">Rolle dieser Installation</div><div class="set-h">${r === 'einzel' ? 'Einzelplatz – keine Verbindung zu anderen Kassen' : r === 'zentrale' ? `Zentrale · Filialkennung ${esc(i.filiale)}` : `Filiale ${esc(i.filiale)} · verbunden mit ${esc(i.url || '')}`}</div></div><div class="set-c"><div class="seg" id="vbSeg">${[['einzel', 'Einzelplatz'], ['zentrale', 'Zentrale'], ['filiale', 'Filiale']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${r === k}">${l}</button>`).join('')}</div></div></div>
+    ${r === 'filiale' ? `<div class="set-row" style="border-bottom:0"><div><div class="set-l">Abgleich ${st.ok ? '<span class="pill pos" style="height:20px">verbunden</span>' : st.fehler ? '<span class="pill neg" style="height:20px">Fehler</span>' : '<span class="pill" style="height:20px">wartet</span>'}</div><div class="set-h">${st.zeit ? `Zuletzt ${esc(fmtTs(st.zeit))} · gesendet ${num(st.gesendet?.belege || 0)} Belege, ${num(st.gesendet?.bestaende || 0)} Bestände · geholt ${num(st.geholt?.artikel || 0)} Artikel, ${num(st.geholt?.kunden || 0)} Kunden` : 'Noch kein Abgleich'}${st.fehler && !st.ok ? `<br><span style="color:var(--neg)">${esc(st.fehler)}</span>` : ''}</div></div><div class="set-c" style="gap:6px"><button class="btn btn-secondary btn-sm" data-vb="test">${ic('wifi', 'i-sm')}Verbindung testen</button><button class="btn btn-primary btn-sm" data-vb="sync">${ic('sync', 'i-sm')}Jetzt abgleichen</button></div></div>` : ''}
+    ${r === 'zentrale' ? `<div class="set-row" style="border-bottom:0"><div><div class="set-l">Filialen</div><div class="set-h">${num((i.stores || []).length - 1)} Filialen angebunden · Verwaltung unter Filialen</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-goto="filialen">${ic('building', 'i-sm')}Filialen</button></div></div>` : ''}`;
+  initSeg($('#vbSeg', box), b => openVbSetup(b.dataset.v));
+}
+function openVbSetup(rolle) {
+  const i = VB.info || {};
+  const el = openLayer(`<div class="modal" style="width:min(560px,100%)" role="dialog" aria-modal="true" aria-label="Filialverbund"><div class="m-head"><div class="m-ic">${ic('building')}</div><div><h2>${rolle === 'zentrale' ? 'Als Zentrale einrichten' : rolle === 'filiale' ? 'Mit der Zentrale verbinden' : 'Einzelplatz'}</h2><p>${rolle === 'zentrale' ? 'Diese Installation führt Artikel, Preise und Kunden für alle Filialen' : rolle === 'filiale' ? 'Verbindungscode aus der Zentrale (Filialen → Filiale anlegen) einfügen' : 'Abgleich mit anderen Kassen beenden – lokale Daten bleiben erhalten'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body" style="display:grid;gap:12px">${rolle === 'einzel' ? '' : `<div class="ed-grid"><label class="field"><span>Filialkennung</span><input class="input" id="vbFil" value="${esc(i.rolle === rolle ? i.filiale : (rolle === 'zentrale' ? 'ZEN' : ''))}" placeholder="z. B. INN" style="text-transform:uppercase"></label><label class="field"><span>Name</span><input class="input" id="vbName" value="${esc(i.name || CFG['firma.name'])}"></label></div>`}
+      ${rolle === 'filiale' ? `<label class="field"><span>Verbindungscode</span><textarea class="input mono" id="vbCode" rows="3" style="height:auto;padding-top:9px;font-size:12px" placeholder="eyJ1cmwiOi…"></textarea></label><div class="prompt-hint blk">${ic('info', 'i-xs')}Die Filiale übernimmt danach Artikel, Preise, Aktionen und Kunden der Zentrale. Belege dieser Kasse bleiben hier und werden zusätzlich an die Zentrale gemeldet.</div>` : ''}
+      ${rolle === 'zentrale' ? `<div class="prompt-hint blk">${ic('info', 'i-xs')}Der eingebaute Server wird im Firmennetz erreichbar (Port ${esc(CFG['api.port'] || 8787)}). Für Filialen an anderen Standorten: VPN oder Portfreigabe einrichten. Jede Filiale bekommt einen eigenen Schlüssel.</div>` : ''}</div>
+    <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="vbGo">${ic('check', 'i-sm')}Übernehmen</button></div></div>`, {focus: '#vbFil', onClose: () => renderVbBox()});
+  $('#vbGo', el).onclick = async () => {
+    let by; try { by = (await stepUp({title: 'Filialverbund ändern', text: 'Rolle dieser Installation festlegen', admin: true})).by; } catch { return; }
+    try {
+      VB.info = await invoke('verbund_setup', {rolle, filiale: $('#vbFil', el)?.value.trim() || '', name: $('#vbName', el)?.value.trim() || '', code: $('#vbCode', el)?.value.trim() || null, by: by.name});
+      closeLayer(el);
+      if (rolle === 'filiale') { toast('Mit der Zentrale verbunden', {t2: 'Erster Abgleich läuft …', icon: 'sync', type: 'pos'}); try { const r = await invoke('verbund_sync'); await afterSync(r); } catch (e) { toast('Abgleich fehlgeschlagen', {t2: String(e), type: 'warn', dur: 8000}); } }
+      else toast(rolle === 'zentrale' ? 'Zentrale eingerichtet' : 'Einzelplatz', {t2: rolle === 'zentrale' ? 'Jetzt unter Filialen die Filialen anlegen' : '', type: 'pos', icon: 'building'});
+      Hooks.emit('config.verbund', {rolle});
+      // Kassen-ID der Vorlage durch die Filialkennung ersetzen (Belegnummern/RKSV je Standort eindeutig)
+      if (rolle !== 'einzel' && VB.info?.filiale && (!CFG['kasse.id'] || CFG['kasse.id'] === 'INN-K01')) await saveSettings({'kasse.id': VB.info.filiale + '-K01'}, true);
+      await loadVerbund(); renderVbBox(); renderNavVerbund();
+    } catch (e) { toast('Nicht möglich', {t2: String(e), type: 'warn', dur: 8000}); }
+  };
+}
+async function afterSync(r) {
+  try { replaceCatalog(await invoke('catalog_list')); await loadCustomers(); await loadPromos(); await loadSuppliers(); } catch { /* */ }
+  await loadVerbund();
+  toast('Abgleich abgeschlossen', {t2: `${num(r.gesendet.belege)} Belege gesendet · ${num(r.geholt.artikel)} Artikel, ${num(r.geholt.kunden)} Kunden geholt`, type: 'pos', icon: 'sync'});
+}
+
+/* ── Seiten: Filialen, Umlagerungen ── */
+function renderNavVerbund() {
+  for (let i = NAV.length - 1; i >= 0; i--) if (NAV[i].vb) NAV.splice(i, 1);
+  const at = NAV.findIndex(n => n.g === 'Auswertung');
+  NAV.splice(at, 0, {g: 'Filialen', vb: true}, {id: 'filialen', label: vbRole() === 'filiale' ? 'Filialverbund' : 'Filialen', icon: 'building', vb: true}, {id: 'umlagerungen', label: 'Umlagerungen', icon: 'swap', vb: true});
+  if ($('#nav')) { renderNav(); permNav(); $$('.nav-item').forEach(n => n.dataset.view === S.view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current')); loadVerbund(); }
+}
+registerPage('filialen', {title: 'Filialen', sub: () => vbRole() === 'einzel' ? 'Einzelplatz' : vbRole() === 'zentrale' ? 'Zentrale' : `Filiale ${vbOwn()}`, render: renderFilialen});
+registerPage('umlagerungen', {title: 'Umlagerungen', sub: () => 'Ware zwischen Filialen verschieben', render: renderUmlagerungen});
+async function renderFilialen() {
+  const v = $('#view-filialen');
+  if (!DESKTOP) { v.innerHTML = desktopEmpty('building', 'Filialverbund'); return; }
+  await loadVerbund();
+  if (!vbOn()) { v.innerHTML = `<div class="cv">${pageHead('Filialen', 'Mehrere Standorte und Kassen verbinden')}<div class="card"><div class="empty" style="padding:56px 20px"><div class="empty-icon">${ic('building')}</div><h3>Diese Kasse arbeitet als Einzelplatz</h3><p>Für mehrere Filialen oder Kassen: eine Installation als Zentrale einrichten, die anderen als Filiale verbinden. Jede Kasse bleibt offline-fähig.</p><button class="btn btn-primary" data-vbset="1">${ic('sliders', 'i-sm')}Filialverbund einrichten</button></div></div></div>`; return; }
+  const z = vbRole() === 'zentrale', list = VB.info.stores || [];
+  const online = s => s.id === vbOwn() || (s.last_sync && Date.now() - new Date(s.last_sync) < 3 * 6e4);
+  if (z) { try { VB.sug = await invoke('verbund_suggestions'); } catch { VB.sug = []; } }
+  v.innerHTML = `<div class="cv">${pageHead(z ? 'Filialen' : 'Filialverbund', z ? 'Zentrale · Artikel, Preise, Aktionen und Kunden werden an alle Filialen verteilt' : `Filiale ${esc(vbOwn())} · Stammdaten kommen aus der Zentrale`, z ? `<button class="btn btn-primary" data-vb="neu">${ic('plus', 'i-sm')}Filiale anlegen</button>` : `<button class="btn btn-secondary" data-vb="sync">${ic('sync', 'i-sm')}Jetzt abgleichen</button>`)}
+    ${kpiCards([[num(list.length), 'Standorte'], [num(list.filter(online).length), 'online'], [eur(list.reduce((a, s) => a + (s.revenue_today || 0), 0) / 100), 'Umsatz heute (alle)'], [eur0(list.reduce((a, s) => a + (s.revenue_month || 0), 0) / 100), 'Umsatz Monat (alle)']])}
+    <div class="seg" id="vbTab" style="margin-bottom:12px">${[['uebersicht', 'Übersicht'], ['bestand', 'Bestand je Filiale'], ...(z ? [['vorschlag', `Umlagerungsvorschläge${VB.sug.length ? ` (${VB.sug.length})` : ''}`]] : [])].map(([k, l]) => `<button data-v="${k}" aria-pressed="${VB.tab === k}">${l}</button>`).join('')}</div>
+    <div id="vbBody"></div></div>`;
+  initSeg($('#vbTab', v), b => { VB.tab = b.dataset.v; renderVbBody(); });
+  renderVbBody();
+}
+function renderVbBody() {
+  const box = $('#vbBody'); if (!box) return;
+  const list = VB.info.stores || [], z = vbRole() === 'zentrale';
+  if (VB.tab === 'uebersicht') {
+    const max = Math.max(1, ...list.map(s => s.revenue_today || 0));
+    box.innerHTML = `<div class="card"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Filiale</th><th>Status</th><th class="r">Bons heute</th><th>Umsatz heute</th><th class="r" style="padding-right:16px">Umsatz Monat</th></tr></thead><tbody>${list.map(s => { const on = s.id === vbOwn() || (s.last_sync && Date.now() - new Date(s.last_sync) < 3 * 6e4); return `<tr><td style="padding-left:16px"><b>${esc(s.name)}</b><div class="muted" style="font-size:11.5px">${esc(s.id)}${s.id === vbOwn() ? ' · diese Kasse' : ''}${s.info?.version ? ' · v' + esc(s.info.version) : ''}</div></td><td>${s.own ? '<span class="pill accent">Zentrale</span>' : `<span class="pill ${on ? 'pos' : 'warn'}">${on ? 'online' : 'zuletzt ' + (s.last_sync ? esc(fmtTs(s.last_sync)) : 'nie')}</span>`}</td><td class="r num">${num(s.sales_today || 0)}</td><td style="min-width:200px"><div style="display:flex;align-items:center;gap:10px"><div class="meter" style="flex:1"><i style="width:${(s.revenue_today || 0) / max * 100}%"></i></div><b class="num" style="min-width:90px;text-align:right">${eur((s.revenue_today || 0) / 100)}</b></div></td><td class="r num" style="padding-right:16px">${eur0((s.revenue_month || 0) / 100)}</td></tr>`; }).join('')}</tbody></table></div>
+      ${z ? '' : `<div class="prompt-hint blk" style="margin-top:10px">${ic('info', 'i-xs')}Umsätze der anderen Filialen kommen mit jedem Abgleich aus der Zentrale.</div>`}`;
+  } else if (VB.tab === 'bestand') {
+    const n = norm(VB.q), arts = (n ? ART.filter(a => a.hay.includes(n)) : ART).slice(0, 6), stores = STORES;
+    box.innerHTML = `<div class="filters"><input class="input" id="vbQ" placeholder="Artikel suchen …" value="${esc(VB.q)}" style="max-width:360px"></div>${arts.map(a => `<div class="card" style="margin-bottom:12px"><div class="set-row"><div><div class="set-l">${esc(a.name)}</div><div class="set-h">${esc(a.id)} · ${eur(a.sale || a.price)}</div></div></div><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Variante</th>${stores.map(s => `<th class="r">${esc(s.name)}</th>`).join('')}<th class="r" style="padding-right:16px">Summe</th></tr></thead><tbody>${a.variants.map(v => { const q = stores.map((s, i) => i === 0 ? v.q : (VB.stock?.[s.id]?.[v.ean] ?? 0)); return `<tr><td style="padding-left:16px">${esc(colorName(v.c))} · ${esc(v.s)}</td>${q.map(x => `<td class="r num" style="${x <= 0 ? 'color:var(--text-4)' : x <= 2 ? 'color:var(--warn);font-weight:600' : ''}">${x}</td>`).join('')}<td class="r num" style="padding-right:16px;font-weight:600">${q.reduce((s2, x) => s2 + Math.max(0, x), 0)}</td></tr>`; }).join('')}</tbody></table></div>`).join('')}`;
+  } else {
+    box.innerHTML = VB.sug.length ? `<div class="card"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Artikel</th><th>Von → Nach</th><th class="r">Menge</th><th>Begründung</th><th></th></tr></thead><tbody>${VB.sug.slice(0, 50).map((x, i) => `<tr><td style="padding-left:16px"><b>${esc(x.name)}</b><div class="muted" style="font-size:11.5px">${esc(colorName(x.color))} · ${esc(x.size)}</div></td><td>${esc(storeName(x.from))} → <b>${esc(storeName(x.to))}</b></td><td class="r num">${x.qty}</td><td style="font-size:12px;color:var(--text-2);max-width:420px">${esc(x.reason)}</td><td class="r" style="padding-right:12px"><button class="btn btn-secondary btn-sm" data-vbsug="${i}">Anlegen</button></td></tr>`).join('')}</tbody></table></div>`
+      : `<div class="card"><div class="empty" style="padding:48px"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><h3>Keine Umlagerung nötig</h3><p>Vorschläge entstehen, wenn eine Filiale einen gut laufenden Artikel nicht mehr hat und eine andere genug davon.</p></div></div>`;
+  }
+}
+function openStoreCreate() {
+  const el = openLayer(`<div class="modal" style="width:min(560px,100%)" role="dialog" aria-modal="true" aria-label="Filiale anlegen"><div id="scBox"></div></div>`, {focus: '#scId'});
+  const box = $('#scBox', el);
+  box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('building')}</div><div><h2>Filiale anlegen</h2><p>Danach den Verbindungscode an der Filialkasse eingeben</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body"><div class="ed-grid"><label class="field"><span>Kennung</span><input class="input" id="scId" placeholder="z. B. SBG" style="text-transform:uppercase"></label><label class="field"><span>Name</span><input class="input" id="scName" placeholder="z. B. Salzburg"></label><label class="field full"><span>Adresse</span><input class="input" id="scAddr"></label></div></div>
+    <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="scGo">${ic('check', 'i-sm')}Anlegen</button></div>`;
+  $('#scGo', el).onclick = async () => {
+    try { await stepUp({title: 'Filiale anlegen', text: 'Neuer Zugang zur Zentrale', admin: true}); } catch { return; }
+    let r; try { r = await invoke('verbund_store_create', {id: $('#scId', el).value, name: $('#scName', el).value, addr: $('#scAddr', el).value}); } catch (e) { return toast('Nicht angelegt', {t2: String(e), type: 'warn'}); }
+    let qr = ''; try { qr = await invoke('qr_svg', {text: r.code}); } catch { /* */ }
+    box.innerHTML = `<div class="m-head"><div class="m-ic" style="color:var(--pos)">${ic('check')}</div><div><h2>Filiale angelegt</h2><p>An der Filialkasse: Einstellungen → Filialverbund → Filiale → Code einfügen</p></div></div>
+      <div class="m-body" style="display:grid;gap:12px"><textarea class="input mono" readonly rows="4" id="scCode" style="height:auto;font-size:11.5px">${esc(r.code)}</textarea><div style="display:flex;gap:14px;align-items:center"><div class="qr-box">${qr.replace('<svg', '<svg width="130" height="130"')}</div><div class="muted" style="font-size:12.5px">Zentrale erreichbar unter <b class="mono">${esc(r.url)}</b>. Der Code enthält den Schlüssel dieser Filiale – vertraulich behandeln. Er wird nur jetzt angezeigt.</div></div></div>
+      <div class="m-foot"><button class="btn btn-secondary" id="scCopy">${ic('copy', 'i-sm')}Code kopieren</button><span class="sp"></span><button class="btn btn-primary" data-close>Fertig</button></div>`;
+    $('#scCopy', el).onclick = () => navigator.clipboard?.writeText(r.code).then(() => toast('Kopiert', {type: 'pos', icon: 'copy', dur: 1500}));
+    await loadVerbund(); if (S.view === 'filialen') renderFilialen();
+  };
+}
+async function renderUmlagerungen() {
+  const v = $('#view-umlagerungen');
+  if (!DESKTOP) { v.innerHTML = desktopEmpty('swap', 'Umlagerungen'); return; }
+  await loadVerbund();
+  if (!vbOn()) { v.innerHTML = `<div class="cv">${pageHead('Umlagerungen', 'Ware zwischen Filialen verschieben')}<div class="card"><div class="empty" style="padding:56px 20px"><div class="empty-icon">${ic('swap')}</div><h3>Nur im Filialverbund</h3><p>Umlagerungen gibt es, sobald mehrere Filialen verbunden sind.</p><button class="btn btn-primary" data-vbset="1">Filialverbund einrichten</button></div></div></div>`; return; }
+  const own = vbOwn(), z = vbRole() === 'zentrale';
+  v.innerHTML = `<div class="cv">${pageHead('Umlagerungen', 'Angefordert → versendet (Quelle bucht aus) → eingegangen (Ziel bucht ein)', `<button class="btn btn-primary" data-vb="tneu">${ic('plus', 'i-sm')}Umlagerung anlegen</button>`)}
+    <div class="card">${VB.transfers.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Nummer</th><th>Von → Nach</th><th>Positionen</th><th>Status</th><th>Angelegt</th><th></th></tr></thead><tbody>${VB.transfers.map(t => { const [l, tone] = TR_STATE[t.status] || [t.status, '']; const acts = [t.status === 'angefordert' && t.from === own ? `<button class="btn btn-primary btn-sm" data-tst="versendet" data-tno="${esc(t.no)}">Versenden</button>` : '', t.status === 'versendet' && t.to === own ? `<button class="btn btn-primary btn-sm" data-tst="empfangen" data-tno="${esc(t.no)}">Eingang buchen</button>` : '', t.status === 'angefordert' && (z || t.to === own) ? `<button class="btn btn-ghost btn-sm" data-tst="storniert" data-tno="${esc(t.no)}">Stornieren</button>` : ''].join(''); return `<tr><td style="padding-left:16px" class="mono"><b>${esc(t.no)}</b></td><td>${esc(storeName(t.from))} → <b>${esc(storeName(t.to))}</b></td><td style="font-size:12.5px">${t.lines.map(x => `${x.qty} × ${esc(x.name || x.ean)}`).join('<br>')}</td><td><span class="pill ${tone}">${l}</span></td><td class="muted" style="font-size:12px">${esc(fmtTs(t.created_at))}${t.note ? `<br>${esc(t.note)}` : ''}</td><td class="r" style="padding-right:12px;white-space:nowrap">${acts}</td></tr>`; }).join('')}</tbody></table>`
+      : `<div class="empty" style="padding:48px"><div class="empty-icon">${ic('swap')}</div><h3>Noch keine Umlagerungen</h3><p>${z ? 'Umlagerungen anlegen oder Vorschläge unter Filialen übernehmen.' : 'An der Kasse bei „nicht lagernd“ direkt aus einer anderen Filiale anfordern.'}</p></div>`}</div></div>`;
+}
+function openTransferNew(preset) {
+  const own = vbOwn(), stores = STORES;
+  const st = {from: preset?.from || stores.find(s => s.id !== own)?.id || '', to: preset?.to || own, lines: preset?.lines || [], q: ''};
+  const el = openLayer(`<div class="modal" style="width:min(640px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="Umlagerung"><div id="tnBox" style="display:flex;flex-direction:column;min-height:0"></div></div>`);
+  const box = $('#tnBox', el);
+  const render = () => {
+    const n = norm(st.q), hits = n ? ART.flatMap(a => a.variants.filter(v => a.hay.includes(n) || v.ean === st.q.trim()).map(v => ({a, v}))).slice(0, 12) : [];
+    box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('swap')}</div><div><h2>Umlagerung anlegen</h2><p>${vbRole() === 'zentrale' ? 'wird sofort an beide Filialen verteilt' : 'wird in der Zentrale angelegt (Verbindung nötig)'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="m-body" style="display:grid;gap:12px;overflow:auto"><div class="ed-grid"><label class="field"><span>Von</span><select class="input select" id="tnFrom">${stores.map(s => `<option value="${esc(s.id)}" ${s.id === st.from ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label><label class="field"><span>Nach</span><select class="input select" id="tnTo">${stores.map(s => `<option value="${esc(s.id)}" ${s.id === st.to ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label></div>
+        <input class="input" id="tnQ" placeholder="Artikel suchen oder EAN scannen …" value="${esc(st.q)}" autocomplete="off">
+        ${hits.length ? `<div class="reasons">${hits.map(({a, v}) => `<button class="chip" data-tnadd="${esc(v.ean)}" style="height:30px">${esc(a.name)} · ${esc(colorName(v.c))} · ${esc(v.s)}</button>`).join('')}</div>` : ''}
+        <div class="card" style="box-shadow:none">${st.lines.length ? `<table class="tbl" style="margin:0"><tbody>${st.lines.map((l, i) => `<tr><td style="padding-left:14px">${esc(l.name)}<div class="muted mono" style="font-size:11px">${esc(l.ean)}</div></td><td class="r"><input class="input num" data-tnq="${i}" value="${l.qty}" style="width:70px;height:30px;text-align:right"></td><td class="r" style="padding-right:10px"><button class="btn btn-ghost btn-sm btn-icon" data-tnrm="${i}" aria-label="Entfernen">${ic('x', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:22px"><p>Noch keine Positionen.</p></div>'}</div></div>
+      <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="tnGo" ${st.lines.length ? '' : 'disabled'}>${ic('check', 'i-sm')}Anlegen</button></div>`;
+  };
+  el.addEventListener('input', e => { if (e.target.id === 'tnQ') { st.q = e.target.value; render(); const q = $('#tnQ', el); q.focus(); q.setSelectionRange(q.value.length, q.value.length); } });
+  el.addEventListener('change', e => { if (e.target.id === 'tnFrom') st.from = e.target.value; if (e.target.id === 'tnTo') st.to = e.target.value; const i = e.target.dataset.tnq; if (i != null) st.lines[+i].qty = Math.max(1, parseInt(e.target.value, 10) || 1); });
+  el.addEventListener('click', async e => {
+    const ad = e.target.closest('[data-tnadd]'); if (ad) { const h = findEan(ad.dataset.tnadd); const ex = st.lines.find(l => l.ean === h.v.ean); ex ? ex.qty++ : st.lines.push({ean: h.v.ean, qty: 1, name: `${h.a.name} · ${colorName(h.v.c)} · ${h.v.s}`}); st.q = ''; return render(); }
+    const rm = e.target.closest('[data-tnrm]'); if (rm) { st.lines.splice(+rm.dataset.tnrm, 1); return render(); }
+    if (e.target.closest('#tnGo')) {
+      try { const t = await invoke('verbund_transfer_create', {from: st.from, to: st.to, lines: st.lines, note: '', user: S.user.name}); closeLayer(el); toast('Umlagerung angelegt', {t2: `${t.no} · ${storeName(t.from)} → ${storeName(t.to)}`, type: 'pos', icon: 'swap'}); await loadVerbund(); if (S.view === 'umlagerungen') renderUmlagerungen(); }
+      catch (err) { toast('Nicht angelegt', {t2: String(err), type: 'warn', dur: 7000}); }
+    }
+  });
+  render();
+}
+async function transferStatus(no, status) {
+  const lbl = {versendet: 'Ware versenden – Bestand wird hier ausgebucht', empfangen: 'Wareneingang – Bestand wird hier eingebucht', storniert: 'Umlagerung stornieren'}[status];
+  try { await needPerm('bestand.buchen', 'Umlagerung', lbl); } catch { return; }
+  try {
+    const t = await invoke('verbund_transfer_status', {no, status, user: S.user.name});
+    toast(`Umlagerung ${TR_STATE[status][0]}`, {t2: t.no, type: 'pos', icon: 'swap'});
+    replaceCatalog(await invoke('catalog_list')); await loadVerbund();
+    Hooks.emit('verbund.transfer.' + status, {nr: no});
+    if (S.view === 'umlagerungen') renderUmlagerungen();
+  } catch (e) { toast('Nicht möglich', {t2: String(e), type: 'warn', dur: 7000}); }
+}
+
+/* ── Dashboard: Filialvergleich mit echten Zahlen ── */
+if (DESKTOP && W['sales.stores']) {
+  const ws = W['sales.stores'];
+  ws.sub = () => vbOn() ? 'Umsatz heute je Filiale' : 'Einzelplatz';
+  ws.tools = () => '';
+  ws.body = () => {
+    const list = vbOn() ? (VB.info?.stores || []) : [];
+    if (!list.length) return `<div class="empty" style="flex:1"><div class="empty-icon">${ic('building')}</div><h3>Einzelplatz</h3><p>Im Filialverbund erscheinen hier die Umsätze aller Filialen.</p></div>`;
+    const max = Math.max(1, ...list.map(s => s.revenue_today || 0));
+    return `<div class="wl">${list.slice().sort((a, b) => (b.revenue_today || 0) - (a.revenue_today || 0)).map(s => `<div class="wl-row"><div class="wl-main"><div class="wl-t">${esc(s.name)}${s.id === vbOwn() ? ' <span class="muted" style="font-weight:400">· hier</span>' : ''}</div><div class="meter" style="margin-top:6px"><i style="width:${(s.revenue_today || 0) / max * 100}%"></i></div></div><b class="num">${eur0((s.revenue_today || 0) / 100)}</b></div>`).join('')}</div>`;
+  };
+}
+
+function bindVerbund() {
+  const on = (id, fn) => $('#view-' + id)?.addEventListener('click', fn);
+  $('#view-einstellungen').addEventListener('click', async e => {
+    const b = e.target.closest('[data-vb]'); if (!b) return;
+    if (b.dataset.vb === 'test') { try { const r = await invoke('verbund_test'); toast('Zentrale erreichbar', {t2: `${r.zentrale || 'Zentrale'} · Filiale ${r.filiale}`, type: 'pos', icon: 'wifi'}); } catch (err) { toast('Keine Verbindung', {t2: String(err), type: 'warn', dur: 8000}); } }
+    if (b.dataset.vb === 'sync') { try { await afterSync(await invoke('verbund_sync')); } catch (err) { toast('Abgleich fehlgeschlagen', {t2: String(err), type: 'warn', dur: 8000}); } renderVbBox(); }
+  });
+  on('filialen', async e => {
+    if (e.target.closest('[data-vbset]')) return setGo('verbund');
+    const b = e.target.closest('[data-vb]');
+    if (b?.dataset.vb === 'neu') return openStoreCreate();
+    if (b?.dataset.vb === 'sync') { try { await afterSync(await invoke('verbund_sync')); } catch (err) { toast('Abgleich fehlgeschlagen', {t2: String(err), type: 'warn', dur: 8000}); } return renderFilialen(); }
+    const sg = e.target.closest('[data-vbsug]'); if (sg) { const x = VB.sug[+sg.dataset.vbsug]; return openTransferNew({from: x.from, to: x.to, lines: [{ean: x.ean, qty: x.qty, name: `${x.name} · ${colorName(x.color)} · ${x.size}`}]}); }
+  });
+  $('#view-filialen').addEventListener('input', e => { if (e.target.id === 'vbQ') { VB.q = e.target.value; renderVbBody(); const q = $('#vbQ'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); } });
+  on('umlagerungen', e => {
+    if (e.target.closest('[data-vbset]')) return setGo('verbund');
+    if (e.target.closest('[data-vb="tneu"]')) return openTransferNew();
+    const s = e.target.closest('[data-tst]'); if (s) transferStatus(s.dataset.tno, s.dataset.tst);
+  });
+  // regelmäßig Status/Umsätze der Filialen aktualisieren
+  setInterval(() => { if (vbOn()) loadVerbund().then(() => { if (S.view === 'filialen' && VB.tab === 'uebersicht') renderVbBody(); }); }, 60000);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   38 · ANMELDEMETHODEN — PIN (Standard), Passwort, Handy-QR (Freigabe
+   von einem angemeldeten Handy), Windows Hello, Single Sign-On über
+   OpenID Connect (Microsoft Entra ID, Google Workspace, Keycloak …).
+   ════════════════════════════════════════════════════════════════════ */
+const AUTH = {methods: {}};
+const IS_WIN = /Windows/i.test(navigator.userAgent);
+Object.assign(DEFAULTS, {'sso.name': 'Microsoft Entra ID', 'sso.issuer': '', 'sso.client_id': '', 'sso.client_secret': ''});
+Object.keys(DEFAULTS).forEach(k => { if (!(k in CFG)) CFG[k] = DEFAULTS[k]; });
+async function loadAuth() { if (!DESKTOP) return; try { AUTH.methods = await invoke('auth_methods'); } catch { AUTH.methods = {}; } }
+const ssoReady = () => !!(CFG['sso.issuer'] && CFG['sso.client_id']);
+const qrReady = () => !!(CFG['api.aktiv'] && CFG['api.lan']);
+
+function altAuthHTML(user) {
+  const b = [];
+  if (Object.values(AUTH.methods).some(m => m.passwort)) b.push(['pw', 'lock', 'Passwort']);
+  if (qrReady()) b.push(['qr', 'qr', 'Mit dem Handy']);
+  if (IS_WIN && AUTH.methods[user.id]?.hello) b.push(['hello', 'faceid', 'Windows Hello']);
+  if (ssoReady()) b.push(['sso', 'building', CFG['sso.name'] || 'Single Sign-On']);
+  return b.length ? `<div class="or">oder anmelden mit</div><div class="auth-alt">${b.map(([k, i, l]) => `<button class="btn btn-secondary" data-m="${k}">${ic(i)}${esc(l)}</button>`).join('')}</div>`
+    : `<div class="or" style="margin-top:14px">Weitere Anmeldewege unter Benutzer & Rechte</div>`;
+}
+async function altAuth(m, user, card, done, back) {
+  const fail = e => { back(); toast('Anmeldung nicht möglich', {t2: String(e?.message || e), type: 'warn', dur: 7000}); Hooks.emit('auth.login.failed', {benutzer: user.name, methode: m}); };
+  const wait = (icon, msg, extra = '') => { card.innerHTML = `<div class="authwait" style="padding:20px 0"><div class="ring">${ic(icon)}</div><p>${esc(msg)}</p>${extra}<button class="btn btn-ghost btn-sm" data-altback style="margin-top:8px">Zurück zur PIN</button></div>`; };
+  card.onclick = e => { if (e.target.closest('[data-altback]')) { card.onclick = null; card._qr = null; back(); } };
+  const pick = u => STAFF.find(s => s.id === u.id) || user;
+  if (m === 'pw') {
+    card.innerHTML = `<form id="pwForm" style="display:grid;gap:10px"><div style="text-align:center;font-size:13px;color:var(--text-2)">Mit Benutzername oder E-Mail anmelden</div>
+      <input class="input" id="pwLogin" placeholder="Benutzername / E-Mail" autocomplete="username"><input class="input" id="pwPass" type="password" placeholder="Passwort" autocomplete="current-password">
+      <button class="btn btn-primary">${ic('check', 'i-sm')}Anmelden</button><button type="button" class="btn btn-ghost btn-sm" data-altback>Zurück zur PIN</button></form>`;
+    setTimeout(() => $('#pwLogin', card)?.focus(), 30);
+    $('#pwForm', card).onsubmit = async e => {
+      e.preventDefault();
+      const login = $('#pwLogin', card).value.trim(), password = $('#pwPass', card).value;
+      try { done(pick(await invoke('auth_login_password', {login, password})), 'Passwort'); }
+      catch (err) {
+        if (String(err) !== 'TOTP') { shakeEl($('#pwForm', card)); toast(String(err), {type: 'warn'}); return; }
+        const code = await askTotp({name: login}); if (!code) return;
+        try { done(pick(await invoke('auth_login_password', {login, password, code})), 'Passwort + 2FA'); } catch (e2) { toast(String(e2), {type: 'warn'}); }
+      }
+    };
+    return;
+  }
+  if (m === 'qr') {
+    let r; try { r = await invoke('auth_qr_start'); } catch (e) { return fail(e); }
+    let svg = ''; try { svg = await invoke('qr_svg', {text: r.url}); } catch { /* */ }
+    card.innerHTML = `<div style="display:grid;justify-items:center;gap:10px;padding:6px 0"><div style="font-size:13px;color:var(--text-2);text-align:center">Mit dem Handy scannen, auf dem <b style="color:var(--text)">Kontor mobil</b> angemeldet ist</div><div class="qr-box">${svg.replace('<svg', '<svg width="170" height="170"')}</div><span class="thinking" style="font-size:12px"><b>Warte auf Bestätigung …</b></span><button class="btn btn-ghost btn-sm" data-altback>Zurück zur PIN</button></div>`;
+    card._qr = r.token;
+    const t0 = Date.now();
+    while (card._qr === r.token && document.contains(card)) {
+      await new Promise(res => setTimeout(res, 1500));
+      if (card._qr !== r.token) return;
+      try { const u = await invoke('auth_qr_poll', {token: r.token}); if (u) { card._qr = null; return done(pick(u), 'Handy (QR)'); } }
+      catch (e) { card._qr = null; return fail(e); }
+      if (Date.now() - t0 > 175000) { card._qr = null; return fail('QR-Code abgelaufen'); }
+    }
+    return;
+  }
+  if (m === 'hello') {
+    wait('faceid', 'Windows Hello · bitte bestätigen …');
+    try { done(pick(await invoke('auth_hello', {user: user.id, enable: false})), 'Windows Hello'); } catch (e) { fail(e); }
+    return;
+  }
+  if (m === 'sso') {
+    wait('building', `Anmeldung über ${CFG['sso.name'] || 'Single Sign-On'} im Browser …`, '<p class="muted" style="font-size:12px">Das Browserfenster nach der Anmeldung schließen.</p>');
+    try { done(pick(await invoke('auth_sso')), CFG['sso.name'] || 'SSO'); } catch (e) { fail(e); }
+  }
+}
+
+/* ── Benutzer: Anmeldung je Person (Benutzername/Passwort, Windows Hello) ── */
+{
+  const _rub = renderUsersBox;
+  renderUsersBox = function () {
+    _rub();
+    const box = $('#usrBox'); if (!box || !DESKTOP) return;
+    STAFF.forEach(u => {
+      const b = $(`[data-usr="${u.id}"]`, box); if (!b) return;
+      const m = AUTH.methods[u.id] || {}, tags = [m.passwort && 'Passwort', m.hello && 'Hello', SEC.totp.has(u.id) && '2FA'].filter(Boolean);
+      b.insertAdjacentHTML('beforebegin', `<button class="btn btn-ghost btn-sm" data-login="${u.id}" data-tip="${esc(m.login || 'Benutzername, Passwort, Windows Hello')}">${ic('usbkey', 'i-sm')}Anmeldung${tags.length ? ` <span class="muted" style="font-size:11px">· ${tags.join(' · ')}</span>` : ''}</button>`);
+    });
+  };
+}
+async function openLoginEditor(u) {
+  const self = u.id === S.user.id;
+  let by; try { by = self ? {name: S.user.name} : (await stepUp({title: 'Anmeldung bearbeiten', text: u.name, admin: true})).by; } catch { return; }
+  const m = AUTH.methods[u.id] || {};
+  const el = openLayer(`<div class="modal" style="width:min(520px,100%)" role="dialog" aria-modal="true" aria-label="Anmeldung"><div class="m-head"><div class="m-ic">${ic('usbkey')}</div><div><h2>Anmeldung · ${esc(u.name)}</h2><p>PIN bleibt immer möglich · zusätzliche Wege</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body" style="display:grid;gap:14px">
+      <label class="field"><span>Benutzername oder E-Mail <span class="muted">(auch für Single Sign-On)</span></span><input class="input" id="leLogin" value="${esc(m.login || '')}" placeholder="z. B. lena.moser@firma.at" autocomplete="off"></label>
+      <div class="ed-grid"><label class="field"><span>${m.passwort ? 'Neues Passwort' : 'Passwort (optional)'}</span><input class="input" id="lePw" type="password" autocomplete="new-password" placeholder="mind. 10 Zeichen"></label><label class="field"><span>Wiederholen</span><input class="input" id="lePw2" type="password" autocomplete="new-password"></label></div>
+      ${m.passwort ? `<div><button class="btn btn-ghost btn-sm" id="lePwOff">${ic('trash', 'i-sm')}Passwort entfernen</button></div>` : ''}
+      <div class="set-row" style="padding:10px 0;border-bottom:0"><div><div class="set-l">Windows Hello ${m.hello ? '<span class="pill pos" style="height:20px">aktiv</span>' : ''}</div><div class="set-h">${IS_WIN ? (self ? 'Gesicht, Fingerabdruck oder Geräte-PIN dieses PCs' : 'Kann nur die Person selbst an ihrem PC einrichten') : 'nur unter Windows'}</div></div><div class="set-c">${m.hello ? `<button class="btn btn-secondary btn-sm" id="leHelloOff">Ausschalten</button>` : `<button class="btn btn-secondary btn-sm" id="leHello" ${IS_WIN && self ? '' : 'disabled'}>${ic('faceid', 'i-sm')}Einrichten</button>`}</div></div>
+    </div>
+    <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="leSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {focus: '#leLogin'});
+  const after = async msg => { await loadAuth(); renderUsersBox(); if (msg) toast(msg, {type: 'pos', icon: 'usbkey', t2: u.name}); };
+  el.addEventListener('click', async e => {
+    if (e.target.closest('#lePwOff')) { try { await invoke('auth_password_clear', {user: u.id, by: by.name}); } catch (err) { return toast('Fehler', {t2: String(err), type: 'warn'}); } closeLayer(el); return after('Passwort entfernt'); }
+    if (e.target.closest('#leHello')) { try { await invoke('auth_hello', {user: u.id, enable: true}); } catch (err) { return toast('Windows Hello nicht eingerichtet', {t2: String(err), type: 'warn', dur: 7000}); } closeLayer(el); return after('Windows Hello eingerichtet'); }
+    if (e.target.closest('#leHelloOff')) { try { await invoke('auth_hello_off', {user: u.id}); } catch (err) { return toast('Fehler', {t2: String(err), type: 'warn'}); } closeLayer(el); return after('Windows Hello ausgeschaltet'); }
+    if (e.target.closest('#leSave')) {
+      const login = $('#leLogin', el).value.trim(), pw = $('#lePw', el).value, pw2 = $('#lePw2', el).value;
+      if (pw !== pw2) return toast('Passwörter stimmen nicht überein', {type: 'warn'});
+      try { await invoke('auth_password_set', {user: u.id, login, password: pw || null, by: by.name}); } catch (err) { return toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
+      closeLayer(el); after(pw ? 'Passwort gesetzt' : 'Benutzername gespeichert');
+    }
+  });
+}
+
+/* ── Einstellungen → Single Sign-On ── */
+SET_SECTIONS.splice(SET_SECTIONS.findIndex(s => s[0] === 'benutzer') + 1, 0, ['sso', 'Single Sign-On', 'usbkey']);
+{
+  const _rs = renderSettings;
+  renderSettings = function () {
+    _rs();
+    const a = $('#sec-benutzer'); if (!a) return;
+    a.insertAdjacentHTML('afterend', `<section class="set-sec" id="sec-sso"><h2>Single Sign-On</h2><p>Anmeldung mit dem Firmenkonto über OpenID Connect – z. B. <b>Microsoft Entra ID</b> (Azure AD), <b>Google Workspace</b>, Keycloak oder AD FS. Kontor öffnet den Browser, die Person meldet sich beim Anbieter an, Kontor prüft die Signatur und ordnet die E-Mail einem Benutzer zu (Benutzer & Rechte → Anmeldung).</p><div class="card">
+      ${field('sso.name', 'Bezeichnung am Anmeldebildschirm', 'z. B. Microsoft Entra ID, Google')}
+      ${field('sso.issuer', 'Aussteller (Issuer-URL)', 'Entra ID: https://login.microsoftonline.com/<Mandanten-ID>/v2.0 · Google: https://accounts.google.com')}
+      ${field('sso.client_id', 'Client-ID (Anwendungs-ID)', 'aus der App-Registrierung')}
+      ${field('sso.client_secret', 'Client-Geheimnis', 'nur falls der Anbieter eines verlangt (Google: ja, Entra „Mobile & Desktop“: nein)', 'password')}
+      <div class="set-row" style="border-bottom:0"><div><div class="set-l">Weiterleitungs-URI beim Anbieter</div><div class="set-h"><span class="mono">http://127.0.0.1</span> (Plattform „Mobilgerät und Desktop“ bzw. „Desktop-App“) – Kontor wählt den Port selbst.</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" data-sso="test" ${DESKTOP ? '' : 'disabled'}>${ic('building', 'i-sm')}Testen</button></div></div></div></section>`);
+  };
+}
+function bindAuth() {
+  $('#view-einstellungen').addEventListener('click', async e => {
+    if (!e.target.closest('[data-sso="test"]')) return;
+    if (!ssoReady()) return toast('Aussteller und Client-ID eintragen', {type: 'warn'});
+    toast('Browser öffnet sich …', {icon: 'building'});
+    try { const u = await invoke('auth_sso'); toast('Single Sign-On funktioniert', {t2: `angemeldet als ${u.name}`, type: 'pos', icon: 'check'}); } catch (err) { toast('Single Sign-On fehlgeschlagen', {t2: String(err), type: 'warn', dur: 9000}); }
+  });
+  const loginClick = e => { const b = e.target.closest('[data-login]'); if (b) { e.stopPropagation(); openLoginEditor(STAFF.find(s => s.id === b.dataset.login)); } };
+  $('#view-einstellungen').addEventListener('click', loginClick, true);
+  $('#view-benutzer').addEventListener('click', loginClick, true);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   39 · ERWEITERUNGEN — installierbare Pakete (kontor.erweiterung/v1).
+   Eine Erweiterung bringt Objekte, Felder, Regeln, Skripte, API-Endpunkte,
+   Dashboard-Widgets und Befehle mit. Widgets werden von Kontor selbst
+   gezeichnet (Liste, Kennzahl, Tabelle) – fremder Code läuft nur in der
+   Skript-Sandbox, nie im Programm selbst.
+   ════════════════════════════════════════════════════════════════════ */
+const EXT = {list: [], data: {}, busy: {}};
+const EXT_GALERIE = [
+  {format: 'kontor.erweiterung/v1', id: 'kontor.werkstatt', name: 'Werkstatt & Service', version: '1.0.0', author: 'Kontor', icon: 'wrench',
+    beschreibung: 'Reparatur- und Serviceaufträge mit Status, Abholtermin und Preis. Automatische E-Mail, sobald ein Auftrag abholbereit ist. Dashboard-Widget „Offene Aufträge“.',
+    objekte: [{name: 'Reparaturauftrag', plural: 'Reparaturaufträge', icon: 'wrench', felder: [['Kunde', 'text', true], ['Telefon', 'telefon'], ['E-Mail', 'email'], ['Gegenstand', 'text', true], ['Auftrag', 'mehrzeilig'], ['Status', 'auswahl', true, ['Angenommen', 'In Arbeit', 'Abholbereit', 'Abgeholt']], ['Fertig bis', 'datum'], ['Preis', 'betrag']]}],
+    regeln: [{name: 'Abholbereit → Kunde informieren', trigger: 'objekt.reparaturauftraege.saved', conditions: [{feld: 'status', op: '=', wert: 'Abholbereit'}, {feld: 'e_mail', op: 'nicht leer', wert: ''}], actions: [{typ: 'mail', an: '{{e_mail}}', betreff: 'Ihr Auftrag ist abholbereit', text: 'Guten Tag {{kunde}},\n\nIhr Auftrag „{{gegenstand}}“ ist fertig und kann abgeholt werden.\n\nIhr Team von {{filiale}}'}, {typ: 'hinweis', text: 'Kund:in informiert: {{kunde}}', text2: '{{gegenstand}} ist abholbereit'}]}],
+    widgets: [{id: 'offen', titel: 'Offene Reparaturen', typ: 'liste', icon: 'wrench', quelle: {objekt: 'reparaturauftraege', filter: {feld: 'status', op: '≠', wert: 'Abgeholt'}}, felder: {titel: 'gegenstand', untertitel: 'kunde', wert: 'status'}, leer: 'Keine offenen Aufträge'}],
+    befehle: [{titel: 'Neuer Reparaturauftrag', icon: 'wrench', oeffnen: 'obj-reparaturauftraege'}]},
+  {format: 'kontor.erweiterung/v1', id: 'kontor.kennzahlen', name: 'Kassen-Kennzahlen', version: '1.0.0', author: 'Kontor', icon: 'chart',
+    beschreibung: 'Widgets für Bons heute, Umsatz je Kassier:in und meistverkaufte Artikel der Woche – direkt aus den Belegen.',
+    widgets: [
+      {id: 'bons', titel: 'Bons heute', typ: 'kennzahl', icon: 'receipt', groesse: ['s', 'm'], quelle: {abfrage: "SELECT COUNT(*) AS wert FROM sales WHERE kind = 'verkauf' AND substr(ts,1,10) = date('now','localtime')"}, einheit: 'Bons'},
+      {id: 'kassier', titel: 'Umsatz je Kassier:in heute', typ: 'tabelle', icon: 'users', quelle: {abfrage: "SELECT COALESCE(cashier,'–') AS \"Kassier:in\", COUNT(*) AS Bons, printf('€ %.2f', SUM(total)/100.0) AS Umsatz FROM sales WHERE substr(ts,1,10) = date('now','localtime') GROUP BY cashier ORDER BY SUM(total) DESC"}, leer: 'Heute noch kein Umsatz'},
+      {id: 'woche', titel: 'Renner der Woche', typ: 'liste', icon: 'star', quelle: {abfrage: "SELECT json_extract(l.value,'$.name') AS titel, SUM(json_extract(l.value,'$.qty')) || ' Stück' AS wert FROM sales s, json_each(s.data,'$.lines') l WHERE s.kind = 'verkauf' AND s.ts >= date('now','-7 days') AND json_extract(l.value,'$.service') = 0 GROUP BY titel ORDER BY SUM(json_extract(l.value,'$.qty')) DESC LIMIT 6"}, felder: {titel: 'titel', wert: 'wert'}, leer: 'Noch keine Verkäufe diese Woche'}]},
+  {format: 'kontor.erweiterung/v1', id: 'kontor.geburtstag', name: 'Geburtstags-Bonus', version: '1.0.0', author: 'Kontor', icon: 'gift',
+    beschreibung: 'Feld „Geburtstag“ bei Kund:innen. Wird am Geburtstag eine Kundin an der Kasse zugeordnet, erscheint ein Hinweis und es werden 100 Bonuspunkte gebucht.',
+    felder: [{object: 'kunde', label: 'Geburtstag', type: 'datum', at_pos: true}],
+    skripte: [{name: 'geburtstag.js', code: "const g = daten.feld && daten.feld['Geburtstag'];\nconst heute = new Date();\nconst md = String(heute.getMonth() + 1).padStart(2, '0') + '-' + String(heute.getDate()).padStart(2, '0');\nif (g && String(g).slice(5, 10) === md) {\n  toast('Heute Geburtstag: ' + daten.kunde_name, 'Herzlichen Glückwunsch – 100 Bonuspunkte gebucht');\n  punkte(100, 'Geburtstagsbonus');\n}\n"}],
+    regeln: [{name: 'Geburtstag an der Kasse', trigger: 'pos.customer.attached', conditions: [], actions: [{typ: 'skript', skriptName: 'geburtstag.js'}]}]},
+];
+const pl = (n, w) => `${n} ${n === 1 ? w : ({Objekt: 'Objekte', Feld: 'Felder', Regel: 'Regeln', Skript: 'Skripte', Endpunkt: 'Endpunkte', Widget: 'Widgets', Befehl: 'Befehle'})[w] || w}`;
+const extTag = m => ` [${m.name}]`;
+const extOn = () => EXT.list.filter(e => e.enabled);
+async function loadExtensions() {
+  if (!DESKTOP) return;
+  try { EXT.list = await invoke('ext_list'); } catch { EXT.list = []; }
+  registerExtWidgets();
+}
+
+/* ── Installation: Bestandteile über die normalen Funktionen anlegen ── */
+async function extApply(m) {
+  const log = [];
+  for (const o of m.objekte || []) {
+    let ent = CF.ents.find(e => e.plural === o.plural || e.name === o.name);
+    if (!ent) { CF.ents = await invoke('entity_save', {entity: {id: '', name: o.name, plural: o.plural, icon: o.icon || 'layers', title_field: null, count: 0}}); ent = CF.ents.find(e => e.plural === o.plural); log.push(`Objekt ${o.plural}`); }
+    let pos = cfDefs('obj:' + ent.id).length;
+    for (const [label, type, required, options] of o.felder || []) {
+      if (cfDefs('obj:' + ent.id).some(d => d.label === label)) continue;
+      try { CF.defs = await invoke('field_save', {field: {id: null, object: 'obj:' + ent.id, key: '', label, type, options: options || [], required: !!required, at_pos: false, help: '', pos: pos++}}); } catch (e) { console.warn(e); }
+    }
+  }
+  for (const f of m.felder || []) {
+    if (cfDefs(f.object).some(d => d.label === f.label)) continue;
+    try { CF.defs = await invoke('field_save', {field: {id: null, object: f.object, key: '', label: f.label, type: f.type || 'text', options: f.options || [], required: !!f.required, at_pos: !!f.at_pos, help: f.help || '', pos: cfDefs(f.object).length}}); log.push(`Feld ${f.label}`); } catch (e) { console.warn(e); }
+  }
+  for (const sc of m.skripte || []) { const ex = AU.scripts.find(x => x.name === sc.name); AU.scripts = await invoke('script_save', {script: {id: ex?.id ?? null, name: sc.name, code: sc.code}}); }
+  for (const r of m.regeln || []) {
+    const name = r.name + extTag(m), ex = AU.rules.find(x => x.name === name);
+    const actions = (r.actions || []).map(a => a.skriptName ? {typ: 'skript', skript: AU.scripts.find(s => s.name === a.skriptName)?.id} : a);
+    AU.rules = await invoke('rule_save', {rule: {id: ex?.id ?? null, name, trigger: r.trigger, conditions: r.conditions || [], actions, active: true, runs: ex?.runs || 0, last_run: ex?.last_run || null, last_error: null}});
+    log.push(`Regel ${r.name}`);
+  }
+  for (const p of m.endpunkte || []) { try { await invoke('api_endpoint_save', {id: null, slug: p.slug, title: p.title || p.slug, sql: p.sql, active: true}); log.push(`Endpunkt ${p.slug}`); } catch (e) { console.warn(e); } }
+  syncObjNav();
+  return log;
+}
+async function extInstall(m, src = 'Galerie') {
+  try { await needPerm('anpassen', `Erweiterung installieren`, `${m.name} ${m.version} von ${m.author || 'unbekannt'}`); } catch { return; }
+  try {
+    EXT.list = await invoke('ext_install', {manifest: m, by: S.user.name});
+    const log = await extApply(m);
+    registerExtWidgets();
+    toast(`${m.name} installiert`, {t2: [...log, (m.widgets || []).length ? `${pl(m.widgets.length, 'Widget')} in der Bibliothek` : ''].filter(Boolean).join(' · ') || 'bereit', type: 'pos', icon: m.icon || 'puzzle', dur: 7000});
+    Hooks.emit('extension.installed', {erweiterung: m.id, version: m.version, quelle: src});
+  } catch (e) { toast('Installation fehlgeschlagen', {t2: String(e), type: 'warn', dur: 8000}); }
+  if (S.view === 'erweiterungen') renderErweiterungen();
+}
+async function extToggle(id, on) {
+  try { EXT.list = await invoke('ext_enable', {id, on}); } catch (e) { return toast('Fehler', {t2: String(e), type: 'warn'}); }
+  const m = EXT.list.find(e => e.id === id)?.manifest;
+  for (const r of AU.rules.filter(r => m && r.name.endsWith(extTag(m)))) { try { AU.rules = await invoke('rule_save', {rule: {...r, active: on}}); } catch { /* */ } }
+  registerExtWidgets(); renderErweiterungen();
+}
+async function extRemove(id) {
+  const e = EXT.list.find(x => x.id === id), m = e?.manifest || {};
+  try { await needPerm('anpassen', 'Erweiterung entfernen', `${e.name}: Regeln, Skripte, Widgets und Befehle werden entfernt. Eigene Objekte, Felder und deren Daten bleiben erhalten.`); } catch { return; }
+  for (const r of AU.rules.filter(r => r.name.endsWith(extTag(m)))) { try { AU.rules = await invoke('rule_delete', {id: r.id}); } catch { /* */ } }
+  for (const sc of m.skripte || []) { const x = AU.scripts.find(s => s.name === sc.name); if (x) { try { AU.scripts = await invoke('script_delete', {id: x.id}); } catch { /* */ } } }
+  try { EXT.list = await invoke('ext_remove', {id}); } catch (err) { return toast('Fehler', {t2: String(err), type: 'warn'}); }
+  registerExtWidgets(); toast('Erweiterung entfernt', {t2: e.name, icon: 'trash'}); Hooks.emit('extension.removed', {erweiterung: id});
+  renderErweiterungen();
+}
+
+/* ── Widgets der Erweiterungen (von Kontor gezeichnet) ── */
+function registerExtWidgets() {
+  Object.keys(W).filter(k => k.startsWith('x:')).forEach(k => delete W[k]);
+  for (const e of extOn()) for (const w of e.manifest.widgets || []) {
+    const key = `x:${e.id}:${w.id}`;
+    W[key] = {title: w.titel, cat: 'Erweiterungen', icon: w.icon || e.manifest.icon || 'puzzle', desc: `${e.name} · ${w.typ === 'kennzahl' ? 'Kennzahl' : w.typ === 'tabelle' ? 'Tabelle' : 'Liste'}`, sizes: w.groesse || (w.typ === 'kennzahl' ? ['s', 'm'] : ['tall', 'wide']), plugin: `${e.name} ${e.version}`,
+      sub: () => e.name, body: () => extWidgetBody(key, w)};
+  }
+}
+async function extFetch(key, w) {
+  if (EXT.busy[key]) return; EXT.busy[key] = true;
+  let rows = [];
+  try {
+    if (w.quelle?.objekt) {
+      rows = (await invoke('records_list', {entity: w.quelle.objekt, q: null})).map(r => ({id: r.id, ...r.data}));
+      const f = w.quelle.filter; if (f) rows = rows.filter(r => condOk({feld: f.feld, op: f.op, wert: f.wert}, r));
+    } else if (w.quelle?.abfrage) rows = await invoke('api_query_test', {sql: w.quelle.abfrage, args: {}});
+  } catch (e) { rows = {fehler: String(e)}; }
+  EXT.data[key] = {rows, t: Date.now()}; EXT.busy[key] = false;
+  (Dash.layout || []).filter(it => it.t === key).forEach(it => rerenderWidget(it.id));
+}
+function extWidgetBody(key, w) {
+  const d = EXT.data[key];
+  if (!d || Date.now() - d.t > 60000) extFetch(key, w);
+  if (!d) return `<div class="empty" style="flex:1"><span class="thinking"><b>Lade …</b></span></div>`;
+  if (d.rows?.fehler) return `<div class="empty" style="flex:1"><p style="color:var(--neg)">${esc(d.rows.fehler)}</p></div>`;
+  const rows = d.rows || [];
+  if (!rows.length) return `<div class="empty" style="flex:1"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><p>${esc(w.leer || 'Keine Einträge')}</p></div>`;
+  if (w.typ === 'kennzahl') { const v = Object.values(rows[0])[0]; return `<div style="display:flex;flex-direction:column;justify-content:center;flex:1;padding:4px 2px"><div class="kpi-v" style="font-size:40px;font-weight:650;letter-spacing:-.03em">${esc(typeof v === 'number' ? num(v) : v)}</div><div class="muted" style="font-size:12.5px">${esc(w.einheit || '')}</div></div>`; }
+  if (w.typ === 'tabelle') { const cols = Object.keys(rows[0]); return `<div style="overflow:auto;flex:1"><table class="tbl" style="margin:0"><thead><tr>${cols.map((c, i) => `<th class="${i ? 'r' : ''}">${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0, 12).map(r => `<tr>${cols.map((c, i) => `<td class="${i ? 'r num' : ''}" style="${i ? '' : 'font-weight:550'}">${esc(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`; }
+  const f = w.felder || (k => ({titel: k[0], wert: k[1], untertitel: k[2]}))(Object.keys(rows[0]));
+  return `<div class="wl">${rows.slice(0, 6).map(r => `<div class="wl-row"><div class="wl-main"><div class="wl-t">${esc(r[f.titel] ?? '')}</div>${f.untertitel ? `<div class="wl-s">${esc(r[f.untertitel] ?? '')}</div>` : ''}</div>${f.wert ? `<span class="pill">${esc(r[f.wert] ?? '')}</span>` : ''}</div>`).join('')}${rows.length > 6 ? `<div class="muted" style="font-size:12px;padding:6px 2px">+ ${rows.length - 6} weitere</div>` : ''}</div>`;
+}
+// Vorschau-Widgets der Browser-Demo durch echte Erweiterungen ersetzen
+if (DESKTOP) { delete W['ext.repairs']; delete W['ext.rental']; }
+
+/* ── Befehle in der Befehlspalette ── */
+{
+  const _cl = cmdList;
+  cmdList = function () {
+    const extra = [{group: 'Navigation', label: 'Erweiterungen', icon: 'puzzle', run: () => go('erweiterungen'), kw: 'plugins installieren galerie'}];
+    for (const e of extOn()) for (const b of e.manifest.befehle || []) extra.push({group: e.name, label: b.titel, icon: b.icon || 'puzzle', kw: 'erweiterung', run: () => runExtCommand(e, b)});
+    return [..._cl(), ...extra];
+  };
+}
+async function runExtCommand(e, b) {
+  if (b.oeffnen) return go(b.oeffnen);
+  if (b.skript) {
+    const ctx = ruleContext('befehl', {benutzer: S.user.name});
+    const r = await runScript(b.skript, 'befehl', ctx);
+    for (const a of r.actions || []) { try { await doAction(a, ctx, {name: e.name}); } catch (err) { toast('Befehl: Fehler', {t2: String(err), type: 'warn'}); } }
+    if (!r.ok) toast(`${e.name}: ${r.error}`, {type: 'warn'});
+  }
+}
+
+/* ── Seite „Erweiterungen“ ── */
+for (let i = PH_VIEWS.length - 1; i >= 0; i--) if (PH_VIEWS[i] === 'erweiterungen') PH_VIEWS.splice(i, 1);
+NAV.splice(NAV.findIndex(n => n.id === 'anpassen') + 1, 0, {id: 'erweiterungen', label: 'Erweiterungen', icon: 'puzzle'});
+registerPage('erweiterungen', {title: 'Erweiterungen', sub: () => `${EXT.list.length} installiert`, render: renderErweiterungen});
+function renderErweiterungen() {
+  const v = $('#view-erweiterungen');
+  if (!DESKTOP) { v.innerHTML = desktopEmpty('puzzle', 'Erweiterungen'); return; }
+  const inst = id => EXT.list.find(e => e.id === id);
+  const parts = m => [(m.objekte || []).length && pl(m.objekte.length, 'Objekt'), (m.felder || []).length && pl(m.felder.length, 'Feld'), (m.regeln || []).length && pl(m.regeln.length, 'Regel'), (m.skripte || []).length && pl(m.skripte.length, 'Skript'), (m.endpunkte || []).length && pl(m.endpunkte.length, 'Endpunkt'), (m.widgets || []).length && pl(m.widgets.length, 'Widget'), (m.befehle || []).length && pl(m.befehle.length, 'Befehl')].filter(Boolean).join(' · ');
+  v.innerHTML = `<div class="cv">${pageHead('Erweiterungen', 'Zusätzliche Funktionen installieren – Objekte, Regeln, Widgets und Befehle in einem Paket', `<button class="btn btn-secondary" data-ex="datei">${ic('download', 'i-sm')}Aus Datei installieren …</button>`)}
+    <h3 style="font-size:14px;margin:4px 0 10px">Installiert</h3>
+    <div class="card">${EXT.list.length ? EXT.list.map(e => `<div class="set-row"><div style="display:flex;gap:12px;align-items:center;min-width:0"><span class="reg-ic">${ic(e.manifest.icon || 'puzzle', 'i-sm')}</span><div style="min-width:0"><div class="set-l">${esc(e.name)} <span class="muted" style="font-weight:400">${esc(e.version)} · ${esc(e.author || '')}</span></div><div class="set-h">${esc(parts(e.manifest))}</div></div></div><div class="set-c" style="gap:8px"><button class="switch" role="switch" data-exon="${esc(e.id)}" aria-checked="${e.enabled}" aria-label="aktiv"></button><button class="btn btn-ghost btn-sm" data-exrm="${esc(e.id)}">${ic('trash', 'i-sm')}</button></div></div>`).join('')
+      : '<div class="empty" style="padding:28px"><p>Noch keine Erweiterung installiert.</p></div>'}</div>
+    <h3 style="font-size:14px;margin:22px 0 10px">Galerie</h3>
+    <div class="ds-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">${EXT_GALERIE.map(m => `<div class="card" style="padding:18px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;gap:12px;align-items:center"><span class="reg-ic" style="color:var(--accent)">${ic(m.icon, 'i-sm')}</span><div><b>${esc(m.name)}</b><div class="muted" style="font-size:12px">${esc(m.version)} · ${esc(m.author)}</div></div></div><p style="margin:0;font-size:13px;color:var(--text-2);flex:1">${esc(m.beschreibung)}</p><div class="muted" style="font-size:12px">${esc(parts(m))}</div><div>${inst(m.id) ? `<span class="pill pos">${ic('check')}installiert</span>${inst(m.id).version !== m.version ? ` <button class="btn btn-secondary btn-sm" data-exg="${esc(m.id)}">Aktualisieren</button>` : ''}` : `<button class="btn btn-primary btn-sm" data-exg="${esc(m.id)}">${ic('download', 'i-sm')}Installieren</button>`}</div></div>`).join('')}</div>
+    <div class="prompt-hint blk" style="margin-top:14px">${ic('info', 'i-xs')}Eigene Erweiterungen sind JSON-Dateien im Format <span class="mono">kontor.erweiterung/v1</span> (Objekte, Felder, Regeln, Skripte, Endpunkte, Widgets, Befehle). Skripte laufen in der Sandbox ohne Datei- und Netzwerkzugriff; Abfragen sind nur lesend.</div></div>`;
+}
+function bindExtensions() {
+  $('#view-erweiterungen').addEventListener('click', async e => {
+    const g = e.target.closest('[data-exg]'); if (g) return extInstall(EXT_GALERIE.find(m => m.id === g.dataset.exg));
+    const on = e.target.closest('[data-exon]'); if (on) return extToggle(on.dataset.exon, on.getAttribute('aria-checked') !== 'true');
+    const rm = e.target.closest('[data-exrm]'); if (rm) return extRemove(rm.dataset.exrm);
+    if (e.target.closest('[data-ex="datei"]')) {
+      let txt; try { txt = await invoke('open_text', {title: 'Erweiterung installieren', ext: 'json'}); } catch (err) { return toast('Datei nicht lesbar', {t2: String(err), type: 'warn'}); }
+      if (!txt) return;
+      let m; try { m = JSON.parse(txt); } catch { return toast('Keine gültige Erweiterung', {type: 'warn'}); }
+      if (m.format !== 'kontor.erweiterung/v1') return toast('Keine Kontor-Erweiterung', {t2: 'format „kontor.erweiterung/v1“ fehlt', type: 'warn'});
+      extInstall(m, 'Datei');
+    }
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   40 · ZAHLUNGSARTEN, DESIGNS, SCHNELLWAHL, DRUCKLAYOUT, KI-WIDGETS
+   ════════════════════════════════════════════════════════════════════ */
+Object.assign(DEFAULTS, {'zahlung.aus': [], 'zahlung.eigene': [], 'zahlung.paypalme': '', 'zahlung.iban': '', 'zahlung.bic': '', 'zahlung.empfaenger': '', 'kasse.schnellwahl': null, 'design.vorlagen': [], 'a4.farbe': '#1f6fd1', 'etikett.felder': ['marke', 'name', 'variante', 'preis']});
+Object.keys(DEFAULTS).forEach(k => { if (!(k in CFG)) CFG[k] = DEFAULTS[k]; });
+const plain = s => String(s ?? '').replace(/[<>"]/g, '').trim();
+
+/* ── Zahlungsarten ── */
+if (!METHODS.some(m => m.id === 'ueberweisung')) METHODS.splice(METHODS.findIndex(m => m.id === 'gutschein'), 0, {id: 'ueberweisung', label: 'Überweisung', sub: 'SEPA-QR · Banking-App', icon: 'qr', kind: 'qr'});
+const BASE_METHODS = METHODS.map(m => ({...m}));
+function applyMethods() {
+  const aus = new Set(Array.isArray(CFG['zahlung.aus']) ? CFG['zahlung.aus'] : []);
+  METHODS.length = 0;
+  BASE_METHODS.forEach(m => METHODS.push({...m, hidden: aus.has(m.id) || (m.id === 'ueberweisung' && !CFG['zahlung.iban'])}));
+  (Array.isArray(CFG['zahlung.eigene']) ? CFG['zahlung.eigene'] : []).forEach(m => METHODS.splice(METHODS.findIndex(x => x.id === 'gutschein'), 0, {id: m.id, label: plain(m.label), sub: plain(m.sub || (m.link ? 'QR-Code' : 'extern bestätigen')), icon: m.link ? 'qr' : 'card', kind: 'qr', link: m.link || '', custom: true, hidden: aus.has(m.id)}));
+  const p = METHODS.find(m => m.id === 'paypal'); if (p && CFG['zahlung.paypalme']) p.sub = 'paypal.me/' + plain(CFG['zahlung.paypalme']);
+}
+{ const _as = applySettings; applySettings = function (...a) { const r = _as.apply(this, a); applyMethods(); return r; }; }
+/** EPC-QR (SEPA „Girocode“, von österreichischen Banking-Apps lesbar) */
+const epcPayload = (amount, ref) => ['BCD', '002', '1', 'SCT', plain(CFG['zahlung.bic']).toUpperCase(), plain(CFG['zahlung.empfaenger'] || CFG['firma.name']).slice(0, 70), plain(CFG['zahlung.iban']).replace(/\s/g, '').toUpperCase(), 'EUR' + amount.toFixed(2), '', '', plain(ref).slice(0, 140)].join('\n');
+function qrFor(m, amount) {
+  if (m.id === 'paypal' && CFG['zahlung.paypalme']) return `https://paypal.me/${encodeURIComponent(plain(CFG['zahlung.paypalme']))}/${amount.toFixed(2)}EUR`;
+  if (m.id === 'ueberweisung' && CFG['zahlung.iban']) return epcPayload(amount, `${CFG['firma.marke'] || 'Kontor'} Beleg ${belegNo()}`);
+  if (m.link) return m.link.replace(/\{betrag\}/g, amount.toFixed(2)).replace(/\{beleg\}/g, belegNo());
+  return null;
+}
+const _runQRSim = runQR;
+runQR = async function (m, amount) {
+  if (!DESKTOP) return _runQRSim(m, amount);
+  PAY.busy = true;
+  const term = $('#term'); $('#payGo').disabled = true; $('#payAmtIn').disabled = true;
+  const reset = msg => { if (!PAY) return; PAY.busy = false; $('#payGo').disabled = false; $('#payAmtIn').disabled = false; if (msg) term.innerHTML = msg; };
+  const data = qrFor(m, amount);
+  let svg = ''; if (data) { try { svg = await invoke('qr_svg', {text: data}); } catch { /* */ } }
+  if (!PAY) return;
+  term.innerHTML = `${svg ? `<div class="qr-box" style="margin-bottom:10px">${svg.replace('<svg', '<svg width="150" height="150"')}</div>` : `<div class="dev">${ic(m.icon)}</div>`}<h3>${esc(eur(amount))} · ${esc(m.label)}</h3><p>${svg ? (m.id === 'ueberweisung' ? 'Mit der Banking-App scannen – Betrag und Empfänger sind ausgefüllt' : 'Kund:in scannt den Code und bezahlt am Handy') : 'Zahlung beim Anbieter durchführen'} · danach bestätigen</p><div style="display:flex;gap:8px;justify-content:center;margin-top:10px"><button class="btn btn-secondary" id="qrNo">Abbrechen</button><button class="btn btn-primary" id="qrOk">${ic('check', 'i-sm')}Zahlung erhalten</button></div>`;
+  Hooks.emit('pos.payment.qr', {beleg: belegNo(), art: m.id, betrag: r2(amount)});
+  $('#qrOk').onclick = () => { if (PAY) addPart(m, amount, `${m.label} · bestätigt`); };
+  $('#qrNo').onclick = () => reset(`<div class="dev">${ic(m.icon)}</div><h3>Abgebrochen</h3><p>Andere Zahlungsart wählen oder erneut versuchen.</p>`);
+};
+SET_SECTIONS.splice(SET_SECTIONS.findIndex(s => s[0] === 'terminal'), 0, ['zahlung', 'Zahlungsarten', 'card']);
+function renderZahlBox() {
+  const box = $('#zahlBox'); if (!box) return;
+  const aus = new Set(CFG['zahlung.aus'] || []);
+  box.innerHTML = `<div class="set-row"><div><div class="set-l">An der Kasse anbieten</div><div class="set-h">Reihenfolge = Tasten 1–8 im Bezahlen-Dialog</div></div><div class="set-c" style="flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:460px">${BASE_METHODS.concat((CFG['zahlung.eigene'] || []).map(m => ({...m, icon: m.link ? 'qr' : 'card'}))).map(m => `<button class="chip" data-zm="${esc(m.id)}" aria-pressed="${!aus.has(m.id)}">${ic(m.icon, 'i-sm')}${esc(plain(m.label))}</button>`).join('')}</div></div>
+    ${field('zahlung.paypalme', 'PayPal.me-Name', 'z. B. alpenlichtsport → QR-Code mit Betrag (paypal.me/…/49.90EUR)')}
+    ${field('zahlung.iban', 'IBAN für Überweisung per QR', 'aktiviert „Überweisung“ mit SEPA-QR (EPC-Girocode)')}
+    ${field('zahlung.bic', 'BIC', 'optional')}
+    ${field('zahlung.empfaenger', 'Empfänger', 'leer = Firmenname')}
+    <div class="set-row" style="border-bottom:0"><div><div class="set-l">Eigene Zahlungsarten</div><div class="set-h">${(CFG['zahlung.eigene'] || []).map(m => `${esc(plain(m.label))}${m.link ? ' (QR)' : ''} <button class="btn btn-ghost btn-sm" data-zdel="${esc(m.id)}" style="height:22px">${ic('x', 'i-xs')}</button>`).join(' · ') || 'z. B. Rechnung, Firmenkonto, Twint, Bluecode – mit oder ohne QR-Link'}</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" data-z="neu">${ic('plus', 'i-sm')}Zahlungsart</button></div></div>`;
+}
+function openOwnMethod() {
+  const el = openLayer(`<div class="modal" style="width:min(520px,100%)" role="dialog" aria-modal="true" aria-label="Zahlungsart"><div class="m-head"><div class="m-ic">${ic('card')}</div><div><h2>Eigene Zahlungsart</h2><p>Erscheint im Bezahlen-Dialog; wird am Bon und im Bericht ausgewiesen</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body" style="display:grid;gap:12px"><label class="field"><span>Bezeichnung</span><input class="input" id="omL" placeholder="z. B. Bluecode"></label><label class="field"><span>Zusatz</span><input class="input" id="omS" placeholder="z. B. App · QR"></label>
+      <label class="field"><span>Zahlungslink für QR-Code (optional)</span><input class="input mono" id="omLink" placeholder="https://… {betrag} … {beleg}"></label><div class="prompt-hint blk">${ic('info', 'i-xs')}Platzhalter <span class="mono">{betrag}</span> (z. B. 49.90) und <span class="mono">{beleg}</span>. Ohne Link wird die Zahlung nur bestätigt.</div></div>
+    <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="omGo">${ic('check', 'i-sm')}Hinzufügen</button></div></div>`, {focus: '#omL'});
+  $('#omGo', el).onclick = async () => {
+    const label = plain($('#omL', el).value); if (label.length < 2) return toast('Bezeichnung fehlt', {type: 'warn'});
+    const list = [...(CFG['zahlung.eigene'] || []), {id: 'x-' + norm(label).replace(/[^a-z0-9]/g, '').slice(0, 16) + '-' + uid().slice(0, 3), label, sub: plain($('#omS', el).value), link: $('#omLink', el).value.trim()}];
+    await saveSettings({'zahlung.eigene': list}); closeLayer(el); renderZahlBox();
+  };
+}
+
+/* ── Design-Vorlagen: weitere mitgelieferte und eigene ── */
+Object.assign(ACCENTS, {koralle: {h: 8, s: 70, name: 'Koralle'}, wald: {h: 152, s: 36, name: 'Wald'}, beere: {h: 336, s: 50, name: 'Beere'}, violett: {h: 262, s: 48, name: 'Violett'}});
+function extendPresets() {
+  if (THEME_PRESETS.some(p => p.id === 'ozean')) return;
+  THEME_PRESETS.unshift({id: 'ozean', name: 'Ozean · Hell', d: 'Standard ab 0.10 – klar, freundlich, hell.', theme: 'light', accent: 'ozean', density: 'comfort', radius: 'soft'}, {id: 'ozean-nacht', name: 'Ozean · Nacht', d: 'Dunkel mit kühlem Blau – ruhig am Abend.', theme: 'dark', accent: 'ozean', density: 'comfort', radius: 'soft'});
+  THEME_PRESETS.push({id: 'koralle', name: 'Koralle', d: 'Warm und lebendig – Mode & Lifestyle.', theme: 'light', accent: 'koralle', density: 'comfort', radius: 'soft'}, {id: 'wald', name: 'Wald', d: 'Natürlich, grün – Outdoor & Bio.', theme: 'light', accent: 'wald', density: 'comfort', radius: 'soft'},
+    {id: 'beere-nacht', name: 'Beere · Nacht', d: 'Edel und dunkel – Boutique.', theme: 'dark', accent: 'beere', density: 'comfort', radius: 'soft'}, {id: 'violett', name: 'Violett · Touch', d: 'Große Bedienflächen, kräftiger Akzent.', theme: 'light', accent: 'violett', density: 'touch', radius: 'soft'});
+}
+const designs = () => Array.isArray(CFG['design.vorlagen']) ? CFG['design.vorlagen'] : [];
+function askText(title, text, value = '') {
+  return new Promise(resolve => {
+    const el = openLayer(`<div class="modal" style="width:min(440px,100%)" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="m-head"><div class="m-ic">${ic('edit')}</div><div><h2>${esc(title)}</h2><p>${esc(text)}</p></div></div><div class="m-body"><input class="input" id="atIn" value="${esc(value)}"></div><div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="atGo">OK</button></div></div>`, {focus: '#atIn', onClose: () => resolve(null)});
+    const go2 = () => { const v = $('#atIn', el).value.trim(); if (!v) return; resolve(v); closeLayer(el); };
+    $('#atGo', el).onclick = go2; el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go2(); } });
+  });
+}
+async function saveDesign() {
+  const name = await askText('Design-Vorlage speichern', 'Name der Vorlage – für alle Benutzer dieser Kasse verfügbar', `Eigene ${designs().length + 1}`); if (!name) return;
+  const d = {name: plain(name), theme: prefs.theme, accent: prefs.accent, custom: prefs.custom, density: prefs.density, radius: prefs.radius, motion: prefs.motion, tpl: prefs.tpl};
+  await saveSettings({'design.vorlagen': [...designs().filter(x => x.name !== d.name), d]}, true);
+  toast('Design-Vorlage gespeichert', {t2: `„${d.name}“ – unter Designsystem → Design-Vorlagen`, type: 'pos', icon: 'palette'});
+  Hooks.emit('config.theme.saved', {vorlage: d.name, modus: d.theme, akzent: d.accent});
+  if (S.view === 'designsystem') renderDesign();
+}
+function applyDesign(d) { Object.assign(prefs, {theme: d.theme, accent: d.accent, custom: d.custom || null, density: d.density, radius: d.radius, motion: d.motion || 'full', tpl: d.tpl || prefs.tpl}); applyPrefs(true); toast(`Vorlage „${d.name}“ angewendet`, {icon: 'palette'}); }
+// Designsystem-Seite: eigene Vorlagen anzeigen, exportieren, importieren
+function decorateDesign() {
+  const grid = $('#view-designsystem [data-preset="_own"]')?.parentElement; if (!grid || $('#ownDesigns')) return;
+  const own = designs();
+  grid.insertAdjacentHTML('afterend', `<div id="ownDesigns" style="margin-top:14px"><div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><b style="font-size:14px">Eigene Vorlagen</b><span class="sp" style="flex:1"></span><button class="btn btn-secondary btn-sm" data-dsx="save">${ic('plus', 'i-sm')}Aktuelle Darstellung speichern</button><button class="btn btn-ghost btn-sm" data-dsx="export" ${own.length ? '' : 'disabled'}>${ic('download', 'i-sm')}Exportieren</button><button class="btn btn-ghost btn-sm" data-dsx="import">Importieren …</button></div>
+    ${own.length ? `<div class="ds-grid ds-cols-4">${own.map((d, i) => `<div class="card preset" style="position:relative"><button style="all:unset;display:block;cursor:pointer;width:100%" data-dsown="${i}">${presetPreview({...d, accent: ACCENTS[d.accent] ? d.accent : 'ozean'})}<div class="meta"><div class="t1">${esc(d.name)}</div><div class="t2">${esc(d.theme === 'dark' ? 'Dunkel' : d.theme === 'light' ? 'Hell' : 'System')} · ${esc(ACCENTS[d.accent]?.name || 'eigene Farbe')}</div></div></button><button class="btn btn-ghost btn-sm btn-icon" data-dsdel="${i}" style="position:absolute;top:8px;right:8px" aria-label="Löschen">${ic('trash', 'i-sm')}</button></div>`).join('')}</div>` : '<div class="muted" style="font-size:13px">Noch keine – Darstellung oben rechts (Paletten-Symbol) einstellen und hier speichern.</div>'}</div>`);
+}
+{ const _rd = renderDesign; renderDesign = function (...a) { extendPresets(); const r = _rd.apply(this, a); decorateDesign(); return r; }; }
+
+/* ── Schnellwahl-Tasten an der Kasse ── */
+const SVC_DEFAULT = SERVICES.map(s => ({...s}));
+function applyQuick() {
+  const list = Array.isArray(CFG['kasse.schnellwahl']) ? CFG['kasse.schnellwahl'] : null; if (!list) return;
+  SERVICES.length = 0;
+  list.forEach(s => SERVICES.push({id: s.id, name: plain(s.name), price: s.price == null ? null : +s.price, icon: s.icon || 'tag', vat: s.vat ?? 20}));
+  if (!SERVICES.some(s => s.id === 'GS')) SERVICES.push(SVC_DEFAULT.find(s => s.id === 'GS'));
+}
+{ const _as2 = applySettings; applySettings = function (...a) { const r = _as2.apply(this, a); applyQuick(); return r; }; }
+function openQuickEditor() {
+  const st = SERVICES.filter(s => s.id !== 'GS').map(s => ({...s, price: s.price == null ? '' : num(s.price, 2)}));
+  const icons = ['bag', 'wrench', 'snow', 'sliders', 'tag', 'gift', 'star', 'clock', 'boxes', 'percent', 'truck', 'receipt'];
+  const el = openLayer(`<div class="modal" style="width:min(640px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="Schnellwahl"><div id="qeBox" style="display:flex;flex-direction:column;min-height:0"></div></div>`);
+  const box = $('#qeBox', el);
+  const collect = () => $$('[data-qe]', el).forEach(i => { st[+i.dataset.qi][i.dataset.qe] = i.value; });
+  const render = () => {
+    box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('grid')}</div><div><h2>Schnellwahl-Tasten</h2><p>Dienstleistungen und häufige Positionen ohne Artikelnummer · „Gutschein verkaufen“ bleibt immer</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="m-body" style="overflow:auto;display:grid;gap:8px">${st.map((s, i) => `<div class="frow" style="grid-template-columns:44px 1fr 110px 90px 36px"><select class="input select" data-qe="icon" data-qi="${i}" style="padding:0 6px">${icons.map(x => `<option ${x === s.icon ? 'selected' : ''}>${x}</option>`).join('')}</select><input class="input" data-qe="name" data-qi="${i}" value="${esc(s.name)}" placeholder="Bezeichnung"><input class="input num" data-qe="price" data-qi="${i}" value="${esc(s.price)}" placeholder="Preis €"><select class="input select" data-qe="vat" data-qi="${i}">${[20, 13, 10, 0].map(v => `<option value="${v}" ${+s.vat === v ? 'selected' : ''}>${v} %</option>`).join('')}</select><button class="btn btn-ghost btn-icon" data-qrm="${i}" aria-label="Entfernen">${ic('x', 'i-sm')}</button></div>`).join('')}
+        <div><button class="btn btn-ghost btn-sm" id="qeAdd">${ic('plus', 'i-sm')}Taste hinzufügen</button></div></div>
+      <div class="m-foot"><button class="btn btn-ghost" id="qeReset">Standard</button><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="qeSave">${ic('check', 'i-sm')}Speichern</button></div>`;
+  };
+  el.addEventListener('click', async e => {
+    if (e.target.closest('#qeAdd')) { collect(); st.push({id: 'Q' + uid().slice(0, 4).toUpperCase(), name: '', price: '', icon: 'tag', vat: 20}); return render(); }
+    const rm = e.target.closest('[data-qrm]'); if (rm) { collect(); st.splice(+rm.dataset.qrm, 1); return render(); }
+    if (e.target.closest('#qeReset')) { await saveSettings({'kasse.schnellwahl': SVC_DEFAULT.filter(s => s.id !== 'GS')}, true); SERVICES.length = 0; SVC_DEFAULT.forEach(s => SERVICES.push({...s})); closeLayer(el); return toast('Schnellwahl zurückgesetzt', {icon: 'grid'}); }
+    if (e.target.closest('#qeSave')) {
+      collect();
+      const list = st.filter(s => plain(s.name)).map(s => ({id: s.id, name: plain(s.name), price: String(s.price).trim() ? r2(parseAmt(s.price)) : null, icon: s.icon, vat: +s.vat}));
+      if (list.some(s => s.price != null && !(s.price >= 0))) return toast('Preis ungültig', {type: 'warn'});
+      await saveSettings({'kasse.schnellwahl': list}); closeLayer(el);
+      if (S.view === 'kasse') { S.view = null; go('kasse'); }
+    }
+  });
+  render();
+}
+
+/* ── Drucklayout: Farbe der A4-Belege, Inhalt der Etiketten ── */
+{ const _pi = printInvoice; printInvoice = function (rec, kind) { const c = /^#[0-9a-f]{6}$/i.test(CFG['a4.farbe'] || '') ? CFG['a4.farbe'] : '#111111'; const _ph = printHTML; printHTML = (body, title, css = '') => _ph(body, title, css + `h1{color:${c}}th{color:${c};border-color:${c}}.sum .tot td{border-color:${c};color:${c}}`); try { return _pi(rec, kind); } finally { printHTML = _ph; } }; }
+
+/* ── KI-Antworten als Dashboard-Widget anheften ── */
+const aiPins = () => persist.get('aiPins', []);
+function registerAiPins() {
+  Object.keys(W).filter(k => k.startsWith('ai.pin:')).forEach(k => delete W[k]);
+  aiPins().forEach(p => {
+    W['ai.pin:' + p.id] = {title: p.title || p.q, cat: 'KI', icon: 'sparkle', desc: `Gespeicherte Frage: „${p.q}“`, sizes: ['wide', 'tall'], sub: () => 'KI · lokal', tools: () => `<span class="ai-chip"><span class="dot live"></span>aktuell</span>`,
+      body: it => { const c = AI_PIN_DATA[p.id]; if (!c || Date.now() - c.t > 120000) refreshPin(p, it); if (!c) return `<div class="empty" style="flex:1"><span class="thinking"><b>Werte aus …</b></span></div>`; const a = c.a;
+        return a.rows?.length ? `<div style="overflow:auto;flex:1"><table class="tbl" style="margin:0"><thead><tr>${a.cols.slice(0, 4).map((x, i) => `<th class="${a.num?.includes(i) ? 'r' : ''}">${esc(x)}</th>`).join('')}</tr></thead><tbody>${a.rows.slice(0, 6).map(r => `<tr>${r.slice(0, 4).map((x, i) => `<td class="${a.num?.includes(i) ? 'r num' : ''}" style="${i ? '' : 'font-weight:550'}">${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : `<p style="font-size:13px;color:var(--text-2)">${esc(a.text)}</p>`; }};
+  });
+}
+const AI_PIN_DATA = {};
+async function refreshPin(p) {
+  if (AI_PIN_DATA[p.id]?.busy) return; AI_PIN_DATA[p.id] = {...(AI_PIN_DATA[p.id] || {}), busy: true};
+  try { AI_PIN_DATA[p.id] = {a: await realAnswer(p.q), t: Date.now()}; } catch (e) { AI_PIN_DATA[p.id] = {a: {text: String(e)}, t: Date.now()}; }
+  (Dash.layout || []).filter(it => it.t === 'ai.pin:' + p.id).forEach(it => rerenderWidget(it.id));
+}
+function pinQuestion(q, title) {
+  const p = {id: uid(), q, title: title || q};
+  persist.set('aiPins', [...aiPins(), p]); registerAiPins();
+  Dash.layout.unshift({id: uid(), t: 'ai.pin:' + p.id, s: 'wide'}); Dash.preset = 'eigene'; saveLayout(); if (S.view === 'dashboard') renderWidgets(false);
+  toast('Als Widget angeheftet', {t2: `„${p.title}“ – aktualisiert sich selbst`, type: 'pos', icon: 'layout'});
+  Hooks.emit('dashboard.widget.added', {widget: 'ai.pin', frage: q});
+}
+// Knopf „Anheften“ an KI-Antworten (Dashboard und KI-Analyse)
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-pinq]'); if (b) { e.stopPropagation(); pinQuestion(b.dataset.pinq, b.dataset.pint); }
+}, true);
+const pinObserver = new MutationObserver(() => {
+  const foot = $('#answerSlot .answer-foot'); const q = $('#askInput')?.value.trim();
+  if (DESKTOP && foot && q && !$('[data-pinq]', foot) && foot.children.length) foot.lastElementChild?.insertAdjacentHTML?.('beforeend', `<button class="btn btn-secondary btn-sm" data-pinq="${esc(q)}" data-pint="${esc($('#answerSlot .answer-head h3')?.textContent || q)}">${ic('layout', 'i-sm')}Als Widget</button>`);
+  const ka = $('#kiAns .set-row'); const kq = $('#kiQ')?.value.trim();
+  if (ka && kq && !$('[data-pinq]', ka)) ka.insertAdjacentHTML('beforeend', `<div class="set-c"><button class="btn btn-ghost btn-sm" data-pinq="${esc(kq)}" data-pint="${esc($('#kiAns .set-l')?.textContent.trim() || kq)}">${ic('layout', 'i-sm')}Als Widget</button></div>`);
+});
+setTimeout(() => ['#view-dashboard', '#view-ki'].forEach(id => { const n = $(id); n && pinObserver.observe(n, {childList: true, subtree: true}); }), 0);
+
+/* ── Einstellungen: Abschnitte für Zahlungsarten, Schnellwahl, Drucklayout ── */
+{
+  const _rs = renderSettings;
+  renderSettings = function () {
+    _rs();
+    const a = $('#sec-terminal');
+    if (a) a.insertAdjacentHTML('beforebegin', `<section class="set-sec" id="sec-zahlung"><h2>Zahlungsarten</h2><p>Welche Zahlungsarten an der Kasse erscheinen, PayPal und Überweisung per QR-Code, eigene Zahlungsarten.</p><div class="card" id="zahlBox"></div></section>`);
+    const k = $('#sec-kasse .card');
+    if (k) k.insertAdjacentHTML('beforeend', `<div class="set-row"><div><div class="set-l">Schnellwahl-Tasten</div><div class="set-h">${esc(SERVICES.filter(s => s.id !== 'GS').map(s => s.name).join(' · '))}</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" data-qe-open>${ic('grid', 'i-sm')}Bearbeiten</button></div></div>`);
+    const b = $('#bonBox');
+    if (b) b.insertAdjacentHTML('beforeend', `<div class="set-row"><div><div class="set-l">Akzentfarbe Rechnung/Lieferschein</div><div class="set-h">Überschrift, Tabellenkopf und Summe</div></div><div class="set-c"><input type="color" data-key="a4.farbe" value="${esc(CFG['a4.farbe'] || '#1f6fd1')}" style="width:44px;height:30px;border:0;background:none"></div></div>`);
+    renderZahlBox();
+  };
+}
+function bindMore() {
+  const sv = $('#view-einstellungen');
+  sv.addEventListener('click', async e => {
+    const zm = e.target.closest('[data-zm]');
+    if (zm) { const aus = new Set(CFG['zahlung.aus'] || []); aus.has(zm.dataset.zm) ? aus.delete(zm.dataset.zm) : aus.add(zm.dataset.zm); if (aus.has('bar')) { aus.delete('bar'); toast('Bar bleibt immer verfügbar', {icon: 'cash'}); } await saveSettings({'zahlung.aus': [...aus]}, true); return renderZahlBox(); }
+    if (e.target.closest('[data-z="neu"]')) return openOwnMethod();
+    const zd = e.target.closest('[data-zdel]'); if (zd) { await saveSettings({'zahlung.eigene': (CFG['zahlung.eigene'] || []).filter(m => m.id !== zd.dataset.zdel)}); return renderZahlBox(); }
+    if (e.target.closest('[data-qe-open]')) return openQuickEditor();
+  });
+  sv.addEventListener('change', e => { if (['zahlung.iban', 'zahlung.paypalme'].includes(e.target.dataset.key)) setTimeout(() => { applyMethods(); renderZahlBox(); }, 100); });
+  $('#view-designsystem').addEventListener('click', async e => {
+    const t = e.target;
+    const o = t.closest('[data-dsown]'); if (o) return applyDesign(designs()[+o.dataset.dsown]);
+    const d = t.closest('[data-dsdel]'); if (d) { const l = designs().slice(); l.splice(+d.dataset.dsdel, 1); await saveSettings({'design.vorlagen': l}, true); return renderDesign(); }
+    const x = t.closest('[data-dsx]'); if (!x) return;
+    if (x.dataset.dsx === 'save') return saveDesign();
+    if (x.dataset.dsx === 'export') { try { const p = await invoke('save_text', {name: 'Kontor_Designs.json', content: JSON.stringify({format: 'kontor.designs/v1', vorlagen: designs()}, null, 2), title: 'Design-Vorlagen exportieren'}); if (p) toast('Exportiert', {t2: p, type: 'pos', icon: 'download'}); } catch (err) { toast('Fehler', {t2: String(err), type: 'warn'}); } }
+    if (x.dataset.dsx === 'import') {
+      let txt; try { txt = await invoke('open_text', {title: 'Design-Vorlagen importieren', ext: 'json'}); } catch (err) { return toast('Datei nicht lesbar', {t2: String(err), type: 'warn'}); }
+      if (!txt) return; let j; try { j = JSON.parse(txt); } catch { return toast('Ungültige Datei', {type: 'warn'}); }
+      const add = (j.vorlagen || []).filter(v => v && v.name && v.theme).map(v => ({...v, name: plain(v.name)}));
+      await saveSettings({'design.vorlagen': [...designs().filter(v => !add.some(a => a.name === v.name)), ...add]}, true); renderDesign(); toast(`${add.length} Vorlagen importiert`, {type: 'pos', icon: 'palette'});
+    }
+  }, true);
+  // „Als Design-Vorlage speichern“ im Darstellungs-Menü speichert jetzt wirklich
+  document.addEventListener('click', e => { if (e.target.closest('#apSave')) { e.stopPropagation(); closePopover(); saveDesign(); } }, true);
+}
+
+/* ── Eigene Dashboard-Widgets: SQL-Abfrage (nur lesend) + Darstellung ── */
+DEFAULTS['dash.eigene'] = []; if (!('dash.eigene' in CFG)) CFG['dash.eigene'] = [];
+const ownWidgets = () => Array.isArray(CFG['dash.eigene']) ? CFG['dash.eigene'] : [];
+const OW_VORLAGEN = [
+  ['Umsatz heute', 'kennzahl', "SELECT printf('€ %.2f', COALESCE(SUM(total),0)/100.0) AS wert FROM sales WHERE substr(ts,1,10) = date('now','localtime')", 'brutto'],
+  ['Bons je Stunde (heute)', 'tabelle', "SELECT substr(ts,12,2) || ' Uhr' AS Stunde, COUNT(*) AS Bons, printf('€ %.2f', SUM(total)/100.0) AS Umsatz FROM sales WHERE kind = 'verkauf' AND substr(ts,1,10) = date('now','localtime') GROUP BY 1 ORDER BY 1", ''],
+  ['Unter Mindestbestand', 'liste', "SELECT a.name AS Artikel, v.stock || ' / ' || a.min_stock AS Bestand, v.ean AS EAN FROM variants v JOIN articles a ON a.id = v.article_id WHERE a.min_stock > 0 AND v.stock < a.min_stock ORDER BY v.stock LIMIT 20", ''],
+  ['Neue Kund:innen (30 Tage)', 'kennzahl', "SELECT COUNT(*) AS wert FROM customers WHERE created_at >= date('now','-30 days')", 'Kund:innen'],
+];
+function registerOwnWidgets() {
+  Object.keys(W).filter(k => k.startsWith('own:')).forEach(k => delete W[k]);
+  ownWidgets().forEach(o => {
+    const key = 'own:' + o.id, w = {typ: o.typ, quelle: {abfrage: o.sql}, einheit: o.einheit, leer: 'Keine Treffer'};
+    W[key] = {title: o.titel, cat: 'Erweiterungen', icon: o.typ === 'kennzahl' ? 'chart' : o.typ === 'tabelle' ? 'grid' : 'list', desc: `Eigene Abfrage · ${o.typ === 'kennzahl' ? 'Kennzahl' : o.typ === 'tabelle' ? 'Tabelle' : 'Liste'}`, sizes: o.typ === 'kennzahl' ? ['s', 'm'] : ['tall', 'wide'], plugin: 'Eigenes Widget', sub: () => 'Eigene Abfrage', body: () => extWidgetBody(key, w)};
+  });
+}
+{ const _as3 = applySettings; applySettings = function (...a) { const r = _as3.apply(this, a); if (DESKTOP) registerOwnWidgets(); return r; }; }
+function openWidgetBuilder(edit) {
+  const o = edit ? {...edit} : {id: uid().slice(0, 8), titel: '', typ: 'kennzahl', sql: '', einheit: ''};
+  const el = openLayer(`<div class="modal" style="width:min(720px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="Eigenes Widget"><div class="m-head"><div class="m-ic">${ic('code')}</div><div><h2>Eigenes Widget</h2><p>Abfrage auf die lokale Datenbank (nur lesend) – als Kennzahl, Liste oder Tabelle</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body" style="overflow:auto;display:grid;gap:12px">
+      <div><div class="muted" style="font-size:12px;margin-bottom:6px">Vorlagen</div><div style="display:flex;flex-wrap:wrap;gap:6px">${OW_VORLAGEN.map((v, i) => `<button class="chip" data-owv="${i}">${esc(v[0])}</button>`).join('')}</div></div>
+      <div class="ed-grid"><label class="field"><span>Titel</span><input class="input" id="owT" value="${esc(o.titel)}" placeholder="z. B. Umsatz heute"></label><label class="field"><span>Einheit / Zusatz (Kennzahl)</span><input class="input" id="owE" value="${esc(o.einheit || '')}" placeholder="z. B. Bons"></label></div>
+      <div class="field"><span>Darstellung</span><div class="seg" id="owSeg">${[['kennzahl', 'Kennzahl'], ['liste', 'Liste'], ['tabelle', 'Tabelle']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${o.typ === k}">${l}</button>`).join('')}</div></div>
+      <label class="field"><span>Abfrage (SQL, SELECT)</span><textarea class="input mono" id="owS" rows="5" style="height:auto;padding-top:9px;font-size:12.5px" placeholder="SELECT COUNT(*) AS wert FROM sales WHERE …">${esc(o.sql)}</textarea></label>
+      <div class="prompt-hint blk">${ic('info', 'i-xs')}Tabellen u. a.: <span class="mono">sales</span> (ts, kind, total in Cent, cashier, customer_id, data), <span class="mono">articles</span>, <span class="mono">variants</span> (ean, stock), <span class="mono">customers</span>, <span class="mono">transfers</span>. Kennzahl: erste Spalte der ersten Zeile. Liste: Spalte 1 = Titel, 2 = Wert, 3 = Unterzeile.</div>
+      <div id="owPrev"></div>
+      ${ownWidgets().length && !edit ? `<div><div class="muted" style="font-size:12px;margin-bottom:6px">Vorhandene eigene Widgets</div>${ownWidgets().map(x => `<div class="set-row"><div class="set-l">${esc(x.titel)} <span class="muted" style="font-weight:400">· ${esc(x.typ)}</span></div><div class="set-c" style="gap:6px"><button class="btn btn-ghost btn-sm" data-owedit="${esc(x.id)}">${ic('edit', 'i-sm')}Bearbeiten</button><button class="btn btn-ghost btn-sm btn-icon" data-owdel="${esc(x.id)}" aria-label="Löschen">${ic('trash', 'i-sm')}</button></div></div>`).join('')}</div>` : ''}
+    </div>
+    <div class="m-foot"><button class="btn btn-secondary" id="owTest">${ic('zap', 'i-sm')}Vorschau</button><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="owGo">${ic('check', 'i-sm')}${edit ? 'Speichern' : 'Zum Dashboard hinzufügen'}</button></div></div>`, {focus: '#owT'});
+  initSeg($('#owSeg', el), b => { o.typ = b.dataset.v; });
+  const read = () => { o.titel = plain($('#owT', el).value); o.einheit = plain($('#owE', el).value); o.sql = $('#owS', el).value.trim(); };
+  const preview = async () => {
+    read(); const box = $('#owPrev', el);
+    try {
+      const rows = await invoke('api_query_test', {sql: o.sql, args: {}});
+      const k = 'own:_vorschau'; EXT.data[k] = {rows, t: Date.now()};
+      box.innerHTML = `<div class="card" style="padding:14px;display:flex;flex-direction:column;min-height:120px;max-height:260px;overflow:auto"><div class="muted" style="font-size:12px;margin-bottom:6px">Vorschau · ${num(rows.length)} Zeile${rows.length === 1 ? '' : 'n'}</div>${extWidgetBody(k, {typ: o.typ, einheit: o.einheit, leer: 'Keine Treffer'})}</div>`;
+      return true;
+    } catch (e) { box.innerHTML = `<div class="prompt-hint blk" style="color:var(--neg)">${ic('alert', 'i-xs')}${esc(String(e))}</div>`; return false; }
+  };
+  el.addEventListener('click', async e => {
+    const v = e.target.closest('[data-owv]'); if (v) { const [t, typ, sql, ein] = OW_VORLAGEN[+v.dataset.owv]; $('#owT', el).value = t; $('#owS', el).value = sql; $('#owE', el).value = ein; $(`#owSeg [data-v="${typ}"]`, el).click(); return preview(); }
+    if (e.target.closest('#owTest')) return preview();
+    const ed = e.target.closest('[data-owedit]'); if (ed) { closeLayer(el); return openWidgetBuilder(ownWidgets().find(x => x.id === ed.dataset.owedit)); }
+    const dl = e.target.closest('[data-owdel]'); if (dl) {
+      await saveSettings({'dash.eigene': ownWidgets().filter(x => x.id !== dl.dataset.owdel)}, true);
+      Dash.layout = Dash.layout.filter(it => it.t !== 'own:' + dl.dataset.owdel); saveLayout(); registerOwnWidgets(); if (S.view === 'dashboard') renderWidgets(false);
+      closeLayer(el); return toast('Widget gelöscht', {icon: 'trash'});
+    }
+    if (e.target.closest('#owGo')) {
+      read(); if (o.titel.length < 2) return toast('Titel fehlt', {type: 'warn'});
+      if (!(await preview())) return toast('Abfrage fehlerhaft', {t2: 'Vorschau prüfen', type: 'warn'});
+      await saveSettings({'dash.eigene': [...ownWidgets().filter(x => x.id !== o.id), o]}, true);
+      registerOwnWidgets(); delete EXT.data['own:' + o.id];
+      if (!edit) { Dash.layout.unshift({id: uid(), t: 'own:' + o.id, s: W['own:' + o.id].sizes[0]}); Dash.preset = 'eigene'; saveLayout(); }
+      closeLayer(el); $$('.layer').forEach(l => { if ($('#libList', l)) closeLayer(l); });
+      if (S.view === 'dashboard') renderWidgets(false); else go('dashboard');
+      toast(edit ? 'Widget gespeichert' : `„${o.titel}“ hinzugefügt`, {type: 'pos', icon: 'layout'});
+      Hooks.emit('dashboard.widget.added', {widget: 'own', titel: o.titel});
+    }
+  });
+}
+document.addEventListener('click', e => { if (DESKTOP && e.target.closest('#libCustom')) { e.stopPropagation(); openWidgetBuilder(); } }, true);
+
+/* ════════════════════════════════════════════════════════════════════
    12 · ANMELDUNG — Sperrbildschirm mit PIN, Windows Hello, FIDO2, SSO
    ════════════════════════════════════════════════════════════════════ */
 /* ════════════════════════════════════════════════════════════════════
@@ -8091,7 +8923,7 @@ function bindShell() {
   $('#tbLeft').addEventListener('click', e => { const p = e.target.closest('[data-park]'); p && resume(p.dataset.park); });
   $('#statusbar').addEventListener('click', e => {
     const id = e.target.closest('[id]')?.id;
-    ({sbConn: () => setOnline(!S.online), sbBackup: () => DESKTOP ? (go('einstellungen'), setTimeout(() => $('#sec-sicherung')?.scrollIntoView({block: 'start'}), 120)) : backupNow(), sbUpdate: openUpdate, sbHooks: toggleInspector})[id]?.();
+    ({sbConn: () => setOnline(!S.online), sbVerbund: () => go('filialen'), sbBackup: () => DESKTOP ? (go('einstellungen'), setTimeout(() => $('#sec-sicherung')?.scrollIntoView({block: 'start'}), 120)) : backupNow(), sbUpdate: openUpdate, sbHooks: toggleInspector})[id]?.();
   });
   $('#views').addEventListener('mousedown', e => { if (matchMedia('(max-width: 900px)').matches && !e.target.closest('.sidebar')) $('#app').classList.remove('sb-open'); });
   addEventListener('hashchange', () => go(location.hash.slice(1)));
@@ -8106,11 +8938,12 @@ async function init() {
   await loadCustomers();
   await loadUsers();
   if (DESKTOP) { await refreshRksv(); await loadSuppliers(); await loadPromos(); setInterval(applyPromos, 30 * 6e4); }
-  if (DESKTOP) { await Promise.all([loadCustom(), loadAutomation(), loadSecurity()]); installGuards(); }
+  if (DESKTOP) { await Promise.all([loadCustom(), loadAutomation(), loadSecurity(), loadAuth(), loadExtensions(), loadVerbund()]); installGuards(); }
+  extendPresets(); registerAiPins(); renderNavVerbund();
   if (DESKTOP) { await refreshInfo(); Hooks.on('*', (p, e) => { if (!e.evt.startsWith('config.settings')) invoke('audit_append', {event: e.evt, payload: e.payload ?? {}}).catch(() => {}); }); }
   $('#palKbd').innerHTML = `<span class="kbd">${MOD}</span><span class="kbd">K</span>`;
   renderNav(); permNav(); renderMe(); renderStore(); renderStatus();
-  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings(); bindStockViews(); bindP5(); bindCustom(); bindAutomation(); bindSecurity(); bindAiFibu(); bindPages(); bindImportDisplay();
+  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings(); bindStockViews(); bindP5(); bindCustom(); bindAutomation(); bindSecurity(); bindAiFibu(); bindPages(); bindImportDisplay(); bindVerbund(); bindAuth(); bindExtensions(); bindMore();
   go(location.hash.slice(1) || 'dashboard');
   if (DESKTOP) lock();   // Anmeldung mit PIN beim Start
   if (DESKTOP) { loadPurchasing().then(() => navBadge('wareneingang', EK.pos.filter(p => ['bestellt', 'teilgeliefert'].includes(p.status)).length)).catch(() => {}); if (CFG['display.auto']) setTimeout(() => toggleDisplay(true), 1500); }

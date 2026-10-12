@@ -12,6 +12,9 @@ mod custom;
 mod security;
 mod zvt;
 mod mobile;
+mod verbund;
+mod auth;
+mod extensions;
 mod closing;
 mod customers;
 mod db;
@@ -27,6 +30,7 @@ mod updates;
 mod users;
 mod vouchers;
 
+use base64::Engine as _;
 use serde::Serialize;
 use serde_json::{json, Map, Value};
 use std::path::PathBuf;
@@ -1307,6 +1311,264 @@ fn mobile_info(app: AppHandle) -> Value {
         "lan": g("api.lan").and_then(|v| v.as_bool()).unwrap_or(false), "port": g("api.port").and_then(|v| v.as_u64()).unwrap_or(8787) })
 }
 
+/* ── Paket 8: Filialverbund ── */
+
+#[tauri::command]
+fn verbund_info(db: State<db::Db>) -> Value {
+    let c = db.conn.lock().unwrap();
+    let g = |k: &str| db::setting_get(&c, k).unwrap_or(Value::Null);
+    let rolle = verbund::rolle(&c);
+    json!({ "rolle": rolle, "filiale": verbund::own_store(&c), "name": g("verbund.name"), "url": g("verbund.url"), "verbunden": !g("verbund.schluessel").is_null() && g("verbund.schluessel") != json!(""),
+        "status": g("verbund.status"), "stores": if rolle == "zentrale" { verbund::overview(&c).map(|o| o["stores"].clone()).unwrap_or(json!([])) } else { g("verbund.umsatz") } })
+}
+#[tauri::command]
+fn verbund_setup(app: AppHandle, rolle: String, filiale: String, name: String, code: Option<String>, by: Option<String>) -> Res<Value> {
+    if !verbund::ROLLEN.contains(&rolle.as_str()) {
+        return Err("Unbekannte Rolle".into());
+    }
+    let db = app.state::<db::Db>();
+    {
+        let c = db.conn.lock().unwrap();
+        let fil = filiale.trim().to_uppercase();
+        if rolle != "einzel" && (fil.len() < 2 || fil.len() > 12) {
+            return Err("Filialkennung: 2–12 Zeichen (z. B. INN)".into());
+        }
+        db::setting_set(&c, "verbund.rolle", &json!(rolle)).map_err(err)?;
+        db::setting_set(&c, "verbund.filiale", &json!(fil)).map_err(err)?;
+        db::setting_set(&c, "verbund.name", &json!(name.trim())).map_err(err)?;
+        if rolle == "filiale" {
+            // Verbindungscode der Zentrale: Base64(JSON {url, schluessel, filiale})
+            let raw = code.unwrap_or_default();
+            let txt = String::from_utf8(base64::engine::general_purpose::STANDARD.decode(raw.trim()).map_err(|_| "Verbindungscode ungültig".to_string())?).map_err(err)?;
+            let v: Value = serde_json::from_str(&txt).map_err(|_| "Verbindungscode ungültig".to_string())?;
+            let (url, key) = (v["url"].as_str().unwrap_or(""), v["schluessel"].as_str().unwrap_or(""));
+            if url.is_empty() || key.is_empty() {
+                return Err("Verbindungscode unvollständig".into());
+            }
+            if let Some(f) = v["filiale"].as_str() {
+                db::setting_set(&c, "verbund.filiale", &json!(f)).map_err(err)?;
+            }
+            db::setting_set(&c, "verbund.url", &json!(url)).map_err(err)?;
+            db::setting_set(&c, "verbund.schluessel", &json!(key)).map_err(err)?;
+            for k in ["verbund.c_sale", "verbund.c_move", "verbund.c_points"] {
+                db::setting_set(&c, k, &json!(0)).map_err(err)?;
+            }
+            db::setting_set(&c, "verbund.c_cust", &json!("")).map_err(err)?;
+            db::setting_set(&c, "verbund.c_pull", &json!("")).map_err(err)?;
+            db::setting_set(&c, "verbund.jetzt", &json!("1")).map_err(err)?;
+        }
+        let _ = db::audit_append(&c, "config.verbund", &json!({ "rolle": rolle, "filiale": fil, "durch": by }));
+    }
+    if rolle == "zentrale" {
+        let (port, running) = {
+            let c = db.conn.lock().unwrap();
+            db::setting_set(&c, "api.aktiv", &json!(true)).map_err(err)?;
+            db::setting_set(&c, "api.lan", &json!(true)).map_err(err)?;
+            (db::setting_get(&c, "api.port").and_then(|v| v.as_u64()).unwrap_or(8787) as u16, api::running(&app.state::<api::ApiState>()))
+        };
+        if running.as_deref().map(|a| !a.starts_with("0.0.0.0")).unwrap_or(true) {
+            api::start(&app.state::<api::ApiState>(), db.path.clone(), true, port)?;
+        }
+    }
+    Ok(verbund_info(db))
+}
+#[tauri::command]
+async fn verbund_test(app: AppHandle) -> Res<Value> {
+    let p = app.state::<db::Db>().path.clone();
+    tauri::async_runtime::spawn_blocking(move || { let c = db::open(&p).map_err(err)?; verbund::hello(&c) }).await.map_err(err)?
+}
+#[tauri::command]
+async fn verbund_sync(app: AppHandle) -> Res<Value> {
+    let p = app.state::<db::Db>().path.clone();
+    tauri::async_runtime::spawn_blocking(move || { let c = db::open(&p).map_err(err)?; let _ = c.busy_timeout(std::time::Duration::from_secs(10)); verbund::sync_once(&c) }).await.map_err(err)?
+}
+#[tauri::command]
+fn verbund_store_create(db: State<db::Db>, id: String, name: String, addr: String) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    if verbund::rolle(&c) != "zentrale" {
+        return Err("Filialen legt die Zentrale an".into());
+    }
+    let key = verbund::store_create(&c, &id, &name, &addr)?;
+    let port = db::setting_get(&c, "api.port").and_then(|v| v.as_u64()).unwrap_or(8787);
+    let ip = mobile::local_ips().into_iter().next().unwrap_or_else(|| "127.0.0.1".into());
+    let url = format!("http://{ip}:{port}");
+    let code = base64::engine::general_purpose::STANDARD.encode(json!({ "url": url, "schluessel": key, "filiale": id.trim().to_uppercase() }).to_string());
+    let _ = db::audit_append(&c, "verbund.store.created", &json!({ "filiale": id.trim().to_uppercase(), "name": name }));
+    Ok(json!({ "code": code, "url": url }))
+}
+#[tauri::command]
+fn verbund_store_toggle(db: State<db::Db>, id: String, active: bool) -> Res<()> {
+    db.conn.lock().unwrap().execute("UPDATE stores SET active = ?2 WHERE id = ?1", rusqlite::params![id, active as i64]).map_err(err)?;
+    Ok(())
+}
+#[tauri::command]
+fn verbund_stock(db: State<db::Db>) -> Res<Value> {
+    verbund::stock_matrix(&db.conn.lock().unwrap())
+}
+#[tauri::command]
+fn verbund_transfers(db: State<db::Db>) -> Res<Vec<Value>> {
+    let c = db.conn.lock().unwrap();
+    let own = verbund::own_store(&c);
+    verbund::transfers(&c, if verbund::rolle(&c) == "zentrale" { None } else { Some(&own) }).map_err(err)
+}
+#[tauri::command]
+async fn verbund_transfer_create(app: AppHandle, from: String, to: String, lines: Value, note: String, user: String) -> Res<Value> {
+    let p = app.state::<db::Db>().path.clone();
+    let r = tauri::async_runtime::spawn_blocking(move || {
+        let c = db::open(&p).map_err(err)?;
+        if verbund::rolle(&c) == "zentrale" { verbund::transfer_create(&c, &from, &to, &lines, &note, &user) } else { verbund::remote_transfer(&c, &json!({ "from": from, "to": to, "lines": lines, "note": note, "user": user })) }
+    })
+    .await
+    .map_err(err)?;
+    if let Ok(t) = &r {
+        let _ = db::audit_append(&app.state::<db::Db>().conn.lock().unwrap(), "verbund.transfer.created", &json!({ "nr": t["no"], "von": t["from"], "nach": t["to"] }));
+    }
+    r
+}
+#[tauri::command]
+async fn verbund_transfer_status(app: AppHandle, no: String, status: String, user: String) -> Res<Value> {
+    let p = app.state::<db::Db>().path.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let c = db::open(&p).map_err(err)?;
+        let _ = c.busy_timeout(std::time::Duration::from_secs(10));
+        let own = verbund::own_store(&c);
+        let r = if verbund::rolle(&c) == "zentrale" { verbund::transfer_status(&c, &no, &status, &own, &own, &user) } else { verbund::remote_transfer_status(&c, &no, &status, &user) };
+        if let Ok(t) = &r {
+            let _ = db::audit_append(&c, "verbund.transfer.status", &json!({ "nr": t["no"], "status": t["status"], "benutzer": user }));
+        }
+        r
+    })
+    .await
+    .map_err(err)?
+}
+#[tauri::command]
+fn verbund_suggestions(db: State<db::Db>) -> Res<Vec<Value>> {
+    verbund::suggestions(&db.conn.lock().unwrap())
+}
+
+/* ── Paket 8: Anmeldung ── */
+
+#[tauri::command]
+fn auth_methods(db: State<db::Db>) -> Value {
+    auth::methods(&db.conn.lock().unwrap())
+}
+#[tauri::command]
+fn auth_password_set(db: State<db::Db>, user: String, login: String, password: Option<String>, by: Option<String>) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    auth::password_set(&c, &user, &login, password.as_deref().filter(|p| !p.is_empty()))?;
+    let _ = db::audit_append(&c, "auth.password.set", &json!({ "benutzer": user, "durch": by }));
+    Ok(())
+}
+#[tauri::command]
+fn auth_password_clear(db: State<db::Db>, user: String, by: Option<String>) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    auth::password_clear(&c, &user)?;
+    let _ = db::audit_append(&c, "auth.password.cleared", &json!({ "benutzer": user, "durch": by }));
+    Ok(())
+}
+#[tauri::command]
+fn auth_login_password(db: State<db::Db>, login: String, password: String, code: Option<String>) -> Res<users::User> {
+    let c = db.conn.lock().unwrap();
+    let r = auth::password_verify(&c, &login, &password, code.as_deref());
+    if matches!(&r, Err(e) if e == "TOTP") {
+        return Err("TOTP".into());
+    }
+    let _ = db::audit_append(&c, if r.is_ok() { "auth.password.ok" } else { "auth.password.failed" }, &json!({ "login": login }));
+    let id = r?;
+    users::list(&c).map_err(err)?.into_iter().find(|u| u.id == id).ok_or_else(|| "Benutzer nicht gefunden".into())
+}
+#[tauri::command]
+async fn auth_sso(app: AppHandle) -> Res<users::User> {
+    let cfg = {
+        let db = app.state::<db::Db>();
+        let c = db.conn.lock().unwrap();
+        let g = |k: &str| db::setting_get(&c, k).and_then(|v| v.as_str().map(str::to_string)).unwrap_or_default();
+        auth::OidcCfg { issuer: g("sso.issuer"), client_id: g("sso.client_id"), client_secret: g("sso.client_secret") }
+    };
+    let who = tauri::async_runtime::spawn_blocking(move || auth::oidc_login(&cfg)).await.map_err(err)??;
+    let db = app.state::<db::Db>();
+    let c = db.conn.lock().unwrap();
+    let email = who["email"].as_str().unwrap_or("").to_string();
+    let Some(id) = auth::user_by_login(&c, &email) else {
+        let _ = db::audit_append(&c, "auth.sso.unknown", &json!({ "email": email }));
+        return Err(format!("{email} ist keinem Kontor-Benutzer zugeordnet (Benutzer → Anmeldung: E-Mail eintragen)"));
+    };
+    let _ = db::audit_append(&c, "auth.sso.ok", &json!({ "benutzer": id, "email": email }));
+    users::list(&c).map_err(err)?.into_iter().find(|u| u.id == id).ok_or_else(|| "Benutzer nicht gefunden".into())
+}
+#[tauri::command]
+async fn auth_hello(window: tauri::WebviewWindow, app: AppHandle, user: String, enable: bool) -> Res<users::User> {
+    #[cfg(windows)]
+    let hwnd = window.hwnd().map(|h| h.0 as isize).unwrap_or(0);
+    #[cfg(not(windows))]
+    let hwnd = { let _ = &window; 0isize };
+    {
+        let db = app.state::<db::Db>();
+        let c = db.conn.lock().unwrap();
+        let on: i64 = c.query_row("SELECT hello FROM users WHERE id = ?1 AND active = 1", [&user], |r| r.get(0)).map_err(|_| "Benutzer nicht gefunden".to_string())?;
+        if on == 0 && !enable {
+            return Err("Windows Hello ist für diese Person nicht eingerichtet".into());
+        }
+    }
+    let msg = if enable { "Windows Hello für die Kontor-Anmeldung einrichten" } else { "Bei Kontor anmelden" };
+    tauri::async_runtime::spawn_blocking(move || auth::hello_verify(hwnd, msg)).await.map_err(err)??;
+    let db = app.state::<db::Db>();
+    let c = db.conn.lock().unwrap();
+    if enable {
+        auth::hello_set(&c, &user, true)?;
+    }
+    let _ = db::audit_append(&c, if enable { "auth.hello.enabled" } else { "auth.hello.ok" }, &json!({ "benutzer": user }));
+    users::list(&c).map_err(err)?.into_iter().find(|u| u.id == user).ok_or_else(|| "Benutzer nicht gefunden".into())
+}
+#[tauri::command]
+fn auth_hello_off(db: State<db::Db>, user: String) -> Res<()> {
+    auth::hello_set(&db.conn.lock().unwrap(), &user, false)
+}
+#[tauri::command]
+fn auth_qr_start(app: AppHandle) -> Res<Value> {
+    let running = api::running(&app.state::<api::ApiState>());
+    let Some(addr) = running.filter(|a| a.starts_with("0.0.0.0")) else { return Err("Handy-Zugang ist nicht freigegeben (Einstellungen → Handy & Tablet)".into()) };
+    let port = addr.rsplit(':').next().unwrap_or("8787").to_string();
+    let ip = mobile::local_ips().into_iter().next().ok_or("Keine Netzwerkverbindung")?;
+    let t = mobile::qr_start();
+    Ok(json!({ "token": t, "url": format!("http://{ip}:{port}/mobil#qr={t}") }))
+}
+#[tauri::command]
+fn auth_qr_poll(db: State<db::Db>, token: String) -> Res<Option<users::User>> {
+    let Some(id) = mobile::qr_status(&token)? else { return Ok(None) };
+    let c = db.conn.lock().unwrap();
+    let _ = db::audit_append(&c, "auth.qr.login", &json!({ "benutzer": id }));
+    Ok(users::list(&c).map_err(err)?.into_iter().find(|u| u.id == id))
+}
+
+/* ── Paket 8: Erweiterungen ── */
+
+#[tauri::command]
+fn ext_list(db: State<db::Db>) -> Res<Vec<Value>> {
+    extensions::list(&db.conn.lock().unwrap()).map_err(err)
+}
+#[tauri::command]
+fn ext_install(db: State<db::Db>, manifest: Value, by: Option<String>) -> Res<Vec<Value>> {
+    let c = db.conn.lock().unwrap();
+    extensions::install(&c, &manifest)?;
+    let _ = db::audit_append(&c, "config.extension.installed", &json!({ "erweiterung": manifest["id"], "version": manifest["version"], "durch": by }));
+    extensions::list(&c).map_err(err)
+}
+#[tauri::command]
+fn ext_enable(db: State<db::Db>, id: String, on: bool) -> Res<Vec<Value>> {
+    let c = db.conn.lock().unwrap();
+    extensions::set_enabled(&c, &id, on)?;
+    let _ = db::audit_append(&c, "config.extension.enabled", &json!({ "erweiterung": id, "aktiv": on }));
+    extensions::list(&c).map_err(err)
+}
+#[tauri::command]
+fn ext_remove(db: State<db::Db>, id: String) -> Res<Vec<Value>> {
+    let c = db.conn.lock().unwrap();
+    extensions::remove(&c, &id)?;
+    let _ = db::audit_append(&c, "config.extension.removed", &json!({ "erweiterung": id }));
+    extensions::list(&c).map_err(err)
+}
+
 /// Vollbild / Kassen-Kiosk ein- oder ausschalten.
 #[tauri::command]
 fn set_fullscreen(window: tauri::WebviewWindow, on: bool) -> Res<bool> {
@@ -1323,20 +1585,25 @@ fn set_zoom(window: tauri::WebviewWindow, factor: f64) -> Res<f64> {
 }
 
 fn main() {
-    tauri::Builder::default()
+    // Portabler Betrieb / mehrere Kassen auf einem Rechner (z. B. Schulung, Test): eigener Datenordner
+    let portable = std::env::var("KONTOR_DATA_DIR").ok().filter(|d| !d.trim().is_empty());
+    let mut builder = tauri::Builder::default();
+    if portable.is_none() {
         // Nur eine Instanz pro Rechner: ein zweiter Start holt das offene Fenster nach vorne.
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.unminimize();
                 let _ = w.set_focus();
             }
-        }))
+        }));
+    }
+    builder
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(updates::Pending::default())
         .manage(api::ApiState::default())
-        .setup(|app| {
-            let dir = app.path().app_data_dir()?;
+        .setup(move |app| {
+            let dir = match &portable { Some(d) => PathBuf::from(d), None => app.path().app_data_dir()? };
             std::fs::create_dir_all(&dir)?;
             let path = dir.join("kontor.db");
             let conn = db::open(&path).map_err(|e| format!("Datenbank konnte nicht geöffnet werden: {e}"))?;
@@ -1347,6 +1614,7 @@ fn main() {
             }
             // Hintergrund-Dienste: Webhook-Zustellung, lokale REST-API (falls eingeschaltet)
             automation::start_worker(path.clone());
+            verbund::start_worker(path.clone());
             let api_cfg = (db::setting_get(&conn, "api.aktiv").and_then(|v| v.as_bool()).unwrap_or(false), db::setting_get(&conn, "api.lan").and_then(|v| v.as_bool()).unwrap_or(false), db::setting_get(&conn, "api.port").and_then(|v| v.as_u64()).unwrap_or(8787) as u16);
             if api_cfg.0 {
                 if let Err(e) = api::start(&app.state::<api::ApiState>(), path.clone(), api_cfg.1, api_cfg.2) {
@@ -1368,6 +1636,30 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            verbund_info,
+            verbund_setup,
+            verbund_test,
+            verbund_sync,
+            verbund_store_create,
+            verbund_store_toggle,
+            verbund_stock,
+            verbund_transfers,
+            verbund_transfer_create,
+            verbund_transfer_status,
+            verbund_suggestions,
+            auth_methods,
+            auth_password_set,
+            auth_password_clear,
+            auth_login_password,
+            auth_sso,
+            auth_hello,
+            auth_hello_off,
+            auth_qr_start,
+            auth_qr_poll,
+            ext_list,
+            ext_install,
+            ext_enable,
+            ext_remove,
             audit_query,
             articles_import,
             customers_import,

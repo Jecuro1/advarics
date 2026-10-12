@@ -25,6 +25,44 @@ fn sessions() -> &'static Mutex<HashMap<String, Sess>> {
     S.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+/* ── Anmeldung an der Kasse per Handy (QR-Code am Sperrbildschirm) ── */
+struct Qr {
+    user: Option<(String, String)>,
+    at: Instant,
+}
+fn qr_map() -> &'static Mutex<HashMap<String, Qr>> {
+    static Q: OnceLock<Mutex<HashMap<String, Qr>>> = OnceLock::new();
+    Q.get_or_init(|| Mutex::new(HashMap::new()))
+}
+pub fn qr_start() -> String {
+    let mut b = [0u8; 16];
+    OsRng.fill_bytes(&mut b);
+    let t: String = b.iter().map(|x| format!("{x:02x}")).collect();
+    let mut m = qr_map().lock().unwrap();
+    m.retain(|_, v| v.at.elapsed() < Duration::from_secs(300));
+    m.insert(t.clone(), Qr { user: None, at: Instant::now() });
+    t
+}
+/// Bestätigt? → Benutzer-ID (Code wird dabei verbraucht)
+pub fn qr_status(token: &str) -> Result<Option<String>, String> {
+    let mut m = qr_map().lock().unwrap();
+    match m.get(token) {
+        None => Err("QR-Code abgelaufen".into()),
+        Some(q) if q.at.elapsed() > Duration::from_secs(180) => {
+            m.remove(token);
+            Err("QR-Code abgelaufen".into())
+        }
+        Some(q) => match &q.user {
+            Some((id, _)) => {
+                let id = id.clone();
+                m.remove(token);
+                Ok(Some(id))
+            }
+            None => Ok(None),
+        },
+    }
+}
+
 fn json_reply(req: Request, code: u16, v: Value) {
     let r = Response::from_string(v.to_string()).with_status_code(code).with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json; charset=utf-8"[..]).unwrap());
     let _ = req.respond(r);
@@ -130,7 +168,7 @@ pub fn handle(c: &Connection, mut req: Request, path: &str) {
             _ => None,
         }
     };
-    let Some((_uid, name, role)) = sess else { return json_reply(req, 401, json!({ "fehler": "Bitte neu anmelden" })) };
+    let Some((uid, name, role)) = sess else { return json_reply(req, 401, json!({ "fehler": "Bitte neu anmelden" })) };
 
     let res: Result<Value, (u16, String)> = (|| match (method.clone(), path) {
         (Method::Get, "/mobil/api/suche") => Ok(json!(search(c, q.get("q").map(|s| s.as_str()).unwrap_or("")).map_err(|e| (500, e))?)),
@@ -172,6 +210,14 @@ pub fn handle(c: &Connection, mut req: Request, path: &str) {
             let id = inv["id"].as_i64().unwrap_or(0);
             let r = inventory::count(c, id, Some(&s("ean")), None, bj["menge"].as_i64().unwrap_or(1), bj["dazu"].as_bool().unwrap_or(true)).map_err(|e| (400, e))?;
             Ok(json!({ "inventur": inv["no"], "ergebnis": r }))
+        }
+        (Method::Post, "/mobil/api/qr") => {
+            let t = s("token");
+            let mut m = qr_map().lock().unwrap();
+            let q = m.get_mut(&t).filter(|q| q.at.elapsed() < Duration::from_secs(180)).ok_or((404, "QR-Code abgelaufen – an der Kasse neu anzeigen".to_string()))?;
+            q.user = Some((uid.clone(), name.clone()));
+            let _ = db::audit_append(c, "auth.qr.approved", &json!({ "benutzer": name }));
+            Ok(json!({ "ok": true }))
         }
         (Method::Post, "/mobil/api/abmelden") => {
             sessions().lock().unwrap().remove(&tok);

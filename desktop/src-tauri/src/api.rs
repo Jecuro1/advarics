@@ -204,6 +204,19 @@ fn handle(c: &Connection, db_path: &Path, mut req: Request) {
     let path = url.split('?').next().unwrap_or("").trim_end_matches('/').to_string();
     let args = query_args(&url);
     let arg = |k: &str| args.iter().find(|(a, _)| a == k).map(|(_, v)| v.clone());
+    if path.starts_with("/sync/") {
+        let key = req.headers().iter().find(|h| h.field.equiv("X-Kontor-Filiale")).map(|h| h.value.as_str().to_string()).unwrap_or_default();
+        let ip = req.remote_addr().map(|a| a.ip().to_string()).unwrap_or_default();
+        let mut body = String::new();
+        if method != Method::Get {
+            let _ = std::io::Read::read_to_string(&mut std::io::Read::take(req.as_reader(), 64 * 1024 * 1024), &mut body);
+        }
+        let bj: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
+        return match crate::verbund::handle(c, if method == Method::Get { "GET" } else { "POST" }, &path, &key, &bj, &ip) {
+            Ok(v) => reply(req, 200, v),
+            Err((code, e)) => reply(req, code, json!({ "fehler": e })),
+        };
+    }
     if path == "/mobil" || path.starts_with("/mobil/") {
         return crate::mobile::handle(c, req, &path);
     }

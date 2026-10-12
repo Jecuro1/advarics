@@ -62,8 +62,14 @@ Stand 0.10.0 – alles mit lokaler Datenbank, ohne Server:
   lokale REST-API mit Schlüsseln und eigenen Endpunkten (OpenAPI unter `/api/v1/openapi.json`), Export/Import als Paket.
 - **Betrieb:** Datensicherung (optional AES-256-verschlüsselt, inkl. Bilder) mit Prüfung und Wiederherstellung,
   signierte Updates im Programm (Kanal Stable oder Beta), Protokoll.
-- **Noch offen:** Mehrplatz/Filialserver, echte RKSV-Signaturkarte bzw. A-Trust, TSE (Deutschland), App-Store-App,
-  Windows Hello/FIDO2/Entra ID/AD/SAML-Anmeldung.
+- **Filialverbund:** Zentrale + Filialen (Verbindung per Code über den eingebauten Server, Port 8787), Abgleich alle
+  30 s, Bestand je Filiale, Umlagerungen (angefordert → versendet → empfangen) mit KI-Vorschlägen, jede Kasse offline-fähig.
+- **Anmeldung:** PIN, Passwort (+ Zwei-Faktor), Handy-QR, Windows Hello, Single Sign-On per OpenID Connect
+  (Entra ID, Google, Keycloak); Rechte je Rolle mit PIN-Freigabe.
+- **Erweiterungen** (`kontor.erweiterung/v1`) mit Galerie, eigene Dashboard-Widgets per Abfrage, einstellbare
+  Zahlungsarten inkl. PayPal.me- und SEPA-QR, eigene Design-Vorlagen.
+- **Noch offen:** echte RKSV-Signaturkarte bzw. A-Trust, TSE (Deutschland), App-Store-App, FIDO2-Schlüssel,
+  Active-Directory/SAML-Anmeldung.
 
 Datenbank: `%APPDATA%\at.kontor.desktop\kontor.db` · Sicherungen standardmäßig: `Dokumente\Kontor-Sicherungen`.
 Updates per neuem Installer behalten Datenbank und Einstellungen.

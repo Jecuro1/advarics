@@ -52,7 +52,7 @@ function lock() {
       <div class="pin-dots" id="lockDots" style="margin:14px 0 ${msg ? 6 : 16}px"><i></i><i></i><i></i><i></i></div>
       ${msg ? `<div style="text-align:center;font-size:12.5px;color:var(--neg);margin-bottom:10px">${esc(msg)}</div>` : ''}
       ${pinPad()}
-      ${DESKTOP ? '<div class="or" style="margin-top:14px">Windows Hello, Sicherheitsschlüssel und SSO folgen</div>' : `<div class="or">oder anmelden mit</div>
+      ${DESKTOP ? altAuthHTML(user) : `<div class="or">oder anmelden mit</div>
       <div class="auth-alt"><button class="btn btn-secondary" data-m="hello">${ic('faceid')}Windows Hello</button><button class="btn btn-secondary" data-m="fido">${ic('usbkey')}Sicherheitsschlüssel</button><button class="btn btn-secondary" data-m="nfc">${ic('idcard')}Mitarbeiterkarte</button><button class="btn btn-secondary" data-m="sso">${ic('building')}Entra ID · SSO</button></div>`}`;
   };
   const dots = () => $$('#lockDots i', el).forEach((d, i) => d.classList.toggle('on', i < pin.length));
@@ -83,6 +83,7 @@ function lock() {
     const u = e.target.closest('[data-u]'); if (u && !busy) { user = STAFF.find(s => s.id === u.dataset.u); pin = ''; $$('.lock-user', el).forEach(b => b.setAttribute('aria-pressed', b === u)); renderCard(); return; }
     const k = e.target.closest('[data-k]'); if (k) return key(k.dataset.k);
     const m = e.target.closest('[data-m]'); if (!m) return;
+    if (DESKTOP) { if (busy) return; return altAuth(m.dataset.m, user, card, (u, method) => { user = u; unlock(method); }, () => renderCard()); }
     ({hello: () => waitFor('faceid', 'Windows Hello · Gesicht wird erkannt …', 'Windows Hello'), fido: () => waitFor('usbkey', 'Sicherheitsschlüssel einstecken und berühren …', 'FIDO2'),
       nfc: () => waitFor('idcard', 'Mitarbeiterkarte an den Leser halten …', 'NFC-Karte'), sso: () => waitFor('building', 'Weiterleitung an Ihren Identitätsanbieter (OIDC) …', 'Entra ID')})[m.dataset.m]();
   });

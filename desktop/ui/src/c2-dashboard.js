@@ -305,7 +305,7 @@ const W = {
       if (DESKTOP) return realRegistersHTML();
       const k1 = S.online ? statusPill(['Online', 'pos']) : statusPill(['Offline', 'warn']);
       return `<div style="flex:1;min-height:0;overflow:auto">
-        <div class="reg"><span class="reg-ic">${ic('register', 'i-sm')}</span><div class="wl-main"><div class="wl-t">Kasse 1 · INN-K01</div><div class="wl-s">${esc(S.user.name)} · ${num(118 + Dash.session.bons)} Bons${S.queue ? ` · ${S.queue} in Warteschlange` : ''}</div></div>${k1}</div>
+        <div class="reg"><span class="reg-ic">${ic('register', 'i-sm')}</span><div class="wl-main"><div class="wl-t">${esc(CFG['kasse.name'] || 'Kasse 1')} · ${esc(CFG['kasse.id'] || 'INN-K01')}</div><div class="wl-s">${esc(S.user.name)} · ${num(118 + Dash.session.bons)} Bons${S.queue ? ` · ${S.queue} in Warteschlange` : ''}</div></div>${k1}</div>
         <div class="reg"><span class="reg-ic">${ic('register', 'i-sm')}</span><div class="wl-main"><div class="wl-t">Kasse 2 · INN-K02</div><div class="wl-s">Offline seit 12 min · 3 Belege lokal signiert</div></div>${statusPill(['Offline', 'warn'])}</div>
         <div class="reg"><span class="reg-ic">${ic('phone-pay', 'i-sm')}</span><div class="wl-main"><div class="wl-t">Mobile Kasse · INN-M01</div><div class="wl-s">Tablet · Verkaufsfläche</div></div>${statusPill(['Bereit', ''])}</div>
       </div><div class="note" style="margin-top:10px">${ic('shield')}<span>Monatsbeleg Oktober fällig am 31.10. · Signatureinheiten gültig bis 03/2029.</span><button class="btn btn-secondary btn-sm" data-act="dep" style="margin-left:auto;flex:none">DEP-Export</button></div>`;
@@ -491,7 +491,7 @@ function openLibrary() {
   const el = openLayer(`<div class="drawer-panel" role="dialog" aria-modal="true" aria-label="Widget-Bibliothek">
     <div class="m-head" style="padding-bottom:14px"><div class="m-ic">${ic('layout')}</div><div><h2>Widget-Bibliothek</h2><p>Kern-Widgets, Widgets aus Erweiterungen und eigene Abfragen.</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
     <div class="drawer-body"><input class="input lib-search" id="libQ" placeholder="Widgets durchsuchen …" style="height:40px"><div id="libList"></div>
-      <div class="lib-i" style="border-style:dashed;margin-top:18px"><span class="reg-ic">${ic('code')}</span><div style="min-width:0"><div class="t1">Eigenes Widget</div><div class="t2">Abfrage auf beliebige Entitäten (auch eigene) + Darstellung als Kennzahl, Liste oder Diagramm. Wird als JSON versioniert.</div></div><button class="btn btn-secondary btn-sm" id="libCustom">Erstellen</button></div>
+      <div class="lib-i" style="border-style:dashed;margin-top:18px"><span class="reg-ic">${ic('code')}</span><div style="min-width:0"><div class="t1">Eigenes Widget</div><div class="t2">Abfrage auf beliebige Entitäten (auch eigene) + Darstellung als Kennzahl, Liste oder Tabelle. Wird als JSON versioniert.</div></div><button class="btn btn-secondary btn-sm" id="libCustom">Erstellen</button></div>
     </div></div>`, {cls: 'drawer', focus: '#libQ'});
   const render = () => {
     const q = norm($('#libQ', el).value.trim()); const used = new Set(Dash.layout.map(x => x.t));

@@ -117,7 +117,11 @@ pub fn save(c: &Connection, k: &Customer) -> Result<String, String> {
         let n: i64 = c
             .query_row("UPDATE counters SET value = value + 1 WHERE name = 'kunde' RETURNING value", [], |r| r.get(0))
             .map_err(|e| e.to_string())?;
-        format!("K-{n:05}")
+        // im Filialverbund mit Filialkennung, damit Nummern über alle Filialen eindeutig bleiben
+        match db::setting_get(c, "verbund.rolle").and_then(|v| v.as_str().map(str::to_string)).as_deref() {
+            Some("filiale") => format!("K-{}-{n:05}", db::setting_get(c, "verbund.filiale").and_then(|v| v.as_str().map(str::to_string)).unwrap_or_default()),
+            _ => format!("K-{n:05}"),
+        }
     } else {
         k.id.trim().to_string()
     };

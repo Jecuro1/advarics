@@ -1,6 +1,6 @@
 [package]
 name = "kontor"
-version = "0.10.0"
+version = "0.11.0"
 description = "Kontor – Warenwirtschaft & Kasse (On-Premise)"
 authors = ["Kontor"]
 edition = "2021"
@@ -17,7 +17,7 @@ serde_json = "1"
 tauri-plugin-dialog = "2"
 tauri-plugin-updater = "2"
 rusqlite = { version = "0.40", features = ["bundled", "backup"] }
-sha2 = "0.10"
+sha2 = { version = "0.10", features = ["oid"] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 # RKSV: ES256-Signatur, AES-256-ICM-Umsatzzähler, Base64, QR-Code
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8"] }
@@ -38,10 +38,12 @@ url = "2"
 ureq = { version = "2", default-features = false, features = ["tls", "json"] }
 tiny_http = "0.12"
 sha1 = "0.10"
+# Paket 8: Single Sign-On (RS256-Signaturen der Identitätsanbieter)
+rsa = "0.9"
 
 [target.'cfg(windows)'.dependencies]
 # Bondrucker über den Windows-Druckerspooler (RAW)
-windows = { version = "0.58", features = ["Win32_Foundation", "Win32_Graphics_Printing", "Win32_Graphics_Gdi", "Win32_Security"] }
+windows = { version = "0.58", features = ["Win32_Foundation", "Win32_Graphics_Printing", "Win32_Graphics_Gdi", "Win32_Security", "Foundation", "Security_Credentials_UI", "Win32_System_WinRT"] }
 
 [profile.release]
 codegen-units = 1

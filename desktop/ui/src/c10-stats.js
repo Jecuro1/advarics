@@ -148,7 +148,8 @@ function realRegistersHTML() {
   const d = ST.cache.heute;
   return `<div style="flex:1;min-height:0;overflow:auto">
     <div class="reg"><span class="reg-ic">${ic('register', 'i-sm')}</span><div class="wl-main"><div class="wl-t">${esc(CFG['kasse.name'])} · ${esc(CFG['kasse.id'])}</div><div class="wl-s">${esc(S.user.name)} · heute ${d ? num(d.bons) : '…'} Bons · ${d ? eur0(d.rev) : '…'}</div></div>${statusPill(['Diese Kasse', 'pos'])}</div>
-    <div class="reg" style="opacity:.6"><span class="reg-ic">${ic('server', 'i-sm')}</span><div class="wl-main"><div class="wl-t">Weitere Kassen</div><div class="wl-s">erscheinen mit dem Filial-Server</div></div>${statusPill(['Geplant', ''])}</div>
+    ${typeof vbOn === 'function' && vbOn() ? (VB.info?.stores || []).filter(x => x.id !== vbOwn()).map(x => { const ago = x.last_sync ? (Date.now() - new Date(x.last_sync)) / 60000 : Infinity; return `<div class="reg"><span class="reg-ic">${ic('store', 'i-sm')}</span><div class="wl-main"><div class="wl-t">${esc(x.name)} · ${esc(x.id)}</div><div class="wl-s">${x.last_sync ? `heute ${num(x.sales_today || 0)} Bons · ${eur0((x.revenue_today || 0) / 100)} · Abgleich ${esc(fmtTs(x.last_sync))}` : 'noch nicht verbunden'}</div></div>${statusPill(x.active === false ? ['inaktiv', ''] : ago < 3 ? ['online', 'pos'] : x.last_sync ? ['offline', 'warn'] : ['wartet', ''])}</div>`; }).join('') || '<div class="muted" style="font-size:12.5px;padding:8px 2px">Noch keine Filiale angelegt – unter Filialen.</div>'
+      : `<div class="reg" style="opacity:.75"><span class="reg-ic">${ic('server', 'i-sm')}</span><div class="wl-main"><div class="wl-t">Weitere Kassen</div><div class="wl-s">Einzelplatz · Filialverbund unter Einstellungen</div></div><button class="btn btn-ghost btn-sm" data-goto="einstellungen">Einrichten</button></div>`}
   </div><div class="note" style="margin-top:10px">${ic('shield')}<span>${S.rksv?.active ? `RKSV-Testmodus aktiv · Kassen-ID ${esc(S.rksv.kassen_id)} · Software-Schlüssel (nicht registrierbar)` : 'RKSV nicht in Betrieb – Einstellungen → RKSV → Testbetrieb starten'}</span>${S.rksv?.active ? `<button class="btn btn-secondary btn-sm" data-act="dep" style="margin-left:auto;flex:none">DEP-Export</button>` : ''}</div>`;
 }
 function realSystemHTML() {
@@ -156,7 +157,7 @@ function realSystemHTML() {
   return `<div style="flex:1;min-height:0;overflow:auto">
     <div class="ops-row">${ic('database', 'i-sm')}<div class="k"><b>${esc(backupLabel())}</b>Datenbank ${i.db_bytes ? fmtBytes(i.db_bytes) : ''} · Prüfsumme & Integrität bei jeder Sicherung</div><button class="btn btn-secondary btn-sm" data-act="backup">Jetzt sichern</button></div>
     ${updWidgetRow()}
-    <div class="ops-row">${ic('server', 'i-sm')}<div class="k"><b>Einzelplatz</b>${esc(i.data_dir || 'lokales Datenverzeichnis')}</div></div>
+    <div class="ops-row">${ic('server', 'i-sm')}<div class="k"><b>${typeof vbStatus === 'function' && vbStatus() ? esc(vbStatus().text) : 'Einzelplatz'}</b>${esc(i.data_dir || 'lokales Datenverzeichnis')}</div></div>
     <div class="ops-row" style="opacity:.6">${ic('sparkle', 'i-sm')}<div class="k"><b>KI lokal</b>Vorschau – Modell wird in einem späteren Paket angebunden</div></div>
   </div><div class="wl-foot" style="margin-top:6px">${ic('info', 'i-xs')} Backups liegen in Ihrer Verantwortung – Kontor stellt die Werkzeuge.</div>`;
 }

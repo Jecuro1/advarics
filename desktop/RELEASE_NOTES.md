@@ -1,3 +1,17 @@
+## Neu in 0.11.0
+- **Filialverbund:** eine Installation als Zentrale, weitere Kassen als Filialen – Verbindung per Code. Artikel, Preise, Aktionen, Lieferanten und Kunden kommen von der Zentrale; Belege, Bestände und Bonuspunkte der Filialen werden alle 30 Sekunden gemeldet. Jede Kasse verkauft auch ohne Verbindung weiter
+- **Neue Seiten „Filialen“ und „Umlagerungen“:** Umsatz und Status je Filiale, Bestand je Artikel in allen Filialen, Umlagerungen anfordern → versenden (bucht aus) → empfangen (bucht ein), KI-Vorschläge für Umlagerungen
+- **An der Kasse:** Verfügbarkeit in den anderen Filialen; nicht lagernde Ware direkt per Umlagerung aus der Filiale mit dem meisten Bestand anfordern
+- **Weitere Anmeldewege:** Benutzername/E-Mail + Passwort (auch mit Zwei-Faktor), mit dem Handy (QR-Code an der Kasse, Bestätigung in Kontor mobil), Windows Hello, Single Sign-On über OpenID Connect (Microsoft Entra ID, Google Workspace, Keycloak …)
+- **Erweiterungen:** Pakete mit Objekten, Feldern, Regeln, Skripten, Endpunkten, Widgets und Befehlen – aus der Galerie (Werkstatt & Service, Kassen-Kennzahlen, Geburtstags-Bonus) oder als Datei; ein-/ausschalten und entfernen
+- **Eigene Dashboard-Widgets:** Abfrage auf die lokale Datenbank (nur lesend) als Kennzahl, Liste oder Tabelle – mit Vorlagen und Vorschau
+- **Zahlungsarten einstellbar:** welche an der Kasse erscheinen, PayPal per QR-Code mit Betrag (PayPal.me), Überweisung per SEPA-QR (Girocode) für Banking-Apps, eigene Zahlungsarten mit oder ohne Zahlungslink
+- **Schnellwahl-Tasten** der Kasse frei bearbeiten (Bezeichnung, Preis, Steuersatz, Symbol)
+- **Eigene Design-Vorlagen** speichern, exportieren und importieren; neue Vorlagen Koralle, Wald, Beere · Nacht, Violett · Touch
+- **KI-Antworten als Widget** ans Dashboard anheften – aktualisieren sich selbst
+- Akzentfarbe für Rechnung und Lieferschein (A4)
+- Statusleiste zeigt Rolle und letzten Abgleich im Filialverbund; Kassen-ID folgt der Filialkennung
+
 ## Neu in 0.10.0
 - **Neues helles Design** als Standard: klarer, freundlicher, mit neuer Akzentfarbe „Ozean“ (Dunkel und andere Farben weiter unter Darstellung wählbar)
 - **Neue Menüstruktur** mit aufklappbaren Bereichen: Verkauf, Sortiment, Einkauf, Kunden, Auswertung, System
