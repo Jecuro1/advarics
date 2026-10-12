@@ -1,3 +1,9 @@
+## Neu in 0.27.0
+
+- Einstellungen › Einstellungen Allgemein wie bei Advarics: Reiter Allgemein und E-Mail-Fußzeile, Karten Allgemein, Internationalisierung, Sonstige Standard-Einstellungen, Standard-Einstellungen f. Warengruppen, Gutscheine, Geräte-Registrierung und WebApp-Einstellungen. Auswahlfelder mit Suche, Löschen, Öffnen und Neu anlegen. Sichern und Änderungen zurücknehmen.
+- Einstellungen › Buchungslogik (Status-Seite mit Einstellungen, Status, Auswertung, Prüfung).
+- Menü Einstellungen: Reihenfolge wie bei Advarics beginnt mit Einstellungen Allgemein, Buchungslogik, Buchungsabschluss; die bisherigen Kontor-Einstellungen heißen „Kontor-Einstellungen“.
+
 ## Neu in 0.26.3
 
 - Tabellen füllen jetzt die ganze Arbeitsfläche bis unten (vorher blieb unter der Tabelle leerer Platz).

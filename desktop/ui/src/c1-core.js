@@ -196,7 +196,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.26.3', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.27.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -400,10 +400,11 @@ const NAV = [
   {id: 'st-statistikfilter', label: 'Statistikfilter', icon: 'filter'},
   {id: 'st-land', label: 'Länder', icon: 'globe'},
   {g: 'Einstellungen'},
-  {id: 'einstellungen', label: 'Einstellungen', icon: 'sliders'},
-  {id: 'einst-allgemein', label: 'Allgemein', icon: 'store'},
-  {id: 'prozesskonfiguration', label: 'Prozesskonfiguration', icon: 'flow'},
+  {id: 'einst-allgemein', label: 'Einstellungen Allgemein', icon: 'sliders'},
+  {id: 'einst-buchungslogik', label: 'Buchungslogik', icon: 'sliders'},
   {id: 'buchungsabschluss', label: 'Buchungsabschluss', icon: 'lock'},
+  {id: 'einstellungen', label: 'Kontor-Einstellungen', icon: 'sliders'},
+  {id: 'prozesskonfiguration', label: 'Prozesskonfiguration', icon: 'flow'},
   {id: 'einst-kassen', label: 'Kassen', icon: 'register'},
   {id: 'einst-benutzer', label: 'Benutzer-Einstellungen', icon: 'user'},
   {id: 'nummernkreise', label: 'Nummernkreise', icon: 'list'},
