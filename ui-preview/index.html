@@ -1968,7 +1968,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.32.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.33.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -14468,8 +14468,8 @@ INVOKE_HOOKS.doc_save = a => {
 
 /* ── Bonus Systeme ── */
 STAMM_DEF.bonussystem = {t: 'Bonus Systeme', ic: 'gift', sub: 'Bonus-Systeme mit Filtern und Staffeln', cols: [{k: 'name', l: 'Name'}]};
-const BS_TYPEN = [['marke', 'Marke'], ['warengruppe', 'Warengruppe'], ['hauptabteilung', 'Haupt-Abteilung'], ['abteilung', 'Abteilung'], ['hauptbereich', 'Haupt-Bereich'], ['bereich', 'Bereich'], ['saison', 'Saison']];
-const bsNeu = () => ({name: '', kundenfilter: false, von: 0, bis: 0, nurReg: false, regulaer: false, reduziert: false, rabattiert: false, maxRabatt: 0, maxEinheit: '%', gutscheintyp: '', tage: 0, filter: [], staffeln: []});
+const BS_TYPEN = [['marke', 'Marke'], ['warengruppe', 'Warengruppe'], ['hauptabteilung', 'Haupt-Abteilung'], ['abteilung', 'Abteilung'], ['bereich', 'Bereich']];
+const bsNeu = () => ({name: '', kundenfilter: false, von: 0, bis: 0, nurReg: false, gutscheintyp: '', tage: 365, filter: [], staffeln: []});
 const bsStaffel = () => ({name: '', ab: 0, pLauf: 0, pLaufU: '%', bLauf: 0, pGesp: 0, pGespU: '%', bGesp: 0});
 const BS = {id: null, ids: [], draft: null, tab: 'allg', dirty: false};
 const bsLoad = id => { const r = id ? stRows('bonussystem').find(x => x.id === id) : null; return r ? JSON.parse(JSON.stringify({...bsNeu(), ...r})) : bsNeu(); };
@@ -14481,11 +14481,10 @@ function bsOpen(id, ids) {
 }
 agridPage('st-bonussystem', {
   title: 'Bonus Systeme', count: () => stRows('bonussystem').length, sort: {k: 'name', dir: 1},
-  rows: () => stRows('bonussystem').map(r => ({id: r.id, name: r.name || '', kundenfilter: !!r.kundenfilter, von: +r.von || 0, bis: +r.bis || 0, nurReg: !!r.nurReg, regulaer: !!r.regulaer, reduziert: !!r.reduziert, rabattiert: !!r.rabattiert, maxRabatt: `${num(+r.maxRabatt || 0)} ${r.maxEinheit || '%'}`, gutscheintyp: stName('gutscheintyp', r.gutscheintyp) || '', tage: +r.tage || 0})),
+  rows: () => stRows('bonussystem').map(r => ({id: r.id, name: r.name || '', kundenfilter: !!r.kundenfilter, von: +r.von || 0, bis: +r.bis || 0, nurReg: !!r.nurReg, staffeln: (r.staffeln || []).length, gutscheintyp: stName('gutscheintyp', r.gutscheintyp) || '', tage: +r.tage || 0})),
   toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}],
   cols: [{k: 'name', l: 'Name', w: 220}, {k: 'kundenfilter', l: 'Kunden Filter verwenden', t: 'check', w: 190}, {k: 'von', l: 'Von Kundennummer', t: 'num', w: 160}, {k: 'bis', l: 'Bis Kundennummer', t: 'num', w: 160}, {k: 'nurReg', l: 'Nur für registrierte Kunden', t: 'check', w: 210},
-    {k: 'regulaer', l: 'Verwendung bei regulären Waren', t: 'check', w: 230}, {k: 'reduziert', l: 'Verwendung bei reduzierten Waren', t: 'check', w: 240}, {k: 'rabattiert', l: 'Verwendung bei rabattierten Waren', t: 'check', w: 240},
-    {k: 'maxRabatt', l: 'Maximaler Belegrabatt', w: 180}, {k: 'gutscheintyp', l: 'Gutscheintyp', w: 170}, {k: 'tage', l: 'Gültigkeit in Tagen', t: 'num', w: 160}],
+    {k: 'staffeln', l: 'Staffeln', t: 'num', w: 110}, {k: 'gutscheintyp', l: 'Gutscheintyp', w: 170}, {k: 'tage', l: 'Gültigkeit in Tagen', t: 'num', w: 160}],
   actions: {back: e2Back, refresh: async () => { await loadStamm(true); PAGES['st-bonussystem'].render(); }, new: () => bsOpen(null, [])},
   edit: id => bsOpen(id, (AG['st-bonussystem'].filtered || []).map(r => r.id)),
   remove: async ids => { if (!await confirmBox(`${num(ids.length)} Bonus-System${ids.length > 1 ? 'e' : ''} löschen?`, 'Löschen')) throw new Error('abgebrochen'); await needPerm('einstellungen', 'Bonus Systeme'); const s = new Set(ids); await stammSave('bonussystem', stRows('bonussystem').filter(r => !s.has(r.id)).map(r => ({...r}))); },
@@ -14519,10 +14518,9 @@ function bsRender() {
   if (BS.tab === 'allg') body = `<div class="ea-cols"><div class="ae-card ea-card"><h4>Allgemein</h4><div class="ea-fields">
       <label class="field"><span>Name *</span><input class="input" data-bs="name" value="${esc(D.name)}"></label>
       ${bsSw('kundenfilter', 'Kunden Filter verwenden', D.kundenfilter)}${bsNum('von', 'Von Kundennummer *', D.von)}${bsNum('bis', 'Bis Kundennummer *', D.bis)}
-      ${bsSw('nurReg', 'Nur für registrierte Kunden', D.nurReg)}${bsSw('regulaer', 'Verwendung bei regulären Waren', D.regulaer)}${bsSw('reduziert', 'Verwendung bei reduzierten Waren', D.reduziert)}${bsSw('rabattiert', 'Verwendung bei rabattierten Waren', D.rabattiert)}
-      ${bsUnit('maxRabatt', 'Maximaler Belegrabatt in Prozent *', D.maxRabatt, D.maxEinheit, 'maxEinheit')}
+      ${bsSw('nurReg', 'Nur für registrierte Kunden', D.nurReg)}
       <div class="field ea-cmb"><span>Gutscheintyp *</span><div class="ea-cmb-row"><div class="input ea-pick ${D.gutscheintyp ? '' : 'bad'}" tabindex="0" data-bs-pick="gt"><span class="${D.gutscheintyp ? '' : 'ph'}">${esc(stName('gutscheintyp', D.gutscheintyp) || '')}</span>${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-bs-go="st-gutscheintyp" title="Öffnen">${ic('edit', 'i-sm')}</button><button type="button" class="ea-ib" data-bs-go="st-gutscheintyp" title="Neu anlegen">${ic('plus', 'i-sm')}</button><button type="button" class="ea-ib" data-bs-pick="gt" title="Suchen">${ic('search', 'i-sm')}</button></div></div>
-      ${bsNum('tage', 'Gültigkeit in Tagen', D.tage)}</div></div></div>`;
+      ${bsNum('tage', 'Gültigkeit des Bonus-Gutscheins in Tagen', D.tage)}</div></div></div>`;
   else if (BS.tab === 'filter') body = `<div class="ea-cols">${D.filter.map((x, i) => `<div class="ae-card ea-card" style="max-width:340px;flex:0 1 320px"><h4 style="display:flex;justify-content:space-between;align-items:center">${i + 1}<button type="button" class="ea-ib" data-bs-del="filter.${i}" title="Entfernen">${ic('trash', 'i-sm')}</button></h4><div class="ea-fields">
       <label class="field"><span>Filter Typ</span><select class="input select" data-bs-typ="${i}">${BS_TYPEN.map(([k, l]) => `<option value="${k}" ${x.typ === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <div class="field ea-cmb"><span>Filter *</span><div class="ea-cmb-row"><div class="input ea-pick ${x.wert ? '' : 'bad'}" tabindex="0" data-bs-pick="f${i}"><span class="${x.wert ? '' : 'ph'}">${esc(bsLabel(x.typ, x.wert))}</span>${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-bs-pick="f${i}" title="Suchen">${ic('search', 'i-sm')}</button></div></div>
@@ -15193,6 +15191,46 @@ const kkBelegzusatzOk = id => { const r = kkActive()?.belegzusatz; return !r?.le
     return html ? h.replace(/(<div class="line-var">.*?<\/div>)/, '$1' + html) : h;
   };
 }
+/* ═════════════════════════════════════════════════════════════════
+   51 · BONUS SYSTEME – Wirkung beim Verkauf
+   Nach jedem Verkauf: passende Artikel nach Filter, Staffel nach Summe, Bonus-Gutschein ausstellen.
+   ═════════════════════════════════════════════════════════════════ */
+function bonusLineOk(sys, l) {
+  if (l.service || l.voucher || !l.art) return false;
+  const a = l.art, wg = stRows('warengruppe').find(r => r.id === a.cat);
+  const ab = wg && stRows('abteilung').find(r => r.id === wg.abteilung), ha = ab && stRows('hauptabteilung').find(r => r.id === ab.parent), be = ha && stRows('bereich').find(r => r.id === ha.parent);
+  const val = {marke: a.brand, warengruppe: a.cat, abteilung: ab?.id, hauptabteilung: ha?.id, bereich: be?.id};
+  const hit = f => String(val[f.typ] ?? '') === String(f.wert);
+  const incl = (sys.filter || []).filter(f => f.einschl), excl = (sys.filter || []).filter(f => !f.einschl);
+  if (incl.length && !incl.some(hit)) return false;
+  return !excl.some(hit);
+}
+function bonusFor(sys, rec) {
+  const c = rec.customer;
+  if (sys.nurReg && !c) return null;
+  if (sys.kundenfilter) { const n = parseInt(String(c?.id || '').replace(/\D/g, ''), 10); if (!c || !(n >= +sys.von && n <= +sys.bis)) return null; }
+  const base = r2((rec.lines || []).filter(l => bonusLineOk(sys, l)).reduce((s, l) => s + r2(l.unit * l.qty) - (l.disc ? r2(r2(l.unit * l.qty) * l.disc.pct / 100) : 0), 0));
+  const st = [...(sys.staffeln || [])].filter(x => +x.ab <= base).sort((a, b) => +b.ab - +a.ab)[0];
+  if (!st) return null;
+  const [p, pu, b] = c ? [+st.pGesp, st.pGespU, +st.bGesp] : [+st.pLauf, st.pLaufU, +st.bLauf];
+  const bonus = r2((pu === '€' ? p : base * p / 100) + (b || 0));
+  return bonus > 0 ? {sys, staffel: st, base, bonus} : null;
+}
+async function kkBonus(rec) {
+  if (!DESKTOP || (rec.kind && rec.kind !== 'verkauf')) return;
+  const list = stActive('bonussystem'); if (!list.length) return;
+  for (const sys of list) {
+    const r = bonusFor(sys, rec); if (!r) continue;
+    try {
+      const o = await invoke('voucher_bonus', {amount: Math.round(r.bonus * 100), refno: rec.no, customer: rec.customer?.id || null, days: +sys.tage || 365, note: `${sys.name}${sys.gutscheintyp ? ' · ' + (stName('gutscheintyp', sys.gutscheintyp) || '') : ''}`, user: S.user.name});
+      rec.bonus = {code: o.code, amount: r.bonus, system: sys.name};
+      toast(`Bonus-Gutschein ${eur(r.bonus)}`, {t2: `${sys.name} · ${o.code} · gültig ${+sys.tage || 365} Tage`, type: 'pos', icon: 'gift', dur: 14000});
+      Hooks.emit('bonus.issued', {beleg: rec.no, system: sys.name, gutschein: o.code, betrag: r.bonus});
+      if (CFG['drucker.auto'] && typeof printOps === 'function') printOps([...headOps(), {t: 'text', s: 'BONUS-GUTSCHEIN', a: 'c', b: true, big: true}, {t: 'text', s: eur(r.bonus), a: 'c', b: true, big: true}, {t: 'text', s: o.code, a: 'c', b: true}, {t: 'text', s: `${sys.name} · gültig ${+sys.tage || 365} Tage`, a: 'c'}, {t: 'qr', d: o.code}, {t: 'feed', n: 4}, {t: 'cut'}], 'Bonus-Gutschein ' + o.code, true);
+    } catch (e) { toast('Bonus-Gutschein nicht ausgestellt', {t2: String(e), type: 'warn'}); }
+  }
+}
+{ const _sd = showDone; showDone = function (rec) { const r = _sd.apply(this, arguments); kkBonus(rec); return r; }; }
 
 /* ════════════════════════════════════════════════════════════════════
    12 · ANMELDUNG — Sperrbildschirm mit PIN, Windows Hello, FIDO2, SSO

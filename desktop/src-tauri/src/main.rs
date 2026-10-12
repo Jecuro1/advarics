@@ -511,6 +511,14 @@ fn user_delete(db: State<db::Db>, id: String, by: Option<String>) -> Res<Vec<use
 /* ── Gutscheine ── */
 
 #[tauri::command]
+fn voucher_bonus(db: State<db::Db>, amount: i64, refno: String, customer: Option<String>, days: i64, note: String, user: String) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    let code = vouchers::issue_bonus(&c, amount, &refno, customer.as_deref(), days, &note, Some(&user))?;
+    let _ = db::audit_append(&c, "voucher.bonus", &json!({ "gutschein": code, "betrag": amount, "beleg": refno, "bonus": note, "benutzer": user }));
+    Ok(json!({ "code": code }))
+}
+
+#[tauri::command]
 fn voucher_get(db: State<db::Db>, code: String) -> Res<Value> {
     vouchers::get(&db.conn.lock().unwrap(), &code)
 }
@@ -2144,6 +2152,7 @@ fn main() {
             open_url,
             voucher_set_pin,
             voucher_check_pin,
+            voucher_bonus,
             voucher_delete,
             voucher_moves,
             audit_query,

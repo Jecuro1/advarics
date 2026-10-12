@@ -48,6 +48,22 @@ pub fn issue(c: &Connection, amount: i64, refno: &str, customer: Option<&str>, y
     Ok(code)
 }
 
+/// Bonus-Gutschein (aus einem Bonus-System) mit Gültigkeit in Tagen ausgeben.
+pub fn issue_bonus(c: &Connection, amount: i64, refno: &str, customer: Option<&str>, days: i64, note: &str, user: Option<&str>) -> Result<String, String> {
+    if amount <= 0 {
+        return Err("Bonusbetrag muss größer als 0 sein".into());
+    }
+    let code = new_code(c)?;
+    let valid = (chrono::Local::now() + chrono::Duration::days(days.clamp(1, 3650))).format("%Y-%m-%d").to_string();
+    c.execute(
+        "INSERT INTO vouchers(code, initial, balance, status, sale_no, customer_id, valid_until, created_at, note) VALUES (?1,?2,?2,'aktiv',?3,?4,?5,?6,?7)",
+        params![code, amount, refno, customer, valid, db::now(), note],
+    )
+    .map_err(|e| e.to_string())?;
+    move_(c, &code, amount, amount, &format!("Bonus: {note}"), Some(refno), user)?;
+    Ok(code)
+}
+
 pub fn get(c: &Connection, code: &str) -> Result<Value, String> {
     let code = code.trim().to_uppercase();
     let row: Option<(String, i64, i64, String, Option<String>, Option<String>, String)> = c

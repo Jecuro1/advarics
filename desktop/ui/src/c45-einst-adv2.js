@@ -63,8 +63,8 @@ INVOKE_HOOKS.doc_save = a => {
 
 /* ── Bonus Systeme ── */
 STAMM_DEF.bonussystem = {t: 'Bonus Systeme', ic: 'gift', sub: 'Bonus-Systeme mit Filtern und Staffeln', cols: [{k: 'name', l: 'Name'}]};
-const BS_TYPEN = [['marke', 'Marke'], ['warengruppe', 'Warengruppe'], ['hauptabteilung', 'Haupt-Abteilung'], ['abteilung', 'Abteilung'], ['hauptbereich', 'Haupt-Bereich'], ['bereich', 'Bereich'], ['saison', 'Saison']];
-const bsNeu = () => ({name: '', kundenfilter: false, von: 0, bis: 0, nurReg: false, regulaer: false, reduziert: false, rabattiert: false, maxRabatt: 0, maxEinheit: '%', gutscheintyp: '', tage: 0, filter: [], staffeln: []});
+const BS_TYPEN = [['marke', 'Marke'], ['warengruppe', 'Warengruppe'], ['hauptabteilung', 'Haupt-Abteilung'], ['abteilung', 'Abteilung'], ['bereich', 'Bereich']];
+const bsNeu = () => ({name: '', kundenfilter: false, von: 0, bis: 0, nurReg: false, gutscheintyp: '', tage: 365, filter: [], staffeln: []});
 const bsStaffel = () => ({name: '', ab: 0, pLauf: 0, pLaufU: '%', bLauf: 0, pGesp: 0, pGespU: '%', bGesp: 0});
 const BS = {id: null, ids: [], draft: null, tab: 'allg', dirty: false};
 const bsLoad = id => { const r = id ? stRows('bonussystem').find(x => x.id === id) : null; return r ? JSON.parse(JSON.stringify({...bsNeu(), ...r})) : bsNeu(); };
@@ -76,11 +76,10 @@ function bsOpen(id, ids) {
 }
 agridPage('st-bonussystem', {
   title: 'Bonus Systeme', count: () => stRows('bonussystem').length, sort: {k: 'name', dir: 1},
-  rows: () => stRows('bonussystem').map(r => ({id: r.id, name: r.name || '', kundenfilter: !!r.kundenfilter, von: +r.von || 0, bis: +r.bis || 0, nurReg: !!r.nurReg, regulaer: !!r.regulaer, reduziert: !!r.reduziert, rabattiert: !!r.rabattiert, maxRabatt: `${num(+r.maxRabatt || 0)} ${r.maxEinheit || '%'}`, gutscheintyp: stName('gutscheintyp', r.gutscheintyp) || '', tage: +r.tage || 0})),
+  rows: () => stRows('bonussystem').map(r => ({id: r.id, name: r.name || '', kundenfilter: !!r.kundenfilter, von: +r.von || 0, bis: +r.bis || 0, nurReg: !!r.nurReg, staffeln: (r.staffeln || []).length, gutscheintyp: stName('gutscheintyp', r.gutscheintyp) || '', tage: +r.tage || 0})),
   toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}],
   cols: [{k: 'name', l: 'Name', w: 220}, {k: 'kundenfilter', l: 'Kunden Filter verwenden', t: 'check', w: 190}, {k: 'von', l: 'Von Kundennummer', t: 'num', w: 160}, {k: 'bis', l: 'Bis Kundennummer', t: 'num', w: 160}, {k: 'nurReg', l: 'Nur für registrierte Kunden', t: 'check', w: 210},
-    {k: 'regulaer', l: 'Verwendung bei regulären Waren', t: 'check', w: 230}, {k: 'reduziert', l: 'Verwendung bei reduzierten Waren', t: 'check', w: 240}, {k: 'rabattiert', l: 'Verwendung bei rabattierten Waren', t: 'check', w: 240},
-    {k: 'maxRabatt', l: 'Maximaler Belegrabatt', w: 180}, {k: 'gutscheintyp', l: 'Gutscheintyp', w: 170}, {k: 'tage', l: 'Gültigkeit in Tagen', t: 'num', w: 160}],
+    {k: 'staffeln', l: 'Staffeln', t: 'num', w: 110}, {k: 'gutscheintyp', l: 'Gutscheintyp', w: 170}, {k: 'tage', l: 'Gültigkeit in Tagen', t: 'num', w: 160}],
   actions: {back: e2Back, refresh: async () => { await loadStamm(true); PAGES['st-bonussystem'].render(); }, new: () => bsOpen(null, [])},
   edit: id => bsOpen(id, (AG['st-bonussystem'].filtered || []).map(r => r.id)),
   remove: async ids => { if (!await confirmBox(`${num(ids.length)} Bonus-System${ids.length > 1 ? 'e' : ''} löschen?`, 'Löschen')) throw new Error('abgebrochen'); await needPerm('einstellungen', 'Bonus Systeme'); const s = new Set(ids); await stammSave('bonussystem', stRows('bonussystem').filter(r => !s.has(r.id)).map(r => ({...r}))); },
@@ -114,10 +113,9 @@ function bsRender() {
   if (BS.tab === 'allg') body = `<div class="ea-cols"><div class="ae-card ea-card"><h4>Allgemein</h4><div class="ea-fields">
       <label class="field"><span>Name *</span><input class="input" data-bs="name" value="${esc(D.name)}"></label>
       ${bsSw('kundenfilter', 'Kunden Filter verwenden', D.kundenfilter)}${bsNum('von', 'Von Kundennummer *', D.von)}${bsNum('bis', 'Bis Kundennummer *', D.bis)}
-      ${bsSw('nurReg', 'Nur für registrierte Kunden', D.nurReg)}${bsSw('regulaer', 'Verwendung bei regulären Waren', D.regulaer)}${bsSw('reduziert', 'Verwendung bei reduzierten Waren', D.reduziert)}${bsSw('rabattiert', 'Verwendung bei rabattierten Waren', D.rabattiert)}
-      ${bsUnit('maxRabatt', 'Maximaler Belegrabatt in Prozent *', D.maxRabatt, D.maxEinheit, 'maxEinheit')}
+      ${bsSw('nurReg', 'Nur für registrierte Kunden', D.nurReg)}
       <div class="field ea-cmb"><span>Gutscheintyp *</span><div class="ea-cmb-row"><div class="input ea-pick ${D.gutscheintyp ? '' : 'bad'}" tabindex="0" data-bs-pick="gt"><span class="${D.gutscheintyp ? '' : 'ph'}">${esc(stName('gutscheintyp', D.gutscheintyp) || '')}</span>${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-bs-go="st-gutscheintyp" title="Öffnen">${ic('edit', 'i-sm')}</button><button type="button" class="ea-ib" data-bs-go="st-gutscheintyp" title="Neu anlegen">${ic('plus', 'i-sm')}</button><button type="button" class="ea-ib" data-bs-pick="gt" title="Suchen">${ic('search', 'i-sm')}</button></div></div>
-      ${bsNum('tage', 'Gültigkeit in Tagen', D.tage)}</div></div></div>`;
+      ${bsNum('tage', 'Gültigkeit des Bonus-Gutscheins in Tagen', D.tage)}</div></div></div>`;
   else if (BS.tab === 'filter') body = `<div class="ea-cols">${D.filter.map((x, i) => `<div class="ae-card ea-card" style="max-width:340px;flex:0 1 320px"><h4 style="display:flex;justify-content:space-between;align-items:center">${i + 1}<button type="button" class="ea-ib" data-bs-del="filter.${i}" title="Entfernen">${ic('trash', 'i-sm')}</button></h4><div class="ea-fields">
       <label class="field"><span>Filter Typ</span><select class="input select" data-bs-typ="${i}">${BS_TYPEN.map(([k, l]) => `<option value="${k}" ${x.typ === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <div class="field ea-cmb"><span>Filter *</span><div class="ea-cmb-row"><div class="input ea-pick ${x.wert ? '' : 'bad'}" tabindex="0" data-bs-pick="f${i}"><span class="${x.wert ? '' : 'ph'}">${esc(bsLabel(x.typ, x.wert))}</span>${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-bs-pick="f${i}" title="Suchen">${ic('search', 'i-sm')}</button></div></div>

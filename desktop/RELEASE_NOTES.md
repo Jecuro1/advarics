@@ -1,3 +1,8 @@
+## Neu in 0.33.0
+
+- Bonus Systeme wirken beim Verkauf: Nach jedem Kassenverkauf werden die passenden Artikel nach Filter (Marke, Warengruppe, Abteilung, Haupt-Abteilung, Bereich; einschließend/ausschließend) und Kundenbedingungen (Kundennummer von/bis, nur registrierte Kunden) geprüft, die Staffel nach Summe gewählt und ein Bonus-Gutschein (Prozent oder Betrag, getrennt für Laufkundschaft und gespeicherte Kunden) mit der eingestellten Gültigkeit ausgestellt und – bei automatischem Druck – gedruckt.
+- Entfernt aus Bonus Systeme: Verwendungs-Schalter und Belegrabatt-Grenze (ohne Wirkung).
+
 ## Neu in 0.32.0
 
 - Kassen-Konfiguration, weitere Reiter mit Wirkung:
