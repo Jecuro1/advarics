@@ -1,3 +1,8 @@
+## Neu in 0.17.0
+
+- Warengruppen-Import aus Advarics (XLSX): Im Advarics-Import wird die Datei automatisch als Warengruppenliste erkannt. Importiert Warengruppen samt Hierarchie (Bereich › Hauptabteilung › Abteilung), MwSt.-Typ, Etikettentyp, Inventur, Altersbewertung und Spanne. Wiederholbar, löscht nichts.
+- Stammdaten-Tabellen zeigen bei großen Listen die ersten 200 Treffer (Suche eingrenzen); lange Auswahllisten laden erst beim Öffnen. Die Kasse zeigt nur Warengruppen mit Artikeln.
+
 ## Neu in 0.16.1
 
 - Ruhigeres linkes Menü: schlichte Bereichstitel statt farbiger Leisten, beim ersten Start alle Bereiche eingeklappt (nur der aktuelle ist offen), kompaktere Abstände.

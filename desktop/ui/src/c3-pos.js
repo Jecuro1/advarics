@@ -55,7 +55,7 @@ function renderPOS() {
 }
 function renderCats() {
   const cnt = id => id === 'alle' ? ART.length : ART.filter(a => a.cat === id).length;
-  $('#cats').innerHTML = CATS.map(c => `<button class="cat" data-cat="${c.id}" aria-pressed="${!POS.q && POS.cat === c.id}">${c.name}<span class="n">${cnt(c.id)}</span></button>`).join('');
+  $('#cats').innerHTML = CATS.filter(c => c.id === 'alle' || c.id === POS.cat || cnt(c.id) > 0).map(c => `<button class="cat" data-cat="${c.id}" aria-pressed="${!POS.q && POS.cat === c.id}">${c.name}<span class="n">${cnt(c.id)}</span></button>`).join('');
 }
 function renderQuick() {
   $('#quick').innerHTML = SERVICES.map(s => `<button class="qb" data-svc="${s.id}"><span class="qi">${ic(s.icon, 'i-sm')}</span><span><span class="qn" style="display:block">${s.name}</span><span class="qp" style="display:block">${s.price == null ? 'Betrag wählen' : eur(s.price)}</span></span></button>`).join('')

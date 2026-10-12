@@ -367,10 +367,41 @@ function bindArtikel2() {
 }
 
 /* ── Advarics-Import (XLSX) ── */
-const ADV = {path: '', pv: null, opt: {inaktiv: false, bestand: true, preise: true, bilder: true, demo_weg: true}, busy: false, res: null, timer: null};
+const ADV = {path: '', pv: null, wg: null, wgres: null, opt: {inaktiv: false, bestand: true, preise: true, bilder: true, demo_weg: true}, busy: false, res: null, timer: null};
+/** Datei wählen: Warengruppenliste oder Artikelexport wird automatisch erkannt */
+async function advPick() {
+  try {
+    const p = window.__ADV_TEST_FILE || await invoke('advarics_pick'); if (!p) return;
+    ADV.path = p; ADV.pv = null; ADV.wg = null; ADV.wgres = null; ADV.res = null; PAGES['advarics-import'].render();
+    const wg = await invoke('advarics_wg_preview', {path: p});
+    if (wg) ADV.wg = wg; else ADV.pv = await invoke('advarics_preview', {path: p});
+    PAGES['advarics-import'].render();
+  } catch (err) { ADV.pv = null; ADV.wg = null; toast('Datei nicht lesbar', {t2: String(err), type: 'warn', dur: 9000}); PAGES['advarics-import'].render(); }
+}
 registerPage('advarics-import', {title: 'Advarics-Import', sub: () => ADV.pv ? `${num(ADV.pv.artikel)} Artikel in der Datei` : 'Artikelexport als Excel-Datei', render: async () => {
   const v = $('#view-advarics-import');
   if (!DESKTOP) { v.innerHTML = desktopEmpty('download', 'Advarics-Import'); return; }
+  if (ADV.path && ADV.wg) {
+    const w = ADV.wg, wr = ADV.wgres;
+    v.innerHTML = `<div class="cv">${pageHead('Advarics-Import', 'Warengruppenliste aus Advarics: Warengruppen mit Bereich › Hauptabteilung › Abteilung, MwSt., Etikettentyp, Inventur', `<button class="btn btn-secondary" data-advpick ${ADV.busy ? 'disabled' : ''}>${ic('folder', 'i-sm')}Andere Datei …</button>`)}
+      <div class="card" style="padding:12px 16px;margin-bottom:14px;font-size:13px">${ic('folder', 'i-sm')} <span class="mono">${esc(ADV.path)}</span></div>
+      <div class="card" style="padding:18px 20px;margin-bottom:14px"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">${[['Warengruppen', w.warengruppen], ['Abteilungen', w.abteilungen], ['Hauptabteilungen', w.hauptabteilungen], ['Bereiche', w.bereiche]].map(([l, n]) => `<div><div class="muted" style="font-size:12px">${l}</div><div style="font-size:24px;font-weight:700">${num(n)}</div></div>`).join('')}</div>
+      <div class="muted" style="margin-top:12px;font-size:13px">${num(w.ohne_hierarchie)} Warengruppen ohne Hierarchie. Bestehende Warengruppen mit gleicher Nummer werden ergänzt, nichts wird gelöscht. Wiederholen ist gefahrlos.</div></div>
+      ${wr ? `<div class="card" style="padding:16px 20px;margin-bottom:14px"><b>Import abgeschlossen:</b> ${num(wr.warengruppen_neu)} Warengruppen neu, ${num(wr.warengruppen_aktualisiert)} aktualisiert · ${num(wr.abteilungen_neu)} Abteilungen, ${num(wr.hauptabteilungen_neu)} Hauptabteilungen, ${num(wr.bereiche_neu)} Bereiche neu</div>` : ''}
+      <button class="btn btn-primary" data-advwg ${ADV.busy ? 'disabled' : ''} style="height:44px;padding:0 22px">${ic('download', 'i-sm')}${ADV.busy ? 'Import läuft …' : `${num(w.warengruppen)} Warengruppen importieren`}</button></div>`;
+    v.onclick = async e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.advpick != null) return advPick();
+      if (b.dataset.advwg != null) {
+        if (!await confirmBox(`${num(w.warengruppen)} Warengruppen mit Hierarchie importieren?`, 'Importieren')) return;
+        ADV.busy = true; PAGES['advarics-import'].render();
+        try { ADV.wgres = await invoke('advarics_wg_import', {path: ADV.path}); await loadStamm(true); toast('Warengruppen importiert', {t2: `${num(ADV.wgres.warengruppen_neu)} neu`, type: 'pos', icon: 'download'}); }
+        catch (err) { toast('Import fehlgeschlagen', {t2: String(err), type: 'warn', dur: 9000}); }
+        ADV.busy = false; PAGES['advarics-import'].render();
+      }
+    };
+    return;
+  }
   const pv = ADV.pv, o = ADV.opt, r = ADV.res;
   const sw = (k, l, h) => `<div class="set-row"><div><div class="set-l">${l}</div><div class="set-h">${h}</div></div><div class="set-c"><button class="switch" role="switch" data-advo="${k}" aria-checked="${!!o[k]}"></button></div></div>`;
   v.innerHTML = `<div class="cv">${pageHead('Advarics-Import', 'Artikelexport aus Advarics (Excel „GridExport“) einlesen: Artikel mit Farben, Preisen, Bestand, Lieferanten, Warengruppen und Bildern', `<button class="btn btn-secondary" data-advpick ${ADV.busy ? 'disabled' : ''}>${ic('folder', 'i-sm')}${ADV.path ? 'Andere Datei …' : 'Datei wählen …'}</button>`)}
@@ -394,7 +425,7 @@ registerPage('advarics-import', {title: 'Advarics-Import', sub: () => ADV.pv ? `
   v.onclick = async e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.advpick != null) {
-      try { const p = await invoke('advarics_pick'); if (!p) return; ADV.path = p; ADV.pv = null; ADV.res = null; PAGES['advarics-import'].render(); ADV.pv = await invoke('advarics_preview', {path: p}); PAGES['advarics-import'].render(); } catch (err) { ADV.pv = null; toast('Datei nicht lesbar', {t2: String(err), type: 'warn', dur: 9000}); PAGES['advarics-import'].render(); }
+      return advPick();
       return;
     }
     if (b.dataset.advo) { ADV.opt[b.dataset.advo] = !ADV.opt[b.dataset.advo]; b.setAttribute('aria-checked', ADV.opt[b.dataset.advo]); return; }

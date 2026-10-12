@@ -216,6 +216,139 @@ pub fn preview(path: &Path) -> Result<Value, String> {
     }))
 }
 
+/* ── Warengruppen-Export (XLSX „GridExport“ mit Hierarchie Ebene1–3) ── */
+
+#[derive(Default, Clone, Debug)]
+pub struct WgRow {
+    pub nr: String,
+    pub name: String,
+    pub e: [(String, String); 3], // (Nr., Name) je Hierarchieebene; leer = „NA“
+    pub mwst: String,
+    pub etikett: String,
+    pub inventur: bool,
+    pub alter: String,
+    pub spanne: Option<f64>,
+}
+
+/// Liest die Warengruppentabelle; `Ok(None)`, wenn die Datei keine Warengruppenliste ist
+pub fn wg_read(path: &Path) -> Result<Option<Vec<WgRow>>, String> {
+    let mut wb: Xlsx<_> = calamine::open_workbook(path).map_err(|e| format!("Datei nicht lesbar (XLSX erwartet): {e}"))?;
+    let range = wb.worksheet_range_at(0).ok_or("Die Datei enthält kein Tabellenblatt")?.map_err(|e| e.to_string())?;
+    let mut rows = range.rows();
+    let head: Vec<String> = rows.next().ok_or("Tabelle ist leer")?.iter().map(|d| txt(d).to_lowercase()).collect();
+    let col = |n: &str| head.iter().position(|h| h == n);
+    let (Some(cn), Some(cname), Some(c1)) = (col("nr."), col("name"), col("hierarchie ebene1-nr.")) else { return Ok(None) };
+    let (n1, c2, n2, c3, n3) = (col("hierarchie ebene1-name"), col("hierarchie ebene2-nr."), col("hierarchie ebene2-name"), col("hierarchie ebene3-nr."), col("hierarchie ebene3-name"));
+    let (cm, ce, ci, ca, cs) = (col("mwst.-typ"), col("etiketten-typ"), col("inventur"), col("altersbewertung"), col("vorschl.-spanne/kalk."));
+    let get = |r: &[Data], c: Option<usize>| -> Data { c.and_then(|i| r.get(i)).cloned().unwrap_or(Data::Empty) };
+    let lvl = |r: &[Data], nr: Option<usize>, nm: Option<usize>| -> (String, String) {
+        let (a, b) = (txt(&get(r, nr)), txt(&get(r, nm)));
+        if a.is_empty() || b.is_empty() || b.eq_ignore_ascii_case("na") { (String::new(), String::new()) } else { (a, b) }
+    };
+    let mut out = vec![];
+    for r in rows {
+        let (nr, name) = (txt(&r[cn]), txt(&r[cname]));
+        if nr.is_empty() || name.is_empty() {
+            continue;
+        }
+        out.push(WgRow {
+            nr, name,
+            e: [lvl(r, Some(c1), n1), lvl(r, c2, n2), lvl(r, c3, n3)],
+            mwst: txt(&get(r, cm)), etikett: txt(&get(r, ce)), inventur: flag(&get(r, ci)), alter: txt(&get(r, ca)), spanne: num(&get(r, cs)),
+        });
+    }
+    Ok(Some(out))
+}
+
+pub fn wg_preview(path: &Path) -> Result<Value, String> {
+    let Some(rows) = wg_read(path)? else { return Ok(Value::Null) };
+    let mut lv: [std::collections::BTreeSet<String>; 3] = Default::default();
+    for r in &rows {
+        for i in 0..3 {
+            if !r.e[i].0.is_empty() {
+                lv[i].insert(r.e[..=i].iter().map(|x| x.0.clone()).collect::<Vec<_>>().join("-"));
+            }
+        }
+    }
+    let ohne = rows.iter().filter(|r| r.e[0].0.is_empty()).count();
+    Ok(json!({
+        "warengruppen": rows.len(), "bereiche": lv[0].len(), "hauptabteilungen": lv[1].len(), "abteilungen": lv[2].len(), "ohne_hierarchie": ohne,
+        "beispiele": rows.iter().skip(8).take(6).map(|r| json!({ "nr": r.nr, "name": r.name, "pfad": r.e.iter().filter(|x| !x.0.is_empty()).map(|x| x.1.clone()).collect::<Vec<_>>().join(" › ") })).collect::<Vec<_>>(),
+    }))
+}
+
+fn mwst_satz(t: &str) -> i64 {
+    match t.to_lowercase().as_str() {
+        "ohne mwst." | "ohne mwst" | "steuerfrei" => 0,
+        "reduziert" | "ermäßigt" => 10,
+        _ => 20,
+    }
+}
+
+/// Warengruppen samt Hierarchie in die Stammdaten schreiben (bestehende Einträge werden ergänzt, nichts wird gelöscht)
+pub fn wg_import(c: &mut Connection, path: &Path) -> Result<Value, String> {
+    let rows = wg_read(path)?.ok_or("Das ist keine Warengruppenliste (Spalten „Nr.“, „Name“, „Hierarchie Ebene1-Nr.“ fehlen)")?;
+    let tx = c.transaction().map_err(|e| e.to_string())?;
+    let now = db::now();
+    let mut pos: HashMap<&str, i64> = HashMap::new();
+    for k in ["warengruppe", "abteilung", "hauptabteilung", "bereich"] {
+        pos.insert(k, tx.query_row("SELECT COALESCE(MAX(pos), -1) + 1 FROM stamm WHERE kind = ?1", [k], |r| r.get(0)).map_err(|e| e.to_string())?);
+    }
+    let (mut neu, mut upd) = ([0usize; 4], [0usize; 4]);
+    let mut put = |kind: &'static str, idx: usize, id: &str, add: Value| -> Result<(), String> {
+        let cur: Option<String> = tx.query_row("SELECT data FROM stamm WHERE kind = ?1 AND id = ?2", params![kind, id], |r| r.get(0)).optional().map_err(|e| e.to_string())?;
+        let mut v: Value = cur.as_deref().and_then(|d| serde_json::from_str(d).ok()).unwrap_or(json!({}));
+        for (k, x) in add.as_object().unwrap() {
+            v[k] = x.clone();
+        }
+        if cur.is_some() {
+            tx.execute("UPDATE stamm SET data = ?3, updated_at = ?4 WHERE kind = ?1 AND id = ?2", params![kind, id, v.to_string(), now]).map_err(|e| e.to_string())?;
+            upd[idx] += 1;
+        } else {
+            let p = pos.get_mut(kind).unwrap();
+            tx.execute("INSERT INTO stamm(kind, id, data, pos, active, updated_at) VALUES (?1, ?2, ?3, ?4, 1, ?5)", params![kind, id, v.to_string(), *p, now]).map_err(|e| e.to_string())?;
+            *p += 1;
+            neu[idx] += 1;
+        }
+        Ok(())
+    };
+    let mut done: std::collections::HashSet<String> = Default::default();
+    for r in &rows {
+        // Ebene 1 → Bereich, Ebene 2 → Hauptabteilung, Ebene 3 → Abteilung
+        let mut parent = String::new();
+        let mut pfad = String::new();
+        for (i, kind) in [(0usize, "bereich"), (1, "hauptabteilung"), (2, "abteilung")] {
+            if r.e[i].0.is_empty() {
+                break;
+            }
+            pfad = if pfad.is_empty() { r.e[i].0.clone() } else { format!("{pfad}-{}", r.e[i].0) };
+            let id = format!("adv-{}{pfad}", ["b", "h", "a"][i]);
+            if done.insert(id.clone()) {
+                let kn: &'static str = kind;
+                let mut d = json!({ "name": r.e[i].1, "nr": r.e[i].0 });
+                if !parent.is_empty() {
+                    d["parent"] = json!(parent);
+                }
+                put(kn, 3 - i, &id, d)?;
+            }
+            parent = id;
+        }
+        let mut d = json!({ "name": r.name, "nr": r.nr, "ust": mwst_satz(&r.mwst), "etikett": r.etikett, "inventur": r.inventur, "altersbewertung": r.alter });
+        if let Some(s) = r.spanne {
+            d["spanne"] = json!(s);
+        }
+        if r.e[2].0.is_empty() {
+            d["abteilung"] = json!("");
+        } else {
+            d["abteilung"] = json!(parent);
+        }
+        d["gruppe"] = json!(r.name.split_whitespace().take(2).collect::<Vec<_>>().join(" "));
+        put("warengruppe", 0, &format!("adv-{}", r.nr), d)?;
+    }
+    tx.commit().map_err(|e| e.to_string())?;
+    Ok(json!({ "warengruppen_neu": neu[0], "warengruppen_aktualisiert": upd[0], "abteilungen_neu": neu[1], "hauptabteilungen_neu": neu[2], "bereiche_neu": neu[3], "zeilen": rows.len() }))
+}
+
 fn merge_details(cur: &str, add: &Map<String, Value>) -> String {
     let mut v: Value = serde_json::from_str(cur).unwrap_or(json!({}));
     if !v.is_object() {
@@ -464,5 +597,27 @@ mod tests {
         assert_eq!(cents(Some(0.0)), None);
         let a = attr_of("<Relationship Id=\"rId1\" Target=\"../media/image1.jpeg\"/>", "Target");
         assert_eq!(a.as_deref(), Some("../media/image1.jpeg"));
+    }
+
+    /// Mit echter Datei: KONTOR_WG=/pfad/Warengruppen.xlsx cargo test warengruppen_echt -- --ignored --nocapture
+    #[test]
+    #[ignore]
+    fn warengruppen_echt() {
+        let Ok(p) = std::env::var("KONTOR_WG") else { return };
+        let pv = wg_preview(Path::new(&p)).unwrap();
+        println!("{pv}");
+        let mut c = Connection::open_in_memory().unwrap();
+        c.execute_batch("CREATE TABLE stamm (kind TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL DEFAULT '{}', pos INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, PRIMARY KEY (kind, id));").unwrap();
+        let r1 = wg_import(&mut c, Path::new(&p)).unwrap();
+        println!("{r1}");
+        let r2 = wg_import(&mut c, Path::new(&p)).unwrap();
+        assert_eq!(r2["warengruppen_neu"], 0);
+        assert_eq!(r2["abteilungen_neu"], 0);
+        let n: i64 = c.query_row("SELECT COUNT(*) FROM stamm WHERE kind='warengruppe'", [], |r| r.get(0)).unwrap();
+        assert_eq!(n as u64, r1["warengruppen_neu"].as_u64().unwrap());
+        let d: String = c.query_row("SELECT data FROM stamm WHERE kind='warengruppe' AND id='adv-100896'", [], |r| r.get(0)).unwrap();
+        println!("{d}");
+        let a: String = c.query_row("SELECT data FROM stamm WHERE kind='abteilung' AND id='adv-a1-0-89'", [], |r| r.get(0)).unwrap_or_default();
+        println!("{a}");
     }
 }

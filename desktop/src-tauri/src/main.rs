@@ -1835,6 +1835,20 @@ async fn advarics_preview(path: String) -> Res<Value> {
     tauri::async_runtime::spawn_blocking(move || advarics::preview(std::path::Path::new(&path))).await.map_err(err)?
 }
 #[tauri::command]
+async fn advarics_wg_preview(path: String) -> Res<Value> {
+    tauri::async_runtime::spawn_blocking(move || advarics::wg_preview(std::path::Path::new(&path))).await.map_err(err)?
+}
+#[tauri::command]
+async fn advarics_wg_import(app: AppHandle, path: String) -> Res<Value> {
+    let p = app.state::<db::Db>().path.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut c = db::open(&p).map_err(err)?;
+        advarics::wg_import(&mut c, std::path::Path::new(&path))
+    })
+    .await
+    .map_err(err)?
+}
+#[tauri::command]
 async fn advarics_import(app: AppHandle, path: String, inaktiv: bool, bestand: bool, preise: bool, bilder: bool, demo_weg: bool, user: String) -> Res<Value> {
     let p = app.state::<db::Db>().path.clone();
     tauri::async_runtime::spawn_blocking(move || {
@@ -2032,6 +2046,8 @@ fn main() {
             advarics_pick,
             advarics_preview,
             advarics_import,
+            advarics_wg_preview,
+            advarics_wg_import,
             article_media_list,
             article_media_pick,
             article_media_add_url,

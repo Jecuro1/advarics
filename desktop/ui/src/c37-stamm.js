@@ -30,7 +30,7 @@ const STAMM_DEF = {
   verkaufsabteilung: {t: 'Verkaufsabteilung', ic: 'grid', sub: 'Abteilungen im Geschäft mit zugeordneten Warengruppen – für Verkäuferprämien und Flächenauswertung', cols: [{k: 'name', l: 'Abteilung'}, {k: 'warengruppen', l: 'Warengruppen', t: 'multi', o: catOpts, w: 280}, {k: 'leitung', l: 'Leitung'}]},
   // ── Artikel-Stammdaten
   marke: {t: 'Marken', ic: 'star', sub: 'Marken mit Lieferant und Herkunft', cols: [{k: 'name', l: 'Marke'}, {k: 'lieferant', l: 'Lieferant', t: 'select', o: supOpts}, {k: 'land', l: 'Land'}, {k: 'web', l: 'Webseite'}]},
-  warengruppe: {t: 'Warengruppen', ic: 'tag', sub: 'Warengruppen für Artikel, Kasse und Auswertungen – mit Hierarchie, Steuersatz und Konto', cols: [{k: 'name', l: 'Warengruppe'}, {k: 'abteilung', l: 'Abteilung', t: 'select', o: () => stOpts('abteilung')}, {k: 'ust', l: 'USt %', t: 'num', w: 80}, {k: 'konto', l: 'Erlöskonto', w: 100}, {k: 'zolltarif', l: 'Zolltarifnr.', w: 120}]},
+  warengruppe: {t: 'Warengruppen', ic: 'tag', sub: 'Warengruppen für Artikel, Kasse und Auswertungen – mit Hierarchie, Steuersatz und Konto', cols: [{k: 'nr', l: 'Nr.', w: 80}, {k: 'name', l: 'Warengruppe', w: 260}, {k: 'abteilung', l: 'Abteilung', t: 'select', o: () => stOpts('abteilung'), w: 200}, {k: 'ust', l: 'USt %', t: 'num', w: 80}, {k: 'konto', l: 'Erlöskonto', w: 100}, {k: 'zolltarif', l: 'Zolltarifnr.', w: 120}, {k: 'etikett', l: 'Etikettentyp', w: 120}, {k: 'inventur', l: 'Inventur', t: 'check'}, {k: 'altersbewertung', l: 'Altersbewertung', w: 120}, {k: 'spanne', l: 'Spanne/Kalk.', t: 'num', w: 90}]},
   abteilung: {t: 'Abteilungen', ic: 'layers', sub: 'Ebene über den Warengruppen', cols: [{k: 'name', l: 'Abteilung'}, {k: 'parent', l: 'Hauptabteilung', t: 'select', o: () => stOpts('hauptabteilung')}]},
   hauptabteilung: {t: 'Hauptabteilungen', ic: 'layers', sub: 'Ebene über den Abteilungen', cols: [{k: 'name', l: 'Hauptabteilung'}, {k: 'parent', l: 'Bereich', t: 'select', o: () => stOpts('bereich')}]},
   bereich: {t: 'Bereiche', ic: 'layers', sub: 'Ebene über den Hauptabteilungen', cols: [{k: 'name', l: 'Bereich'}, {k: 'parent', l: 'Hauptbereich', t: 'select', o: () => stOpts('hauptbereich')}]},
@@ -149,7 +149,7 @@ async function loadStamm(force) {
 }
 /** Warengruppen und Hausfarben in Artikel/Kasse übernehmen */
 function applyStamm() {
-  for (const r of stActive('warengruppe')) { const c = CATS.find(x => x.id === r.id); if (c) c.name = r.name || c.name; else CATS.push({id: r.id, name: r.name || r.id}); }
+  { const idx = new Map(CATS.map(c => [c.id, c])); for (const r of stActive('warengruppe')) { const c = idx.get(r.id); if (c) c.name = r.name || c.name; else { const n = {id: r.id, name: r.name || r.id}; CATS.push(n); idx.set(r.id, n); } } }
   for (const r of stActive('hausfarbe')) COLORS[r.id] = [r.name || r.id, r.hex || '#888888'];
   const order = stRows('groessenfolge').map(r => r.name || r.id);
   if (order.length) ART.forEach(a => a.sizes.sort((x, y) => (order.indexOf(x) + 1 || 999) - (order.indexOf(y) + 1 || 999)));
@@ -168,6 +168,7 @@ const stCell = (c, r, i) => {
   const opts = typeof c.o === 'function' ? c.o() : c.o || [];
   if (c.t === 'check') return `<input type="checkbox" ${a} ${v ? 'checked' : ''}>`;
   if (c.t === 'ro') return `<span class="muted" style="font-size:12px">${esc(v ? fmtTs(v) : '–')}</span>`;
+  if (c.t === 'select' && opts.length > 150) { const cur = opts.find(([x]) => String(x) === String(v ?? '')); return `<select class="input select" ${a} ${w} data-lazy><option value="">–</option>${cur ? `<option value="${esc(cur[0])}" selected>${esc(cur[1])}</option>` : ''}</select>`; }
   if (c.t === 'select') return `<select class="input select" ${a} ${w}><option value="">–</option>${opts.map(([x, l]) => `<option value="${esc(x)}" ${String(v ?? '') === String(x) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
   if (c.t === 'multi') { const sel = new Set(v || []); return `<div ${w} style="display:flex;flex-wrap:wrap;gap:4px;${c.w ? `min-width:${c.w}px` : ''}">${opts.map(([x, l]) => `<label class="chip" style="cursor:pointer;height:24px;font-size:11.5px"><input type="checkbox" data-stm="${c.k}" data-sti="${i}" value="${esc(x)}" ${sel.has(x) ? 'checked' : ''} style="margin:0 4px 0 0">${esc(l)}</label>`).join('')}</div>`; }
   if (c.t === 'area') return `<textarea class="input" rows="2" ${a} ${w} style="height:auto;padding:6px 10px;${c.w ? `min-width:${c.w}px` : ''}">${esc(v ?? '')}</textarea>`;
@@ -187,16 +188,19 @@ async function renderStamm(kind, page, extra = {}) {
   const st = STE[kind] ||= {rows: null, q: '', dirty: false};
   if (!st.rows || !st.dirty) st.rows = stRows(kind).map(r => ({...r}));
   const n = norm(st.q);
-  const vis = st.rows.map((r, i) => [r, i]).filter(([r]) => !n || norm(Object.values(r).join(' ')).includes(n));
+  const visAll = st.rows.map((r, i) => [r, i]).filter(([r]) => !n || norm(Object.values(r).join(' ')).includes(n));
+  const STMAX = 200, vis = visAll.slice(0, STMAX);
   v.innerHTML = `<div class="cv">${pageHead(extra.title || D.t, D.sub, `<button class="btn btn-secondary" data-stimp="${kind}">${ic('download', 'i-sm')}CSV-Import</button><button class="btn btn-secondary" data-stexp="${kind}">${ic('upload', 'i-sm')}CSV-Export</button><button class="btn btn-primary" data-stsave="${kind}" ${st.dirty ? '' : 'disabled'}>${ic('check', 'i-sm')}Speichern</button>`)}
     ${extra.above ? extra.above() : ''}
     <div class="filters"><input class="input" data-stq="${kind}" value="${esc(st.q)}" placeholder="In ${esc(D.t)} suchen …" style="max-width:320px"><span class="sp" style="flex:1"></span>${st.dirty ? `<span class="pill warn" style="height:24px">nicht gespeichert</span>` : ''}<button class="btn btn-secondary" data-stadd="${kind}">${ic('plus', 'i-sm')}Zeile</button></div>
     <div class="card" style="overflow:auto">${st.rows.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:120px">Kürzel</th>${D.cols.map(c => `<th>${esc(c.l)}</th>`).join('')}<th>aktiv</th><th class="r" style="padding-right:16px"></th></tr></thead><tbody>
-      ${vis.map(([r, i]) => `<tr style="${r._aktiv === false ? 'opacity:.55' : ''}"><td style="padding-left:16px"><input class="input mono" data-stc="id" data-sti="${i}" value="${esc(r.id || '')}" style="max-width:120px"></td>${D.cols.map(c => `<td>${stCell(c, r, i)}</td>`).join('')}
+      ${vis.map(([r, i]) => `<tr style="${r._aktiv === false ? 'opacity:.55' : ''}"><td style="padding-left:16px"><input class="input mono" data-stc="id" data-sti="${i}" value="${esc(r.id || '')}" style="max-width:120px;min-width:104px"></td>${D.cols.map(c => `<td>${stCell(c, r, i)}</td>`).join('')}
         <td><button class="switch" role="switch" data-stakt="${i}" aria-checked="${r._aktiv !== false}" aria-label="aktiv"></button></td>
         <td class="r" style="padding-right:12px;white-space:nowrap"><button class="btn btn-ghost btn-icon btn-sm" data-stmv="${i}" data-d="-1" aria-label="nach oben">${ic('chevron-up', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-stmv="${i}" data-d="1" aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-stdel="${i}" aria-label="Löschen">${ic('trash', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
       : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic(D.ic || 'list')}</div><h3>Noch keine Einträge</h3><p>„Zeile“ hinzufügen oder per CSV importieren.</p></div>`}</div>
+    ${visAll.length > STMAX ? `<div class="muted" style="padding:10px 4px;font-size:13px">Angezeigt werden die ersten ${STMAX} von ${num(visAll.length)} Einträgen – zum Eingrenzen die Suche oben verwenden.</div>` : ''}
     ${extra.below ? extra.below() : ''}</div>`;
+  v.onfocusin = e => { const t = e.target; if (t.dataset?.lazy != null && t.tagName === 'SELECT') { const c = D.cols.find(x => x.k === t.dataset.stc); const cur = t.value; t.removeAttribute('data-lazy'); t.innerHTML = `<option value="">–</option>` + c.o().map(([x, l]) => `<option value="${esc(x)}" ${String(x) === cur ? 'selected' : ''}>${esc(l)}</option>`).join(''); } };
   const mark = () => { st.dirty = true; const b = $(`[data-stsave="${kind}"]`, v); if (b) b.disabled = false; };
   v.oninput = v.onchange = e => {
     const t = e.target, i = +t.dataset.sti;
