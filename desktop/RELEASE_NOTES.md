@@ -1,3 +1,7 @@
+## Neu in 0.23.11
+
+- Größenschlüssel 28 Rucksäcke (14), 29 Bandagen (8), 30 Hosenträger (3), 31 Getränke (1) und 32 Sprays & Pflegemittel (4) mit ihren Advarics-Größen.
+
 ## Neu in 0.23.10
 
 - Größenschlüssel 24 Socken Erw. (10), 25 Schuhe Erw. Snowboard MP (20) und 27 Kinder (12) mit ihren Advarics-Größen; 26 Schuhe Kids Snowboard MP ist wie in Advarics leer.
