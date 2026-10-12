@@ -1,3 +1,7 @@
+## Neu in 0.23.13
+
+- Größenschlüssel 1 ohne Gr. mit seinen 7 Advarics-Größen (*, One Size, OneSize, S, M, L, XL).
+
 ## Neu in 0.23.12
 
 - Größenschlüssel 33 xxxJKE 3 Sport Holding GmbH mit seinen 10 Advarics-Größen (2A, 4A, 6A, 8A, 10A, 92, 104, 116, 128, 140).
