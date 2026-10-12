@@ -1,3 +1,7 @@
+## Neu in 0.23.8
+
+- Größenschlüssel 15 Handschuhe Erw. (14), 16 Skistöcke Kids (8), 17 Skistöcke Erw. (10), 18 Snowboardbindungen (4) und 19 Snowboard Länge Kids (10) mit ihren Advarics-Größen.
+
 ## Neu in 0.23.7
 
 - Größenschlüssel 10 Helme Kids (4), 11 Helme Erw. (12), 12 Protektoren Kids (7), 13 Protektoren Erw. (7) und 14 Handschuhe Kids / Junior (13) mit ihren Advarics-Größen.
