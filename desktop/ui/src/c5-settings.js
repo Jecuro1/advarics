@@ -8,7 +8,7 @@ const DEFAULTS = {
   'firma.adresse': 'Maria-Theresien-Str. 18, 6020 Innsbruck', 'firma.uid': 'ATU00000000', 'firma.telefon': '0512 000000',
   'kasse.id': 'INN-K01', 'kasse.name': 'Kasse 1', 'kasse.freigabe': true, 'kasse.rabattGrenze': 20,
   'kasse.vereinsregel': true, 'kasse.retoureGrenze': 100, 'ziel.tag': 2500, 'kasse.pflichtfelder': true, 'kasse.bonFuss': 'Danke für Ihren Einkauf! Umtausch innerhalb von 30 Tagen mit Beleg.',
-  'anzeige.zoom': 1, 'backup.dir': '', 'backup.auto': true, 'backup.keep': 14, 'update.kanal': 'stable', 'update.auto': true, 'update.freigabe': null,
+  'anzeige.zoom': 1.25, 'anzeige.zoom.v2': false, 'backup.dir': '', 'backup.auto': true, 'backup.keep': 14, 'update.kanal': 'stable', 'update.auto': true, 'update.freigabe': null,
   'drucker.art': 'aus', 'drucker.adresse': '', 'drucker.name': '', 'drucker.breite': 48, 'drucker.auto': false, 'drucker.lade': false, 'gutschein.jahre': 3,
   'bon.logo': '', 'bon.logoDruck': true, 'bon.ersparnis': true, 'bon.artikelnr': false, 'bon.kopf': '', 'bon.fussA4': '',
   'mail.host': '', 'mail.port': 587, 'mail.tls': 'starttls', 'mail.user': '', 'mail.pass': '', 'mail.from': '', 'etikett.art': 'a4', 'etikett.adresse': '', 'etikett.name': '', 'etikett.format': '3x8',
@@ -33,7 +33,9 @@ function applySettings() {
   POS.flow.approval = !!CFG['kasse.freigabe'];
   POS.flow.approvalPct = clamp(+CFG['kasse.rabattGrenze'] || 20, 0, 100);
   const t = $('.brand-tenant'); if (t) t.textContent = CFG['firma.name'];
-  applyZoom(+CFG['anzeige.zoom'] || 1);
+  // 0.25.2: größere Anzeige als neuer Standard (einmalig)
+  if (!CFG['anzeige.zoom.v2']) { CFG['anzeige.zoom.v2'] = true; CFG['anzeige.zoom'] = Math.max(+CFG['anzeige.zoom'] || 1, 1.25); try { saveSettings({'anzeige.zoom.v2': true, 'anzeige.zoom': CFG['anzeige.zoom']}, true); } catch { /* */ } }
+  applyZoom(+CFG['anzeige.zoom'] || 1.25);
   if (S.view) renderTopbar();
 }
 function applyZoom(f) {

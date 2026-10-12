@@ -1519,6 +1519,9 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .ae-tabsw .ed-tab{color:var(--text);font-weight:600}
 .tbl th{color:var(--text-2)}
 .tb-sub,.dash-meta{color:var(--text-3)}
+[data-theme="light"] body{font-weight:500}
+.ag-c,.tbl td,.input,.nav-item,.btn{font-weight:500}
+.btn-primary,.ag-h,.ed-tab,h1,h2,h3,h4,b,strong{font-weight:650}
 </style>
 </head>
 <body>
@@ -1893,7 +1896,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.25.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.25.2', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -3861,7 +3864,7 @@ const DEFAULTS = {
   'firma.adresse': 'Maria-Theresien-Str. 18, 6020 Innsbruck', 'firma.uid': 'ATU00000000', 'firma.telefon': '0512 000000',
   'kasse.id': 'INN-K01', 'kasse.name': 'Kasse 1', 'kasse.freigabe': true, 'kasse.rabattGrenze': 20,
   'kasse.vereinsregel': true, 'kasse.retoureGrenze': 100, 'ziel.tag': 2500, 'kasse.pflichtfelder': true, 'kasse.bonFuss': 'Danke für Ihren Einkauf! Umtausch innerhalb von 30 Tagen mit Beleg.',
-  'anzeige.zoom': 1, 'backup.dir': '', 'backup.auto': true, 'backup.keep': 14, 'update.kanal': 'stable', 'update.auto': true, 'update.freigabe': null,
+  'anzeige.zoom': 1.25, 'anzeige.zoom.v2': false, 'backup.dir': '', 'backup.auto': true, 'backup.keep': 14, 'update.kanal': 'stable', 'update.auto': true, 'update.freigabe': null,
   'drucker.art': 'aus', 'drucker.adresse': '', 'drucker.name': '', 'drucker.breite': 48, 'drucker.auto': false, 'drucker.lade': false, 'gutschein.jahre': 3,
   'bon.logo': '', 'bon.logoDruck': true, 'bon.ersparnis': true, 'bon.artikelnr': false, 'bon.kopf': '', 'bon.fussA4': '',
   'mail.host': '', 'mail.port': 587, 'mail.tls': 'starttls', 'mail.user': '', 'mail.pass': '', 'mail.from': '', 'etikett.art': 'a4', 'etikett.adresse': '', 'etikett.name': '', 'etikett.format': '3x8',
@@ -3886,7 +3889,9 @@ function applySettings() {
   POS.flow.approval = !!CFG['kasse.freigabe'];
   POS.flow.approvalPct = clamp(+CFG['kasse.rabattGrenze'] || 20, 0, 100);
   const t = $('.brand-tenant'); if (t) t.textContent = CFG['firma.name'];
-  applyZoom(+CFG['anzeige.zoom'] || 1);
+  // 0.25.2: größere Anzeige als neuer Standard (einmalig)
+  if (!CFG['anzeige.zoom.v2']) { CFG['anzeige.zoom.v2'] = true; CFG['anzeige.zoom'] = Math.max(+CFG['anzeige.zoom'] || 1, 1.25); try { saveSettings({'anzeige.zoom.v2': true, 'anzeige.zoom': CFG['anzeige.zoom']}, true); } catch { /* */ } }
+  applyZoom(+CFG['anzeige.zoom'] || 1.25);
   if (S.view) renderTopbar();
 }
 function applyZoom(f) {
@@ -14350,6 +14355,7 @@ function openAppearance(anchor) {
   const el = openPopover(anchor, `<div class="pop-h">Darstellung · gilt für ${esc(S.user.name)}</div>
     ${segRow('Modus', 'theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['system', 'System']])}
     <div class="pop-row"><span>Akzent</span><div class="swatch-row">${Object.entries(ACCENTS).map(([k, a]) => `<button class="swb" data-acc="${k}" aria-pressed="${prefs.accent === k}" style="--sw:hsl(${a.h} ${a.s}% 55%)" aria-label="${a.name}" title="${a.name}"></button>`).join('')}<label class="swb custom" title="Eigene Markenfarbe" aria-pressed="${prefs.accent === 'custom'}"><input type="color" id="accCustom" value="#c98a5a" aria-label="Eigene Akzentfarbe"></label></div></div>
+    <div class="pop-row"><span>Anzeigegröße</span><div class="seg" id="apZoom">${[[1, '100 %'], [1.15, '115 %'], [1.25, '125 %'], [1.4, '140 %'], [1.6, '160 %']].map(([v, l]) => `<button data-z="${v}" aria-pressed="${Math.abs((+CFG['anzeige.zoom'] || 1) - v) < .01}">${l}</button>`).join('')}</div></div>
     ${segRow('Dichte', 'density', [['compact', 'Kompakt'], ['comfort', 'Komfort'], ['touch', 'Touch']])}
     ${segRow('Ecken', 'radius', [['sharp', 'Präzise'], ['soft', 'Weich']])}
     ${segRow('Bewegung', 'motion', [['full', 'Voll'], ['reduced', 'Reduziert']])}
@@ -14359,6 +14365,7 @@ function openAppearance(anchor) {
   if (!el) return;
   $$('.seg', el).forEach(s => initSeg(s, b => { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }));
   el.addEventListener('click', e => {
+    const z = e.target.closest('[data-z]'); if (z) { saveSettings({'anzeige.zoom': +z.dataset.z}, true); $$('[data-z]', el).forEach(b => b.setAttribute('aria-pressed', b === z)); return; }
     const a = e.target.closest('[data-acc]');
     if (a) { prefs.accent = a.dataset.acc; applyPrefs(true); $$('[data-acc],.swb.custom', el).forEach(b => b.setAttribute('aria-pressed', b === a)); }
     if (e.target.closest('#apSave')) { closePopover(); toast('Design-Vorlage gespeichert', {t2: '„Alpenlicht · Eigene“ – zuweisbar an Mandant, Filiale oder Rolle', type: 'pos', icon: 'palette'}); Hooks.emit('config.theme.saved', {vorlage: 'Alpenlicht · Eigene', modus: prefs.theme, akzent: prefs.accent}); }

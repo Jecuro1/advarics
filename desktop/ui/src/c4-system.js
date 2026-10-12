@@ -103,6 +103,7 @@ function openAppearance(anchor) {
   const el = openPopover(anchor, `<div class="pop-h">Darstellung · gilt für ${esc(S.user.name)}</div>
     ${segRow('Modus', 'theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['system', 'System']])}
     <div class="pop-row"><span>Akzent</span><div class="swatch-row">${Object.entries(ACCENTS).map(([k, a]) => `<button class="swb" data-acc="${k}" aria-pressed="${prefs.accent === k}" style="--sw:hsl(${a.h} ${a.s}% 55%)" aria-label="${a.name}" title="${a.name}"></button>`).join('')}<label class="swb custom" title="Eigene Markenfarbe" aria-pressed="${prefs.accent === 'custom'}"><input type="color" id="accCustom" value="#c98a5a" aria-label="Eigene Akzentfarbe"></label></div></div>
+    <div class="pop-row"><span>Anzeigegröße</span><div class="seg" id="apZoom">${[[1, '100 %'], [1.15, '115 %'], [1.25, '125 %'], [1.4, '140 %'], [1.6, '160 %']].map(([v, l]) => `<button data-z="${v}" aria-pressed="${Math.abs((+CFG['anzeige.zoom'] || 1) - v) < .01}">${l}</button>`).join('')}</div></div>
     ${segRow('Dichte', 'density', [['compact', 'Kompakt'], ['comfort', 'Komfort'], ['touch', 'Touch']])}
     ${segRow('Ecken', 'radius', [['sharp', 'Präzise'], ['soft', 'Weich']])}
     ${segRow('Bewegung', 'motion', [['full', 'Voll'], ['reduced', 'Reduziert']])}
@@ -112,6 +113,7 @@ function openAppearance(anchor) {
   if (!el) return;
   $$('.seg', el).forEach(s => initSeg(s, b => { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }));
   el.addEventListener('click', e => {
+    const z = e.target.closest('[data-z]'); if (z) { saveSettings({'anzeige.zoom': +z.dataset.z}, true); $$('[data-z]', el).forEach(b => b.setAttribute('aria-pressed', b === z)); return; }
     const a = e.target.closest('[data-acc]');
     if (a) { prefs.accent = a.dataset.acc; applyPrefs(true); $$('[data-acc],.swb.custom', el).forEach(b => b.setAttribute('aria-pressed', b === a)); }
     if (e.target.closest('#apSave')) { closePopover(); toast('Design-Vorlage gespeichert', {t2: '„Alpenlicht · Eigene“ – zuweisbar an Mandant, Filiale oder Rolle', type: 'pos', icon: 'palette'}); Hooks.emit('config.theme.saved', {vorlage: 'Alpenlicht · Eigene', modus: prefs.theme, akzent: prefs.accent}); }

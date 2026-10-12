@@ -1,3 +1,7 @@
+## Neu in 0.25.2
+
+- Alles größer und besser lesbar: Standard-Anzeigegröße jetzt 125 % (einmalig übernommen), Schrift etwas kräftiger. Die Anzeigegröße lässt sich jederzeit ändern: Darstellung-Menü (Palette oben rechts) mit 100–160 %, Einstellungen oder Strg + / Strg - / Strg 0.
+
 ## Neu in 0.25.1
 
 - Bessere Erkennbarkeit in der Arbeitsfläche: deutlich dunklere Schrift und Beschriftungen, kräftigere Rahmen und Trennlinien, stärker abgesetzte Karten, dunklerer Hintergrund hinter den Karten, fettere Spaltenköpfe, größere Feldbeschriftungen.
