@@ -144,7 +144,7 @@ async function zaEdit(id, done) {
   try { await needPerm('einstellungen', 'Zahlungsarten'); await stammSave('kassenzahlart', all.map(x => x.id === id ? {...x, lade: !!o.lade} : {...x})); done && done(); } catch (err) { if (err && String(err.message || err) !== 'abgebrochen') toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
 }
 agridPage('einst-zahlungsarten', {
-  title: 'Zahlungsarten', rows: zaRows, count: () => stRows('kassenzahlart').length, sort: {k: 'name', dir: 1},
+  title: 'Zahlungsarten & Kassenlade', rows: zaRows, count: () => stRows('kassenzahlart').length, sort: {k: 'name', dir: 1},
   toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}], cols: KK_ZA_COLS,
   actions: {back: e2Back, refresh: async () => { await loadStamm(true); PAGES['einst-zahlungsarten'].render(); }},
   edit: (id, done) => zaEdit(id, done)

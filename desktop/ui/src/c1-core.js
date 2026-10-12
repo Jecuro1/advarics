@@ -202,7 +202,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.34.5', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.35.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -406,7 +406,10 @@ const NAV = [
   {id: 'st-statistikfilter', label: 'Statistikfilter', icon: 'filter'},
   {id: 'st-land', label: 'Länder', icon: 'globe'},
   {g: 'Einstellungen'},
-  {id: 'einstellungen', label: 'Allgemein', icon: 'sliders'},
+  {label: 'Allgemein', icon: 'sliders', kids: [{id: 'set-allgemein', label: 'Firma & Filiale', icon: 'store'}, {id: 'set-standard', label: 'Standardwerte', icon: 'sliders'}, {id: 'set-anzeige', label: 'Darstellung', icon: 'palette'}, {id: 'set-benutzer', label: 'Benutzer', icon: 'users'}, {id: 'set-sso', label: 'Single Sign-On', icon: 'usbkey'}]},
+  {label: 'Kasse & Beleg', icon: 'register', kids: [{id: 'set-kasse', label: 'Kasse', icon: 'register'}, {id: 'set-bon', label: 'Bon & Belege', icon: 'receipt'}, {id: 'set-drucker', label: 'Drucker & Lade', icon: 'printer'}, {id: 'set-etikett', label: 'Etiketten-Ausgabe', icon: 'tag'}, {id: 'set-zahlung', label: 'Zahlungsarten', icon: 'card'}, {id: 'set-terminal', label: 'Zahlungsterminal', icon: 'card'}, {id: 'set-display', label: 'Kundendisplay', icon: 'layout'}, {id: 'set-rksv', label: 'RKSV', icon: 'shield'}]},
+  {label: 'Geräte & Verbund', icon: 'building', kids: [{id: 'set-verbund', label: 'Filialverbund', icon: 'building'}, {id: 'set-handy', label: 'Handy & Tablet', icon: 'phone-pay'}, {id: 'set-mail', label: 'E-Mail', icon: 'mail'}]},
+  {label: 'Daten & System', icon: 'server', kids: [{id: 'set-ki', label: 'Lokale KI', icon: 'sparkle'}, {id: 'set-sicherung', label: 'Datensicherung', icon: 'database'}, {id: 'set-updates', label: 'Updates', icon: 'download'}, {id: 'set-system', label: 'System & Protokoll', icon: 'server'}]},
   {id: 'buchungsabschluss', label: 'Buchungsabschluss', icon: 'lock'},
     {id: 'st-bonussystem', label: 'Bonus Systeme', icon: 'gift'},
   {label: 'Kassen', icon: 'register', kids: [{id: 'einst-kassen', label: 'Kassen', icon: 'register'}, {id: 'einst-kassenkonfig', label: 'Kassen-Konfiguration', icon: 'sliders'}]},
@@ -422,16 +425,14 @@ const NAV = [
   {id: 'st-artikelservice', label: 'Artikelservice', icon: 'wrench'},
   {id: 'styling', label: 'Styling', icon: 'palette'},
   {id: 'st-smsvorlage', label: 'SMS Vorlagen', icon: 'chat'},
-  {label: 'FiBu', icon: 'receipt', kids: [{id: 'st-fibukonto', label: 'FiBu Einstellungen', icon: 'sliders'}]},
+  {label: 'FiBu', icon: 'receipt', kids: [{id: 'set-buchhaltung', label: 'FiBu Einstellungen', icon: 'sliders'}]},
   {id: 'st-uebersetzung', label: 'Übersetzung', icon: 'globe'},
   {id: 'ek-verschluesselung', label: 'EK Verschlüsselung', icon: 'lock'},
   {id: 'api-protokoll', label: 'Protokoll externe API Zugriffe', icon: 'history'},
-  {id: 'einst-update', label: 'Updateübersicht', icon: 'download'},
-  {id: 'einst-zahlungsarten', label: 'Zahlungsarten', icon: 'card'},
+  {id: 'einst-zahlungsarten', label: 'Zahlungsarten & Kassenlade', icon: 'card'},
   {label: 'Gutscheine & Rabatte', icon: 'gift', kids: [{id: 'st-gutscheintyp', label: 'Gutscheintypen', icon: 'gift'}, {id: 'st-extgutscheintyp', label: 'Externe Gutscheintypen', icon: 'gift'}, {id: 'st-preisgrund', label: 'Preis Änderungsgründe', icon: 'tag'}, {id: 'st-belegzusatz', label: 'Beleg Zusatzinformationen', icon: 'receipt'}, {id: 'st-festerrabatt', label: 'Feste Rabatte', icon: 'percent'}, {id: 'st-zusatzbuchung', label: 'Zusatz Buchungstypen', icon: 'cash'}]},
   {g: 'System'},
   {id: 'anpassen', label: 'Anpassen', icon: 'puzzle'},
-  {id: 'datensicherung', label: 'Datensicherung', icon: 'database'},
   {id: 'protokoll', label: 'Protokoll', icon: 'history'},
   {g: 'Service'},
   {id: 'hilfe', label: 'Hilfe', icon: 'info'},
@@ -581,6 +582,7 @@ function go(view) {
   else if (view === 'kasse') renderPOS();
   else if (view === 'designsystem') renderDesign();
   else if (view === 'einstellungen') renderSettings();
+  else if (view.startsWith('set-')) { SET.sec = view.slice(4); renderSettings(); }
   else if (view === 'artikel') renderArtikel();
   else if (view === 'bestand') renderBestand();
   else if (view === 'kunden') renderKunden();
@@ -592,7 +594,7 @@ function go(view) {
   else if (PAGES[view]) PAGES[view].render();
   else if (view.startsWith('obj-')) renderObj(view.slice(4));
   else renderPlaceholder(view);
-  const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : view.startsWith('obj-') ? $('#view-obj') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
+  const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : view.startsWith('obj-') ? $('#view-obj') : view.startsWith('set-') ? $('#view-einstellungen') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
   $$('.nav-item').forEach(n => n.dataset.view === view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
   navReveal(view);
   renderTopbar(); applySidebar();

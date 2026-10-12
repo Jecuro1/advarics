@@ -132,7 +132,7 @@ if (DESKTOP) {
 
 /* ── Artikeltext mit KI ── */
 async function aiArticleText(st) {
-  if (!llmReady()) { toast('Kein lokales Sprachmodell eingerichtet', {t2: 'Einstellungen → Lokale KI', type: 'warn', action: {label: 'Einrichten', run: () => { go('einstellungen'); setTimeout(() => $('#sec-ki')?.scrollIntoView(), 150); }}}); return null; }
+  if (!llmReady()) { toast('Kein lokales Sprachmodell eingerichtet', {t2: 'Einstellungen → Lokale KI', type: 'warn', action: {label: 'Einrichten', run: () => setGo('ki')}}); return null; }
   toast('Text wird erstellt …', {t2: CFG['ki.modell'], icon: 'sparkle', dur: 2500});
   const facts = [`Artikel: ${st.name}`, st.brand && `Marke: ${st.brand}`, `Warengruppe: ${CATS.find(c => c.id === st.cat)?.name || st.cat}`, st.colors?.length && `Farben: ${st.colors.map(c => COLORS[c]?.[0] || c).join(', ')}`, st.sizes && `Größen: ${st.sizes}`, ...(st.fields || []).filter(([k, v]) => k && v && k !== 'Beschreibung').map(([k, v]) => `${k}: ${v}`)].filter(Boolean).join('\n');
   try { return (await invoke('ai_llm', {system: 'Du schreibst Produkttexte für einen Sport- und Modehändler in Österreich. Deutsch, sachlich, 2–3 Sätze, keine erfundenen technischen Daten, keine Superlative.', prompt: `Schreibe einen kurzen Produkttext:\n${facts}`})).trim(); }

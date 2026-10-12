@@ -8,7 +8,7 @@ const printerOn = () => DESKTOP && CFG['drucker.art'] && CFG['drucker.art'] !== 
 const m2 = v => num(v, 2);
 async function printOps(ops, purpose, quiet) {
   if (!DESKTOP) { if (!quiet) toast('Gedruckt (Vorschau)', {t2: 'In der Desktop-App an den Bondrucker', icon: 'printer'}); return true; }
-  if (!printerOn()) { if (!quiet) toast('Kein Bondrucker eingerichtet', {t2: 'Einstellungen → Drucker & Kassenlade', type: 'warn', icon: 'printer', action: {label: 'Einrichten', run: () => { go('einstellungen'); setTimeout(() => $('#sec-drucker')?.scrollIntoView({block: 'start'}), 150); }}}); return false; }
+  if (!printerOn()) { if (!quiet) toast('Kein Bondrucker eingerichtet', {t2: 'Einstellungen → Drucker & Kassenlade', type: 'warn', icon: 'printer', action: {label: 'Einrichten', run: () => { setGo('drucker'); }}}); return false; }
   try { await invoke('printer_print', {ops, purpose}); if (!quiet) toast('Gedruckt', {t2: purpose, type: 'pos', icon: 'printer', dur: 1800}); return true; }
   catch (e) { toast('Druck fehlgeschlagen', {t2: String(e), type: 'warn', icon: 'printer', dur: 7000}); return false; }
 }

@@ -1603,6 +1603,11 @@ input.ea-ro{width:100%}
 .ag-sticky>.ag-head,.ag-sticky>.ag-filt{position:static}
 .ag-h{height:auto;min-height:46px;line-height:1.25;padding-top:5px;padding-bottom:5px;white-space:normal}
 .ag-hl{white-space:normal;overflow-wrap:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+/* Einstellungen: jeder Bereich eine eigene Seite */
+.set-page{max-width:1240px}
+.set-page .set-only{margin:0}
+.set-page .set-desc{font-size:13.5px;color:var(--text-3);max-width:78ch;line-height:1.55;margin-top:6px}
+.set-page .set-foot{display:flex;align-items:center;gap:6px;margin-top:22px;font-size:12px;color:var(--text-3)}
 </style>
 </head>
 <body>
@@ -1984,7 +1989,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.34.5', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.35.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2188,7 +2193,10 @@ const NAV = [
   {id: 'st-statistikfilter', label: 'Statistikfilter', icon: 'filter'},
   {id: 'st-land', label: 'Länder', icon: 'globe'},
   {g: 'Einstellungen'},
-  {id: 'einstellungen', label: 'Allgemein', icon: 'sliders'},
+  {label: 'Allgemein', icon: 'sliders', kids: [{id: 'set-allgemein', label: 'Firma & Filiale', icon: 'store'}, {id: 'set-standard', label: 'Standardwerte', icon: 'sliders'}, {id: 'set-anzeige', label: 'Darstellung', icon: 'palette'}, {id: 'set-benutzer', label: 'Benutzer', icon: 'users'}, {id: 'set-sso', label: 'Single Sign-On', icon: 'usbkey'}]},
+  {label: 'Kasse & Beleg', icon: 'register', kids: [{id: 'set-kasse', label: 'Kasse', icon: 'register'}, {id: 'set-bon', label: 'Bon & Belege', icon: 'receipt'}, {id: 'set-drucker', label: 'Drucker & Lade', icon: 'printer'}, {id: 'set-etikett', label: 'Etiketten-Ausgabe', icon: 'tag'}, {id: 'set-zahlung', label: 'Zahlungsarten', icon: 'card'}, {id: 'set-terminal', label: 'Zahlungsterminal', icon: 'card'}, {id: 'set-display', label: 'Kundendisplay', icon: 'layout'}, {id: 'set-rksv', label: 'RKSV', icon: 'shield'}]},
+  {label: 'Geräte & Verbund', icon: 'building', kids: [{id: 'set-verbund', label: 'Filialverbund', icon: 'building'}, {id: 'set-handy', label: 'Handy & Tablet', icon: 'phone-pay'}, {id: 'set-mail', label: 'E-Mail', icon: 'mail'}]},
+  {label: 'Daten & System', icon: 'server', kids: [{id: 'set-ki', label: 'Lokale KI', icon: 'sparkle'}, {id: 'set-sicherung', label: 'Datensicherung', icon: 'database'}, {id: 'set-updates', label: 'Updates', icon: 'download'}, {id: 'set-system', label: 'System & Protokoll', icon: 'server'}]},
   {id: 'buchungsabschluss', label: 'Buchungsabschluss', icon: 'lock'},
     {id: 'st-bonussystem', label: 'Bonus Systeme', icon: 'gift'},
   {label: 'Kassen', icon: 'register', kids: [{id: 'einst-kassen', label: 'Kassen', icon: 'register'}, {id: 'einst-kassenkonfig', label: 'Kassen-Konfiguration', icon: 'sliders'}]},
@@ -2204,16 +2212,14 @@ const NAV = [
   {id: 'st-artikelservice', label: 'Artikelservice', icon: 'wrench'},
   {id: 'styling', label: 'Styling', icon: 'palette'},
   {id: 'st-smsvorlage', label: 'SMS Vorlagen', icon: 'chat'},
-  {label: 'FiBu', icon: 'receipt', kids: [{id: 'st-fibukonto', label: 'FiBu Einstellungen', icon: 'sliders'}]},
+  {label: 'FiBu', icon: 'receipt', kids: [{id: 'set-buchhaltung', label: 'FiBu Einstellungen', icon: 'sliders'}]},
   {id: 'st-uebersetzung', label: 'Übersetzung', icon: 'globe'},
   {id: 'ek-verschluesselung', label: 'EK Verschlüsselung', icon: 'lock'},
   {id: 'api-protokoll', label: 'Protokoll externe API Zugriffe', icon: 'history'},
-  {id: 'einst-update', label: 'Updateübersicht', icon: 'download'},
-  {id: 'einst-zahlungsarten', label: 'Zahlungsarten', icon: 'card'},
+  {id: 'einst-zahlungsarten', label: 'Zahlungsarten & Kassenlade', icon: 'card'},
   {label: 'Gutscheine & Rabatte', icon: 'gift', kids: [{id: 'st-gutscheintyp', label: 'Gutscheintypen', icon: 'gift'}, {id: 'st-extgutscheintyp', label: 'Externe Gutscheintypen', icon: 'gift'}, {id: 'st-preisgrund', label: 'Preis Änderungsgründe', icon: 'tag'}, {id: 'st-belegzusatz', label: 'Beleg Zusatzinformationen', icon: 'receipt'}, {id: 'st-festerrabatt', label: 'Feste Rabatte', icon: 'percent'}, {id: 'st-zusatzbuchung', label: 'Zusatz Buchungstypen', icon: 'cash'}]},
   {g: 'System'},
   {id: 'anpassen', label: 'Anpassen', icon: 'puzzle'},
-  {id: 'datensicherung', label: 'Datensicherung', icon: 'database'},
   {id: 'protokoll', label: 'Protokoll', icon: 'history'},
   {g: 'Service'},
   {id: 'hilfe', label: 'Hilfe', icon: 'info'},
@@ -2363,6 +2369,7 @@ function go(view) {
   else if (view === 'kasse') renderPOS();
   else if (view === 'designsystem') renderDesign();
   else if (view === 'einstellungen') renderSettings();
+  else if (view.startsWith('set-')) { SET.sec = view.slice(4); renderSettings(); }
   else if (view === 'artikel') renderArtikel();
   else if (view === 'bestand') renderBestand();
   else if (view === 'kunden') renderKunden();
@@ -2374,7 +2381,7 @@ function go(view) {
   else if (PAGES[view]) PAGES[view].render();
   else if (view.startsWith('obj-')) renderObj(view.slice(4));
   else renderPlaceholder(view);
-  const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : view.startsWith('obj-') ? $('#view-obj') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
+  const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : view.startsWith('obj-') ? $('#view-obj') : view.startsWith('set-') ? $('#view-einstellungen') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
   $$('.nav-item').forEach(n => n.dataset.view === view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
   navReveal(view);
   renderTopbar(); applySidebar();
@@ -4026,7 +4033,7 @@ function stepZoom(dir) {
   const next = dir === 0 ? 1 : UI_MUL_STEPS[clamp((i < 0 ? 3 : i) + dir, 0, UI_MUL_STEPS.length - 1)];
   saveSettings({'anzeige.zoom.mul': next, 'anzeige.zoom.auto': true}, true);
   toast(next === 1 ? 'Anzeigegröße: automatisch' : `Anzeigegröße: automatisch ${next > 1 ? '+' : '−'} ${Math.abs(Math.round((next - 1) * 100))} %`, {icon: 'eye', dur: 1400});
-  if (S.view === 'einstellungen') $$('#zoomSeg button').forEach(b => b.setAttribute('aria-pressed', Math.abs(+b.dataset.v - next) < .01));
+  if (inSettings()) $$('#zoomSeg button').forEach(b => b.setAttribute('aria-pressed', Math.abs(+b.dataset.v - next) < .01));
 }
 const ZOOM_CHOICES = [[.8, 'Kleiner'], [1, 'Automatisch'], [1.15, 'Größer'], [1.3, 'Groß'], [1.5, 'Sehr groß']];
 
@@ -4048,7 +4055,7 @@ async function realBackup(kind = 'manuell', quiet) {
   try {
     const e = await invoke('backup_create', {kind});
     await refreshInfo(); refreshDashboard(['ops.system']);
-    if (S.view === 'einstellungen') renderBackups();
+    if (inSettings()) renderBackups();
     if (!quiet || kind !== 'automatisch') toast('Sicherung erstellt', {t2: `${e.file} · ${fmtBytes(e.manifest.bytes)} · geprüft`, type: 'pos', icon: 'database'});
     return e;
   } catch (e) { toast('Sicherung fehlgeschlagen', {t2: String(e), type: 'warn', icon: 'database', dur: 7000}); await refreshInfo(); return null; }
@@ -4059,6 +4066,9 @@ async function autoBackupCheck() {
 }
 
 /* ── Ansicht ── */
+/** Läuft gerade eine Einstellungsseite? (jeder Bereich ist eine eigene Seite „set-…“) */
+const inSettings = () => S.view === 'einstellungen' || String(S.view || '').startsWith('set-');
+const SET = {sec: 'allgemein'};   // welcher Bereich zeigt die Einstellungsansicht gerade
 const SET_SECTIONS = [['allgemein', 'Firma & Filiale', 'store'], ['standard', 'Standardwerte', 'sliders'], ['kasse', 'Kasse', 'register'], ['benutzer', 'Benutzer', 'users'], ['bon', 'Bon & Belege', 'receipt'], ['drucker', 'Drucker & Lade', 'printer'], ['etikett', 'Etiketten', 'tag'], ['mail', 'E-Mail', 'mail'], ['rksv', 'RKSV', 'shield'], ['anzeige', 'Darstellung', 'palette'], ['sicherung', 'Datensicherung', 'database'], ['updates', 'Updates', 'download'], ['system', 'System & Protokoll', 'server']];
 function field(key, label, help, type = 'text', extra = '') {
   const v = CFG[key];
@@ -5626,7 +5636,7 @@ const printerOn = () => DESKTOP && CFG['drucker.art'] && CFG['drucker.art'] !== 
 const m2 = v => num(v, 2);
 async function printOps(ops, purpose, quiet) {
   if (!DESKTOP) { if (!quiet) toast('Gedruckt (Vorschau)', {t2: 'In der Desktop-App an den Bondrucker', icon: 'printer'}); return true; }
-  if (!printerOn()) { if (!quiet) toast('Kein Bondrucker eingerichtet', {t2: 'Einstellungen → Drucker & Kassenlade', type: 'warn', icon: 'printer', action: {label: 'Einrichten', run: () => { go('einstellungen'); setTimeout(() => $('#sec-drucker')?.scrollIntoView({block: 'start'}), 150); }}}); return false; }
+  if (!printerOn()) { if (!quiet) toast('Kein Bondrucker eingerichtet', {t2: 'Einstellungen → Drucker & Kassenlade', type: 'warn', icon: 'printer', action: {label: 'Einrichten', run: () => { setGo('drucker'); }}}); return false; }
   try { await invoke('printer_print', {ops, purpose}); if (!quiet) toast('Gedruckt', {t2: purpose, type: 'pos', icon: 'printer', dur: 1800}); return true; }
   catch (e) { toast('Druck fehlgeschlagen', {t2: String(e), type: 'warn', icon: 'printer', dur: 7000}); return false; }
 }
@@ -6221,7 +6231,7 @@ function askEmail(prefill, title) {
   });
 }
 async function mailReceipt(rec) {
-  if (!mailReady()) return toast('E-Mail nicht eingerichtet', {t2: 'Einstellungen → E-Mail: Mailserver eintragen', type: 'warn', icon: 'mail', action: {label: 'Einrichten', run: () => { go('einstellungen'); setTimeout(() => $('#sec-mail')?.scrollIntoView({block: 'start'}), 150); }}});
+  if (!mailReady()) return toast('E-Mail nicht eingerichtet', {t2: 'Einstellungen → E-Mail: Mailserver eintragen', type: 'warn', icon: 'mail', action: {label: 'Einrichten', run: () => { setGo('mail'); }}});
   const to = await askEmail(rec.customer?.email || custById(rec.customer?.id)?.email, `Beleg ${rec.no} per E-Mail`); if (!to) return;
   toast('Sende …', {icon: 'mail', dur: 1500});
   try { await invoke('mail_send', {to, subject: `Ihr Beleg ${rec.no} – ${CFG['firma.marke']}`, html: mailReceiptHTML(rec), text: mailReceiptText(rec), qr: rec.rksv?.qr || null, purpose: 'beleg'}); toast('Beleg gesendet', {t2: to, type: 'pos', icon: 'mail'}); Hooks.emit('pos.receipt.digital', {beleg: rec.no, kanal: 'email'}); }
@@ -7598,7 +7608,7 @@ if (DESKTOP) {
 
 /* ── Artikeltext mit KI ── */
 async function aiArticleText(st) {
-  if (!llmReady()) { toast('Kein lokales Sprachmodell eingerichtet', {t2: 'Einstellungen → Lokale KI', type: 'warn', action: {label: 'Einrichten', run: () => { go('einstellungen'); setTimeout(() => $('#sec-ki')?.scrollIntoView(), 150); }}}); return null; }
+  if (!llmReady()) { toast('Kein lokales Sprachmodell eingerichtet', {t2: 'Einstellungen → Lokale KI', type: 'warn', action: {label: 'Einrichten', run: () => setGo('ki')}}); return null; }
   toast('Text wird erstellt …', {t2: CFG['ki.modell'], icon: 'sparkle', dur: 2500});
   const facts = [`Artikel: ${st.name}`, st.brand && `Marke: ${st.brand}`, `Warengruppe: ${CATS.find(c => c.id === st.cat)?.name || st.cat}`, st.colors?.length && `Farben: ${st.colors.map(c => COLORS[c]?.[0] || c).join(', ')}`, st.sizes && `Größen: ${st.sizes}`, ...(st.fields || []).filter(([k, v]) => k && v && k !== 'Beschreibung').map(([k, v]) => `${k}: ${v}`)].filter(Boolean).join('\n');
   try { return (await invoke('ai_llm', {system: 'Du schreibst Produkttexte für einen Sport- und Modehändler in Österreich. Deutsch, sachlich, 2–3 Sätze, keine erfundenen technischen Daten, keine Superlative.', prompt: `Schreibe einen kurzen Produkttext:\n${facts}`})).trim(); }
@@ -8043,7 +8053,8 @@ async function setupChecks() {
     {id: 'mail', t: 'E-Mail-Versand', d: 'Belege und Bestellungen per E-Mail', ok: !!mailReady(), go: () => setGo('mail')},
   ];
 }
-function setGo(sec) { go('einstellungen'); setTimeout(() => $('#sec-' + sec)?.scrollIntoView({block: 'start'}), 160); }
+/** Einstellungen › Bereich öffnen (jeder Bereich ist eine eigene Seite, z. B. setGo('drucker') → set-drucker) */
+function setGo(sec) { go('set-' + (sec === 'firma' ? 'allgemein' : sec)); }
 async function renderHilfe() {
   const v = $('#view-hilfe'), checks = await setupChecks(), done = checks.filter(c => c.ok).length;
   v.innerHTML = `<div class="cv">${pageHead('Hilfe & Info', `Kontor ${esc(S.appVersion)} · ${DESKTOP ? 'Desktop-App' : 'Vorschau im Browser'} · Daten bleiben auf Ihrem Rechner`)}
@@ -8070,19 +8081,6 @@ async function renderHilfe() {
       $('#setupBanner').onclick = e => { const b = e.target.closest('[data-sb]'); if (!b) return; if (b.dataset.sb === 'x') { persist.set('setupHidden', true); $('#setupBanner').remove(); } else go('hilfe'); };
     });
     return r;
-  };
-}
-
-/* ── Datensicherung: eigener Menüpunkt, Inhalt in den Einstellungen ── */
-{
-  const _go0 = go;
-  go = function (view) {
-    if (view === 'datensicherung') {
-      _go0('einstellungen');
-      setTimeout(() => { $('#sec-sicherung')?.scrollIntoView({block: 'start'}); $$('.nav-item').forEach(n => n.dataset.view === 'datensicherung' ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current')); }, 160);
-      return;
-    }
-    return _go0(view);
   };
 }
 
@@ -11610,9 +11608,6 @@ const STAMM_DEF = {
     seed: [{id: 'MA', name: 'Mitarbeiterrabatt', pct: 20, freigabe: true}, {id: 'VEREIN', name: 'Vereinsrabatt', pct: 10}, {id: 'BESCH', name: 'Beschädigte Ware', pct: 30, freigabe: true}]},
   zusatzbuchung: {t: 'Zusatz Buchungstypen', ic: 'cash', sub: 'Eigene Kassenbuch-Buchungen (z. B. Trinkgeld, Porto, Reinigung) mit Konto', cols: [{k: 'name', l: 'Buchungstyp'}, {k: 'richtung', l: 'Richtung', t: 'select', o: [['ein', 'Einlage'], ['aus', 'Entnahme']]}, {k: 'konto', l: 'Konto'}],
     seed: [{id: 'PORTO', name: 'Porto', richtung: 'aus', konto: '7380'}, {id: 'TRINK', name: 'Trinkgeld-Kassa', richtung: 'ein', konto: '3600'}]},
-  fibukonto: {t: 'FiBu Einstellungen – Konten', ic: 'receipt', sub: 'Kontenzuordnung für den Buchhaltungsexport', cols: [{k: 'name', l: 'Vorgang'}, {k: 'konto', l: 'Konto'}, {k: 'gegenkonto', l: 'Gegenkonto'}],
-    seed: [{id: 'BAR', name: 'Barzahlung', konto: '2700', gegenkonto: '4000'}, {id: 'KARTE', name: 'Kartenzahlung', konto: '2790', gegenkonto: '4000'}, {id: 'GUTSCHEIN', name: 'Gutschein-Verkauf', konto: '3610', gegenkonto: '2700'}]},
-  // ── Inventur / Analyse
   inventurort: {t: 'Inventurorte', ic: 'grid', sub: 'Zählbereiche (Regale, Lager, Schaufenster) – Zählungen je Ort erfassen', cols: [{k: 'name', l: 'Ort'}, {k: 'filiale', l: 'Filiale', t: 'select', o: storeOpts}, {k: 'bereich', l: 'Bereich'}, {k: 'zaehler', l: 'Zählteam'}]},
   altersbewertung: {t: 'Altersbewertung Prozentsätze', ic: 'percent', sub: 'Abwertung des Lagerwerts nach Alter (Monate seit Wareneingang) – für Inventurbewertung und Bilanz', cols: [{k: 'name', l: 'Stufe'}, {k: 'ab', l: 'ab Monaten', t: 'num'}, {k: 'pct', l: 'Abwertung %', t: 'num'}],
     seed: [{id: 'A1', name: 'bis 6 Monate', ab: 0, pct: 0}, {id: 'A2', name: '6–12 Monate', ab: 6, pct: 20}, {id: 'A3', name: '12–24 Monate', ab: 12, pct: 50}, {id: 'A4', name: 'über 24 Monate', ab: 24, pct: 80}]},
@@ -13103,11 +13098,6 @@ document.addEventListener('click', async e => {
 });
 Object.assign(VIEW_PERM, {nummernkreise: 'einstellungen', buchungsabschluss: 'berichte', prozesskonfiguration: 'einstellungen', 'ek-verschluesselung': 'einstellungen'});
 
-/* Weiterleitungen in die bestehenden Einstellungs-Bereiche */
-function settingsLink(id, title, sec) {
-  registerPage(id, {title, sub: () => 'Einstellungen', render: () => { const v = $('#view-' + id); v.innerHTML = `<div class="cv">${loadingCard('Öffne Einstellungen')}</div>`; setTimeout(() => { go('einstellungen'); setTimeout(() => $(`[data-sec="${sec}"]`, $('#view-einstellungen'))?.click(), 80); }, 30); }});
-}
-settingsLink('einst-allgemein', 'Einstellungen', 'standard'); settingsLink('einst-kassen', 'Kassen', 'kasse'); settingsLink('einst-benutzer', 'Benutzer-Einstellungen', 'benutzer'); settingsLink('einst-update', 'Updateübersicht', 'updates'); settingsLink('einst-zahlungsarten', 'Zahlungsarten', 'kasse'); settingsLink('einst-buchungslogik', 'Buchungslogik', 'bon');
 
 /* ── Kasse: Beleg-Zusatzinformationen, Scanner-Regeln, Artikelservice, Preisgruppen ── */
 { const _op = openPayment; openPayment = function (...args) {
@@ -14985,7 +14975,7 @@ async function zaEdit(id, done) {
   try { await needPerm('einstellungen', 'Zahlungsarten'); await stammSave('kassenzahlart', all.map(x => x.id === id ? {...x, lade: !!o.lade} : {...x})); done && done(); } catch (err) { if (err && String(err.message || err) !== 'abgebrochen') toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
 }
 agridPage('einst-zahlungsarten', {
-  title: 'Zahlungsarten', rows: zaRows, count: () => stRows('kassenzahlart').length, sort: {k: 'name', dir: 1},
+  title: 'Zahlungsarten & Kassenlade', rows: zaRows, count: () => stRows('kassenzahlart').length, sort: {k: 'name', dir: 1},
   toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}], cols: KK_ZA_COLS,
   actions: {back: e2Back, refresh: async () => { await loadStamm(true); PAGES['einst-zahlungsarten'].render(); }},
   edit: (id, done) => zaEdit(id, done)
@@ -15282,6 +15272,58 @@ function fkRender(tab) {
     }};
 }
 KAE_RENDER.mwst = () => fkRender('mwst'); KAE_RENDER.zahl = () => fkRender('zahl'); KAE_RENDER.summen = () => fkRender('summen');
+/* ═════════════════════════════════════════════════════════════════
+   53 · EINSTELLUNGEN – jeder Menüpunkt ist eine eigene Seite
+   Aufbau und Handler der Bereiche bleiben unverändert (sie werden – auch die von anderen Modulen eingehängten –
+   weiter in #view-einstellungen gebaut); sichtbar ist je Seite nur noch EIN Bereich, mit eigenem Titel, eigener
+   Adresse (#set-kasse …) und eigenem Platz im Menü.
+   ═════════════════════════════════════════════════════════════════ */
+const SET_LABEL = {etikett: 'Etiketten-Ausgabe', buchhaltung: 'FiBu Einstellungen'};   // Menü-/Seitentitel, falls abweichend vom Abschnittstitel
+const SET_SUB = {
+  allgemein: 'Firmendaten für Belege und Exporte', standard: 'EDI, Gutscheine, neue Artikel, E-Mail-Fußzeile', anzeige: 'Größe, Farben, Dichte',
+  benutzer: 'Personen, PIN und Rechte', sso: 'Anmeldung mit dem Firmenkonto', kasse: 'Freigaben, Grenzen, Ziele', bon: 'Beleglayout und Texte',
+  drucker: 'Bondrucker und Kassenlade', etikett: 'Preis- und Barcode-Etiketten', zahlung: 'Zahlungsarten und IBAN', terminal: 'Kartenterminal',
+  display: 'Anzeige für Kund:innen', rksv: 'Registrierkasse und Signatur', verbund: 'Mehrere Standorte', handy: 'Mobile Kasse und Scanner',
+  mail: 'Mailserver (SMTP)', buchhaltung: 'Konten und Export', ki: 'Lokales Sprachmodell', sicherung: 'Sicherungen und Wiederherstellung',
+  updates: 'Programmupdates', system: 'Version und Protokoll'
+};
+SET_SECTIONS.forEach(([id, label]) => {
+  const pid = 'set-' + id, title = SET_LABEL[id] || label;
+  TITLES[pid] = title;
+  PAGES[pid] = {title, sub: () => SET_SUB[id] || 'Einstellungen', render: () => { SET.sec = id; renderSettings(); }};
+  VIEW_PERM[pid] = 'einstellungen';
+});
+VIEW_PERM.einstellungen = 'einstellungen';
+
+/* Zuordnung der alten Adressen */
+const SET_ALIAS = {einstellungen: 'set-allgemein', 'einst-allgemein': 'set-standard', 'einst-benutzer': 'set-benutzer', 'einst-update': 'set-updates', datensicherung: 'set-sicherung', 'einst-buchungslogik': 'set-bon'};
+{ const _go = go;
+  go = function (view) {
+    const to = SET_ALIAS[view] || view, was = S.view, r = _go.call(this, to);
+    // alle Einstellungsseiten teilen sich eine Ansicht: beim Wechsel wieder nach oben (erst jetzt, wenn sie sichtbar ist)
+    if (S.view !== was && String(to).startsWith('set-')) { const h = $('#view-einstellungen'); if (h) h.scrollTop = 0; }
+    return r;
+  };
+}
+
+/* Bereich als eigene Seite darstellen: nur der gewählte Abschnitt, Titel und Beschreibung als Seitenkopf */
+{ const _rs = renderSettings;
+  renderSettings = function () { _rs.apply(this, arguments); settingsPage(SET.sec); };
+}
+function settingsPage(sec) {
+  const host = $('#view-einstellungen'); if (!host) return;
+  const sel = SET_SECTIONS.find(s => s[0] === sec) || SET_SECTIONS[0];
+  const el = $('#sec-' + sel[0], host); if (!el) return;
+  const h2 = el.querySelector(':scope > h2'), p = el.querySelector(':scope > p');
+  const title = SET_LABEL[sel[0]] || h2?.textContent || sel[1], desc = p ? p.innerHTML : '';
+  h2?.remove(); p?.remove();
+  const note = host.querySelector('.set-note');
+  const page = document.createElement('div'); page.className = 'cv set-page';
+  page.innerHTML = `<div class="cv-head"><div><h2 class="h-title">${esc(title)}</h2>${desc ? `<div class="set-desc">${desc}</div>` : ''}</div></div>`;
+  el.classList.add('set-only'); page.append(el);
+  if (note) { const n = document.createElement('div'); n.className = 'set-foot'; n.innerHTML = note.innerHTML; page.append(n); }
+  host.replaceChildren(page);
+}
 
 /* ════════════════════════════════════════════════════════════════════
    12 · ANMELDUNG — Sperrbildschirm mit PIN, Windows Hello, FIDO2, SSO
@@ -15613,7 +15655,7 @@ function bindShell() {
   $('#tbLeft').addEventListener('click', e => { const p = e.target.closest('[data-park]'); p && resume(p.dataset.park); });
   $('#statusbar').addEventListener('click', e => {
     const id = e.target.closest('[id]')?.id;
-    ({sbConn: () => setOnline(!S.online), sbVerbund: () => go('filialen'), sbBackup: () => DESKTOP ? (go('einstellungen'), setTimeout(() => $('#sec-sicherung')?.scrollIntoView({block: 'start'}), 120)) : backupNow(), sbUpdate: openUpdate, sbHooks: toggleInspector})[id]?.();
+    ({sbConn: () => setOnline(!S.online), sbVerbund: () => go('filialen'), sbBackup: () => DESKTOP ? setGo('sicherung') : backupNow(), sbUpdate: openUpdate, sbHooks: toggleInspector})[id]?.();
   });
   $('#views').addEventListener('mousedown', e => { if (matchMedia('(max-width: 900px)').matches && !e.target.closest('.sidebar')) $('#app').classList.remove('sb-open'); });
   addEventListener('hashchange', () => go(location.hash.slice(1)));

@@ -1,3 +1,16 @@
+## Neu in 0.35.0
+
+- **Jede Einstellung ist jetzt eine eigene Seite.** Die lange Sammelseite „Kontor-Einstellungen“ mit über 20 Abschnitten zum Scrollen gibt es nicht mehr. Im Menü unter Einstellungen gibt es vier Gruppen, jeder Punkt öffnet seine eigene Seite mit eigenem Titel und eigener Adresse:
+  - **Allgemein:** Firma & Filiale · Standardwerte · Darstellung · Benutzer · Single Sign-On
+  - **Kasse & Beleg:** Kasse · Bon & Belege · Drucker & Lade · Etiketten-Ausgabe · Zahlungsarten · Zahlungsterminal · Kundendisplay · RKSV
+  - **Geräte & Verbund:** Filialverbund · Handy & Tablet · E-Mail
+  - **Daten & System:** Lokale KI · Datensicherung · Updates · System & Protokoll
+  - Die Buchhaltungs-Konten stehen unter **FiBu › FiBu Einstellungen**.
+- Alle Verknüpfungen (Einrichtungs-Assistent, Meldungen wie „Kein Bondrucker eingerichtet“, Statuszeile „Backup“, Suche mit Strg K, alte Lesezeichen) führen direkt auf die richtige Seite.
+- **Keine doppelten Menüpunkte mehr:** „Updateübersicht“ (gleiche Seite wie „Updates“), „Datensicherung“ unter System (gleiche Seite wie unter Einstellungen) und die wirkungslose Tabelle „FiBu Einstellungen – Konten“ (die echten Konten stehen jetzt dort) sind entfernt. Die Zahlungsarten-Liste mit den Kassenlade-Einstellungen heißt jetzt „Zahlungsarten & Kassenlade“, damit sie nicht mit „Zahlungsarten“ (Anbieten, PayPal, IBAN) verwechselt wird.
+- Beim Wechsel zwischen Einstellungsseiten springt die Ansicht wieder nach oben.
+- Intern: Die Oberfläche wird beim Bauen atomar geschrieben (keine halbfertige Datei mehr).
+
 ## Neu in 0.34.5
 
 - **Nur noch eine Einstellungsseite:** „Einstellungen Allgemein“ und „Kontor-Einstellungen“ gab es doppelt. Jetzt gibt es im Menü unter Einstellungen genau einen Eintrag „Allgemein“. Die Felder der bisherigen Seite stehen als Abschnitt **Standardwerte** (zweiter Punkt links) in dieser Seite: Unternehmens-GLN, Gutscheine gültig (Jahre), Standard-Spediteur, Standardwerte für neue Artikel (Warengruppe, Marke, MwSt.-Satz, Größenschlüssel) und E-Mail-Fußzeile. Änderungen wirken sofort – ein extra „Sichern“ ist nicht mehr nötig.

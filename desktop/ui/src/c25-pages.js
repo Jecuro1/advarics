@@ -290,7 +290,8 @@ async function setupChecks() {
     {id: 'mail', t: 'E-Mail-Versand', d: 'Belege und Bestellungen per E-Mail', ok: !!mailReady(), go: () => setGo('mail')},
   ];
 }
-function setGo(sec) { go('einstellungen'); setTimeout(() => $('#sec-' + sec)?.scrollIntoView({block: 'start'}), 160); }
+/** Einstellungen › Bereich öffnen (jeder Bereich ist eine eigene Seite, z. B. setGo('drucker') → set-drucker) */
+function setGo(sec) { go('set-' + (sec === 'firma' ? 'allgemein' : sec)); }
 async function renderHilfe() {
   const v = $('#view-hilfe'), checks = await setupChecks(), done = checks.filter(c => c.ok).length;
   v.innerHTML = `<div class="cv">${pageHead('Hilfe & Info', `Kontor ${esc(S.appVersion)} · ${DESKTOP ? 'Desktop-App' : 'Vorschau im Browser'} · Daten bleiben auf Ihrem Rechner`)}
@@ -317,19 +318,6 @@ async function renderHilfe() {
       $('#setupBanner').onclick = e => { const b = e.target.closest('[data-sb]'); if (!b) return; if (b.dataset.sb === 'x') { persist.set('setupHidden', true); $('#setupBanner').remove(); } else go('hilfe'); };
     });
     return r;
-  };
-}
-
-/* ── Datensicherung: eigener Menüpunkt, Inhalt in den Einstellungen ── */
-{
-  const _go0 = go;
-  go = function (view) {
-    if (view === 'datensicherung') {
-      _go0('einstellungen');
-      setTimeout(() => { $('#sec-sicherung')?.scrollIntoView({block: 'start'}); $$('.nav-item').forEach(n => n.dataset.view === 'datensicherung' ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current')); }, 160);
-      return;
-    }
-    return _go0(view);
   };
 }
 

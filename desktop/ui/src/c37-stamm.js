@@ -110,9 +110,6 @@ const STAMM_DEF = {
     seed: [{id: 'MA', name: 'Mitarbeiterrabatt', pct: 20, freigabe: true}, {id: 'VEREIN', name: 'Vereinsrabatt', pct: 10}, {id: 'BESCH', name: 'Beschädigte Ware', pct: 30, freigabe: true}]},
   zusatzbuchung: {t: 'Zusatz Buchungstypen', ic: 'cash', sub: 'Eigene Kassenbuch-Buchungen (z. B. Trinkgeld, Porto, Reinigung) mit Konto', cols: [{k: 'name', l: 'Buchungstyp'}, {k: 'richtung', l: 'Richtung', t: 'select', o: [['ein', 'Einlage'], ['aus', 'Entnahme']]}, {k: 'konto', l: 'Konto'}],
     seed: [{id: 'PORTO', name: 'Porto', richtung: 'aus', konto: '7380'}, {id: 'TRINK', name: 'Trinkgeld-Kassa', richtung: 'ein', konto: '3600'}]},
-  fibukonto: {t: 'FiBu Einstellungen – Konten', ic: 'receipt', sub: 'Kontenzuordnung für den Buchhaltungsexport', cols: [{k: 'name', l: 'Vorgang'}, {k: 'konto', l: 'Konto'}, {k: 'gegenkonto', l: 'Gegenkonto'}],
-    seed: [{id: 'BAR', name: 'Barzahlung', konto: '2700', gegenkonto: '4000'}, {id: 'KARTE', name: 'Kartenzahlung', konto: '2790', gegenkonto: '4000'}, {id: 'GUTSCHEIN', name: 'Gutschein-Verkauf', konto: '3610', gegenkonto: '2700'}]},
-  // ── Inventur / Analyse
   inventurort: {t: 'Inventurorte', ic: 'grid', sub: 'Zählbereiche (Regale, Lager, Schaufenster) – Zählungen je Ort erfassen', cols: [{k: 'name', l: 'Ort'}, {k: 'filiale', l: 'Filiale', t: 'select', o: storeOpts}, {k: 'bereich', l: 'Bereich'}, {k: 'zaehler', l: 'Zählteam'}]},
   altersbewertung: {t: 'Altersbewertung Prozentsätze', ic: 'percent', sub: 'Abwertung des Lagerwerts nach Alter (Monate seit Wareneingang) – für Inventurbewertung und Bilanz', cols: [{k: 'name', l: 'Stufe'}, {k: 'ab', l: 'ab Monaten', t: 'num'}, {k: 'pct', l: 'Abwertung %', t: 'num'}],
     seed: [{id: 'A1', name: 'bis 6 Monate', ab: 0, pct: 0}, {id: 'A2', name: '6–12 Monate', ab: 6, pct: 20}, {id: 'A3', name: '12–24 Monate', ab: 12, pct: 50}, {id: 'A4', name: 'über 24 Monate', ab: 24, pct: 80}]},

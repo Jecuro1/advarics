@@ -329,7 +329,7 @@ function bindShell() {
   $('#tbLeft').addEventListener('click', e => { const p = e.target.closest('[data-park]'); p && resume(p.dataset.park); });
   $('#statusbar').addEventListener('click', e => {
     const id = e.target.closest('[id]')?.id;
-    ({sbConn: () => setOnline(!S.online), sbVerbund: () => go('filialen'), sbBackup: () => DESKTOP ? (go('einstellungen'), setTimeout(() => $('#sec-sicherung')?.scrollIntoView({block: 'start'}), 120)) : backupNow(), sbUpdate: openUpdate, sbHooks: toggleInspector})[id]?.();
+    ({sbConn: () => setOnline(!S.online), sbVerbund: () => go('filialen'), sbBackup: () => DESKTOP ? setGo('sicherung') : backupNow(), sbUpdate: openUpdate, sbHooks: toggleInspector})[id]?.();
   });
   $('#views').addEventListener('mousedown', e => { if (matchMedia('(max-width: 900px)').matches && !e.target.closest('.sidebar')) $('#app').classList.remove('sb-open'); });
   addEventListener('hashchange', () => go(location.hash.slice(1)));

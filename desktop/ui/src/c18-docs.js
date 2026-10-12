@@ -178,7 +178,7 @@ function askEmail(prefill, title) {
   });
 }
 async function mailReceipt(rec) {
-  if (!mailReady()) return toast('E-Mail nicht eingerichtet', {t2: 'Einstellungen → E-Mail: Mailserver eintragen', type: 'warn', icon: 'mail', action: {label: 'Einrichten', run: () => { go('einstellungen'); setTimeout(() => $('#sec-mail')?.scrollIntoView({block: 'start'}), 150); }}});
+  if (!mailReady()) return toast('E-Mail nicht eingerichtet', {t2: 'Einstellungen → E-Mail: Mailserver eintragen', type: 'warn', icon: 'mail', action: {label: 'Einrichten', run: () => { setGo('mail'); }}});
   const to = await askEmail(rec.customer?.email || custById(rec.customer?.id)?.email, `Beleg ${rec.no} per E-Mail`); if (!to) return;
   toast('Sende …', {icon: 'mail', dur: 1500});
   try { await invoke('mail_send', {to, subject: `Ihr Beleg ${rec.no} – ${CFG['firma.marke']}`, html: mailReceiptHTML(rec), text: mailReceiptText(rec), qr: rec.rksv?.qr || null, purpose: 'beleg'}); toast('Beleg gesendet', {t2: to, type: 'pos', icon: 'mail'}); Hooks.emit('pos.receipt.digital', {beleg: rec.no, kanal: 'email'}); }

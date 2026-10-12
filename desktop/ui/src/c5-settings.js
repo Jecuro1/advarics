@@ -90,7 +90,7 @@ function stepZoom(dir) {
   const next = dir === 0 ? 1 : UI_MUL_STEPS[clamp((i < 0 ? 3 : i) + dir, 0, UI_MUL_STEPS.length - 1)];
   saveSettings({'anzeige.zoom.mul': next, 'anzeige.zoom.auto': true}, true);
   toast(next === 1 ? 'Anzeigegröße: automatisch' : `Anzeigegröße: automatisch ${next > 1 ? '+' : '−'} ${Math.abs(Math.round((next - 1) * 100))} %`, {icon: 'eye', dur: 1400});
-  if (S.view === 'einstellungen') $$('#zoomSeg button').forEach(b => b.setAttribute('aria-pressed', Math.abs(+b.dataset.v - next) < .01));
+  if (inSettings()) $$('#zoomSeg button').forEach(b => b.setAttribute('aria-pressed', Math.abs(+b.dataset.v - next) < .01));
 }
 const ZOOM_CHOICES = [[.8, 'Kleiner'], [1, 'Automatisch'], [1.15, 'Größer'], [1.3, 'Groß'], [1.5, 'Sehr groß']];
 
@@ -112,7 +112,7 @@ async function realBackup(kind = 'manuell', quiet) {
   try {
     const e = await invoke('backup_create', {kind});
     await refreshInfo(); refreshDashboard(['ops.system']);
-    if (S.view === 'einstellungen') renderBackups();
+    if (inSettings()) renderBackups();
     if (!quiet || kind !== 'automatisch') toast('Sicherung erstellt', {t2: `${e.file} · ${fmtBytes(e.manifest.bytes)} · geprüft`, type: 'pos', icon: 'database'});
     return e;
   } catch (e) { toast('Sicherung fehlgeschlagen', {t2: String(e), type: 'warn', icon: 'database', dur: 7000}); await refreshInfo(); return null; }
@@ -123,6 +123,9 @@ async function autoBackupCheck() {
 }
 
 /* ── Ansicht ── */
+/** Läuft gerade eine Einstellungsseite? (jeder Bereich ist eine eigene Seite „set-…“) */
+const inSettings = () => S.view === 'einstellungen' || String(S.view || '').startsWith('set-');
+const SET = {sec: 'allgemein'};   // welcher Bereich zeigt die Einstellungsansicht gerade
 const SET_SECTIONS = [['allgemein', 'Firma & Filiale', 'store'], ['standard', 'Standardwerte', 'sliders'], ['kasse', 'Kasse', 'register'], ['benutzer', 'Benutzer', 'users'], ['bon', 'Bon & Belege', 'receipt'], ['drucker', 'Drucker & Lade', 'printer'], ['etikett', 'Etiketten', 'tag'], ['mail', 'E-Mail', 'mail'], ['rksv', 'RKSV', 'shield'], ['anzeige', 'Darstellung', 'palette'], ['sicherung', 'Datensicherung', 'database'], ['updates', 'Updates', 'download'], ['system', 'System & Protokoll', 'server']];
 function field(key, label, help, type = 'text', extra = '') {
   const v = CFG[key];
