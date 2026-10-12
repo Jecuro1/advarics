@@ -2041,6 +2041,7 @@ fn main() {
             let _ = advarics::groessenschluessel_seed(&mut conn);
             let _ = advarics::groessenschluessel_zuordnung(&mut conn);
             if let Err(e) = advarics::groessen_seed(&mut conn) { let _ = db::audit_append(&conn, "groessen.seed.failed", &json!({ "fehler": e })); }
+            let _ = advarics::groessen_g1(&mut conn);
             if db::count(&conn, "articles") > 0 {
                 purchasing::supplier_seed(&conn).map_err(|e| format!("Lieferanten: {e}"))?;
             }

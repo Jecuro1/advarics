@@ -352,10 +352,10 @@ pub fn groessenschluessel_seed(c: &mut Connection) -> Result<(), String> {
 }
 
 /// Zuordnung der Größen zu Advarics-Größenschlüsseln (Schlüssel-Nr., Größen) – füllt nur Schlüssel, die noch leer sind
-const GS_ZUORDNUNG: [(i64, &[&str]); 4] = [(3, &["32", "33", "34", "35", "36", "37", "38", "40", "42", "44", "46", "48", "50"]), (4, &["39", "40", "41", "42", "43", "44", "45", "46", "48", "50", "52", "54", "56", "58", "60"]), (5, &["16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39"]), (2, &["XXS", "XXS/XS", "XS", "XS/S", "S", "S-M", "S/M", "M", "M/L", "L", "L-XL", "L/XL", "XL", "XL/XXL", "XXL", "XXXL"])];
+const GS_ZUORDNUNG: [(i64, &[&str]); 5] = [(6, &["35", "35,5", "36", "36 2/3", "36,5", "36½", "37", "37 1/3", "37,5", "37½", "38", "38 2/3", "38,5", "39", "39 1/3", "39 2/3", "39,5", "39½", "40", "40 2/3", "40,5", "40½", "41", "41 1/3", "41,5", "41½", "42", "42 2/3", "42,5", "42½", "43", "43 1/3", "43,5", "43½", "44", "44 1/3", "44 2/3", "44,5", "44½", "45", "45 1/3", "45,5", "46", "46 2/3", "46,5", "46½", "47", "47 1/3", "47,5", "48", "48 2/3", "48,5", "48½", "49", "49 1/3", "49,5", "49½", "50", "50 2/3", "50½", "51"]), (3, &["32", "33", "34", "35", "36", "37", "38", "40", "42", "44", "46", "48", "50"]), (4, &["39", "40", "41", "42", "43", "44", "45", "46", "48", "50", "52", "54", "56", "58", "60"]), (5, &["16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39"]), (2, &["XXS", "XXS/XS", "XS", "XS/S", "S", "S-M", "S/M", "M", "M/L", "L", "L-XL", "L/XL", "XL", "XL/XXL", "XXL", "XXXL"])];
 
 pub fn groessenschluessel_zuordnung(c: &mut Connection) -> Result<(), String> {
-    if db::setting_get(c, "groessenschluessel.zuordnung.v2").and_then(|v| v.as_bool()).unwrap_or(false) {
+    if db::setting_get(c, "groessenschluessel.zuordnung.v3").and_then(|v| v.as_bool()).unwrap_or(false) {
         return Ok(());
     }
     for (nr, list) in GS_ZUORDNUNG {
@@ -367,7 +367,32 @@ pub fn groessenschluessel_zuordnung(c: &mut Connection) -> Result<(), String> {
             c.execute("UPDATE stamm SET data = ?2, updated_at = ?3 WHERE kind = 'groessenschluessel' AND id = ?1", params![format!("gs-{nr}"), v.to_string(), db::now()]).map_err(|e| e.to_string())?;
         }
     }
-    db::setting_set(c, "groessenschluessel.zuordnung.v2", &json!(true)).map_err(|e| e.to_string())?;
+    db::setting_set(c, "groessenschluessel.zuordnung.v3", &json!(true)).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// „Größe 1“ für Halbgrößen (z. B. 36½ → 36 1/2) und „One Size“ ergänzen, wo sie noch leer ist
+pub fn groessen_g1(c: &mut Connection) -> Result<(), String> {
+    if db::setting_get(c, "groessen.g1.v1").and_then(|v| v.as_bool()).unwrap_or(false) {
+        return Ok(());
+    }
+    let rows: Vec<(String, String)> = {
+        let mut st = c.prepare("SELECT id, data FROM stamm WHERE kind = 'groesse'").map_err(|e| e.to_string())?;
+        let v: Vec<(String, String)> = st.query_map([], |r| Ok((r.get(0)?, r.get(1)?))).map_err(|e| e.to_string())?.filter_map(Result::ok).collect();
+        v
+    };
+    let tx = c.transaction().map_err(|e| e.to_string())?;
+    for (id, d) in rows {
+        let mut v: Value = serde_json::from_str(&d).unwrap_or(json!({}));
+        let name = v["name"].as_str().unwrap_or("").to_string();
+        let g1 = if name == "One Size" { name.clone() } else if name.contains('½') { name.replace('½', " 1/2") } else { continue };
+        if v["g1"].as_str().unwrap_or("").is_empty() {
+            v["g1"] = json!(g1);
+            tx.execute("UPDATE stamm SET data = ?2 WHERE kind = 'groesse' AND id = ?1", params![id, v.to_string()]).map_err(|e| e.to_string())?;
+        }
+    }
+    tx.commit().map_err(|e| e.to_string())?;
+    db::setting_set(c, "groessen.g1.v1", &json!(true)).map_err(|e| e.to_string())?;
     Ok(())
 }
 
