@@ -317,10 +317,29 @@ fn catalog_seed(db: State<db::Db>, articles: Vec<catalog::Article>) -> Res<usize
 fn article_save(db: State<db::Db>, article: catalog::Article, user: Option<String>) -> Res<Vec<catalog::Article>> {
     let mut c = db.conn.lock().unwrap();
     let tx = c.transaction().map_err(err)?;
+    let alt: Option<(i64, Option<i64>)> = tx.query_row("SELECT price, cost FROM articles WHERE id = ?1", [&article.id], |r| Ok((r.get(0)?, r.get(1)?))).ok();
     catalog::save(&tx, &article)?;
+    if let Some((vk, ek)) = alt {
+        if vk != article.price || ek != article.cost {
+            db::audit_append(&tx, "catalog.price.changed", &json!({ "artikel": article.id, "alt_vk": vk, "neu_vk": article.price, "alt_ek": ek, "neu_ek": article.cost, "benutzer": user })).map_err(err)?;
+        }
+    }
     db::audit_append(&tx, "catalog.article.saved", &json!({ "artikel": article.id, "name": article.name, "varianten": article.variants.len(), "benutzer": user })).map_err(err)?;
     tx.commit().map_err(err)?;
     catalog::list(&c).map_err(err)
+}
+
+/// Daten für die Reiter der Artikelmaske: Buchungen, Filialbestand, Preisänderungen
+#[tauri::command]
+fn article_card(db: State<db::Db>, id: String) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    let mut st = c.prepare("SELECT m.id, m.ts, v.size, v.color, v.ean, m.delta, m.stock_after, m.reason, COALESCE(m.user,'') FROM stock_moves m JOIN variants v ON v.id = m.variant_id WHERE v.article_id = ?1 ORDER BY m.id DESC LIMIT 500").map_err(err)?;
+    let moves: Vec<Value> = st.query_map([&id], |r| Ok(json!({ "id": r.get::<_, i64>(0)?, "ts": r.get::<_, String>(1)?, "size": r.get::<_, String>(2)?, "color": r.get::<_, String>(3)?, "ean": r.get::<_, String>(4)?, "delta": r.get::<_, i64>(5)?, "after": r.get::<_, i64>(6)?, "reason": r.get::<_, String>(7)?, "user": r.get::<_, String>(8)? }))).map_err(err)?.filter_map(Result::ok).collect();
+    let mut st = c.prepare("SELECT s.store, COALESCE(t.name, s.store), v.size, v.color, v.ean, s.stock FROM store_stock s JOIN variants v ON v.ean = s.ean LEFT JOIN stores t ON t.id = s.store WHERE v.article_id = ?1 ORDER BY s.store, v.id").map_err(err)?;
+    let stores: Vec<Value> = st.query_map([&id], |r| Ok(json!({ "store": r.get::<_, String>(0)?, "name": r.get::<_, String>(1)?, "size": r.get::<_, String>(2)?, "color": r.get::<_, String>(3)?, "ean": r.get::<_, String>(4)?, "stock": r.get::<_, i64>(5)? }))).map_err(err)?.filter_map(Result::ok).collect();
+    let mut st = c.prepare("SELECT id, ts, payload FROM audit_log WHERE event = 'catalog.price.changed' AND json_extract(payload, '$.artikel') = ?1 ORDER BY id DESC LIMIT 200").map_err(err)?;
+    let prices: Vec<Value> = st.query_map([&id], |r| { let p: String = r.get(2)?; let mut v: Value = serde_json::from_str(&p).unwrap_or(json!({})); v["id"] = json!(r.get::<_, i64>(0)?); v["ts"] = json!(r.get::<_, String>(1)?); Ok(v) }).map_err(err)?.filter_map(Result::ok).collect();
+    Ok(json!({ "moves": moves, "stores": stores, "prices": prices }))
 }
 
 #[tauri::command]
@@ -2050,6 +2069,7 @@ fn main() {
             advarics_pick,
             advarics_preview,
             advarics_import,
+            article_card,
             advarics_wg_preview,
             advarics_wg_import,
             article_media_list,

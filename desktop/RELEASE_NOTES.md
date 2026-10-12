@@ -1,3 +1,9 @@
+## Neu in 0.21.0
+
+- Artikel im Advarics-Stil: Artikelliste als Datentabelle (Gruppieren, Spaltenfilter, Spalten-Auswahl, Export, Auswahl, Etiketten) und Artikelmaske als eigene Seite mit Werkzeugleiste (Übersicht, Aktualisieren, Sichern, Neu, Änderungen zurücknehmen, Löschen, Artikel-Service), Datensatz-Navigation und den Reitern Allgemein, Basispreise, Filial-Preise, Scancodes, Bestand, Preisänderungen, Buchungen, Artikel-Karte, Zusätzl. Lieferanten, Artikel-Merkmale, Zusatz-Preise, Bilder-Zuordnung, Attribut-Zuordnung, Text-Zuordnung, Übersetzung, NOS Monatswerte, Vorgänger-Artikel – dazu die bisherigen Reiter Beschreibung, Material, Technik, Klassifikation, Webshop, Farben & Größen.
+- Preisänderungen werden protokolliert (Reiter „Preisänderungen“), Bestand je Filiale und Buchungen je Artikel.
+- Neu: Stammdaten › Artikeltexte (Textbausteine für die Text-Zuordnung).
+
 ## Neu in 0.20.0
 
 - Warengruppen als Datentabelle im Advarics-Stil: Werkzeugleiste (Zurück, Aktualisieren, Neu, Fedas Synchronisierung), Gruppierleiste (Spalten hineinziehen), Suche, Spalten-Auswahl, automatische Spaltenbreite, Export, Filterzeile je Spalte, Sortierung, Auswahlkästchen, Spalten Hierarchie Ebene1–3 (Nr./Name), MwSt.-Typ, Etiketten-Typ, Inventur, Altersbewertung, Vorschl.-Spanne/Kalk. Doppelklick bearbeitet, flüssig auch mit 11.848 Zeilen.

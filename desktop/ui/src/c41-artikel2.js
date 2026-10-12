@@ -83,15 +83,19 @@ function askUrl(title, label) {
 
 /* ── Artikel-Editor mit Reitern ── */
 const edTabMem = {};
-openEditor = function (a, tab0) {
+function artEditorMount(host, a, tab0) {
   const isNew = !a;
+  const el = document.createElement('div'); el.className = 'ae'; host.replaceChildren(el);
   const sale0 = a ? ('baseSale' in a ? a.baseSale : a.sale) : null;
   const st = a ? {id: a.id, name: a.name, brand: a.brand, cat: a.cat, g: a.g, price: num(a.price, 2), sale: sale0 ? num(sale0, 2) : '', vat: a.vat ?? 20, tag: a.tag || '', colors: [...a.colors], sizes: a.sizes.join(', '), fields: cfSplit('artikel', a.fields).free, cf: cfSplit('artikel', a.fields).typed, ski: !!a.prompts, pop: a.pop || 50, cost: a.cost != null ? num(a.cost, 2) : '', supplierId: a.supplierId || '', minStock: String(a.minStock ?? 2), d: JSON.parse(JSON.stringify(a.details || {}))}
     : {id: nextArtId(), name: '', brand: '', cat: AV.cat !== 'alle' ? AV.cat : 'jacken', g: 'jacket', price: '', sale: '', vat: 20, tag: '', colors: [], sizes: 'S, M, L, XL', fields: [], cf: {}, ski: false, pop: 50, cost: '', supplierId: '', minStock: '2', d: {}};
   st.pending = [];     // Bildadressen, die nach dem ersten Speichern geladen werden
   let tab = tab0 || edTabMem.last || 'stamm';
-  const el = openLayer(`<div class="drawer-panel" style="width:min(1020px,100%)" role="dialog" aria-modal="true" aria-label="Artikel bearbeiten"><div id="edHead"></div><div id="edTabs" class="ed-tabs"></div><div class="drawer-body" id="edBody"></div>
-    <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">${isNew ? '' : `<button class="btn btn-danger" id="edDel">${ic('trash', 'i-sm')}Deaktivieren</button>`}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="edSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {cls: 'drawer', focus: '[data-f="name"]'});
+  const ids = AE.ids || [], pos = a ? ids.indexOf(a.id) : -1;
+  el.innerHTML = `<div class="ag-bar ae-bar"><button class="ag-btn" data-close>${ic('chevron-left', 'i-sm')}<span>Übersicht: Artikel</span></button><button class="ag-btn" id="edRefresh">${ic('sync', 'i-sm')}<span>Aktualisieren</span></button><button class="ag-btn" id="edSave">${ic('check', 'i-sm')}<span>Sichern</span></button><button class="ag-btn" id="edNew">${ic('plus', 'i-sm')}<span>Neu</span></button><button class="ag-btn" id="edUndo">${ic('undo', 'i-sm')}<span>Änderungen zurücknehmen</span></button>${isNew ? '' : `<button class="ag-btn" id="edDel">${ic('trash', 'i-sm')}<span>Löschen</span></button>`}<button class="ag-btn" id="edService">${ic('sliders', 'i-sm')}<span>Artikel-Service</span></button><span class="sp" style="flex:1"></span>${pos >= 0 ? `<span class="ae-nav"><button class="ag-btn" id="edPrev" ${pos <= 0 ? 'disabled' : ''}>${ic('chevron-left', 'i-sm')}</button><b>${pos + 1}/${ids.length}</b><button class="ag-btn" id="edNext" ${pos >= ids.length - 1 ? 'disabled' : ''}>${ic('chevron-right', 'i-sm')}</button></span>` : ''}</div>
+    <div id="edHead"></div><div class="ae-tabsw"><div id="edTabs" class="ed-tabs"></div></div><div class="ae-body"><div id="edBody"></div></div>`;
+  const edClose = () => go('artikel');
+  const remount = (art, t) => artEditorMount(host, art, t);
   const collect = () => {
     $$('[data-f]', el).forEach(i => { st[i.dataset.f] = i.value; });
     if ($('.frow', el) || $('#edFields', el)) st.fields = $$('.frow', el).map(r => [$('[data-fk]', r).value.trim(), $('[data-fv]', r).value.trim()]);
@@ -99,6 +103,7 @@ openEditor = function (a, tab0) {
     if ($$('[data-d]', el).length) { const keep = {}; const here = new Set($$('[data-d]', el).map(i => i.dataset.d)); Object.entries(st.d).forEach(([k, v]) => { if (!here.has(k)) keep[k] = v; }); st.d = {...keep, ...readDetails(el)}; }
   };
   const sizesArr = () => [...new Set(String(st.sizes).split(',').map(s => s.trim()).filter(Boolean))];
+  const ctx = {st, a, el, host, isNew, sizesArr, get tab() { return tab; }, rerender: () => { collect(); render(); }, setTab: t => { collect(); tab = t; render(); }, collect, card: null, cardFor: null};
   const liveA = () => (a && ART.find(x => x.id === a.id)) || a;
   const media = () => (liveA()?.media || []);
   const refreshMedia = async () => { if (!DESKTOP || !a) return; replaceCatalog(await invoke('catalog_list')); const fresh = ART.find(x => x.id === a.id); if (fresh) { a.media = fresh.media; a.image = fresh.image; } renderArtTable(); };
@@ -110,6 +115,7 @@ openEditor = function (a, tab0) {
       <div style="display:flex;gap:0;justify-content:space-between;min-width:0"><button class="btn btn-ghost btn-icon btn-sm" data-mmv="${m.id}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="nach vorn">${ic('chevron-left', 'i-sm')}</button><button class="btn btn-ghost btn-sm" data-mmain="${m.id}" ${i === 0 ? 'disabled' : ''}>${ic('star', 'i-sm')}Haupt</button><button class="btn btn-ghost btn-icon btn-sm" data-mdel="${m.id}" aria-label="Löschen">${ic('trash', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-mmv="${m.id}" data-d="1" ${i === n - 1 ? 'disabled' : ''} aria-label="nach hinten">${ic('chevron-right', 'i-sm')}</button></div></div>`;
   };
   const tabBody = () => {
+    if (AE_GRID_TABS[tab]) return AE_GRID_TABS[tab](ctx);
     const c = COLORS[st.colors[0]]?.[1] || '#888';
     if (tab === 'stamm') return `<div class="ed-grid">
         <label class="field full"><span>Bezeichnung <b class="req">*</b></span><input class="input" data-f="name" value="${esc(st.name)}" placeholder="z. B. Grat Hardshell Jacke"></label>
@@ -147,8 +153,10 @@ openEditor = function (a, tab0) {
   const render = () => {
     const c = COLORS[st.colors[0]]?.[1] || '#888', sizes = sizesArr();
     $('#edHead', el).innerHTML = `<div class="m-head" style="padding-bottom:10px"><span class="thumb" style="--c:${c};width:46px;height:46px;border-radius:12px">${a ? artVisual(liveA(), c) : glyph(st.g, c)}</span><div><h2>${isNew ? 'Neuer Artikel' : esc(st.name)}</h2><p>${esc(st.id)}${st.brand ? ' · ' + esc(st.brand) : ''} · ${st.colors.length * sizes.length} Varianten${isNew ? '' : ` · Bestand ${num(a.stock)}`}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>`;
-    $('#edTabs', el).innerHTML = DET_TABS.map(([k, l, i]) => `<button type="button" class="ed-tab" data-tab="${k}" aria-selected="${k === tab}">${ic(i, 'i-sm')}${l}${k === 'bilder' && media().length ? `<span class="nav-badge">${media().length}</span>` : ''}</button>`).join('');
+    $('#edTabs', el).innerHTML = AE_TABS.map(([k, l]) => `<button type="button" class="ed-tab" data-tab="${k}" aria-selected="${k === tab}">${esc(l)}${k === 'bilder' && media().length ? `<span class="nav-badge">${media().length}</span>` : ''}</button>`).join('');
     $('#edBody', el).innerHTML = tabBody();
+    aeAfter(ctx, tab);
+    $('#edTabs .ed-tab[aria-selected="true"]', el)?.scrollIntoView({block: 'nearest', inline: 'center'});
     edTabMem.last = tab;
   };
   const saveMediaOrder = async () => { const items = $$('[data-mid]', el).map(t => ({id: +t.dataset.mid, color: $('[data-mcol]', t).value, caption: $('[data-mcap]', t).value})); await invoke('article_media_update', {id: a.id, items}); };
@@ -158,6 +166,12 @@ openEditor = function (a, tab0) {
   };
   el.addEventListener('click', async e => {
     const t = e.target;
+    if (t.closest('[data-close]')) return edClose();
+    if (t.closest('#edNew')) { AE.ids = []; return remount(null, 'stamm'); }
+    if (t.closest('#edUndo')) { return remount(a ? ART.find(x => x.id === a.id) || a : null, tab); }
+    if (t.closest('#edRefresh')) { try { if (DESKTOP) replaceCatalog(await invoke('catalog_list')); } catch { /* */ } return remount(a ? ART.find(x => x.id === a.id) || a : null, tab); }
+    const nv = t.closest('#edPrev, #edNext'); if (nv && !nv.disabled) { const id = (AE.ids || [])[pos + (nv.id === 'edNext' ? 1 : -1)]; const nx = id && ART.find(x => x.id === id); if (nx) return remount(nx, tab); return; }
+    if (t.closest('#edService')) { collect(); return aeService(ctx, t.closest('#edService')); }
     const tb = t.closest('[data-tab]'); if (tb) { collect(); tab = tb.dataset.tab; return render(); }
     const col = t.closest('[data-col]'); if (col) { collect(); const k = col.dataset.col, i = st.colors.indexOf(k); i >= 0 ? st.colors.splice(i, 1) : st.colors.push(k); return render(); }
     const sz = t.closest('[data-sz]'); if (sz) { collect(); st.sizes = sz.dataset.sz; return render(); }
@@ -196,7 +210,7 @@ openEditor = function (a, tab0) {
     if (t.closest('#edDel')) {
       try { await stepUp({title: 'Artikel deaktivieren', text: `${a.name} wird aus Kasse und Liste entfernt. Belege und Historie bleiben erhalten.`}); } catch { return; }
       if (DESKTOP) { try { await invoke('article_delete', {id: a.id, user: S.user.name}); } catch (err) { return toast('Fehler', {t2: String(err), type: 'warn'}); } }
-      ART.splice(ART.indexOf(a), 1); closeLayer(el); renderArtTable(); renderTopbar();
+      ART.splice(ART.indexOf(a), 1); edClose();
       toast('Artikel deaktiviert', {t2: a.name, icon: 'trash'}); Hooks.emit('catalog.article.deactivated', {sku: a.id}); return;
     }
     if (t.closest('#edSave')) {
@@ -225,7 +239,7 @@ openEditor = function (a, tab0) {
         else { const i = ART.findIndex(x => x.id === art.id); i >= 0 ? ART.splice(i, 1, art) : ART.unshift(art); }
       } catch (err) { btn.disabled = false; return fail(String(err)); }
       if (DESKTOP && st.pending.length) { try { const rr = await invoke('article_media_add_url', {id: art.id, urls: st.pending, color: ''}); replaceCatalog(await invoke('catalog_list')); if (rr.fehler.length) toast(`${rr.fehler.length} Bild${rr.fehler.length === 1 ? '' : 'er'} nicht ladbar`, {t2: rr.fehler[0], type: 'warn'}); } catch { /* */ } }
-      closeLayer(el); renderArtTable(); renderTopbar();
+      remount(ART.find(y => y.id === art.id) || art, tab);
       toast(isNew ? 'Artikel angelegt' : 'Artikel gespeichert', {t2: `${art.name} · ${variants.length} Varianten${isNew ? ' – Bestand unter „Bestand“ buchen' : ''}`, type: 'pos', icon: 'tag', action: isNew ? {label: 'Bilder hinzufügen', run: () => { const x = ART.find(y => y.id === art.id); if (x) openEditor(x, 'bilder'); }} : undefined});
       Hooks.emit('catalog.article.saved', {sku: art.id, name: art.name, varianten: variants.length, neu: isNew});
     }

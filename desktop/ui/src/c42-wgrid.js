@@ -6,28 +6,33 @@
 const AGRID_ROW = 24;
 const AG = {};   // Zustand je Tabelle
 
-function agridPage(page, cfg) {
-  const st = AG[page] = {cfg, rows: [], view: [], cols: cfg.cols.map(c => ({...c, show: c.show !== false})), sort: null, filters: {}, q: '', group: [], collapsed: new Set(), sel: new Set(), filterRow: true, scrollTop: 0, built: false};
-  const render = async () => {
-    const v = $('#view-' + page);
-    await loadStamm();
-    st.rows = cfg.rows();
-    st.built = false;
-    v.innerHTML = `<div class="agrid" id="ag-${page}">
-      <div class="ag-bar">${cfg.toolbar.map(b => `<button class="ag-btn" data-ag="${b.k}">${ic(b.icon, 'i-sm')}<span>${esc(b.l)}</span></button>`).join('')}<button class="ag-btn ag-del" data-ag="del" hidden>${ic('trash', 'i-sm')}<span>Löschen</span></button></div>
+function agNew(cfg) {
+  return {cfg, rows: [], view: [], cols: cfg.cols.map(c => ({...c, show: c.show !== false})), sort: null, filters: {}, q: '', group: [...(cfg.group || [])], collapsed: new Set(), sel: new Set(), filterRow: true};
+}
+/** Tabelle in einen beliebigen Container zeichnen (Seite oder Reiter) */
+function agMount(key, v) {
+  const st = AG[key], cfg = st.cfg;
+  st.rows = cfg.rows();
+  v.innerHTML = `<div class="agrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}">
+      ${cfg.toolbar?.length ? `<div class="ag-bar">${cfg.toolbar.map(b => `<button class="ag-btn" data-ag="${b.k}">${ic(b.icon, 'i-sm')}<span>${esc(b.l)}</span></button>`).join('')}<button class="ag-btn ag-del" data-ag="del" hidden>${ic('trash', 'i-sm')}<span>Löschen</span></button></div>` : ''}
       <div class="ag-tools"><div class="ag-drop" data-agdrop><span class="ag-ph">Zu gruppierende Spalten hierhin ziehen…</span></div>
+        ${(cfg.extra || []).map(b => `<button class="ag-xbtn" data-ag="${b.k}">${ic(b.icon || 'plus', 'i-sm')}${esc(b.l)}</button>`).join('')}
+        ${cfg.remove && !cfg.toolbar?.length ? `<button class="ag-xbtn ag-del" data-ag="del" hidden>${ic('trash', 'i-sm')}Löschen</button>` : ''}
         <label class="ag-search">${ic('search', 'i-sm')}<input data-agq placeholder="Suche …" value="${esc(st.q)}"></label>
         <button class="ag-tbtn" data-ag="cols">${ic('list', 'i-sm')}Spalten-Auswahl</button>
         <button class="ag-tbtn" data-ag="fit">${ic('swap', 'i-sm')}Automatische Spaltenbreite</button>
         <button class="ag-tbtn" data-ag="export">${ic('upload', 'i-sm')}Exportieren</button>
         <button class="ag-tbtn" data-ag="filter">${ic('filter', 'i-sm')}Filter öffnen</button></div>
       <div class="ag-scroll" data-agscroll><div class="ag-inner" data-aginner><div class="ag-head" data-aghead></div><div class="ag-filt" data-agfilt></div><div class="ag-rows" data-agrows></div></div></div>
-      <div class="ag-foot"><b data-agcount></b><span class="ag-sel" data-agselinfo></span></div>
+      <div class="ag-foot"><b data-agcount></b><span class="ag-sel" data-agselinfo></span><span class="ag-sel" data-agsums></span></div>
       <div class="ag-foot2"><button class="ag-tbtn" data-ag="filter">${ic('filter', 'i-sm')}Filter erstellen</button></div></div>`;
-    agBind(page, v);
-    agApply(page, true);
-  };
-  registerPage(page, {title: cfg.title, sub: () => `${num(cfg.count ? cfg.count() : st.rows.length)} Einträge`, render});
+  agBind(key, v);
+  agApply(key, true);
+}
+function agridPage(page, cfg) {
+  AG[page] = agNew(cfg);
+  const render = async () => { await loadStamm(); AG[page] ||= agNew(cfg); agMount(page, $('#view-' + page)); };
+  registerPage(page, {title: cfg.title, sub: () => `${num(cfg.count ? cfg.count() : AG[page].rows.length)} Einträge`, render});
   VIEW_PERM[page] ||= 'einstellungen';
 }
 
@@ -68,6 +73,7 @@ function agApply(page, resetScroll) {
   agHead(page, v, vis);
   $('[data-agcount]', v).textContent = num(rows.length).replace(/\./g, ' ');
   agSelInfo(page, v);
+  { const sm = vis.filter(c => c.sum); $('[data-agsums]', v).textContent = sm.map(c => `Σ ${c.l}: ${num(rows.reduce((s, r) => s + (+agVal(r, c) || 0), 0))}`).join('   '); }
   const sc = $('[data-agscroll]', v);
   if (resetScroll) sc.scrollTop = 0;
   agRows(page, v, vis);
@@ -102,7 +108,7 @@ function agRows(page, v, vis) {
     const it = st.view[i];
     if (it.g != null) { html += `<div class="ag-row ag-grp" style="top:${i * H}px;padding-left:${8 + it.depth * 16}px" data-aggrp="${esc(it.id)}"><span>${st.collapsed.has(it.id) ? '▸' : '▾'}</span> <b>${esc(it.c)}:</b> ${esc(it.g)} <span class="ag-n">(${num(it.n)})</span></div>`; continue; }
     const r = it.r;
-    html += `<div class="ag-row ${st.sel.has(r.id) ? 'sel' : ''} ${i % 2 ? 'alt' : ''}" style="top:${i * H}px" data-agrow="${esc(r.id)}"><div class="ag-c ag-ck"><i class="agchk ${st.sel.has(r.id) ? 'on' : ''}" data-agck="${esc(r.id)}"></i></div>${vis.map(c => c.t === 'check' ? `<div class="ag-c ag-cc"><i class="agchk ${agVal(r, c) ? 'on' : ''} ro"></i></div>` : `<div class="ag-c ${c.t === 'num' ? 'r' : ''}" title="${esc(agText(r, c))}">${esc(agText(r, c))}</div>`).join('')}</div>`;
+    html += `<div class="ag-row ${st.sel.has(r.id) ? 'sel' : ''} ${i % 2 ? 'alt' : ''}" style="top:${i * H}px" data-agrow="${esc(r.id)}"><div class="ag-c ag-ck"><i class="agchk ${st.sel.has(r.id) ? 'on' : ''}" data-agck="${esc(r.id)}"></i></div>${vis.map(c => c.t === 'check' ? `<div class="ag-c ag-cc"><i class="agchk ${agVal(r, c) ? 'on' : ''} ro"></i></div>` : `<div class="ag-c ${c.t === 'num' ? 'r' : ''}" ${c.html ? '' : `title="${esc(agText(r, c))}"`}>${c.html ? c.html(r) : esc(agText(r, c))}</div>`).join('')}</div>`;
   }
   host.innerHTML = html;
 }
@@ -141,7 +147,7 @@ function agBind(page, v) {
     if (k === 'del') { await cfg.remove?.([...st.sel]).then(() => { st.sel.clear(); return render_(); }).catch(() => { /* abgebrochen */ }); return; }
     const fn = cfg.actions?.[k]; if (fn) { await fn(); }
   };
-  const render_ = () => PAGES[page].render();
+  const render_ = () => cfg.reload ? cfg.reload() : PAGES[page].render();
   v.ondblclick = e => { const r = e.target.closest('[data-agrow]'); if (r && !e.target.closest('[data-agck]')) cfg.edit?.(r.dataset.agrow, render_); };
   // Spalten ziehen → gruppieren; Spaltenbreite ändern
   v.ondragstart = e => { const h = e.target.closest('[data-agcol]'); if (h) { e.dataTransfer.setData('text/plain', h.dataset.agcol); e.dataTransfer.effectAllowed = 'move'; } };
