@@ -2038,7 +2038,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.36.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.36.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -5418,8 +5418,9 @@ function stepUp({title, text, rule, admin = false, roles = null, purpose = 'frei
 
 /* ── Einstellungen → Benutzer ── */
 function usersSectionHTML() {
-  return `<section class="set-sec" id="sec-benutzer"><h2>Benutzer & Anmeldung</h2><p>Jede Person meldet sich mit eigener PIN an – auf Wunsch zusätzlich mit Code aus einer Authenticator-App (2FA). Was eine Rolle darf, steht unter „Rechte je Rolle“; fehlt ein Recht, gibt eine berechtigte Person per PIN frei. Rabatt- und Storno-Freigaben erteilen Filialleitung und Administrator. Nach 5 Fehlversuchen ist die PIN 2 Minuten gesperrt.</p>
-    <div class="card"><div class="set-row" style="border-bottom:0"><div><div class="set-l">Benutzer, PINs, Zwei-Faktor und Rechte</div><div class="set-h">Eigene Seite: Stammdaten → Benutzer</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-goto="benutzer">${ic('shield', 'i-sm')}Öffnen</button></div></div></div></section>`;
+  return `<section class="set-sec" id="sec-benutzer"><h2>Benutzer & Anmeldung</h2><p>Jede Person meldet sich mit eigener PIN an – auf Wunsch zusätzlich mit Code aus einer Authenticator-App (2FA). Was eine Rolle darf, steht unter „Rollen & Rechte“; fehlt ein Recht, gibt eine berechtigte Person per PIN frei. Rabatt- und Storno-Freigaben erteilen Filialleitung und Administrator. Nach 5 Fehlversuchen ist die PIN 2 Minuten gesperrt.</p>
+    <div class="card"><div class="set-row"><div><div class="set-l">Personen, PIN, Zwei-Faktor, Bild, Filialen</div><div class="set-h">Eigene Seite: Stammdaten › Benutzer › Benutzer</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-goto="benutzer">${ic('users', 'i-sm')}Öffnen</button></div></div>
+      <div class="set-row" style="border-bottom:0"><div><div class="set-l">Rollen & Rechte</div><div class="set-h">Was Kasse, Verkauf, Filialleitung und Administrator dürfen – Stammdaten › Benutzer › Rollen & Rechte</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" data-goto="rollen">${ic('shield', 'i-sm')}Öffnen</button></div></div></div></section>`;
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -7380,7 +7381,7 @@ const rolesWith = perm => Object.keys(ROLE_NAMES).filter(r => SEC.roles ? SEC.ro
 async function needPerm(perm, title, text) {
   if (can(perm)) return {by: S.user};
   const g = SEC.grant?.[perm]; if (g && g.user === S.user.id && Date.now() - g.t < 90e3) return {by: g.by};   // eben freigegeben: nicht doppelt fragen
-  try { const r = await stepUp({title: title || 'Freigabe erforderlich', text: text || `${S.user.name} (${S.user.role}) fehlt das Recht „${permLabel(perm)}“.`, rule: `Recht „${permLabel(perm)}“ · festgelegt unter Einstellungen → Benutzer → Rechte`, roles: rolesWith(perm), purpose: DESKTOP ? 'recht:' + perm : 'freigabe'}); (SEC.grant ||= {})[perm] = {user: S.user.id, by: r.by, t: Date.now()}; return r; }
+  try { const r = await stepUp({title: title || 'Freigabe erforderlich', text: text || `${S.user.name} (${S.user.role}) fehlt das Recht „${permLabel(perm)}“.`, rule: `Recht „${permLabel(perm)}“ · festgelegt unter Stammdaten › Benutzer › Rollen & Rechte`, roles: rolesWith(perm), purpose: DESKTOP ? 'recht:' + perm : 'freigabe'}); (SEC.grant ||= {})[perm] = {user: S.user.id, by: r.by, t: Date.now()}; return r; }
   catch (e) { throw new Error('abgebrochen'); }
 }
 function guard(perm, fn, title) {

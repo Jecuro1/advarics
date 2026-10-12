@@ -21,7 +21,7 @@ const rolesWith = perm => Object.keys(ROLE_NAMES).filter(r => SEC.roles ? SEC.ro
 async function needPerm(perm, title, text) {
   if (can(perm)) return {by: S.user};
   const g = SEC.grant?.[perm]; if (g && g.user === S.user.id && Date.now() - g.t < 90e3) return {by: g.by};   // eben freigegeben: nicht doppelt fragen
-  try { const r = await stepUp({title: title || 'Freigabe erforderlich', text: text || `${S.user.name} (${S.user.role}) fehlt das Recht „${permLabel(perm)}“.`, rule: `Recht „${permLabel(perm)}“ · festgelegt unter Einstellungen → Benutzer → Rechte`, roles: rolesWith(perm), purpose: DESKTOP ? 'recht:' + perm : 'freigabe'}); (SEC.grant ||= {})[perm] = {user: S.user.id, by: r.by, t: Date.now()}; return r; }
+  try { const r = await stepUp({title: title || 'Freigabe erforderlich', text: text || `${S.user.name} (${S.user.role}) fehlt das Recht „${permLabel(perm)}“.`, rule: `Recht „${permLabel(perm)}“ · festgelegt unter Stammdaten › Benutzer › Rollen & Rechte`, roles: rolesWith(perm), purpose: DESKTOP ? 'recht:' + perm : 'freigabe'}); (SEC.grant ||= {})[perm] = {user: S.user.id, by: r.by, t: Date.now()}; return r; }
   catch (e) { throw new Error('abgebrochen'); }
 }
 function guard(perm, fn, title) {

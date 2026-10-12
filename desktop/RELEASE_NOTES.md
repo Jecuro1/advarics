@@ -1,3 +1,7 @@
+## Neu in 0.36.1
+
+- Einstellungen › Benutzer & Anmeldung verweist jetzt auf die neuen Seiten **Stammdaten › Benutzer › Benutzer** und **Rollen & Rechte** (zwei Schaltflächen „Öffnen“); der Hinweis bei einer fehlenden Berechtigung nennt den neuen Ort der Rechte-Matrix.
+
 ## Neu in 0.36.0
 
 - **Stammdaten › Benutzer › Benutzer – neu nach dem Vorbild von Advarics.** Die Benutzerliste ist jetzt eine Tabelle mit Bild, Nr., Vorname, Name, E-Mail Firma, Rolle, Benutzergruppe, Aktiv, Verkäufer:in und Anmeldung (Filialen und „Kontor mobil“ lassen sich über „Spalten“ zuschalten) – mit Suche, Filter, Sortierung, Gruppierung und CSV-Export. Doppelklick oder „Neu“ öffnet die Benutzer-Maske mit den Reitern **Allgemein · Haupt-Adresse · Zugeordnete Filialen · Benachrichtigungen · Rechte · Anmeldung**. Oben: Übersicht · Aktualisieren · Sichern · Neu · Änderungen zurücknehmen und Blättern zwischen den Personen. Pflichtfelder sind markiert, ein roter Zähler am Reiter zeigt, wo etwas fehlt.
