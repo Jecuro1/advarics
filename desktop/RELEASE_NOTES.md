@@ -1,3 +1,7 @@
+## Neu in 0.19.0
+
+- Leichter zurechtfinden: Suchfeld „Menü durchsuchen“ über dem Menü (Treffer mit Pfad, Enter öffnet den ersten), Bereich „Zuletzt benutzt“ mit den letzten Seiten, Untermenüs mit nur einem Punkt sind direkte Menüpunkte.
+
 ## Neu in 0.18.1
 
 - Menüdesign wieder wie in 0.16.1 (freigegeben): Bereichstitel mit kleinem Farbsymbol. Ausblenden nach Rechten und FEDAS unter Stammdaten › Warengruppen bleiben.

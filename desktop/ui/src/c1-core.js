@@ -193,7 +193,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.18.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.19.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -457,7 +457,10 @@ const navFlat = () => { const out = []; const walk = (l, path) => l.forEach(n =>
 /** Symbol und Farbton je Hauptmenüpunkt – macht die Bereiche auf einen Blick unterscheidbar */
 const NAV_GROUP_STYLE = {Verkauf: ['register', 215], Marketing: ['percent', 330], Artikel: ['tag', 25], FEDAS: ['sync', 170], Einkauf: ['truck', 150], Kunden: ['users', 265], Versand: ['box', 45], Analyse: ['chart', 195], EDI: ['swap', 290], Webshop: ['globe', 235], Inventur: ['layers', 100], Stammdaten: ['database', 5], Einstellungen: ['sliders', 250], System: ['server', 215], Service: ['info', 185], Auswertung: ['chart', 195], Filialen: ['store', 60]};
 function renderNav() {
-  let html = '', open = false;
+  let html = '<div id="navRecent"></div>', open = false;
+  // Untermenüs mit nur einem Punkt werden zum direkten Menüpunkt (weniger Klicks)
+  const flat = list => list.map(n => n.kids ? (n.kids.length === 1 && !n.kids[0].kids ? n.kids[0] : (n.kids = flat(n.kids), n)) : n);
+  NAV.splice(0, NAV.length, ...flat(NAV));
   // Erststart des ruhigen Menüs: alle Bereiche eingeklappt, nur der aktuelle wird per navReveal geöffnet
   if (!persist.get('navCalm', false)) { NAV.forEach(n => { if (n.g) navClosed.add(n.g); }); persist.set('navCalm', true); persist.set('navClosed', [...navClosed]); }
   const item = (n, lvl) => {
@@ -478,7 +481,31 @@ function renderNav() {
   });
   if (open) html += '</div>';
   $('#nav').innerHTML = html;
+  navRecentRender();
   if (S.view) navReveal(S.view);
+}
+/** „Zuletzt benutzt“: die letzten Seiten ganz oben im Menü */
+const navRecent = persist.get('navRecent', []);
+function navRecentRender() {
+  const el = $('#navRecent'); if (!el) return;
+  const it = navFlat().reduce((m, x) => (m[x.id] = x, m), {});
+  const l = navRecent.filter(id => it[id]).slice(0, 4);
+  el.innerHTML = l.length ? `<div class="nav-rec-t">Zuletzt benutzt</div>${l.map(id => `<button class="nav-item nav-rec" data-view="${id}" style="--lvl:0">${ic(it[id].icon)}<span class="nav-label fade-label">${esc(it[id].label)}</span></button>`).join('')}` : '';
+  if (typeof permNav === 'function') permNav();
+}
+function navRecentAdd(view) {
+  if (['dashboard', 'kasse'].includes(view) || !navFlat().some(x => x.id === view)) return;
+  const i = navRecent.indexOf(view); if (i >= 0) navRecent.splice(i, 1);
+  navRecent.unshift(view); navRecent.length = Math.min(navRecent.length, 6);
+  persist.set('navRecent', navRecent); navRecentRender();
+  $$('.nav-item').forEach(n => n.dataset.view === view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
+}
+/** Menüsuche: tippen, Treffer anklicken */
+function navSearch(q) {
+  const nav = $('#nav'); q = norm(q || '').trim();
+  if (!q) { renderNav(); permNav(); $$('.nav-item').forEach(n => n.dataset.view === S.view && n.setAttribute('aria-current', 'page')); return; }
+  const hits = navFlat().filter(x => (!VIEW_PERM[x.id] || can(VIEW_PERM[x.id])) && norm(x.label + ' ' + (x.path || []).join(' ')).includes(q)).slice(0, 40);
+  nav.innerHTML = hits.length ? hits.map(x => `<button class="nav-item nav-hit" data-view="${x.id}" style="--lvl:0">${ic(x.icon)}<span class="nav-label"><span>${esc(x.label)}</span><small>${esc((x.path || []).join(' › '))}</small></span></button>`).join('') : '<div class="nav-none">Nichts gefunden</div>';
 }
 /** Übergeordnete Menüpunkte der aktuellen Seite aufklappen */
 const navAccordion = () => prefs.navAkkordeon !== false;
@@ -537,6 +564,7 @@ function go(view) {
   if (S.view === view) return;
   if (S.view === 'dashboard' && Dash.editing) setEditing(false, true);
   S.view = view;
+  navRecentAdd(view);
   closePopover();
   $$('.view').forEach(v => v.classList.remove('active'));
   if (view === 'dashboard') renderDashboard();

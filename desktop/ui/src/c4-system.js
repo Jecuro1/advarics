@@ -307,10 +307,12 @@ document.addEventListener('keydown', e => {
 });
 
 function bindShell() {
+  $('#navQ').addEventListener('input', e => navSearch(e.target.value));
+  $('#navQ').addEventListener('keydown', e => { if (e.key === 'Escape') { e.target.value = ''; navSearch(''); } else if (e.key === 'Enter') { const f = $('#nav .nav-hit'); if (f) { go(f.dataset.view); e.target.value = ''; navSearch(''); } } });
   $('#nav').addEventListener('click', e => {
     const g = e.target.closest('[data-grp]'); if (g) return navGroupToggle(g);
     const pa = e.target.closest('[data-par]'); if (pa) return navToggle(pa);
-    const b = e.target.closest('[data-view]'); b && go(b.dataset.view);
+    const b = e.target.closest('[data-view]'); if (b) { const was = b.classList.contains('nav-hit'); go(b.dataset.view); if (was) { $('#navQ').value = ''; navSearch(''); } }
   });
   $('#paletteBtn').onclick = () => openPalette();
   $('#aiBtn').onclick = () => openPalette('? ');
