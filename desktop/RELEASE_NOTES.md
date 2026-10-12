@@ -1,3 +1,11 @@
+## Neu in 0.29.2
+
+- Stammdaten › Größen › Größen sortieren wie bei Advarics: Sichern, Neu, Änderungen zurücknehmen, Rauf, Runter, Automatisch sortieren.
+- Kassen › MwSt.-Sätze und WGR.-MwSt.-Einstellungen: Bearbeiten-Fenster „MwSt.-FiBu-Konto“ mit allen Karten (Kasse, Wareneingang, Retoure, Zusatz-Info, EU, Drittland, Info).
+- Kassen › Fiskalisierung: Bearbeiten der FinanzOnline-Zugangsdaten (Name, Benutzer-, Teilnehmer-Identifikation, PIN).
+- Kassen › Beleg-Konfiguration: Belegtyp muss je Kasse einmalig sein.
+- Menü Einstellungen: Reihenfolge wie bei Advarics (Hintergrundjobs, Etikettentypen, Benutzer-Einstellungen, elekt. Etiketten, Prozesskonfiguration, Nummernkreise, Warengruppen Schemas, Scanner-Regeln, MwSt.-Einstellungen, Einstellungen Etikettendrucker, Artikelservice).
+
 ## Neu in 0.29.1
 
 - Kassen-Konfiguration: die letzten Reiter sind jetzt befüllt – Synchronisierung, Pflichteingaben (Zuordnung der Kundenfelder), Tax-Free Dienste und Kd.-Filter. Zusatz-Buchungen und Beleg Zusatzinformationen sind zuordenbare Listen.

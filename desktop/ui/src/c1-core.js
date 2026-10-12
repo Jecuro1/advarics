@@ -196,7 +196,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.29.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.29.2', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -405,14 +405,18 @@ const NAV = [
   {id: 'buchungsabschluss', label: 'Buchungsabschluss', icon: 'lock'},
   {id: 'st-bonussystem', label: 'Bonus Systeme', icon: 'gift'},
   {label: 'Kassen', icon: 'register', kids: [{id: 'einst-kassen', label: 'Kassen', icon: 'register'}, {id: 'einst-kassenkonfig', label: 'Kassen-Konfiguration', icon: 'sliders'}]},
-  {id: 'einstellungen', label: 'Kontor-Einstellungen', icon: 'sliders'},
-  {id: 'prozesskonfiguration', label: 'Prozesskonfiguration', icon: 'flow'},
+  {id: 'st-edijob', label: 'Hintergrundjobs', icon: 'sync'},
+  {id: 'st-etikettentyp', label: 'Etikettentypen', icon: 'tag'},
   {id: 'einst-benutzer', label: 'Benutzer-Einstellungen', icon: 'user'},
+  {id: 'st-esl', label: 'elekt. Etiketten (ESL)', icon: 'tag'},
+  {id: 'prozesskonfiguration', label: 'Prozesskonfiguration', icon: 'flow'},
   {id: 'nummernkreise', label: 'Nummernkreise', icon: 'list'},
-  {label: 'Etiketten', icon: 'tag', kids: [{id: 'st-etikettentyp', label: 'Etikettentypen', icon: 'tag'}, {id: 'st-etikettendrucker', label: 'Einstellungen Etikettendrucker', icon: 'printer'}, {id: 'st-esl', label: 'elekt. Etiketten', icon: 'tag'}]},
+  {id: 'st-wgschema', label: 'Warengruppen Schemas', icon: 'list'},
   {id: 'st-scannerregel', label: 'Scanner-Regeln', icon: 'barcode'},
-  {label: 'MwSt.', icon: 'percent', kids: [{id: 'st-mwsttyp', label: 'MwSt.-Typen', icon: 'percent'}, {id: 'st-mwstset', label: 'MwSt.-Set', icon: 'percent'}]},
+  {label: 'MwSt.-Einstellungen', icon: 'percent', kids: [{id: 'st-mwsttyp', label: 'MwSt.-Typen', icon: 'percent'}, {id: 'st-mwstset', label: 'MwSt.-Set', icon: 'percent'}]},
+  {id: 'st-etikettendrucker', label: 'Einstellungen Etikettendrucker', icon: 'printer'},
   {id: 'st-artikelservice', label: 'Artikelservice', icon: 'wrench'},
+  {id: 'einstellungen', label: 'Kontor-Einstellungen', icon: 'sliders'},
   {id: 'styling', label: 'Styling', icon: 'palette'},
   {id: 'st-smsvorlage', label: 'SMS Vorlagen', icon: 'chat'},
   {label: 'FiBu', icon: 'receipt', kids: [{id: 'st-fibukonto', label: 'FiBu Einstellungen', icon: 'sliders'}]},
