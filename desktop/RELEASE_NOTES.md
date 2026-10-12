@@ -1,3 +1,7 @@
+## Neu in 0.23.12
+
+- Größenschlüssel 33 xxxJKE 3 Sport Holding GmbH mit seinen 10 Advarics-Größen (2A, 4A, 6A, 8A, 10A, 92, 104, 116, 128, 140).
+
 ## Neu in 0.23.11
 
 - Größenschlüssel 28 Rucksäcke (14), 29 Bandagen (8), 30 Hosenträger (3), 31 Getränke (1) und 32 Sprays & Pflegemittel (4) mit ihren Advarics-Größen.
