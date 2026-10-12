@@ -1,3 +1,8 @@
+## Neu in 0.30.1
+
+- Bonus Systeme, Kassen-Reiter (Feste Rabatte, MwSt., Zahlungsarten, Zusatz-Buchung, Kassen-Summen, WGR.-MwSt., Beleg-Konfiguration, Icon-Sortierung, Positionsinfo) und die Kassen-Konfiguration sind wieder da. Sie werden Schritt für Schritt an die Kasse angebunden.
+- Die Kasse dieses Arbeitsplatzes: Name (Kopfzeile) und Kartenterminal (ZVT) wirken sofort.
+
 ## Neu in 0.30.0
 
 - Nur noch Funktionen, die wirklich etwas bewirken. Entfernt: Bonus Systeme, Kassen-Konfiguration mit 100 Schaltern, Zahlungsarten-/MwSt.-/FiBu-Tabellen je Kasse, Beleg-Konfiguration, Icon-Sortierung, Positionsinfo, FinanzOnline-Zugangsdaten, Währung/Land/Sprache.
