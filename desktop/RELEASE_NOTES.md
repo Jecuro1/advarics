@@ -1,3 +1,7 @@
+## Neu in 0.23.10
+
+- Größenschlüssel 24 Socken Erw. (10), 25 Schuhe Erw. Snowboard MP (20) und 27 Kinder (12) mit ihren Advarics-Größen; 26 Schuhe Kids Snowboard MP ist wie in Advarics leer.
+
 ## Neu in 0.23.9
 
 - Größenschlüssel 20 Snowboard Länge Erw. (9), 21 Ski Alpin Länge Kids (16), 22 Ski Alpin Länge Erw. (19) und 23 Socken Kids (11) mit ihren Advarics-Größen.
