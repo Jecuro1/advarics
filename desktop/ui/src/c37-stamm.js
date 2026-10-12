@@ -150,6 +150,8 @@ async function loadStamm(force) {
 /** Warengruppen und Hausfarben in Artikel/Kasse übernehmen */
 function applyStamm() {
   { const idx = new Map(CATS.map(c => [c.id, c])); for (const r of stActive('warengruppe')) { const c = idx.get(r.id); if (c) c.name = r.name || c.name; else { const n = {id: r.id, name: r.name || r.id}; CATS.push(n); idx.set(r.id, n); } } }
+  // Sobald Advarics-Warengruppen vorhanden sind, ersetzen sie die Standardliste vollständig
+  { const act = stActive('warengruppe'); if (act.some(r => String(r.id).startsWith('adv-'))) { const ids = new Set(act.map(r => r.id)); for (let i = CATS.length - 1; i > 0; i--) if (!ids.has(CATS[i].id)) CATS.splice(i, 1); } }
   for (const r of stActive('hausfarbe')) COLORS[r.id] = [r.name || r.id, r.hex || '#888888'];
   const order = stRows('groessenfolge').map(r => r.name || r.id);
   if (order.length) ART.forEach(a => a.sizes.sort((x, y) => (order.indexOf(x) + 1 || 999) - (order.indexOf(y) + 1 || 999)));

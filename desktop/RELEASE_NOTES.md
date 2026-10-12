@@ -1,3 +1,7 @@
+## Neu in 0.19.1
+
+- Warengruppen-Import ersetzt die bisherigen Warengruppen komplett: Demo-Liste (Jacken & Westen, Hosen, Schuhe …) und von Hand angelegte Ebenen werden entfernt, vorhandene Artikel werden den passenden Advarics-Gruppen zugeordnet (Textil, Hartware, Schuhe, Accessories). Kasse und Auswahllisten zeigen danach nur noch die Advarics-Warengruppen.
+
 ## Neu in 0.19.0
 
 - Leichter zurechtfinden: Suchfeld „Menü durchsuchen“ über dem Menü (Treffer mit Pfad, Enter öffnet den ersten), Bereich „Zuletzt benutzt“ mit den letzten Seiten, Untermenüs mit nur einem Punkt sind direkte Menüpunkte.

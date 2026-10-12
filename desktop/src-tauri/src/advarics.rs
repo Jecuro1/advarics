@@ -345,8 +345,20 @@ pub fn wg_import(c: &mut Connection, path: &Path) -> Result<Value, String> {
         d["gruppe"] = json!(r.name.split_whitespace().take(2).collect::<Vec<_>>().join(" "));
         put("warengruppe", 0, &format!("adv-{}", r.nr), d)?;
     }
+    // Ersetzen: Warengruppen der Demo-/Standardliste und von Hand angelegte Ebenen entfernen, Artikel auf die Advarics-Gruppen umhängen
+    let mut umgehaengt = 0usize;
+    for (alt, neu_id) in [("jacken", "adv-8000"), ("hosen", "adv-8000"), ("shirts", "adv-8000"), ("schuhe", "adv-8002"), ("ski", "adv-8001"), ("rucksaecke", "adv-8001"), ("acc", "adv-8003")] {
+        let da: bool = tx.query_row("SELECT 1 FROM stamm WHERE kind = 'warengruppe' AND id = ?1", [neu_id], |_| Ok(true)).optional().map_err(|e| e.to_string())?.unwrap_or(false);
+        if da {
+            umgehaengt += tx.execute("UPDATE articles SET category = ?2, updated_at = ?3 WHERE category = ?1", params![alt, neu_id, now]).map_err(|e| e.to_string())?;
+        }
+    }
+    let mut entfernt = 0usize;
+    for k in ["warengruppe", "abteilung", "hauptabteilung", "bereich", "hauptbereich"] {
+        entfernt += tx.execute("DELETE FROM stamm WHERE kind = ?1 AND id NOT LIKE 'adv-%'", [k]).map_err(|e| e.to_string())?;
+    }
     tx.commit().map_err(|e| e.to_string())?;
-    Ok(json!({ "warengruppen_neu": neu[0], "warengruppen_aktualisiert": upd[0], "abteilungen_neu": neu[1], "hauptabteilungen_neu": neu[2], "bereiche_neu": neu[3], "zeilen": rows.len() }))
+    Ok(json!({ "entfernt": entfernt, "artikel_umgehaengt": umgehaengt, "warengruppen_neu": neu[0], "warengruppen_aktualisiert": upd[0], "abteilungen_neu": neu[1], "hauptabteilungen_neu": neu[2], "bereiche_neu": neu[3], "zeilen": rows.len() }))
 }
 
 fn merge_details(cur: &str, add: &Map<String, Value>) -> String {
@@ -607,9 +619,13 @@ mod tests {
         let pv = wg_preview(Path::new(&p)).unwrap();
         println!("{pv}");
         let mut c = Connection::open_in_memory().unwrap();
-        c.execute_batch("CREATE TABLE stamm (kind TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL DEFAULT '{}', pos INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, PRIMARY KEY (kind, id));").unwrap();
+        c.execute_batch("CREATE TABLE stamm (kind TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL DEFAULT '{}', pos INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, PRIMARY KEY (kind, id)); CREATE TABLE articles (id TEXT, category TEXT, updated_at TEXT); INSERT INTO stamm(kind,id,data,pos,updated_at) VALUES ('warengruppe','jacken','{}',0,'x'),('warengruppe','ski','{}',1,'x'); INSERT INTO articles VALUES ('A1','jacken','x'),('A2','ski','x');").unwrap();
         let r1 = wg_import(&mut c, Path::new(&p)).unwrap();
         println!("{r1}");
+        assert_eq!(r1["entfernt"], 2);
+        assert_eq!(r1["artikel_umgehaengt"], 2);
+        let cat: String = c.query_row("SELECT category FROM articles WHERE id='A2'", [], |r| r.get(0)).unwrap();
+        assert_eq!(cat, "adv-8001");
         let r2 = wg_import(&mut c, Path::new(&p)).unwrap();
         assert_eq!(r2["warengruppen_neu"], 0);
         assert_eq!(r2["abteilungen_neu"], 0);

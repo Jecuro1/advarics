@@ -386,14 +386,14 @@ registerPage('advarics-import', {title: 'Advarics-Import', sub: () => ADV.pv ? `
     v.innerHTML = `<div class="cv">${pageHead('Advarics-Import', 'Warengruppenliste aus Advarics: Warengruppen mit Bereich › Hauptabteilung › Abteilung, MwSt., Etikettentyp, Inventur', `<button class="btn btn-secondary" data-advpick ${ADV.busy ? 'disabled' : ''}>${ic('folder', 'i-sm')}Andere Datei …</button>`)}
       <div class="card" style="padding:12px 16px;margin-bottom:14px;font-size:13px">${ic('folder', 'i-sm')} <span class="mono">${esc(ADV.path)}</span></div>
       <div class="card" style="padding:18px 20px;margin-bottom:14px"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">${[['Warengruppen', w.warengruppen], ['Abteilungen', w.abteilungen], ['Hauptabteilungen', w.hauptabteilungen], ['Bereiche', w.bereiche]].map(([l, n]) => `<div><div class="muted" style="font-size:12px">${l}</div><div style="font-size:24px;font-weight:700">${num(n)}</div></div>`).join('')}</div>
-      <div class="muted" style="margin-top:12px;font-size:13px">${num(w.ohne_hierarchie)} Warengruppen ohne Hierarchie. Bestehende Warengruppen mit gleicher Nummer werden ergänzt, nichts wird gelöscht. Wiederholen ist gefahrlos.</div></div>
-      ${wr ? `<div class="card" style="padding:16px 20px;margin-bottom:14px"><b>Import abgeschlossen:</b> ${num(wr.warengruppen_neu)} Warengruppen neu, ${num(wr.warengruppen_aktualisiert)} aktualisiert · ${num(wr.abteilungen_neu)} Abteilungen, ${num(wr.hauptabteilungen_neu)} Hauptabteilungen, ${num(wr.bereiche_neu)} Bereiche neu</div>` : ''}
+      <div class="muted" style="margin-top:12px;font-size:13px">${num(w.ohne_hierarchie)} Warengruppen ohne Hierarchie. Die bisherigen Warengruppen (Demo-Liste und von Hand angelegte) werden ersetzt. Advarics-Warengruppen werden ergänzt, nichts davon geht verloren. Wiederholen ist gefahrlos.</div></div>
+      ${wr ? `<div class="card" style="padding:16px 20px;margin-bottom:14px"><b>Import abgeschlossen:</b> ${num(wr.entfernt)} alte Warengruppen ersetzt, ${num(wr.artikel_umgehaengt)} Artikel umgehängt · ${num(wr.warengruppen_neu)} Warengruppen neu, ${num(wr.warengruppen_aktualisiert)} aktualisiert · ${num(wr.abteilungen_neu)} Abteilungen, ${num(wr.hauptabteilungen_neu)} Hauptabteilungen, ${num(wr.bereiche_neu)} Bereiche neu</div>` : ''}
       <button class="btn btn-primary" data-advwg ${ADV.busy ? 'disabled' : ''} style="height:44px;padding:0 22px">${ic('download', 'i-sm')}${ADV.busy ? 'Import läuft …' : `${num(w.warengruppen)} Warengruppen importieren`}</button></div>`;
     v.onclick = async e => {
       const b = e.target.closest('button'); if (!b) return;
       if (b.dataset.advpick != null) return advPick();
       if (b.dataset.advwg != null) {
-        if (!await confirmBox(`${num(w.warengruppen)} Warengruppen mit Hierarchie importieren?`, 'Importieren')) return;
+        if (!await confirmBox(`${num(w.warengruppen)} Advarics-Warengruppen importieren? Die bisherigen Warengruppen (Demo-Liste) werden dabei ersetzt, vorhandene Artikel werden den passenden Advarics-Gruppen zugeordnet.`, 'Importieren')) return;
         ADV.busy = true; PAGES['advarics-import'].render();
         try { ADV.wgres = await invoke('advarics_wg_import', {path: ADV.path}); await loadStamm(true); toast('Warengruppen importiert', {t2: `${num(ADV.wgres.warengruppen_neu)} neu`, type: 'pos', icon: 'download'}); }
         catch (err) { toast('Import fehlgeschlagen', {t2: String(err), type: 'warn', dur: 9000}); }
