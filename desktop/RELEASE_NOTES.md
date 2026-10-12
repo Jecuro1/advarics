@@ -1,3 +1,9 @@
+## Neu in 0.34.5
+
+- **Nur noch eine Einstellungsseite:** „Einstellungen Allgemein“ und „Kontor-Einstellungen“ gab es doppelt. Jetzt gibt es im Menü unter Einstellungen genau einen Eintrag „Allgemein“. Die Felder der bisherigen Seite stehen als Abschnitt **Standardwerte** (zweiter Punkt links) in dieser Seite: Unternehmens-GLN, Gutscheine gültig (Jahre), Standard-Spediteur, Standardwerte für neue Artikel (Warengruppe, Marke, MwSt.-Satz, Größenschlüssel) und E-Mail-Fußzeile. Änderungen wirken sofort – ein extra „Sichern“ ist nicht mehr nötig.
+- Das Feld „Gutscheine gültig (Jahre nach Ausgabejahr)“ war zusätzlich bei „Kasse“ vorhanden – es gibt es jetzt nur noch einmal (bei Standardwerten).
+- „Benutzer-Einstellungen“ ist aus dem Menü verschwunden (öffnete dieselbe Seite); die Benutzer-Einstellungen stehen weiter in der Seite „Allgemein“ im Bereich „Benutzer“. Alte Verknüpfungen leiten auf die neue Seite um.
+
 ## Neu in 0.34.4
 
 - **Kontor für macOS:** Es gibt jetzt einen Mac-Client wie unter Windows – ein Installationsabbild (`Kontor_x.y.z_universal.dmg`) im Release, nativ für Apple Silicon (M1–M4) und Intel-Macs (macOS 11 oder neuer). Updates kommen wie bisher im Programm (Einstellungen › Updates), mit Freigabe und vorheriger Sicherung. Hinweis zum ersten Start (Programm ist nicht notarisiert): Rechtsklick auf Kontor › Öffnen. Ausführliche Anleitung in der README.

@@ -1,5 +1,5 @@
 /* ═════════════════════════════════════════════════════════════════
-   44 · EINSTELLUNGEN ALLGEMEIN – nur Einstellungen, die tatsächlich wirken
+   44 · STANDARDWERTE (Einstellungen › Standardwerte) – nur Einstellungen, die tatsächlich wirken
    ═════════════════════════════════════════════════════════════════ */
 const EA_DEFAULTS = {'edi.gln': '', 'gutschein.jahre': 3, 'allg.spediteur': '', 'allg.warengruppe': '', 'allg.marke': '', 'allg.mwst': '', 'allg.groessenschluessel': '', 'allg.mailfuss': ''};
 const eaMarken = () => { const r = stActive('marke'); return r.length ? r.map(x => [x.name || x.id, x.name || x.id]) : [...new Set(ART.map(a => a.brand).filter(Boolean))].sort().map(x => [x, x]); };
@@ -16,20 +16,12 @@ const EA_GROUPS = () => [
     {k: 'allg.mwst', l: 'MwSt.-Satz', t: 'combo', o: eaOpt('mwsttyp', false), page: 'st-mwsttyp'},
     {k: 'allg.groessenschluessel', l: 'Größenschlüssel', t: 'combo', o: eaOpt('groessenschluessel'), page: 'st-groessenschluessel', hint: 'Die Größen des Schlüssels werden als Größenreihe vorbelegt'}]}
 ];
-const EA = {tab: 'allg', draft: null, dirty: false};
+const EA = {draft: null};
 const eaLoad = () => { const o = {}; for (const k in EA_DEFAULTS) o[k] = CFG[k] ?? EA_DEFAULTS[k]; return o; };
 const eaLabel = (f, v) => { const hit = (f.o() || []).find(x => String(x[0]) === String(v)); return hit ? hit[1] : ''; };
 const eaFind = k => EA_GROUPS().flatMap(g => g.f).find(f => f.k === k);
 
-function eaField(f) {
-  const v = EA.draft[f.k], hint = f.hint ? `<small class="ea-hint">${esc(f.hint)}</small>` : '';
-  if (f.t === 'num') return `<label class="field"><span>${esc(f.l)}</span><input class="input num" type="number" data-ea="${f.k}" value="${esc(v)}">${hint}</label>`;
-  if (f.t === 'combo') {
-    const lbl = eaLabel(f, v);
-    return `<div class="field ea-cmb"><span>${esc(f.l)}</span><div class="ea-cmb-row"><div class="input ea-pick" tabindex="0" data-ea-pick="${f.k}"><span class="${lbl ? '' : 'ea-ph'}">${esc(lbl || 'Nicht festgelegt')}</span>${lbl ? `<button type="button" class="ea-x" data-ea-clr="${f.k}" aria-label="Leeren">${ic('x', 'i-xs')}</button>` : ''}${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-ea-go="${f.page}" title="Liste öffnen">${ic('edit', 'i-sm')}</button><button type="button" class="ea-ib" data-ea-pick="${f.k}" title="Suchen">${ic('search', 'i-sm')}</button></div>${hint}</div>`;
-  }
-  return `<label class="field"><span>${esc(f.l)}</span><input class="input" data-ea="${f.k}" value="${esc(v)}">${hint}</label>`;
-}
+/** Auswahlfeld mit Suche (große Listen wie Warengruppen mit über 10.000 Einträgen) */
 function eaPick(f) {
   return new Promise(res => {
     const all = (f.o() || []);
@@ -44,35 +36,30 @@ function eaPick(f) {
     el.addEventListener('click', e => { const b = e.target.closest('[data-pv]'); if (b) { res(b.dataset.pv); closeLayer(el); } });
   });
 }
-function eaCollect(el) {
-  $$('[data-ea]', el).forEach(i => { EA.draft[i.dataset.ea] = i.type === 'number' ? (i.value === '' ? '' : +i.value) : i.value; });
-  const ta = $('[data-ea-fuss]', el); if (ta) EA.draft['allg.mailfuss'] = ta.value;
+/** Zeile der Einstellungsseite (Einstellungen › Standardwerte): wirkt sofort, ohne extra „Sichern“ */
+function eaRow(f) {
+  const v = CFG[f.k] ?? EA_DEFAULTS[f.k];
+  let ctl;
+  if (f.t === 'combo') {
+    const lbl = eaLabel(f, v);
+    ctl = `<div class="ea-cmb-row"><div class="input ea-pick" tabindex="0" data-ea-pick="${f.k}"><span class="${lbl ? '' : 'ea-ph'}">${esc(lbl || 'Nicht festgelegt')}</span>${lbl ? `<button type="button" class="ea-x" data-ea-clr="${f.k}" aria-label="Leeren">${ic('x', 'i-xs')}</button>` : ''}${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-ea-go="${f.page}" title="Liste öffnen">${ic('edit', 'i-sm')}</button></div>`;
+  } else if (f.t === 'num') ctl = `<input class="input" type="number" min="1" max="30" step="1" data-key="${f.k}" value="${esc(v)}" style="max-width:100px">`;
+  else ctl = `<input class="input" data-key="${f.k}" value="${esc(v)}">`;
+  return `<div class="set-row"><div><div class="set-l">${esc(f.l)}</div>${f.hint ? `<div class="set-h">${esc(f.hint)}</div>` : ''}</div><div class="set-c" style="min-width:0">${ctl}</div></div>`;
 }
-function eaRender() {
-  const host = $('#view-einst-allgemein'); if (!host) return;
-  const el = document.createElement('div'); el.className = 'ae'; host.replaceChildren(el);
-  const btn = (a, icon, l, dis) => `<button class="ag-btn" data-ea-a="${a}" ${dis ? 'disabled' : ''}>${ic(icon, 'i-sm')}<span>${l}</span></button>`;
-  el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', 'Zurück')}${btn('refresh', 'sync', 'Aktualisieren')}${btn('save', 'check', 'Sichern', !EA.dirty)}${btn('undo', 'undo', 'Änderungen zurücknehmen', !EA.dirty)}</div>
-    <div class="ae-tabsw"><div class="ed-tabs"><button type="button" class="ed-tab" data-ea-t="allg" aria-selected="${EA.tab === 'allg'}">Allgemein</button><button type="button" class="ed-tab" data-ea-t="mail" aria-selected="${EA.tab === 'mail'}">E-Mail-Fußzeile</button></div></div>
-    <div class="ae-body"><div id="edBody">${EA.tab === 'allg'
-      ? `<div class="ea-cols">${EA_GROUPS().map(g => `<div class="ae-card ea-card"><h4>${esc(g.h)}</h4><div class="ea-fields">${g.f.map(eaField).join('')}</div></div>`).join('')}</div>`
-      : `<div class="ae-card ea-card" style="flex:1;max-width:none"><h4>E-Mail-Fußzeile</h4><label class="field" style="flex:1"><span>Text unter jeder E-Mail aus Kontor (Belege, Bestellungen, Mahnungen, Regeln)</span><textarea class="input ea-fuss" data-ea-fuss rows="12" placeholder="z. B. Alpenlicht Sport GmbH · Maria-Theresien-Str. 18 · 6020 Innsbruck · UID ATU00000000">${esc(EA.draft['allg.mailfuss'])}</textarea></label></div>`}</div></div>`;
-  el.addEventListener('input', e => { if (e.target.closest('[data-ea],[data-ea-fuss]')) { EA.dirty = true; $$('[data-ea-a="save"],[data-ea-a="undo"]', el).forEach(b => { b.disabled = false; }); } });
-  el.addEventListener('click', async e => {
-    const t = e.target, clr = t.closest('[data-ea-clr]'), pick = t.closest('[data-ea-pick]'), go_ = t.closest('[data-ea-go]'), tab = t.closest('[data-ea-t]'), b = t.closest('[data-ea-a]');
-    if (clr) { e.stopPropagation(); eaCollect(el); EA.draft[clr.dataset.eaClr] = ''; EA.dirty = true; return eaRender(); }
-    if (pick) { const f = eaFind(pick.dataset.eaPick); const v = await eaPick(f); if (v !== undefined) { eaCollect(el); EA.draft[f.k] = v; EA.dirty = true; eaRender(); } return; }
-    if (go_) { if (EA.dirty && !await confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen')) return; EA.dirty = false; return go(go_.dataset.eaGo); }
-    if (tab) { eaCollect(el); EA.tab = tab.dataset.eaT; return eaRender(); }
-    if (!b || b.disabled) return;
-    const a = b.dataset.eaA; eaCollect(el);
-    if (a === 'back') return history.length > 1 ? history.back() : go('dashboard');
-    if (a === 'refresh' || a === 'undo') { await loadStamm(true); EA.draft = eaLoad(); EA.dirty = false; return eaRender(); }
-    try { await needPerm('einstellungen', 'Einstellungen Allgemein'); await saveSettings({...EA.draft}); EA.dirty = false; eaRender(); } catch (err) { if (err) toast('Nicht gespeichert', {t2: String(err.message || err), type: 'warn'}); }
-  });
+function eaSectionHTML() {
+  return `<section class="set-sec" id="sec-standard"><h2>Standardwerte</h2><p>Gelten für alle Kassen: EDI-Absender, Gutscheine, Sendungen, neue Artikel und die Fußzeile unter jeder E-Mail aus Kontor.</p>
+    ${EA_GROUPS().map(g => `<div class="card" style="margin-bottom:12px"><div class="set-row" style="min-height:0"><div class="set-l" style="font-weight:650">${esc(g.h)}</div></div>${g.f.map(eaRow).join('')}</div>`).join('')}
+    <div class="card"><div class="set-row" style="align-items:flex-start"><div><div class="set-l">E-Mail-Fußzeile</div><div class="set-h">Text unter jeder E-Mail aus Kontor (Belege, Bestellungen, Mahnungen, Regeln)</div></div><div class="set-c" style="flex:1;min-width:0"><textarea class="input" data-key="allg.mailfuss" rows="4" style="height:auto;padding:9px 12px;resize:vertical;width:100%" placeholder="z. B. Alpenlicht Sport GmbH · Maria-Theresien-Str. 18 · 6020 Innsbruck · UID ATU00000000">${esc(CFG['allg.mailfuss'] || '')}</textarea></div></div></div></section>`;
 }
-registerPage('einst-allgemein', {title: 'Einstellungen Allgemein', sub: () => 'Einstellungen', render: async () => { await loadStamm(); if (!EA.draft || !EA.dirty) EA.draft = eaLoad(); eaRender(); }});
-VIEW_PERM['einst-allgemein'] = 'einstellungen';
+/** Klicks im Abschnitt „Standardwerte“ (von renderSettings aufgerufen) – true, wenn behandelt */
+async function eaClick(t) {
+  const refresh = () => { const el = $('#sec-standard'); if (el) el.outerHTML = eaSectionHTML(); };
+  const clr = t.closest('[data-ea-clr]'); if (clr) { await saveSettings({[clr.dataset.eaClr]: ''}); refresh(); return true; }
+  const pick = t.closest('[data-ea-pick]'); if (pick) { const f = eaFind(pick.dataset.eaPick); const v = await eaPick(f); if (v !== undefined) { await saveSettings({[f.k]: v}); refresh(); } return true; }
+  const go_ = t.closest('[data-ea-go]'); if (go_) { go(go_.dataset.eaGo); return true; }
+  return false;
+}
 
 /* ── Wirkung der Einstellungen ── */
 /* 1) E-Mail-Fußzeile an jede ausgehende Mail */

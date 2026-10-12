@@ -422,7 +422,7 @@ Object.assign(VIEW_PERM, {nummernkreise: 'einstellungen', buchungsabschluss: 'be
 function settingsLink(id, title, sec) {
   registerPage(id, {title, sub: () => 'Einstellungen', render: () => { const v = $('#view-' + id); v.innerHTML = `<div class="cv">${loadingCard('Öffne Einstellungen')}</div>`; setTimeout(() => { go('einstellungen'); setTimeout(() => $(`[data-sec="${sec}"]`, $('#view-einstellungen'))?.click(), 80); }, 30); }});
 }
-settingsLink('einst-allgemein', 'Allgemein', 'allgemein'); settingsLink('einst-kassen', 'Kassen', 'kasse'); settingsLink('einst-benutzer', 'Benutzer-Einstellungen', 'benutzer'); settingsLink('einst-update', 'Updateübersicht', 'updates'); settingsLink('einst-zahlungsarten', 'Zahlungsarten', 'kasse'); settingsLink('einst-buchungslogik', 'Buchungslogik', 'bon');
+settingsLink('einst-allgemein', 'Einstellungen', 'standard'); settingsLink('einst-kassen', 'Kassen', 'kasse'); settingsLink('einst-benutzer', 'Benutzer-Einstellungen', 'benutzer'); settingsLink('einst-update', 'Updateübersicht', 'updates'); settingsLink('einst-zahlungsarten', 'Zahlungsarten', 'kasse'); settingsLink('einst-buchungslogik', 'Buchungslogik', 'bon');
 
 /* ── Kasse: Beleg-Zusatzinformationen, Scanner-Regeln, Artikelservice, Preisgruppen ── */
 { const _op = openPayment; openPayment = function (...args) {

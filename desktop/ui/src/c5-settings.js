@@ -123,7 +123,7 @@ async function autoBackupCheck() {
 }
 
 /* ── Ansicht ── */
-const SET_SECTIONS = [['allgemein', 'Firma & Filiale', 'store'], ['kasse', 'Kasse', 'register'], ['benutzer', 'Benutzer', 'users'], ['bon', 'Bon & Belege', 'receipt'], ['drucker', 'Drucker & Lade', 'printer'], ['etikett', 'Etiketten', 'tag'], ['mail', 'E-Mail', 'mail'], ['rksv', 'RKSV', 'shield'], ['anzeige', 'Darstellung', 'palette'], ['sicherung', 'Datensicherung', 'database'], ['updates', 'Updates', 'download'], ['system', 'System & Protokoll', 'server']];
+const SET_SECTIONS = [['allgemein', 'Firma & Filiale', 'store'], ['standard', 'Standardwerte', 'sliders'], ['kasse', 'Kasse', 'register'], ['benutzer', 'Benutzer', 'users'], ['bon', 'Bon & Belege', 'receipt'], ['drucker', 'Drucker & Lade', 'printer'], ['etikett', 'Etiketten', 'tag'], ['mail', 'E-Mail', 'mail'], ['rksv', 'RKSV', 'shield'], ['anzeige', 'Darstellung', 'palette'], ['sicherung', 'Datensicherung', 'database'], ['updates', 'Updates', 'download'], ['system', 'System & Protokoll', 'server']];
 function field(key, label, help, type = 'text', extra = '') {
   const v = CFG[key];
   let ctl;
@@ -148,6 +148,7 @@ function renderSettings() {
         ${field('firma.uid', 'UID-Nummer', 'Pflichtangabe auf Belegen ab € 400')}
         ${field('firma.telefon', 'Telefon', '')}
       </div></section>
+      ${eaSectionHTML()}
       <section class="set-sec" id="sec-kasse"><h2>Kasse</h2><p>Gilt für diese Kasse. Änderungen wirken sofort und werden protokolliert.</p><div class="card">
         ${field('kasse.name', 'Bezeichnung', 'Anzeige in der Kopfzeile')}
         ${field('kasse.id', 'Kassen-ID (RKSV)', 'Eindeutige Kennung je Registrierkasse – wird mit der RKSV-Registrierung verbindlich')}
@@ -155,7 +156,6 @@ function renderSettings() {
         ${field('kasse.rabattGrenze', 'Rabattgrenze ohne Freigabe (%)', '', 'number', 'min="0" max="100" step="1" style="max-width:120px"')}
         ${field('kasse.retoureGrenze', 'Erstattung ohne Freigabe bis (€)', 'Retouren darüber und alle Stornos erfordern die Filialleitung (Step-up)', 'number', 'min="0" max="10000" step="10" style="max-width:120px"')}
         ${field('ziel.tag', 'Umsatzziel je Verkaufstag (€)', 'Grundlage für Tages-, Wochen- und Monatsziel im Dashboard', 'number', 'min="0" step="100" style="max-width:140px"')}
-        ${field('gutschein.jahre', 'Gutscheine gültig (Jahre nach Ausgabejahr)', 'Ablaufdatum = 31.12. des Ausgabejahres plus diese Anzahl Jahre', 'number', 'min="1" max="30" step="1" style="max-width:100px"')}
         ${field('kasse.vereinsregel', 'Vereinsrabatt automatisch', 'Regel greift beim Zuordnen von Vereinsmitgliedern', 'switch')}
         ${field('kasse.pflichtfelder', 'Pflichtfelder je Warengruppe', 'z. B. Z-Wert und Seriennummer beim Skiverkauf', 'switch')}
         ${field('kasse.bonFuss', 'Text am Bonende', '', 'textarea')}
@@ -176,6 +176,7 @@ function renderSettings() {
         <div class="card" style="margin-top:12px"><div class="set-row" style="border-bottom:0"><div><div class="set-l">Protokoll</div><div class="set-h">Letzte 60 Einträge</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" id="auditReload">${ic('sync', 'i-sm')}Aktualisieren</button></div></div><div id="auditBox" style="max-height:420px;overflow:auto"></div></div>
       </section>
     </div></div>`;
+  if (!STAMM.loaded) loadStamm().then(() => { const el = $('#sec-standard'); if (el) el.outerHTML = eaSectionHTML(); });
   $$('.seg', v).forEach(s => initSeg(s, b => {
     if (s.id === 'zoomSeg') return saveSettings({'anzeige.zoom.mul': +b.dataset.v, 'anzeige.zoom.auto': true}, true);
     if (s.id === 'chanSeg') return saveSettings({'update.kanal': b.dataset.v});
@@ -244,6 +245,7 @@ function bindSettings() {
   v.addEventListener('input', e => { if (e.target.id === 'setAccCustom') { prefs.custom = hexToHS(e.target.value); prefs.accent = 'custom'; applyPrefs(); } });
   v.addEventListener('click', async e => {
     const t = e.target;
+    if (await eaClick(t)) return;
     const sec = t.closest('[data-sec]'); if (sec) { $('#sec-' + sec.dataset.sec)?.scrollIntoView({behavior: reduced() ? 'auto' : 'smooth', block: 'start'}); return; }
     const sw = t.closest('.switch[data-key]'); if (sw) { const on = sw.getAttribute('aria-checked') !== 'true'; sw.setAttribute('aria-checked', on); return saveSettings({[sw.dataset.key]: on}); }
     const acc = t.closest('[data-acc]'); if (acc) { prefs.accent = acc.dataset.acc; applyPrefs(true); $$('[data-acc],.swb.custom', v).forEach(b => b.setAttribute('aria-pressed', b === acc)); return; }
