@@ -196,7 +196,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.28.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.29.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -404,7 +404,7 @@ const NAV = [
   {id: 'einst-buchungslogik', label: 'Buchungslogik', icon: 'sliders'},
   {id: 'buchungsabschluss', label: 'Buchungsabschluss', icon: 'lock'},
   {id: 'st-bonussystem', label: 'Bonus Systeme', icon: 'gift'},
-  {label: 'Kassen', icon: 'register', kids: [{id: 'einst-kassen', label: 'Kassen', icon: 'register'}]},
+  {label: 'Kassen', icon: 'register', kids: [{id: 'einst-kassen', label: 'Kassen', icon: 'register'}, {id: 'einst-kassenkonfig', label: 'Kassen-Konfiguration', icon: 'sliders'}]},
   {id: 'einstellungen', label: 'Kontor-Einstellungen', icon: 'sliders'},
   {id: 'prozesskonfiguration', label: 'Prozesskonfiguration', icon: 'flow'},
   {id: 'einst-benutzer', label: 'Benutzer-Einstellungen', icon: 'user'},

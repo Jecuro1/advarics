@@ -1,3 +1,11 @@
+## Neu in 0.29.0
+
+- Einstellungen › Kassen › Kassen: Bearbeiten-Seite mit allen Reitern. Neu befüllt: Allgemein (wie Advarics), Fiskalisierung (echte RKSV-Daten), Signatureinheit, MwSt.-Sätze, Zahlungsarten, Zusatz-Buchung, Kassen-Summen, WGR.-MwSt.-Einstellungen, Beleg-Konfiguration, Kassen-Layouts, Kassen-Icon Sortierung (Rauf/Runter), Positionsinfo Sortieren.
+- Einstellungen › Kassen › Kassen-Konfiguration (neu): Liste und Bearbeiten-Seite mit den Reitern Prozesse Nutzen, Allgemein, Beleg-Druck, Beleg-Druck Info, Unterschriften-Pad, Währung, Feste Rabatte, Zahlungsarten (mit Zahlungsart-Detail), Externe Zahlungsart, Scan-Regeln (mit „Automatische Scan-Regeln“), Hot Items, Passwort-Verwaltung, EFT-Kartentyp zuordnen und Artikel-Info.
+- Einstellungen › Zahlungsarten: Liste der 20 Zahlungsarten mit Bearbeiten-Fenster.
+- Noch ohne Inhalt: Kassen › Rabatt/Synchronisierung-Zeitstempel sind Platzhalter; Kassen-Konfiguration › Zusatz-Buchungen, Beleg Zusatzinformationen, Synchronisierung, Pflichteingaben, Tax-Free Dienste, Kd.-Filter.
+- Die Einstellungen der Kassen-Konfiguration werden gespeichert, wirken aber noch nicht an der Kasse.
+
 ## Neu in 0.28.0
 
 - Einstellungen › Buchungsabschluss wie bei Advarics: Feld „Abschluss zum“ mit Sichern und Liste der Abschlüsse (Erstellt am, Abschluss zum, User-Nr., User). Datum darf nicht in der Zukunft und nicht vor dem letzten Abschluss liegen.

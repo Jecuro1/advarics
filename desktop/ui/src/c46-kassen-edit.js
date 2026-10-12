@@ -1,8 +1,8 @@
 /* ═════════════════════════════════════════════════════════════════
    46 · KASSEN BEARBEITEN (Advarics: Reiter Allgemein … Positionsinfo Sortieren)
    ═════════════════════════════════════════════════════════════════ */
-const KAE_TABS = [['allg', 'Allgemein'], ['fisk', 'Fiskalisierung'], ['sign', 'Signatureinheit'], ['rabatt', 'Rabatt'], ['sync', 'Synchronisierung'], ['rfid', 'RFID'], ['eft', 'EFT'], ['fibu', 'FiBu'], ['mwst', 'MwSt.-Sätze'], ['zahl', 'Zahlungsarten'], ['zusatz', 'Zusatz-Buchung'], ['summen', 'Kassen-Summen'], ['wgrmwst', 'WGR.-MwSt.-Einstellungen'], ['beleg', 'Beleg-Konfiguration'], ['layout', 'Kassen-Layouts'], ['icons', 'Kassen-Icon Sortierung'], ['posinfo', 'Positionsinfo Sortieren']];
-const KAE_NEU = () => { const all = stRows('kasse'); return {filnr: '1', filname: STORES[0].name, filgrp: '', land: 'Österreich', nr: Math.max(0, ...all.map(x => +x.nr || 0)) + 1, bez: '', konfig: 'Standard', sync: false, core: false, inaktiv: false, kdStart: 1, kdEnde: 99999, reStart: 1, reEnde: 99999, letzteSync: '', mac: '', syncname: '', paket: '', langsam: false, region: 'de-AT', design: 'Kontor', ws: '', rabatte: [], rfidUser: '', rfidPort: '', kostenstelle: 0, eftAktiv: false, eftConnector: 'PepperV2', eftTerminalTyp: 0, eftCom: 0, eftIp: '', eftSprache: 'German', eftOperator: '', eftCbEvent: 0, eftCbOption: 0, eftDevice: '', eftTimeout: 120, eftTid: '', eftMerchant: '', eftPass: '', eftConfigByte: 0, eftBaud: 0, eftTimeoutMs: 0, eftTrack: 0, eftKey: '', eftVorher: false}; };
+const KAE_TABS = [['allg', 'Allgemein'], ['fisk', 'Fiskalisierung'], ['sig', 'Signatureinheit'], ['rabatt', 'Rabatt'], ['sync', 'Synchronisierung'], ['rfid', 'RFID'], ['eft', 'EFT'], ['fibu', 'FiBu'], ['mwst', 'MwSt.-Sätze'], ['zahl', 'Zahlungsarten'], ['zusatz', 'Zusatz-Buchung'], ['summen', 'Kassen-Summen'], ['wgrmwst', 'WGR.-MwSt.-Einstellungen'], ['beleg', 'Beleg-Konfiguration'], ['layout', 'Kassen-Layouts'], ['icons', 'Kassen-Icon Sortierung'], ['posinfo', 'Positionsinfo Sortieren']];
+const KAE_NEU = () => { const all = stRows('kasse'); return {filnr: '1', filname: STORES[0].name, filgrp: '', land: 'Österreich', nr: Math.max(0, ...all.map(x => +x.nr || 0)) + 1, bez: '', konfig: 'Standard', sync: false, core: false, inaktiv: false, kdStart: 1, kdEnde: 99999, reStart: 1, reEnde: 99999, letzteSync: '', mac: '', syncname: '', paket: '', langsam: false, region: 'de-AT', design: 'Kontor', ws: '', timer: 20, core: false, pw1: '', pw2: '', vfCode: '', extNr: '', sub: {}, rabatte: [], rfidUser: '', rfidPort: '', kostenstelle: 0, eftAktiv: false, eftConnector: 'PepperV2', eftTerminalTyp: 0, eftCom: 0, eftIp: '', eftSprache: 'German', eftOperator: '', eftCbEvent: 0, eftCbOption: 0, eftDevice: '', eftTimeout: 120, eftTid: '', eftMerchant: '', eftPass: '', eftConfigByte: 0, eftBaud: 0, eftTimeoutMs: 0, eftTrack: 0, eftKey: '', eftVorher: false}; };
 const KAE = {id: null, ids: [], draft: null, tab: 'allg', dirty: false};
 const kaeLoad = id => { const r = id ? stRows('kasse').find(x => x.id === id) : null; return JSON.parse(JSON.stringify({...KAE_NEU(), ...(r || {})})); };
 function kaeOpen(id, ids) {
@@ -11,9 +11,10 @@ function kaeOpen(id, ids) {
 }
 /* Feldbeschreibungen je Reiter: t = text | num | check | select | ro */
 const KAE_FELDER = {
-  allg: [['Kasse', [['filnr', 'Fil.-Nr.', 'num'], ['filname', 'Fil.-Name', 'select', () => STORES.map(s => [s.name, s.name])], ['filgrp', 'Fil.-Grp.'], ['land', 'Land'], ['nr', 'Kassen-Nr. *', 'num'], ['bez', 'Kassen-Bez *'], ['konfig', 'Kassen-Konfiguration'], ['region', 'Region und Sprache'], ['design', 'Aktives Design'], ['ws', 'Intersport Workstation-Nr.']]],
-    ['Status', [['sync', 'Synchronisiert', 'check'], ['core', 'Core Kasse aktiv', 'check'], ['inaktiv', 'Nicht aktiv', 'check'], ['langsam', 'Langsamer Sync-Speed', 'check'], ['letzteSync', 'Letzte Sync.', 'ro'], ['mac', 'MAC-Adresse'], ['syncname', 'Sync-Name'], ['paket', 'Update-Kasse Paket']]],
-    ['Nummernkreise', [['kdStart', 'StartNummerKunden', 'num'], ['kdEnde', 'EndeNummerKunden', 'num'], ['reStart', 'StartNummerRechnung', 'num'], ['reEnde', 'EndeNummerRechnung', 'num']]]],
+  allg: [['', [['nr', 'Kassen-Nr. *', 'num'], ['bez', 'Kassen-Bez *'], ['filname', 'Filiale *', 'select', () => STORES.map(s => [s.name, s.name])], ['design', 'Aktives Design', 'select', () => ['Kontor', 'AdvBlue', 'Hell', 'Dunkel'].map(x => [x, x])], ['sync', 'Synchronisiert', 'check'], ['timer', 'Beleg Abschluss Timer in (Sekunde) *', 'num'], ['syncname', 'Sync-Name'], ['mac', 'Sync-Mac-Adresse'], ['core', 'Core-Version aktivieren', 'check'], ['konfig', 'Kassen-Konfiguration *', 'select', () => stActive('kassenkonfig').map(r => [r.name, r.name])]]],
+    ['', [['vfCode', 'Verkaufsfläche Code'], ['pw1', 'Passwort 1'], ['pw2', 'Passwort 2'], ['extNr', 'Externe Kassen-Nr'], ['region', 'Region und Sprache', 'select', () => EA_SPRACHEN], ['_', 'Linker Offset für Belegdruck', 'ro', () => '0'], ['inaktiv', 'Nicht aktiv', 'check']]],
+    ['', [['paket', 'Update-Kasse Paket', 'ro'], ['ws', 'Intersport Workstation-Nr.'], ['hatBelege', 'hat Kassen-Belege', 'check-off'], ['_', 'Start-Beleg-Nr.', 'ro', () => ''], ['_', 'Start-Znr', 'ro', () => ''], ['filnr', 'Fil.-Nr.', 'num'], ['filgrp', 'Fil.-Grp.'], ['land', 'Land'], ['langsam', 'Langsamer Sync-Speed', 'check']]],
+    ['Nummernkreise', [['kdStart', 'StartNummerKunden', 'num'], ['kdEnde', 'EndeNummerKunden', 'num'], ['reStart', 'StartNummerRechnung', 'num'], ['reEnde', 'EndeNummerRechnung', 'num'], ['letzteSync', 'Letzte Sync.', 'ro']]]],
   rfid: [['RFID', [['rfidUser', 'Benutzername/Workstation'], ['rfidPort', 'Port']]]],
   fibu: [['Kostenstelle', [['kostenstelle', 'Kostenstelle', 'num']]]],
   eft: [['Informationen', [['_', 'Eft Treiber-Typ', 'ro', () => (KAE.draft.eftAktiv ? KAE.draft.eftConnector : '')], ['_', 'EFT Treiber-Version', 'ro', () => ''], ['_', 'EFT Treiber-Lizenz-Key', 'ro', () => ''], ['_', 'EFT Treiber-Terminal-Typ', 'ro', () => String(KAE.draft.eftTerminalTyp || '')], ['_', 'EFT Treiber letzte Anmeldung', 'ro', () => '']]],
@@ -23,12 +24,12 @@ const KAE_FELDER = {
 function kaeField([k, l, t, o]) {
   const D = KAE.draft, v = D[k];
   if (t === 'check') return `<label class="ea-sw"><button type="button" class="switch" role="switch" data-ke-sw="${k}" aria-checked="${!!v}"></button><span>${esc(l)}</span></label>`;
-  if (t === 'check-off') return `<label class="ea-sw dis"><button type="button" class="switch" disabled role="switch" aria-checked="false"></button><span>${esc(l)}</span></label>`;
+  if (t === 'check-off') return `<label class="ea-sw dis"><button type="button" class="switch" disabled role="switch" aria-checked="${k === 'hatBelege' ? 'true' : 'false'}"></button><span>${esc(l)}</span></label>`;
   if (t === 'ro') return `<label class="field"><span>${esc(l)}</span><input class="input ea-ro" readonly value="${esc(o ? o() : v ?? '')}"></label>`;
   if (t === 'select') return `<label class="field"><span>${esc(l)}</span><select class="input select" data-ke="${k}">${o().map(([x, y]) => `<option value="${esc(x)}" ${String(v) === String(x) ? 'selected' : ''}>${esc(y)}</option>`).join('')}</select></label>`;
   return `<label class="field"><span>${esc(l)}</span><input class="input ${t === 'num' ? 'num' : ''}" ${t === 'num' ? 'type="number"' : ''} data-ke="${k}" value="${esc(v ?? '')}"></label>`;
 }
-const kaeCards = list => `<div class="ea-cols">${list.map(([h, f]) => `<div class="ae-card ea-card"><h4>${esc(h)}</h4><div class="ea-fields">${f.map(kaeField).join('')}</div></div>`).join('')}</div>`;
+const kaeCards = list => `<div class="ea-cols">${list.map(([h, f]) => `<div class="ae-card ea-card">${h ? `<h4>${esc(h)}</h4>` : ''}<div class="ea-fields">${f.map(kaeField).join('')}</div></div>`).join('')}</div>`;
 const kaeRabattRows = on => stActive('festerrabatt').filter(r => KAE.draft.rabatte.includes(r.id) === on).map((r, i) => ({id: r.id, pct: +r.pct || 0, wert: +r.wert || 0, alsWert: !!r.alsWert, typ: r.typ || 'Rabatt', von: r.von || '', bis: r.bis || '', sort: +r.sort || i + 1, modus: r.modus || 'Beide Ebenen aktiv'}));
 const kaeMiss = D => { const m = []; if (!String(D.bez).trim()) m.push('Kassen-Bez'); if (!(+D.nr > 0)) m.push('Kassen-Nr.'); return m; };
 
@@ -36,7 +37,7 @@ function kaeRender() {
   const host = $('#view-einst-kassen-edit'); if (!host) return;
   const D = KAE.draft, pos = KAE.ids.indexOf(KAE.id), el = document.createElement('div'); el.className = 'ae'; host.replaceChildren(el);
   const btn = (a, icon, l, dis) => `<button class="ag-btn" data-ke-a="${a}" ${dis ? 'disabled' : ''}>${ic(icon, 'i-sm')}<span>${l}</span></button>`;
-  let body;
+  let body, extraMount;
   if (KAE.tab === 'allg') body = kaeCards(KAE_FELDER.allg);
   else if (KAE_FELDER[KAE.tab]) body = kaeCards(KAE_FELDER[KAE.tab]);
   else if (KAE.tab === 'rabatt') body = `<div class="ae-pane ae-two"><div class="ae-card"><h4>Zugeordnet</h4><div data-kg="a"></div></div><div class="ae-card"><h4>Nicht zugeordnet</h4><div data-kg="b"></div></div></div>`;
@@ -47,7 +48,8 @@ function kaeRender() {
       <div class="ae-card ea-card"><h4>Synchronisation-Info</h4><div class="ea-fields">${['Artikel', 'Kunden', 'Gutscheine', 'Auswahlen', 'Rechnungen'].map(x => ro('Max-Id ' + x, '0')).join('')}</div></div>
       <div class="ae-card ea-card" style="flex:1 1 320px"><h4>Synchronisation-Info</h4><div class="ea-fields">${ctl('Langsamer Sync-Speed', D.langsam, false, 'langsam')}${ctl('Reorg Wenn Sync', false, true)}${ctl('Kassen-Reorganisation', false, true)}</div></div></div>
       <div data-kg="s" style="flex:1;min-height:200px;display:flex;flex-direction:column"></div>`;
-  } else body = `<div class="ae-card ea-card" style="max-width:none"><h4>${esc(KAE_TABS.find(t => t[0] === KAE.tab)[1])}</h4><div class="empty" style="padding:28px 12px"><p>Dieser Reiter wird gerade nach dem Advarics-Vorbild aufgebaut.</p></div></div>`;
+  } else if (KAE_RENDER[KAE.tab]) { const r = KAE_RENDER[KAE.tab](); body = r.html; extraMount = r.mount; }
+  else body = '';
   el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', 'Übersicht: Kassen')}${btn('refresh', 'sync', 'Aktualisieren', !KAE.id)}${btn('save', 'check', 'Sichern', !KAE.dirty)}${btn('new', 'plus', 'Neu', !KAE.id)}${btn('undo', 'undo', 'Änderungen zurücknehmen', !KAE.dirty)}${btn('del', 'trash', 'Löschen', !KAE.id)}
       <span class="sp"></span>${KAE.id ? `${btn('prev', 'chevron-left', '', pos <= 0)}<span class="ae-nr">${pos + 1}/${KAE.ids.length}</span>${btn('next', 'chevron-right', '', pos >= KAE.ids.length - 1)}` : ''}</div>
     <div class="ae-tabsw"><div class="ed-tabs" style="flex-wrap:wrap">${KAE_TABS.map(([k, l]) => `<button type="button" class="ed-tab" data-ke-t="${k}" aria-selected="${KAE.tab === k}">${esc(l)}</button>`).join('')}</div></div>
@@ -59,6 +61,7 @@ function kaeRender() {
     mk('ke-a', $('[data-kg="a"]', el), {title: 'Zugeordnet', cols: rc, rows: () => kaeRabattRows(true), sort: {k: 'sort', dir: 1}, edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const s = [...AG['ke-a'].sel]; if (s.length) mv(s, false); }}});
     mk('ke-b', $('[data-kg="b"]', el), {title: 'Nicht zugeordnet', cols: rc, rows: () => kaeRabattRows(false), sort: {k: 'sort', dir: 1}, edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ke-b'].sel]; if (s.length) mv(s, true); }}});
   }
+  if (extraMount) extraMount(el, () => kaeDirty(el));
   if (KAE.tab === 'sync') mk('ke-s', $('[data-kg="s"]', el), {title: 'Sync', cols: [{k: 'a', l: 'Artikel', w: 180}, {k: 'g', l: 'Gutscheine', w: 160}, {k: 'k', l: 'Kunde', w: 160}, {k: 'au', l: 'Auswahlen', w: 160}, {k: 'r', l: 'Rechnungen', w: 160}], rows: () => [{id: 1, a: `Geladen: 0 von ${num(ART.length)}`, g: 'Geladen: 0 von 0', k: 'Geladen: 0 von 0', au: 'Geladen: 0 von 0', r: 'Geladen: 0 von 0'}], extra: [{k: 'rf', l: 'Aktualisieren', icon: 'sync'}], actions: {rf: () => kaeRender()}});
   el.addEventListener('input', e => { if (e.target.closest('[data-ke]')) { KAE.dirty = true; $$('[data-ke-a="save"],[data-ke-a="undo"]', el).forEach(b => { b.disabled = false; }); } });
   el.addEventListener('click', async e => {
@@ -89,6 +92,7 @@ function kaeRender() {
     } catch (err) { if (err && String(err.message || err) !== 'abgebrochen') toast('Nicht möglich', {t2: String(err.message || err), type: 'warn'}); }
   });
 }
+const kaeDirty = el => { KAE.dirty = true; $$('[data-ke-a="save"],[data-ke-a="undo"]', el).forEach(b => { b.disabled = false; }); };
 function kaeCollect(el) {
   $$('[data-ke]', el).forEach(i => { KAE.draft[i.dataset.ke] = i.type === 'number' ? (i.value === '' ? 0 : +i.value) : i.value; });
 }
