@@ -1814,6 +1814,8 @@ const persist = {
 };
 const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 const MOD = IS_MAC ? '⌘' : 'Strg';
+/** Systemdrucker (Bondrucker/Etikettendrucker über den Druckdienst des Betriebssystems) */
+const SYS_OS = IS_MAC ? 'Mac' : 'Windows', SYS_PRN = IS_MAC ? 'Mac-Drucker' : 'Windows-Drucker';
 const parseAmt = s => { const v = parseFloat(String(s).trim().replace(/\s|€/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')); return isFinite(v) ? v : NaN; };
 const DESKTOP = !!(window.__TAURI__ && window.__TAURI__.core);
 /** Prüfungen/Ergänzungen vor Befehlen (z. B. Buchungsabschluss, E-Mail-Fußzeile) – werden in späteren Modulen eingetragen */
@@ -1982,7 +1984,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.34.3', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.34.4', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -4015,7 +4017,7 @@ function uiRefit(force) {
 function applyZoom(f) {
   f = clamp(Math.round(f * 100) / 100, .6, 2.6);
   UI.zoom = f;
-  if (DESKTOP) invoke('set_zoom', {factor: f}).then(() => setTimeout(() => uiRefit(), 160)).catch(() => { UI.zoom = 1; });
+  if (DESKTOP) invoke('set_zoom', {factor: f}).then(r => { if (typeof r === 'number' && r > 0) UI.zoom = r; setTimeout(() => uiRefit(), 160); }).catch(() => { UI.zoom = 1; });
   else if (!window.__UI_EMU) { document.documentElement.style.zoom = f === 1 ? '' : f; document.documentElement.style.setProperty('--zoom', f); }
 }
 { let t = 0; const again = () => { clearTimeout(t); t = setTimeout(() => uiRefit(), 120); };
@@ -4133,7 +4135,7 @@ async function renderBackups() {
   try { list = await invoke('backup_list'); } catch (e) { console.error(e); }
   if (!$('#backupBox')) return;
   box.innerHTML = `<div class="card">
-    <div class="set-row"><div><div class="set-l">Zielordner</div><div class="set-h">Lokaler Pfad, Netzlaufwerk oder NAS (z. B. \\\\NAS-01\\kontor)</div></div><div class="set-c" style="min-width:0;gap:6px"><span class="mono set-path" title="${esc(i?.backup_dir || '')}"><bdi>${esc(i?.backup_dir || '')}</bdi></span><button class="btn btn-secondary btn-sm" id="bkPick">Ändern …</button><button class="btn btn-ghost btn-sm btn-icon" data-open="${esc(i?.backup_dir || '')}" aria-label="Ordner öffnen" data-tip="Ordner öffnen">${ic('boxes', 'i-sm')}</button></div></div>
+    <div class="set-row"><div><div class="set-l">Zielordner</div><div class="set-h">Lokaler Pfad, Netzlaufwerk oder NAS (z. B. ${IS_MAC ? '/Volumes/NAS-01/kontor' : '\\\\NAS-01\\kontor'})</div></div><div class="set-c" style="min-width:0;gap:6px"><span class="mono set-path" title="${esc(i?.backup_dir || '')}"><bdi>${esc(i?.backup_dir || '')}</bdi></span><button class="btn btn-secondary btn-sm" id="bkPick">Ändern …</button><button class="btn btn-ghost btn-sm btn-icon" data-open="${esc(i?.backup_dir || '')}" aria-label="Ordner öffnen" data-tip="Ordner öffnen">${ic('boxes', 'i-sm')}</button></div></div>
     ${field('backup.auto', 'Automatisch täglich sichern', 'Beim Start und stündlich geprüft: Sicherung, wenn die letzte älter als 24 h ist', 'switch')}
     ${field('backup.keep', 'Automatische Sicherungen behalten', 'Ältere automatische Sicherungen werden gelöscht – manuelle nie', 'number', 'min="1" max="365" step="1" style="max-width:120px"')}
     <div class="set-row"><div><div class="set-l">${esc(backupLabel())}</div><div class="set-h">${i?.last_backup ? 'Letzte erfolgreiche Sicherung: ' + esc(fmtTs(i.last_backup)) : 'Es wurde noch keine Sicherung erstellt'}</div></div><div class="set-c"><button class="btn btn-primary" id="bkNow">${ic('database', 'i-sm')}Jetzt sichern</button></div></div>
@@ -5617,7 +5619,7 @@ function renderSettingsKasseLock() {
 
 /* ════════════════════════════════════════════════════════════════════
    24 · BONDRUCKER & KASSENLADE (ESC/POS)
-   Netzwerkdrucker (IP, Port 9100) oder installierter Windows-Drucker.
+   Netzwerkdrucker (IP, Port 9100) oder im System installierter Drucker (Windows-Spooler bzw. macOS/CUPS).
    Die Kassenlade hängt am Drucker und öffnet über dessen Impuls.
    ════════════════════════════════════════════════════════════════════ */
 const printerOn = () => DESKTOP && CFG['drucker.art'] && CFG['drucker.art'] !== 'aus';
@@ -5699,9 +5701,9 @@ async function renderPrinterBox() {
   let printers = [];
   if (DESKTOP && art === 'windows') { try { printers = await invoke('printer_list'); } catch { /* keine */ } }
   if (!$('#prnBox')) return;
-  box.innerHTML = row('Anschluss', 'Netzwerk: Drucker mit eigener IP · Windows: per USB installierter Drucker (RAW)', `<div class="seg" id="prnSeg">${[['aus', 'Kein Drucker'], ['netz', 'Netzwerk'], ['windows', 'Windows-Drucker']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${art === k}">${l}</button>`).join('')}</div>`)
+  box.innerHTML = row('Anschluss', `Netzwerk: Drucker mit eigener IP · ${SYS_OS}: per USB installierter Drucker (RAW)`, `<div class="seg" id="prnSeg">${[['aus', 'Kein Drucker'], ['netz', 'Netzwerk'], ['windows', SYS_PRN]].map(([k, l]) => `<button data-v="${k}" aria-pressed="${art === k}">${l}</button>`).join('')}</div>`)
     + (art === 'netz' ? field('drucker.adresse', 'IP-Adresse', 'z. B. 192.168.1.50 oder 192.168.1.50:9100') : '')
-    + (art === 'windows' ? row('Drucker', printers.length ? `${printers.length} installierte Drucker gefunden` : 'Keine Drucker gefunden – Treiber installieren und neu laden', `<select class="input select" data-key="drucker.name" style="max-width:280px"><option value="">bitte wählen</option>${printers.map(p => `<option ${p === CFG['drucker.name'] ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select><button class="btn btn-ghost btn-sm" id="prnReload">${ic('sync', 'i-sm')}</button>`) : '')
+    + (art === 'windows' ? row('Drucker', printers.length ? `${printers.length} installierte Drucker gefunden` : IS_MAC ? 'Keine Drucker gefunden – unter Systemeinstellungen › Drucker & Scanner hinzufügen und neu laden' : 'Keine Drucker gefunden – Treiber installieren und neu laden', `<select class="input select" data-key="drucker.name" style="max-width:280px"><option value="">bitte wählen</option>${printers.map(p => `<option ${p === CFG['drucker.name'] ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select><button class="btn btn-ghost btn-sm" id="prnReload">${ic('sync', 'i-sm')}</button>`) : '')
     + (art !== 'aus' ? row('Papierbreite', '', `<div class="seg" id="prnWidth">${[[48, '80 mm'], [32, '58 mm']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${(+CFG['drucker.breite'] || 48) === k}">${l}</button>`).join('')}</div>`)
       + field('drucker.auto', 'Beleg automatisch drucken', 'Nach jedem Verkauf, jeder Retoure und jedem Abschluss', 'switch')
       + field('drucker.lade', 'Kassenlade am Drucker', 'Öffnet bei Barzahlung, Rückgeld und Kassenbuch', 'switch')
@@ -6470,8 +6472,8 @@ function labelSectionHTML() {
 function renderLabelBox() {
   const box = $('#lblBox'); if (!box) return;
   const art = CFG['etikett.art'] || 'a4';
-  box.innerHTML = `<div class="set-row"><div><div class="set-l">Drucker</div></div><div class="set-c"><div class="seg" id="lblSeg">${[['a4', 'A4-Bogen'], ['netz', 'ZPL · Netzwerk'], ['windows', 'ZPL · Windows-Drucker']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${art === k}">${l}</button>`).join('')}</div></div></div>`
-    + (art === 'netz' ? field('etikett.adresse', 'IP-Adresse', 'z. B. 192.168.1.60 (Port 9100)') : '') + (art === 'windows' ? field('etikett.name', 'Windows-Druckername', 'genau wie in Windows angezeigt') : '')
+  box.innerHTML = `<div class="set-row"><div><div class="set-l">Drucker</div></div><div class="set-c"><div class="seg" id="lblSeg">${[['a4', 'A4-Bogen'], ['netz', 'ZPL · Netzwerk'], ['windows', `ZPL · ${SYS_PRN}`]].map(([k, l]) => `<button data-v="${k}" aria-pressed="${art === k}">${l}</button>`).join('')}</div></div></div>`
+    + (art === 'netz' ? field('etikett.adresse', 'IP-Adresse', 'z. B. 192.168.1.60 (Port 9100)') : '') + (art === 'windows' ? field('etikett.name', `${SYS_OS === 'Mac' ? 'Mac' : 'Windows'}-Druckername`, `genau wie in ${SYS_OS === 'Mac' ? 'Systemeinstellungen › Drucker & Scanner' : 'Windows'} angezeigt`) : '')
     + (art === 'a4' ? `<div class="set-row"><div><div class="set-l">Bogen</div></div><div class="set-c"><select class="input select" data-key="etikett.format">${Object.entries(LABEL_FORMATS).map(([k, f]) => `<option value="${k}" ${k === (CFG['etikett.format'] || '3x8') ? 'selected' : ''}>${f.name}</option>`).join('')}</select></div></div>` : '');
   initSeg($('#lblSeg', box), async b => { await saveSettings({'etikett.art': b.dataset.v}, true); renderLabelBox(); });
 }
@@ -8035,7 +8037,7 @@ async function setupChecks() {
     {id: 'pins', t: 'Erst-PINs ändern', d: pins.length ? `Noch aktiv: ${pins.join(', ')}` : 'Alle Personen haben eigene PINs', ok: !pins.length, go: () => go('benutzer')},
     {id: '2fa', t: 'Zwei-Faktor für Administratoren', d: 'Authenticator-App als zweiter Schutz', ok: STAFF.some(u => u.roleKey === 'admin' && SEC.totp.has(u.id)), go: () => go('benutzer')},
     {id: 'sortiment', t: 'Eigenes Sortiment', d: 'Artikel anlegen oder per CSV importieren', ok: ART.some(a => !RAW.some(r => r.id === a.id)), go: () => openImport('artikel')},
-    {id: 'drucker', t: 'Bondrucker einrichten', d: 'Netzwerk- oder Windows-Drucker, Kassenlade', ok: CFG['drucker.art'] !== 'aus', go: () => setGo('drucker')},
+    {id: 'drucker', t: 'Bondrucker einrichten', d: `Netzwerk- oder ${SYS_PRN}, Kassenlade`, ok: CFG['drucker.art'] !== 'aus', go: () => setGo('drucker')},
     {id: 'sicherung', t: 'Datensicherung verschlüsseln', d: 'Tägliche Sicherung mit Passwort, möglichst auf NAS', ok: !!CFG['backup.auto'] && pw, go: () => setGo('sicherung')},
     {id: 'rksv', t: 'RKSV in Betrieb nehmen', d: 'Startbeleg erstellen (derzeit Testmodus)', ok: !!S.rksv?.active, go: () => setGo('rksv')},
     {id: 'mail', t: 'E-Mail-Versand', d: 'Belege und Bestellungen per E-Mail', ok: !!mailReady(), go: () => setGo('mail')},

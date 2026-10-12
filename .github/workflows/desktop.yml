@@ -1,0 +1,227 @@
+name: Desktop · Installer & Update (Windows, macOS)
+
+# Jede neue Version (desktop/src-tauri/tauri.conf.json → "version") wird gebaut, signiert und als
+# GitHub-Release veröffentlicht – für Windows (NSIS/MSI) und macOS (DMG für Apple Silicon + Intel).
+# Kontor findet sie über latest.json und installiert nach Freigabe.
+# Die beiden Jobs laufen nacheinander, damit sich ihre Einträge in latest.json nicht überschreiben.
+#
+# Pflicht-Secrets:  TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD  (Update-Signatur)
+# Optional für macOS (sonst „ad-hoc“ signiert: beim ersten Start Rechtsklick → Öffnen):
+#   APPLE_CERTIFICATE (base64 der .p12), APPLE_CERTIFICATE_PASSWORD, APPLE_SIGNING_IDENTITY
+#   („Developer ID Application: Firma (TEAMID)“) und für die Notarisierung APPLE_ID, APPLE_PASSWORD
+#   (App-spezifisches Passwort), APPLE_TEAM_ID.
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths: ["desktop/**", "ui-preview/**", "assets/**", ".github/workflows/desktop.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: Kontor für Windows bauen
+    runs-on: windows-latest
+    env:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - name: Abhängigkeiten
+        working-directory: desktop
+        run: npm ci
+
+      - name: Version, Hinweise, Signatur prüfen
+        id: meta
+        shell: bash
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then echo "signed=true" >> "$GITHUB_OUTPUT"; else echo "signed=false" >> "$GITHUB_OUTPUT"; fi
+          # „schon veröffentlicht“ = der Windows-Installer hängt bereits am Release (ein macOS-Build allein zählt nicht)
+          if gh release view "v$V" --json assets --jq '.assets[].name' -R "$GITHUB_REPOSITORY" 2>/dev/null | grep -qE '(-setup\.exe|\.msi)$'; then echo "released=true" >> "$GITHUB_OUTPUT"; else echo "released=false" >> "$GITHUB_OUTPUT"; fi
+          { echo "notes<<KONTOR_NOTES_EOF"; cat RELEASE_NOTES.md; echo; echo "KONTOR_NOTES_EOF"; } >> "$GITHUB_OUTPUT"
+
+      - name: Bauen, signieren und als Update veröffentlichen
+        if: steps.meta.outputs.signed == 'true' && steps.meta.outputs.released == 'false'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: desktop
+          tauriScript: npx tauri
+          tagName: v__VERSION__
+          releaseName: Kontor __VERSION__
+          # Text auch für „Was ist neu“ im Programm (latest.json)
+          releaseBody: ${{ steps.meta.outputs.notes }}
+          releaseDraft: false
+          # Versionen mit Bindestrich (z. B. 0.9.0-beta.1) erscheinen nur im Beta-Kanal
+          prerelease: ${{ contains(steps.meta.outputs.version, '-') }}
+          includeUpdaterJson: true
+          updaterJsonPreferNsis: true
+
+      - name: Beta-Kanal aktualisieren (Feed enthält jede neue Version)
+        if: steps.meta.outputs.signed == 'true' && steps.meta.outputs.released == 'false'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V="v${{ steps.meta.outputs.version }}"
+          mkdir -p feed
+          gh release download "$V" -p latest.json -D feed --clobber -R "$GITHUB_REPOSITORY"
+          gh release view beta-feed -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create beta-feed -R "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" --title "Beta-Kanal (Update-Feed)" --notes "Technischer Update-Feed für den Beta-Kanal von Kontor. Nicht manuell installieren."
+          gh release upload beta-feed feed/latest.json --clobber -R "$GITHUB_REPOSITORY"
+
+      - name: Bauen ohne Veröffentlichung (Version existiert schon oder Signatur-Secret fehlt)
+        if: steps.meta.outputs.signed != 'true' || steps.meta.outputs.released == 'true'
+        working-directory: desktop
+        shell: bash
+        run: |
+          if [ "${{ steps.meta.outputs.signed }}" = "true" ]; then npx tauri build; else npx tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'; fi
+
+      - name: Installer als Artefakt
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kontor-Windows-Installer
+          path: |
+            desktop/src-tauri/target/release/bundle/nsis/*.exe
+            desktop/src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: error
+          retention-days: 30
+
+  macos:
+    name: Kontor für macOS bauen (Apple Silicon + Intel)
+    needs: windows
+    # läuft auch, wenn der Windows-Job scheitert – nur nicht bei Abbruch (neuer Push)
+    if: ${{ !cancelled() }}
+    runs-on: macos-latest
+    env:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      # Universal-Programm: läuft nativ auf Apple Silicon (M-Serie) und auf Intel-Macs
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+          key: macos-universal
+
+      - name: Abhängigkeiten
+        working-directory: desktop
+        run: npm ci
+
+      - name: Apple-Signatur vorbereiten
+        shell: bash
+        env:
+          S_CERT: ${{ secrets.APPLE_CERTIFICATE }}
+          S_CERT_PW: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          S_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          S_ID: ${{ secrets.APPLE_ID }}
+          S_PW: ${{ secrets.APPLE_PASSWORD }}
+          S_TEAM: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "$S_CERT" ] && [ -n "$S_IDENTITY" ]; then
+            { echo "APPLE_CERTIFICATE=$S_CERT"; echo "APPLE_CERTIFICATE_PASSWORD=$S_CERT_PW"; echo "APPLE_SIGNING_IDENTITY=$S_IDENTITY"; } >> "$GITHUB_ENV"
+            if [ -n "$S_ID" ] && [ -n "$S_PW" ] && [ -n "$S_TEAM" ]; then
+              { echo "APPLE_ID=$S_ID"; echo "APPLE_PASSWORD=$S_PW"; echo "APPLE_TEAM_ID=$S_TEAM"; } >> "$GITHUB_ENV"
+              echo "Signatur mit Developer-ID und Notarisierung"
+            else
+              echo "Signatur mit Developer-ID (ohne Notarisierung)"
+            fi
+          else
+            # Apple-Silicon-Macs starten nur signierte Programme: ad-hoc-Signatur genügt für Installation und Updates
+            echo "APPLE_SIGNING_IDENTITY=-" >> "$GITHUB_ENV"
+            echo "Ohne Apple-Zertifikat: ad-hoc signiert (beim ersten Start Rechtsklick → Öffnen)"
+          fi
+
+      - name: Version, Hinweise, Signatur prüfen
+        id: meta
+        shell: bash
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then echo "signed=true" >> "$GITHUB_OUTPUT"; else echo "signed=false" >> "$GITHUB_OUTPUT"; fi
+          # „schon veröffentlicht“ = das Mac-Installationsabbild hängt bereits am Release
+          if gh release view "v$V" --json assets --jq '.assets[].name' -R "$GITHUB_REPOSITORY" 2>/dev/null | grep -qE '\.dmg$'; then echo "released=true" >> "$GITHUB_OUTPUT"; else echo "released=false" >> "$GITHUB_OUTPUT"; fi
+          { echo "notes<<KONTOR_NOTES_EOF"; cat RELEASE_NOTES.md; echo; echo "KONTOR_NOTES_EOF"; } >> "$GITHUB_OUTPUT"
+
+      - name: Bauen, signieren und als Update veröffentlichen
+        if: steps.meta.outputs.signed == 'true' && steps.meta.outputs.released == 'false'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: desktop
+          tauriScript: npx tauri
+          args: --target universal-apple-darwin
+          tagName: v__VERSION__
+          releaseName: Kontor __VERSION__
+          releaseBody: ${{ steps.meta.outputs.notes }}
+          releaseDraft: false
+          prerelease: ${{ contains(steps.meta.outputs.version, '-') }}
+          includeUpdaterJson: true
+
+      - name: Beta-Kanal aktualisieren (Feed enthält jede neue Version)
+        if: steps.meta.outputs.signed == 'true' && steps.meta.outputs.released == 'false'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V="v${{ steps.meta.outputs.version }}"
+          mkdir -p feed
+          gh release download "$V" -p latest.json -D feed --clobber -R "$GITHUB_REPOSITORY"
+          gh release view beta-feed -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create beta-feed -R "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" --title "Beta-Kanal (Update-Feed)" --notes "Technischer Update-Feed für den Beta-Kanal von Kontor. Nicht manuell installieren."
+          gh release upload beta-feed feed/latest.json --clobber -R "$GITHUB_REPOSITORY"
+          echo "Plattformen im Update-Feed:"; node -e "console.log(Object.keys(JSON.parse(require('fs').readFileSync('feed/latest.json','utf8')).platforms).join(', '))"
+
+      - name: Bauen ohne Veröffentlichung (Version existiert schon oder Signatur-Secret fehlt)
+        if: steps.meta.outputs.signed != 'true' || steps.meta.outputs.released == 'true'
+        working-directory: desktop
+        shell: bash
+        run: |
+          if [ "${{ steps.meta.outputs.signed }}" = "true" ]; then npx tauri build --target universal-apple-darwin; else npx tauri build --target universal-apple-darwin --config '{"bundle":{"createUpdaterArtifacts":false}}'; fi
+
+      - name: Mac-Installer als Artefakt
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kontor-macOS-Installer
+          path: |
+            desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+          retention-days: 30

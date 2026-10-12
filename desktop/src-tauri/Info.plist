@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- macOS fragt beim ersten Zugriff auf Geräte im lokalen Netz (Bondrucker, Kartenterminal, weitere Kassen) um Erlaubnis -->
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>Kontor verbindet sich mit Bondruckern, Kartenterminals und weiteren Kassen in Ihrem lokalen Netzwerk.</string>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>de</string>
+  <key>CFBundleLocalizations</key>
+  <array>
+    <string>de</string>
+  </array>
+</dict>
+</plist>

@@ -1,3 +1,11 @@
+## Neu in 0.34.4
+
+- **Kontor für macOS:** Es gibt jetzt einen Mac-Client wie unter Windows – ein Installationsabbild (`Kontor_x.y.z_universal.dmg`) im Release, nativ für Apple Silicon (M1–M4) und Intel-Macs (macOS 11 oder neuer). Updates kommen wie bisher im Programm (Einstellungen › Updates), mit Freigabe und vorheriger Sicherung. Hinweis zum ersten Start (Programm ist nicht notarisiert): Rechtsklick auf Kontor › Öffnen. Ausführliche Anleitung in der README.
+- **Bondrucker und Etikettendrucker am Mac:** Drucker, die im Mac-Drucksystem eingerichtet sind (Systemeinstellungen › Drucker & Scanner), erscheinen unter Einstellungen › Drucker & Lade als „Mac-Drucker“ – ESC/POS und ZPL gehen unverändert („raw“) an die Warteschlange. Netzwerkdrucker (IP, Port 9100) funktionieren auf beiden Systemen identisch.
+- Windows Hello wird nur unter Windows angeboten. Anzeige-Hinweise (Druckernamen, Backup-Pfad) passen sich dem System an.
+- Auto-Fit: Der Zoom-Bereich der Desktop-App wurde erweitert (0,5–3,0) und die Oberfläche übernimmt den tatsächlich gesetzten Wert – wichtig für 4K-Monitore, auf denen die Automatik mehr als 200 % wählt.
+- Der Build läuft jetzt in einem gemeinsamen Ablauf (`desktop.yml`): erst Windows, dann macOS, beide in demselben Release mit gemeinsamem Update-Feed.
+
 ## Neu in 0.34.3
 
 - Die Anzeige passt sich jetzt stufenlos und laufend an Gerät und Bildschirm an (Auto-Fit): Kontor misst die tatsächliche Fenstergröße samt Windows-Skalierung und wählt daraus die Anzeigegröße – Ziel sind etwa 920 logische Pixel Höhe bei mindestens 1200 Pixel Breite. Beim Maximieren, Fenster-Verkleinern, Monitorwechsel oder Drehen eines Tablets wird sofort neu berechnet; vorher wurde nur einmal beim Start in groben Stufen entschieden.

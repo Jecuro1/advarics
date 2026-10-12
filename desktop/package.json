@@ -1,8 +1,8 @@
 {
   "name": "kontor-desktop",
   "private": true,
-  "version": "0.34.3",
-  "description": "Kontor – Warenwirtschaft & Kasse als installierbares Windows-Programm",
+  "version": "0.34.4",
+  "description": "Kontor – Warenwirtschaft & Kasse als installierbares Windows- und macOS-Programm",
   "scripts": {
     "dev": "tauri dev",
     "build": "tauri build",

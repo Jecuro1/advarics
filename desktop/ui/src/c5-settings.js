@@ -79,7 +79,7 @@ function uiRefit(force) {
 function applyZoom(f) {
   f = clamp(Math.round(f * 100) / 100, .6, 2.6);
   UI.zoom = f;
-  if (DESKTOP) invoke('set_zoom', {factor: f}).then(() => setTimeout(() => uiRefit(), 160)).catch(() => { UI.zoom = 1; });
+  if (DESKTOP) invoke('set_zoom', {factor: f}).then(r => { if (typeof r === 'number' && r > 0) UI.zoom = r; setTimeout(() => uiRefit(), 160); }).catch(() => { UI.zoom = 1; });
   else if (!window.__UI_EMU) { document.documentElement.style.zoom = f === 1 ? '' : f; document.documentElement.style.setProperty('--zoom', f); }
 }
 { let t = 0; const again = () => { clearTimeout(t); t = setTimeout(() => uiRefit(), 120); };
@@ -197,7 +197,7 @@ async function renderBackups() {
   try { list = await invoke('backup_list'); } catch (e) { console.error(e); }
   if (!$('#backupBox')) return;
   box.innerHTML = `<div class="card">
-    <div class="set-row"><div><div class="set-l">Zielordner</div><div class="set-h">Lokaler Pfad, Netzlaufwerk oder NAS (z. B. \\\\NAS-01\\kontor)</div></div><div class="set-c" style="min-width:0;gap:6px"><span class="mono set-path" title="${esc(i?.backup_dir || '')}"><bdi>${esc(i?.backup_dir || '')}</bdi></span><button class="btn btn-secondary btn-sm" id="bkPick">Ändern …</button><button class="btn btn-ghost btn-sm btn-icon" data-open="${esc(i?.backup_dir || '')}" aria-label="Ordner öffnen" data-tip="Ordner öffnen">${ic('boxes', 'i-sm')}</button></div></div>
+    <div class="set-row"><div><div class="set-l">Zielordner</div><div class="set-h">Lokaler Pfad, Netzlaufwerk oder NAS (z. B. ${IS_MAC ? '/Volumes/NAS-01/kontor' : '\\\\NAS-01\\kontor'})</div></div><div class="set-c" style="min-width:0;gap:6px"><span class="mono set-path" title="${esc(i?.backup_dir || '')}"><bdi>${esc(i?.backup_dir || '')}</bdi></span><button class="btn btn-secondary btn-sm" id="bkPick">Ändern …</button><button class="btn btn-ghost btn-sm btn-icon" data-open="${esc(i?.backup_dir || '')}" aria-label="Ordner öffnen" data-tip="Ordner öffnen">${ic('boxes', 'i-sm')}</button></div></div>
     ${field('backup.auto', 'Automatisch täglich sichern', 'Beim Start und stündlich geprüft: Sicherung, wenn die letzte älter als 24 h ist', 'switch')}
     ${field('backup.keep', 'Automatische Sicherungen behalten', 'Ältere automatische Sicherungen werden gelöscht – manuelle nie', 'number', 'min="1" max="365" step="1" style="max-width:120px"')}
     <div class="set-row"><div><div class="set-l">${esc(backupLabel())}</div><div class="set-h">${i?.last_backup ? 'Letzte erfolgreiche Sicherung: ' + esc(fmtTs(i.last_backup)) : 'Es wurde noch keine Sicherung erstellt'}</div></div><div class="set-c"><button class="btn btn-primary" id="bkNow">${ic('database', 'i-sm')}Jetzt sichern</button></div></div>

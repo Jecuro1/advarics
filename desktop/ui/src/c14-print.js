@@ -1,7 +1,7 @@
 
 /* ════════════════════════════════════════════════════════════════════
    24 · BONDRUCKER & KASSENLADE (ESC/POS)
-   Netzwerkdrucker (IP, Port 9100) oder installierter Windows-Drucker.
+   Netzwerkdrucker (IP, Port 9100) oder im System installierter Drucker (Windows-Spooler bzw. macOS/CUPS).
    Die Kassenlade hängt am Drucker und öffnet über dessen Impuls.
    ════════════════════════════════════════════════════════════════════ */
 const printerOn = () => DESKTOP && CFG['drucker.art'] && CFG['drucker.art'] !== 'aus';
@@ -83,9 +83,9 @@ async function renderPrinterBox() {
   let printers = [];
   if (DESKTOP && art === 'windows') { try { printers = await invoke('printer_list'); } catch { /* keine */ } }
   if (!$('#prnBox')) return;
-  box.innerHTML = row('Anschluss', 'Netzwerk: Drucker mit eigener IP · Windows: per USB installierter Drucker (RAW)', `<div class="seg" id="prnSeg">${[['aus', 'Kein Drucker'], ['netz', 'Netzwerk'], ['windows', 'Windows-Drucker']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${art === k}">${l}</button>`).join('')}</div>`)
+  box.innerHTML = row('Anschluss', `Netzwerk: Drucker mit eigener IP · ${SYS_OS}: per USB installierter Drucker (RAW)`, `<div class="seg" id="prnSeg">${[['aus', 'Kein Drucker'], ['netz', 'Netzwerk'], ['windows', SYS_PRN]].map(([k, l]) => `<button data-v="${k}" aria-pressed="${art === k}">${l}</button>`).join('')}</div>`)
     + (art === 'netz' ? field('drucker.adresse', 'IP-Adresse', 'z. B. 192.168.1.50 oder 192.168.1.50:9100') : '')
-    + (art === 'windows' ? row('Drucker', printers.length ? `${printers.length} installierte Drucker gefunden` : 'Keine Drucker gefunden – Treiber installieren und neu laden', `<select class="input select" data-key="drucker.name" style="max-width:280px"><option value="">bitte wählen</option>${printers.map(p => `<option ${p === CFG['drucker.name'] ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select><button class="btn btn-ghost btn-sm" id="prnReload">${ic('sync', 'i-sm')}</button>`) : '')
+    + (art === 'windows' ? row('Drucker', printers.length ? `${printers.length} installierte Drucker gefunden` : IS_MAC ? 'Keine Drucker gefunden – unter Systemeinstellungen › Drucker & Scanner hinzufügen und neu laden' : 'Keine Drucker gefunden – Treiber installieren und neu laden', `<select class="input select" data-key="drucker.name" style="max-width:280px"><option value="">bitte wählen</option>${printers.map(p => `<option ${p === CFG['drucker.name'] ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select><button class="btn btn-ghost btn-sm" id="prnReload">${ic('sync', 'i-sm')}</button>`) : '')
     + (art !== 'aus' ? row('Papierbreite', '', `<div class="seg" id="prnWidth">${[[48, '80 mm'], [32, '58 mm']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${(+CFG['drucker.breite'] || 48) === k}">${l}</button>`).join('')}</div>`)
       + field('drucker.auto', 'Beleg automatisch drucken', 'Nach jedem Verkauf, jeder Retoure und jedem Abschluss', 'switch')
       + field('drucker.lade', 'Kassenlade am Drucker', 'Öffnet bei Barzahlung, Rückgeld und Kassenbuch', 'switch')

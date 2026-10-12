@@ -1,12 +1,20 @@
 # Kontor
 
 On-Premise-Warenwirtschaft und Kassensystem für Mode, Sport, Outdoor und Lifestyle („Kontor“ ist ein Arbeitstitel).
-Desktop-Programm für Windows (Tauri). Aktuell: Programm-Hülle mit UI-Vorschau und Testdaten.
+Desktop-Programm für Windows und macOS (Tauri). Aktuell: Programm-Hülle mit UI-Vorschau und Testdaten.
 
 ## Kontor installieren und aktualisieren
 
-**Erstinstallation:** neuesten Release unter https://github.com/Jecuro1/advarics/releases öffnen und
+**Erstinstallation Windows:** neuesten Release unter https://github.com/Jecuro1/advarics/releases öffnen und
 `Kontor_x.y.z_x64-setup.exe` ausführen (SmartScreen: „Weitere Informationen“ → „Trotzdem ausführen“).
+
+**Erstinstallation macOS (Apple Silicon und Intel, macOS 11 oder neuer):** im selben Release
+`Kontor_x.y.z_universal.dmg` laden, öffnen und Kontor in „Programme“ ziehen. Ohne Apple-Entwicklerzertifikat ist das
+Programm nicht notarisiert: beim ersten Start im Finder mit Rechtsklick auf Kontor → „Öffnen“ → „Öffnen“ bestätigen
+(oder im Terminal `xattr -dr com.apple.quarantine /Applications/Kontor.app`). macOS fragt beim ersten Zugriff auf
+Drucker/Terminals im Netzwerk nach der Erlaubnis „Lokales Netzwerk“ und bei der Kassen-API nach eingehenden
+Verbindungen – beides erlauben. Bondrucker, die per USB am Mac hängen, zuerst unter „Systemeinstellungen › Drucker &
+Scanner“ hinzufügen; Kontor listet sie dann unter Einstellungen › Drucker & Lade (Anschluss „Mac-Drucker“).
 
 **Updates:** direkt im Programm. Kontor sucht beim Start und alle 6 Stunden nach neuen Versionen
 (Einstellungen → Updates). Installiert wird nur nach Freigabe mit PIN – sofort, um 20:00 oder beim
@@ -15,10 +23,15 @@ nächsten Start. Vorher wird automatisch gesichert. Updates sind signiert; manip
 **Neue Version veröffentlichen (Entwicklung):** Version in `desktop/src-tauri/tauri.conf.json`,
 `desktop/src-tauri/Cargo.toml`, `desktop/package.json` und `desktop/ui/src/c1-core.js` (appVersion) erhöhen,
 `desktop/RELEASE_NOTES.md` anpassen (erscheint im Programm unter „Was ist neu“),
-pushen. GitHub Actions baut, signiert und veröffentlicht. Benötigte Repository-Secrets:
-`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+pushen. GitHub Actions (`.github/workflows/desktop.yml`) baut erst Windows, dann macOS (ein universelles Programm für
+M-Serie und Intel), signiert und veröffentlicht beides in einem Release samt gemeinsamem Update-Feed `latest.json`.
+Benötigte Repository-Secrets: `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+Optional für ein notarisiertes macOS-Programm (ohne Rechtsklick-Öffnen): `APPLE_CERTIFICATE` (base64 der .p12),
+`APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY` („Developer ID Application: Firma (TEAMID)“) sowie für die
+Notarisierung `APPLE_ID`, `APPLE_PASSWORD` (App-spezifisches Passwort) und `APPLE_TEAM_ID`.
+Ohne diese Secrets wird das Mac-Programm „ad-hoc“ signiert – Installation und Updates funktionieren trotzdem.
 
-`F11` schaltet Vollbild/Kassen-Kiosk um. Es kann nur eine Kontor-Instanz gleichzeitig laufen.
+`F11` schaltet Vollbild/Kassen-Kiosk um (Mac: auch Ctrl+⌘+F). Es kann nur eine Kontor-Instanz gleichzeitig laufen.
 
 ### Entwickeln
 
@@ -27,12 +40,12 @@ desktop/ui/build.sh   # baut die Oberfläche aus desktop/ui/src nach ui-preview/
 cd desktop
 npm install
 npm run dev      # startet Kontor als Programm-Fenster
-npm run build    # baut den Installer lokal (unter Windows)
+npm run build    # baut den Installer lokal (unter Windows .exe/.msi, unter macOS .app/.dmg)
 cd src-tauri && cargo test   # Tests: Retoure, Storno, Punkte, Gutscheine, RKSV, PIN/2FA, Abschluss, Einkauf, Drucker, API, Webshop, Webhooks, ZVT, Stammdaten, Flexanalyse, EDI-Ordner, Migration
 ```
 
 Voraussetzungen zum Selberbauen: Node.js 22, Rust (stable), unter Windows zusätzlich die
-„Microsoft C++ Build Tools“. Nur zum Benutzen ist nichts davon nötig – nur der Installer.
+„Microsoft C++ Build Tools“, unter macOS die „Xcode Command Line Tools“ (`xcode-select --install`). Nur zum Benutzen ist nichts davon nötig – nur der Installer.
 
 Stand 0.10.0 – alles mit lokaler Datenbank, ohne Server:
 - **Anmeldung & Rechte:** persönliche PIN (Erst-PINs Lena 1111 · David 2222 (Admin) · Miriam 3333 – sofort ändern),
@@ -43,7 +56,7 @@ Stand 0.10.0 – alles mit lokaler Datenbank, ohne Server:
 - **RKSV (Testmodus):** Startbeleg, Signaturkette, AES-verschlüsselter Umsatzzähler, ES256-Signatur, QR-Code,
   Null-/Monats-/Jahresbelege, DEP-Export. Software-Schlüssel statt Signaturkarte – technisch vollständig, aber nicht
   bei FinanzOnline registrierbar. Für den Echtbetrieb wird nur die Signaturquelle getauscht.
-- **Hardware:** Bondrucker (ESC/POS) per Netzwerk oder Windows-Drucker, Kassenlade am Drucker, Kartenterminal über
+- **Hardware:** Bondrucker (ESC/POS) per Netzwerk oder im System installierter Drucker (Windows-Spooler bzw. macOS/CUPS), Kassenlade am Drucker, Kartenterminal über
   ZVT (Netzwerk) oder ohne Anbindung mit Bestätigung.
 - **Sortiment & Einkauf:** Artikel mit Varianten, Bildern, EK-Preis/Spanne, Lieferant, Mindestbestand; Bestand mit
   Journal; geführte Inventur; Preisaktionen mit Zeitraum; Etiketten (EAN-13, A4 oder ZPL); Lieferanten, Bestellungen,
@@ -64,7 +77,7 @@ Stand 0.10.0 – alles mit lokaler Datenbank, ohne Server:
   signierte Updates im Programm (Kanal Stable oder Beta), Protokoll.
 - **Filialverbund:** Zentrale + Filialen (Verbindung per Code über den eingebauten Server, Port 8787), Abgleich alle
   30 s, Bestand je Filiale, Umlagerungen (angefordert → versendet → empfangen) mit KI-Vorschlägen, jede Kasse offline-fähig.
-- **Anmeldung:** PIN, Passwort (+ Zwei-Faktor), Handy-QR, Windows Hello, Single Sign-On per OpenID Connect
+- **Anmeldung:** PIN, Passwort (+ Zwei-Faktor), Handy-QR, Windows Hello (nur Windows), Single Sign-On per OpenID Connect
   (Entra ID, Google, Keycloak); Rechte je Rolle mit PIN-Freigabe.
 - **Erweiterungen** (`kontor.erweiterung/v1`) mit Galerie, eigene Dashboard-Widgets per Abfrage, einstellbare
   Zahlungsarten inkl. PayPal.me- und SEPA-QR, eigene Design-Vorlagen.

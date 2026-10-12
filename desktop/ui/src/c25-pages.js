@@ -284,7 +284,7 @@ async function setupChecks() {
     {id: 'pins', t: 'Erst-PINs ändern', d: pins.length ? `Noch aktiv: ${pins.join(', ')}` : 'Alle Personen haben eigene PINs', ok: !pins.length, go: () => go('benutzer')},
     {id: '2fa', t: 'Zwei-Faktor für Administratoren', d: 'Authenticator-App als zweiter Schutz', ok: STAFF.some(u => u.roleKey === 'admin' && SEC.totp.has(u.id)), go: () => go('benutzer')},
     {id: 'sortiment', t: 'Eigenes Sortiment', d: 'Artikel anlegen oder per CSV importieren', ok: ART.some(a => !RAW.some(r => r.id === a.id)), go: () => openImport('artikel')},
-    {id: 'drucker', t: 'Bondrucker einrichten', d: 'Netzwerk- oder Windows-Drucker, Kassenlade', ok: CFG['drucker.art'] !== 'aus', go: () => setGo('drucker')},
+    {id: 'drucker', t: 'Bondrucker einrichten', d: `Netzwerk- oder ${SYS_PRN}, Kassenlade`, ok: CFG['drucker.art'] !== 'aus', go: () => setGo('drucker')},
     {id: 'sicherung', t: 'Datensicherung verschlüsseln', d: 'Tägliche Sicherung mit Passwort, möglichst auf NAS', ok: !!CFG['backup.auto'] && pw, go: () => setGo('sicherung')},
     {id: 'rksv', t: 'RKSV in Betrieb nehmen', d: 'Startbeleg erstellen (derzeit Testmodus)', ok: !!S.rksv?.active, go: () => setGo('rksv')},
     {id: 'mail', t: 'E-Mail-Versand', d: 'Belege und Bestellungen per E-Mail', ok: !!mailReady(), go: () => setGo('mail')},

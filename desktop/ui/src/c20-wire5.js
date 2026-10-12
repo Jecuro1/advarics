@@ -50,8 +50,8 @@ function labelSectionHTML() {
 function renderLabelBox() {
   const box = $('#lblBox'); if (!box) return;
   const art = CFG['etikett.art'] || 'a4';
-  box.innerHTML = `<div class="set-row"><div><div class="set-l">Drucker</div></div><div class="set-c"><div class="seg" id="lblSeg">${[['a4', 'A4-Bogen'], ['netz', 'ZPL · Netzwerk'], ['windows', 'ZPL · Windows-Drucker']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${art === k}">${l}</button>`).join('')}</div></div></div>`
-    + (art === 'netz' ? field('etikett.adresse', 'IP-Adresse', 'z. B. 192.168.1.60 (Port 9100)') : '') + (art === 'windows' ? field('etikett.name', 'Windows-Druckername', 'genau wie in Windows angezeigt') : '')
+  box.innerHTML = `<div class="set-row"><div><div class="set-l">Drucker</div></div><div class="set-c"><div class="seg" id="lblSeg">${[['a4', 'A4-Bogen'], ['netz', 'ZPL · Netzwerk'], ['windows', `ZPL · ${SYS_PRN}`]].map(([k, l]) => `<button data-v="${k}" aria-pressed="${art === k}">${l}</button>`).join('')}</div></div></div>`
+    + (art === 'netz' ? field('etikett.adresse', 'IP-Adresse', 'z. B. 192.168.1.60 (Port 9100)') : '') + (art === 'windows' ? field('etikett.name', `${SYS_OS === 'Mac' ? 'Mac' : 'Windows'}-Druckername`, `genau wie in ${SYS_OS === 'Mac' ? 'Systemeinstellungen › Drucker & Scanner' : 'Windows'} angezeigt`) : '')
     + (art === 'a4' ? `<div class="set-row"><div><div class="set-l">Bogen</div></div><div class="set-c"><select class="input select" data-key="etikett.format">${Object.entries(LABEL_FORMATS).map(([k, f]) => `<option value="${k}" ${k === (CFG['etikett.format'] || '3x8') ? 'selected' : ''}>${f.name}</option>`).join('')}</select></div></div>` : '');
   initSeg($('#lblSeg', box), async b => { await saveSettings({'etikett.art': b.dataset.v}, true); renderLabelBox(); });
 }

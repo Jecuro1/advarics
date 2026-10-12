@@ -235,12 +235,53 @@ mod win {
     }
 }
 
-#[cfg(not(windows))]
+/// macOS und Linux: Drucker aus dem Systemdruck (CUPS, „Systemeinstellungen › Drucker & Scanner“).
+/// Die Bytes (ESC/POS bzw. ZPL) gehen unverändert („raw“) an die Warteschlange – wie `lp -o raw`.
+#[cfg(unix)]
 mod win {
-    pub fn send_raw(_name: &str, _bytes: &[u8]) -> Result<(), String> {
-        Err("Windows-Drucker sind nur unter Windows verfügbar".into())
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    pub fn send_raw(name: &str, bytes: &[u8]) -> Result<(), String> {
+        if name.is_empty() {
+            return Err("Kein Drucker gewählt".into());
+        }
+        let mut child = Command::new("lp")
+            .args(["-d", name, "-o", "raw", "-t", "Kontor Beleg"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("Druckdienst (lp) nicht verfügbar: {e}"))?;
+        let mut stdin = child.stdin.take().ok_or_else(|| "Druckdienst nicht erreichbar".to_string())?;
+        stdin.write_all(bytes).map_err(|e| format!("Senden an „{name}“ fehlgeschlagen: {e}"))?;
+        drop(stdin);
+        let out = child.wait_with_output().map_err(|e| format!("Druckdienst: {e}"))?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            let msg = String::from_utf8_lossy(&out.stderr).trim().to_string();
+            Err(format!("Drucker „{name}“: {}", if msg.is_empty() { "Auftrag abgelehnt".to_string() } else { msg }))
+        }
     }
+
+    /// Ausgabe von `lpstat -e` (Zielnamen) bzw. `lpstat -a` („NAME accepting requests …“): erstes Wort je Zeile.
+    pub fn parse_lpstat(text: &str) -> Vec<String> {
+        let mut out: Vec<String> = text.lines().filter_map(|l| l.split_whitespace().next()).map(str::to_string).collect();
+        out.sort();
+        out.dedup();
+        out
+    }
+
     pub fn list() -> Vec<String> {
+        for arg in ["-e", "-a"] {
+            if let Ok(o) = Command::new("lpstat").arg(arg).output() {
+                let v = parse_lpstat(&String::from_utf8_lossy(&o.stdout));
+                if !v.is_empty() {
+                    return v;
+                }
+            }
+        }
         vec![]
     }
 }
@@ -248,6 +289,17 @@ mod win {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn lpstat_ausgabe_wird_gelesen() {
+        let e = "EPSON_TM_T20III\nStar_TSP143\n";
+        assert_eq!(win::parse_lpstat(e), vec!["EPSON_TM_T20III".to_string(), "Star_TSP143".to_string()]);
+        let a = "Star_TSP143 accepting requests since Mon Oct 12 19:00:00 2026\nEPSON_TM_T20III accepting requests since Mon Oct 12 18:00:00 2026\n\nStar_TSP143 accepting requests since x\n";
+        assert_eq!(win::parse_lpstat(a), vec!["EPSON_TM_T20III".to_string(), "Star_TSP143".to_string()]);
+        assert!(win::parse_lpstat("").is_empty());
+        assert!(win::send_raw("", b"x").is_err());
+    }
 
     #[test]
     fn escpos_netzwerkdruck() {

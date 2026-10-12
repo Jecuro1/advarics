@@ -2008,10 +2008,11 @@ fn set_fullscreen(window: tauri::WebviewWindow, on: bool) -> Res<bool> {
     Ok(on)
 }
 
-/// Anzeigegröße (Zoom der Oberfläche), 0.7 – 2.0.
+/// Anzeigegröße (Zoom der Oberfläche), 0.5 – 3.0 – die Auto-Fit-Engine der Oberfläche wählt sie je Bildschirm.
+/// Gibt den tatsächlich gesetzten Wert zurück.
 #[tauri::command]
 fn set_zoom(window: tauri::WebviewWindow, factor: f64) -> Res<f64> {
-    let f = factor.clamp(0.7, 2.0);
+    let f = if factor.is_finite() { factor.clamp(0.5, 3.0) } else { 1.0 };
     window.set_zoom(f).map_err(err)?;
     Ok(f)
 }

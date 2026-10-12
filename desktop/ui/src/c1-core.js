@@ -32,6 +32,8 @@ const persist = {
 };
 const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 const MOD = IS_MAC ? '⌘' : 'Strg';
+/** Systemdrucker (Bondrucker/Etikettendrucker über den Druckdienst des Betriebssystems) */
+const SYS_OS = IS_MAC ? 'Mac' : 'Windows', SYS_PRN = IS_MAC ? 'Mac-Drucker' : 'Windows-Drucker';
 const parseAmt = s => { const v = parseFloat(String(s).trim().replace(/\s|€/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')); return isFinite(v) ? v : NaN; };
 const DESKTOP = !!(window.__TAURI__ && window.__TAURI__.core);
 /** Prüfungen/Ergänzungen vor Befehlen (z. B. Buchungsabschluss, E-Mail-Fußzeile) – werden in späteren Modulen eingetragen */
@@ -200,7 +202,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.34.3', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.34.4', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
