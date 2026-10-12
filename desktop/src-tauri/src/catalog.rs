@@ -62,6 +62,12 @@ pub struct Article {
     /// Bilddatei im Ordner „bilder“ (nur lesend – gesetzt über article_image_set)
     #[serde(default)]
     pub image: Option<String>,
+    /// Beschreibung, Material, Pflege, Maße, Klassifikation … (frei strukturiert, im UI nach Schema bearbeitet)
+    #[serde(default)]
+    pub details: Value,
+    /// Bildergalerie (nur lesend – gepflegt über article_media_*)
+    #[serde(default)]
+    pub media: Vec<Value>,
 }
 fn two() -> i64 {
     2
@@ -79,8 +85,19 @@ pub fn list(c: &Connection) -> rusqlite::Result<Vec<Article>> {
             vs.entry(aid).or_default().push(v);
         }
     }
+    let mut media: HashMap<String, Vec<Value>> = HashMap::new();
+    {
+        let mut st = c.prepare("SELECT id, article_id, file, color, caption, source_url, status FROM article_media ORDER BY article_id, pos, id")?;
+        let rows = st.query_map([], |r| {
+            Ok((r.get::<_, String>(1)?, json!({ "id": r.get::<_, i64>(0)?, "file": r.get::<_, Option<String>>(2)?, "color": r.get::<_, String>(3)?, "caption": r.get::<_, String>(4)?, "url": r.get::<_, Option<String>>(5)?, "status": r.get::<_, String>(6)? })))
+        })?;
+        for row in rows {
+            let (aid, m) = row?;
+            media.entry(aid).or_default().push(m);
+        }
+    }
     let mut st = c.prepare(
-        "SELECT id, name, brand, category, glyph, price, sale_price, vat, tag, popularity, colors, sizes, fields, prompts, cost, supplier_id, min_stock, image
+        "SELECT id, name, brand, category, glyph, price, sale_price, vat, tag, popularity, colors, sizes, fields, prompts, cost, supplier_id, min_stock, image, details
          FROM articles WHERE active = 1 ORDER BY popularity DESC, name",
     )?;
     let rows = st.query_map([], |r| {
@@ -106,12 +123,15 @@ pub fn list(c: &Connection) -> rusqlite::Result<Vec<Article>> {
             supplier_id: r.get(15)?,
             min_stock: r.get(16)?,
             image: r.get(17)?,
+            details: serde_json::from_str(&r.get::<_, String>(18)?).unwrap_or(Value::Null),
+            media: vec![],
         })
     })?;
     let mut out = vec![];
     for a in rows {
         let mut a = a?;
         a.variants = vs.remove(&a.id).unwrap_or_default();
+        a.media = media.remove(&a.id).unwrap_or_default();
         out.push(a);
     }
     Ok(out)
@@ -146,18 +166,19 @@ pub fn save(tx: &Transaction, a: &Article) -> Result<(), String> {
     validate(a)?;
     let now = db::now();
     tx.execute(
-        "INSERT INTO articles(id, name, brand, category, glyph, price, sale_price, vat, tag, popularity, colors, sizes, fields, prompts, active, created_at, updated_at, cost, supplier_id, min_stock)
-         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,1,?15,?15,?16,?17,?18)
+        "INSERT INTO articles(id, name, brand, category, glyph, price, sale_price, vat, tag, popularity, colors, sizes, fields, prompts, active, created_at, updated_at, cost, supplier_id, min_stock, details)
+         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,1,?15,?15,?16,?17,?18,?19)
          ON CONFLICT(id) DO UPDATE SET name=excluded.name, brand=excluded.brand, category=excluded.category, glyph=excluded.glyph,
            price=excluded.price, sale_price=excluded.sale_price, vat=excluded.vat, tag=excluded.tag, colors=excluded.colors,
            sizes=excluded.sizes, fields=excluded.fields, prompts=excluded.prompts, active=1, updated_at=excluded.updated_at,
-           cost=excluded.cost, supplier_id=excluded.supplier_id, min_stock=excluded.min_stock",
+           cost=excluded.cost, supplier_id=excluded.supplier_id, min_stock=excluded.min_stock, details=excluded.details",
         params![
             a.id.trim(), a.name.trim(), a.brand.trim(), a.category, if a.glyph.is_empty() { "shirt" } else { &a.glyph },
             a.price, a.sale_price, a.vat, a.tag, a.popularity,
             serde_json::to_string(&a.colors).unwrap(), serde_json::to_string(&a.sizes).unwrap(),
             if a.fields.is_null() { "{}".to_string() } else { a.fields.to_string() }, a.prompts.to_string(), now,
-            a.cost.filter(|c| *c >= 0), a.supplier_id.as_deref().filter(|s| !s.is_empty()), a.min_stock.clamp(0, 9999)
+            a.cost.filter(|c| *c >= 0), a.supplier_id.as_deref().filter(|s| !s.is_empty()), a.min_stock.clamp(0, 9999),
+            if a.details.is_object() { a.details.to_string() } else { "{}".to_string() }
         ],
     )
     .map_err(|e| e.to_string())?;

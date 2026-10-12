@@ -90,7 +90,9 @@ pub fn articles(c: &Connection) -> Result<Vec<Value>, String> {
         }
         out.push(json!({ "id": a.id, "name": a.name, "marke": a.brand, "kategorie": a.category, "glyph": a.glyph, "farben": a.colors, "groessen": a.sizes,
             "preis": price, "statt": if price < a.price { Some(a.price) } else { None }, "aktion": pct > 0 && promo <= base, "bild": a.image.is_some(),
-            "tag": a.tag, "beliebt": a.popularity, "felder": a.fields, "varianten": vars }));
+            "tag": a.tag, "beliebt": a.popularity, "felder": a.fields, "varianten": vars,
+            "galerie": a.media.iter().filter(|m| m["file"].is_string()).map(|m| json!({ "id": m["id"], "farbe": m["color"] })).collect::<Vec<_>>(),
+            "kurztext": a.details["kurztext"], "beschreibung": a.details["beschreibung"], "merkmale": a.details["features"], "material": a.details["mat_zusammensetzung"], "pflege": a.details["pflege"] }));
     }
     out.sort_by(|a, b| b["beliebt"].as_i64().cmp(&a["beliebt"].as_i64()));
     Ok(out)
@@ -183,8 +185,12 @@ pub fn handle(c: &Connection, db_path: &Path, mut req: Request, path: &str) {
             file(req, &images::dir(&data_dir).join(l));
         }
         (Method::Get, p) if p.starts_with("/shop/bild/") => {
-            let id = &p["/shop/bild/".len()..];
-            let img: Option<String> = c.query_row("SELECT image FROM articles WHERE id = ?1 AND active = 1", [id], |r| r.get(0)).ok().flatten();
+            let rest = &p["/shop/bild/".len()..];
+            let (id, mid) = match rest.split_once('/') { Some((a, m)) => (a, m.parse::<i64>().ok()), None => (rest, None) };
+            let img: Option<String> = match mid {
+                Some(m) => c.query_row("SELECT m.file FROM article_media m JOIN articles a ON a.id = m.article_id WHERE a.id = ?1 AND a.active = 1 AND m.id = ?2", rusqlite::params![id, m], |r| r.get(0)).ok().flatten(),
+                None => c.query_row("SELECT image FROM articles WHERE id = ?1 AND active = 1", [id], |r| r.get(0)).ok().flatten(),
+            };
             match img.filter(|i| !i.contains("..") && !i.contains('/') && !i.contains('\\')) {
                 Some(i) => file(req, &images::dir(&data_dir).join(i)),
                 None => {

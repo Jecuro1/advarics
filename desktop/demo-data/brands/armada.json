@@ -1,0 +1,155 @@
+[
+ {
+  "brand": "Armada",
+  "name": "ANTIMATTER 100",
+  "article_no": "RA0718",
+  "gender": "Unisex",
+  "category": "ski",
+  "model_year": "2026/27",
+  "price_eur": 749.95,
+  "description": "Der AntiMatter 100 bringt Big-Mountain-Skills in ein Allmountain-Chassis, das bei den unterschiedlichsten Bedingungen überzeugt. Der Poplar-Holzkern sorgt für Pop und Freeride-Charakter, während die Titanal-Lage Vibrationen und Flattern eliminiert, aber den Pop und das Slashen durchs Tail auch im tiefen Schnee ermöglicht. Der AntiMatter 100 verwandelt sich nahtlos von einem Frontside-Ripper in einen Backside-Freeride-Ski.",
+  "features": [
+   "EST FREERIDE ROCKER",
+   "Pappel Kern",
+   "2.1 ALL MOUNTAIN STAHLKANTEN",
+   "Comp Series Belag",
+   "SPEEDMETAL",
+   "AR100 Seitenwangen",
+   "Taillierung (Länge 161 cm): 129 / 100 / 119 mm, Radius 15 m"
+  ],
+  "colors": [
+   {
+    "images": [
+     "https://cdn.shopify.com/s/files/1/0968/6450/2071/files/ato-pim-e2fc06fa3cefb371-f041c14040a4b296_5f49ae55-6a33-4fd6-bd49-ea9570a2c92a.webp?v=1787056792",
+     "https://cdn.shopify.com/s/files/1/0968/6450/2071/files/ato-pim-d4f25e46a4ff907c-0637d7ff52d22de4_7d5fb35a-2b08-45a4-946e-c82e8ca5c4da.webp?v=1786967923"
+    ]
+   }
+  ],
+  "sizes": [
+   "161",
+   "168",
+   "175",
+   "182",
+   "189"
+  ],
+  "source_url": "https://www.armadasnow.com/de-at/products/antimatter-100-ra0718-202600"
+ },
+ {
+  "brand": "Armada",
+  "name": "Luminal 3L Jacket",
+  "article_no": "R00695",
+  "gender": "Damen",
+  "category": "jacken",
+  "model_year": "2026/27",
+  "price_eur": 449.95,
+  "description": "Die Luminal Jacket ist eine High-Performance-Shell, die den Anforderungen vielseitiger Bergsportler gerecht wird. Als perfekter Partner zur Luminal Bib verfügt sie über dasselbe proprietäre 3-Lagen-Material mit 20K/20K wasserdichtem, atmungsaktivem Schutz. Die Luminal ist für den Einsatz auf der Piste und im Backcountry gleichermaßen konzipiert und bietet dank leichtem mechanischem Stretch im Obermaterial reichlich Bewegungsfreiheit. Dies sorgt für optimalen Tragekomfort bergauf und bergab und überall am Berg.",
+  "features": [
+   "YKK® Wasserabweisende Reißverschlüsse",
+   "CohaesiveTM eingebettete Kordelstopper an Kapuze und Saum",
+   "Helmkompatible Kapuze mit verstärktem Schirm",
+   "Adjustable Hem",
+   "Verstellbare Ärmelbündchen",
+   "Lycra-Handgelenksmanschetten",
+   "Microfleece Chin Guard",
+   "Belüftungsöffnungen",
+   "Verstellbarer Schneefang aus 4-Wege-Stretch",
+   "100 % versiegelte Nähte",
+   "Sleeve Pass Pocket",
+   "Dual Chest Pocket",
+   "Interne Mesh Dump Pockets",
+   "Dual Hand Pockets"
+  ],
+  "material": {
+   "Obermaterial": "20K/20K 3L 89% Nylon 11% Polyester Ripstop with PFC Free DWR"
+  },
+  "care": [
+   "Maschinenwäsche kalt (30 °C)",
+   "Nicht bleichen",
+   "Im Trockner bei niedriger Temperatur trocknen",
+   "Bei niedriger Temperatur bügeln",
+   "Nicht chemisch reinigen",
+   "Keinen Weichspüler verwenden",
+   "Zusammen mit ähnlichen Farben waschen"
+  ],
+  "colors": [
+   {
+    "name": "Black",
+    "images": [
+     "https://cdn.shopify.com/s/files/1/0968/6450/2071/files/ato-pim-0bf3b1be55be2a86-c1747484f7cf4563_d1f1f134-e8dd-4482-86d8-b7080a3f58d2.webp?v=1787006421",
+     "https://cdn.shopify.com/s/files/1/0968/6450/2071/files/ato-pim-d66d4f27ef3ddf98-da8a012dd37f2a37_8930451c-158b-463d-82e3-9186a57df8e5.webp?v=1787057029",
+     "https://cdn.shopify.com/s/files/1/0968/6450/2071/files/ato-pim-d66d4f27ef3ddf98-da8a012dd37f2a37_b8150af8-231f-4d65-9c10-bf8fc370b886.webp?v=1786690585"
+    ]
+   },
+   {
+    "name": "Stormy",
+    "images": [
+     "https://cdn.shopify.com/s/files/1/0968/6450/2071/files/ato-pim-a2e732f730c0cef9-b76cadc235a96fab_18645985-1064-4c62-9c9b-1f13c11c581a.webp?v=1787820231",
+     "https://cdn.shopify.com/s/files/1/0968/6450/2071/files/ato-pim-a274930b46082ec0-46950f60277de10a_a69358dc-affe-460f-a6fa-0b4277a115b3.webp?v=1786690585"
+    ]
+   }
+  ],
+  "sizes": [
+   "XS",
+   "S",
+   "M",
+   "L",
+   "XL"
+  ],
+  "source_url": "https://www.armadasnow.com/de-at/products/luminal-3l-jacket-r00695-202602"
+ },
+ {
+  "brand": "Armada",
+  "name": "Hoopler Baselayer Top",
+  "article_no": "R00591",
+  "gender": "Herren",
+  "category": "shirts",
+  "model_year": "2026/27",
+  "price_eur": 69.95,
+  "description": "Ein guter Baselayer ist die Grundlage für jeden guten Tag auf der Piste, deshalb haben wir den Hoopler entwickelt. Der Hoopler besteht aus 77 % Nylon, 19 % Merinowolle und 4 % Elasthan. Er ist feuchtigkeitsableitend, temperaturausgleichend, dehnbar für maximale Bewegungsfreiheit und von Natur aus geruchshemmend. Die scheuerfreien Flatlock-Nähte und der Sonnenschutz UPF 50 sind perfekt für lange Tage auf dem Berg.",
+  "features": [
+   "Komfortable, scheuerfreie Flachnähte",
+   "UPF50+",
+   "4-Wege-Stretch",
+   "feuchtigkeitsableitend",
+   "abriebfest"
+  ],
+  "material": {
+   "Obermaterial": "79% Recycled Polyester, 21% Elastane"
+  },
+  "care": [
+   "Maschinenwäsche kalt (30 °C)",
+   "Nicht bleichen",
+   "Im Trockner bei niedriger Temperatur trocknen",
+   "Nicht bügeln",
+   "Nicht chemisch reinigen",
+   "Zusammen mit ähnlichen Farben waschen",
+   "Sofort nach dem Waschen entnehmen",
+   "Keinen Weichspüler verwenden"
+  ],
+  "colors": [
+   {
+    "name": "Black",
+    "images": [
+     "https://cdn.shopify.com/s/files/1/0968/6450/2071/files/ato-pim-b3083f4a4deb6080-050189e56b47f388_ecb79b72-96d0-4ab4-8361-2bc0feb738c3.webp?v=1787645949",
+     "https://cdn.shopify.com/s/files/1/0968/6450/2071/files/ato-pim-da89d40a764c0cd0-248d136d0918c0b3_36a47ee5-904b-4591-8cb5-8a48ca9f1875.webp?v=1787056681",
+     "https://cdn.shopify.com/s/files/1/0968/6450/2071/files/ato-pim-b3083f4a4deb6080-050189e56b47f388_eb3a4274-94bd-4aad-9afc-e8035d43365d.webp?v=1786967739"
+    ]
+   },
+   {
+    "name": "Olive",
+    "images": [
+     "https://cdn.shopify.com/s/files/1/0968/6450/2071/files/ato-pim-7f5588f6d3d6eaed-d082dbf5ff5c27b6_44536415-9c3d-4588-ae45-6f59ab460dc8.webp?v=1787645949",
+     "https://cdn.shopify.com/s/files/1/0968/6450/2071/files/ato-pim-fe88f873ba71f30c-5be9252fb755d682_4649f9cc-30d9-4481-86a7-87c8f1f3bc9f.webp?v=1787056681",
+     "https://cdn.shopify.com/s/files/1/0968/6450/2071/files/ato-pim-7f5588f6d3d6eaed-d082dbf5ff5c27b6_d4c45d48-bf82-4b57-8d08-d4930d230eed.webp?v=1786967739"
+    ]
+   }
+  ],
+  "sizes": [
+   "S",
+   "M",
+   "L",
+   "XL"
+  ],
+  "source_url": "https://www.armadasnow.com/de-at/products/hoopler-baselayer-top-r00591-202602"
+ }
+]

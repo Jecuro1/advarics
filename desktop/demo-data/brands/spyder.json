@@ -1,0 +1,177 @@
+[
+ {
+  "brand": "Spyder",
+  "name": "Copper Jacke",
+  "article_no": "38SA073662",
+  "gender": "Herren",
+  "category": "jacken",
+  "model_year": "FA26",
+  "price_eur": 400.0,
+  "short": "Die Copper Jacke ist vollgepackt mit hochwertiger Isolierung, um bei eisigen Bedingungen für Wärme zu sorgen.",
+  "description": "Die Copper Jacke ist vollgepackt mit hochwertiger Isolierung, um bei eisigen Bedingungen für Wärme zu sorgen. Ein spezielles Gewebe aus recyceltem Polyester schützt vor rauem Winterwetter. Mit kräftigen neuen Farbkombinationen und einem symmetrischen Design ist sie eine essenzielle Spyder-Jacke.",
+  "features": [
+   "EXO SHIELD 20K - 4-Wege-Stretch recyceltes Polyester-Gewebe mit 20K/20K Laminat und DWR",
+   "Sorona® Isolierung (100 g)",
+   "Komponenten werden ohne PFAS-Chemikalien hergestellt",
+   "Gezielte Stretch-Einsätze im Inneren für volle Bewegungsfreiheit",
+   "Abnehmbare helmtaugliche Kapuze mit verstellbarer Öffnung",
+   "YKK® AquaGuard® Reißverschluss vorne mittig",
+   "YKK® AquaGuard® Reißverschlüsse an den Brusttaschen",
+   "YKK® Reißverschlüsse an Handtaschen",
+   "YKK®-Reißverschluss an der Tasche für Skipass",
+   "Unterarm-Belüftungssystem mit YKK® Reißverschlüssen",
+   "Fester Schneefang mit Snap-Back-Funktion",
+   "YKK® Reverse-Coil-Reißverschluss an der Innentasche",
+   "Goggle-Tasche aus Mesh",
+   "Brillenputztuch aus Chamois",
+   "Verstellbare Manschettenlaschen",
+   "Innenliegende Stretch-Bündchen und Daumenlöcher",
+   "Saum mit Kordelzug verstellbar",
+   "Länge Größe M: 75 cm",
+   "Fit: Standard Fit"
+  ],
+  "material": {
+   "Zusammensetzung": "100% Recycled Polyester"
+  },
+  "technologies": [
+   "EXO SHIELD",
+   "Sorona®"
+  ],
+  "colors": [
+   {
+    "name": "Black",
+    "images": [
+     "https://spyder.eu/cdn/shop/files/38SA073662_BLK_1.jpg",
+     "https://spyder.eu/cdn/shop/files/38SA073662_BLK_2.jpg",
+     "https://spyder.eu/cdn/shop/files/38SA073662_BLK_5.jpg",
+     "https://spyder.eu/cdn/shop/files/38SA073662_BLK_6.jpg",
+     "https://spyder.eu/cdn/shop/files/38SA073662_BLK_7.jpg"
+    ]
+   }
+  ],
+  "sizes": [
+   "S",
+   "M",
+   "L",
+   "XL",
+   "XXL"
+  ],
+  "source_url": "https://spyder.eu/de-de/products/copper-jacket-1"
+ },
+ {
+  "brand": "Spyder",
+  "name": "Haven Jacke",
+  "article_no": "38SD073610",
+  "gender": "Damen",
+  "category": "jacken",
+  "model_year": "FA26",
+  "price_eur": 450.0,
+  "short": "Eine Kunstdaunenjacke wie keine andere: Die Haven Jacke ist die perfekte vielseitige Winterjacke mit moderner Konstruktion und femininer Passform.",
+  "description": "Eine Kunstdaunenjacke wie keine andere: Die Haven Jacke ist die perfekte vielseitige Winterjacke mit moderner Konstruktion und femininer Passform. Ihr ausgefallenes Design definiert neu, was eine Damen-Pufferjacke sein kann, und durchdachte Details verbinden Mode und Funktion nahtlos.",
+  "features": [
+   "EXO SHIELD 20K – 4-Wege-Stretch recyceltes Polyester-Gewebe mit 20K/20K Laminat und DWR",
+   "Synthetische Daunen Isolation",
+   "Komponenten werden ohne PFAS-Chemikalien hergestellt",
+   "Abnehmbare Kapuze mit verstellbarer Öffnung passt über die meisten Helme",
+   "YKK® Metaluxe® Reißverschluss vorne in der Mitte",
+   "YKK® Metaluxe® Reißverschlüsse an den Handtaschen",
+   "YKK® Metaluxe® Reißverschluss an der Kartentasche am Ärmel",
+   "Gesmoktes, lagenartiges Taillendetail bis zum Saum",
+   "Gezielt platzierte Stretch-Einsätze im Inneren",
+   "Velours-Stretchstoff am Innenkragen",
+   "YKK® Reißverschlüsse an Innentaschen",
+   "Brillenputztuch aus Chamois",
+   "Unterarm-Belüftungssystem mit YKK® Reißverschlüssen",
+   "Innenliegende Stretch-Bündchen und Daumenlöcher",
+   "Länge Größe 8: 24\"",
+   "Passform: Fitted"
+  ],
+  "material": {
+   "Zusammensetzung": "100% Recycled Polyester"
+  },
+  "technologies": [
+   "EXO SHIELD"
+  ],
+  "colors": [
+   {
+    "name": "Black",
+    "images": [
+     "https://spyder.eu/cdn/shop/files/38SD073610_BLK_1.jpg",
+     "https://spyder.eu/cdn/shop/files/38SD073610_BLK_2.jpg",
+     "https://spyder.eu/cdn/shop/files/38SD073610_BLK_4.jpg",
+     "https://spyder.eu/cdn/shop/files/38SD073610_BLK_5.jpg",
+     "https://spyder.eu/cdn/shop/files/38SD073610_BLK_6.jpg",
+     "https://spyder.eu/cdn/shop/files/38SD073610_BLK_7.jpg"
+    ]
+   }
+  ],
+  "sizes": [
+   "0",
+   "2",
+   "4",
+   "6",
+   "8",
+   "10",
+   "12",
+   "14",
+   "16",
+   "18",
+   "20"
+  ],
+  "source_url": "https://spyder.eu/de-de/products/haven-jacket"
+ },
+ {
+  "brand": "Spyder",
+  "name": "Bormio Schneehose",
+  "article_no": "38SA123615",
+  "gender": "Herren",
+  "category": "hosen",
+  "model_year": "FA26",
+  "price_eur": 550.0,
+  "short": "Die Bormio Schneehose präsentiert Spyders innovativste Technologien vereint in einer einzigen Hose.",
+  "description": "Die Bormio Schneehose präsentiert Spyders innovativste Technologien vereint in einer einzigen Hose. Mit einer Konstruktion aus speziellem proprietärem Gewebe, das sowohl Flexibilität als auch Wasserdichtigkeit betont, ermöglicht die Bormio ultimative Bewegungsfreiheit und hält dich zugleich trocken. Vorgeformte Knie sorgen für Komfort durch all deine Schwünge, während durchdacht platzierte Oberschenkel-Belüftungen Atmungsaktivität für deine anspruchsvollsten Tage auf der Piste bieten.",
+  "features": [
+   "EXO SHIELD 30K – 4-Wege-Stretch recycelter Nylon-Twill mit 30K/30K Laminat und DWR",
+   "PrimaLoft® Silver ECO Isolation (60 g)",
+   "Komponenten werden ohne PFAS-Chemikalien hergestellt",
+   "Alle Nähte versiegelt",
+   "Vollständig dehnbares, technisch konstruiertes Innenmaterial",
+   "Recco® professionelle Rettungstechnologie",
+   "Abnehmbare, verstellbare Hosenträger mit Silikon-Gummi für Grip",
+   "Verstellbare Stretch-Bund-Konstruktion mit Gürtelschlaufen",
+   "YKK® AquaGuard® Reißverschlüsse an Handtaschen",
+   "Oberschenkel-Belüftungssystem mit YKK® Reißverschlüssen",
+   "Artikulierte Kniekonstruktion",
+   "Verstärkter Abriebschutz am unteren Saum",
+   "Schneegamaschen mit elastischem Grip-Saum",
+   "Innennaht Größe M: 81,3 cm",
+   "Passform: Fitted"
+  ],
+  "material": {
+   "Zusammensetzung": "85% Recycled Nylon (Polyamide) / 15% Elastane"
+  },
+  "technologies": [
+   "EXO SHIELD"
+  ],
+  "colors": [
+   {
+    "name": "Black",
+    "images": [
+     "https://spyder.eu/cdn/shop/files/38SA123615_BLK_1.jpg",
+     "https://spyder.eu/cdn/shop/files/38SA123615_BLK_2.jpg",
+     "https://spyder.eu/cdn/shop/files/38SA123615_BLK_3.jpg",
+     "https://spyder.eu/cdn/shop/files/38SA123615_BLK_5.jpg",
+     "https://spyder.eu/cdn/shop/files/38SA123615_BLK_7.jpg"
+    ]
+   }
+  ],
+  "sizes": [
+   "S",
+   "M",
+   "L",
+   "XL",
+   "XXL"
+  ],
+  "source_url": "https://spyder.eu/de-de/products/bormio-pants"
+ }
+]

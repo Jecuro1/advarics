@@ -1,0 +1,183 @@
+[
+ {
+  "brand": "Eisbär",
+  "name": "Star Bommelmütze",
+  "article_no": "403125",
+  "gender": "Unisex",
+  "category": "acc",
+  "price_eur": 49.99,
+  "short": "Bild im Vollbildmodus öffnen",
+  "description": "Diese Haube ist ein echter Klassiker und gehört zu den beliebtesten Modellen im Eisbär-Sortiment. Ihre charakteristischen Drei-Streifen-Farbmischungen, kombiniert mit einem kuscheligen Pompon, verleihen ihr ein simples, aber dennoch auffälliges Erscheinungsbild. DDer bewährte 50/50 Materialmix aus mulesingfreier Merinowolle und Polyacryl sorgt für hervorragende Isolierung bei kalten Temperaturen, während Feuchtigkeit bei hoher Atmungsaktivität effizient abgeleitet wird. Das zusätzliche Innenband aus 100% recyceltem, kuscheligem Fleece hält die Ohren auch an den kältesten Wintertagen warm.",
+  "features": [
+   "Merinomix (Mulesing frei)",
+   "Beliebter Klassiker von Eisbär",
+   "Mehrere Drei-Streifen-Farbmischungen",
+   "Kuscheliges Innenfleece aus recyceltem Fleece"
+  ],
+  "material": {
+   "Material": "50 % Merinowolle, 50 % Polyacryl",
+   "Innenmaterial": "100 % Polyester"
+  },
+  "care": [
+   "Handwäsche 30°C",
+   "Maschinenwäsche bei 30°C",
+   "Nicht in den Trockner geben",
+   "Schonwaschgang",
+   "Bügeln auf niedriger Stufe"
+  ],
+  "weight_g": 150,
+  "technologies": [
+   "Atmungsaktiv",
+   "Feuchtigkeitsregulierend",
+   "Geruchshemmend",
+   "Schützt vor Wind",
+   "Schützt vor Kälte"
+  ],
+  "colors": [
+   {
+    "name": "Schwarz-Weiß-Rot",
+    "images": [
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_469_001.png?v=1787252802",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_469_002.png?v=1787253236",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_469_10.jpg?v=1788795802",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_469_11.jpg?v=1788795801",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_469_12.jpg?v=1788795801"
+    ]
+   },
+   {
+    "name": "Pink-Beige-Weiß",
+    "images": [
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_133_001.png?v=1787252802",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_133_002.png?v=1787253236",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_133_10.jpg?v=1788795801",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_133_11.jpg?v=1788795801",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_133_12.jpg?v=1788795801"
+    ]
+   },
+   {
+    "name": "Khaki-Limette-Weiß",
+    "images": [
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_672_001.png?v=1787252802",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_672_002.png?v=1787253236",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_672_10.jpg?v=1788795801",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_672_11.jpg?v=1788795801",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_672_12.jpg?v=1788795801",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_672_13.jpg?v=1788795801",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_672_14.jpg?v=1788795801",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/403125_672_15.jpg?v=1788795801"
+    ]
+   }
+  ],
+  "sizes": [
+   "Onesize"
+  ],
+  "source_url": "https://www.myeisbaer.com/products/star-bommelmuetze-unisex-ski-touring-kaelteschutz"
+ },
+ {
+  "brand": "Eisbär",
+  "name": "Active Pro Stirnband",
+  "article_no": "25178",
+  "gender": "Unisex",
+  "category": "acc",
+  "price_eur": 39.99,
+  "short": "Bild im Vollbildmodus öffnen",
+  "description": "Das ACTIVE PRO Stirnband ist das weltweit erste hochfunktionelle, gestrickte Stirnband aus reinen Naturmaterialien. Es besteht aus 40% Merinowolle, 35% Modal und 25% Baumwolle und bietet eine ausgezeichnete Kombination aus natürlicher Wärmeisolierung und moderner Stricktechnologie für sportliche Aktivitäten. Das Stirnband überzeugt durch hohe Funktionalität, kombiniert mit modernster Stricktechnologie. Active Pro ist das dünnste helmkompatible Modell der ACTIVE Serie und kann vielseitig über das ganze Jahr hinweg eingesetzt werden. Das Strickmuster deutet auf Bereiche mit spezifischer Funktionalität für ausgewiesene Zonen hin, welche zusätzliche Thermoregulation, Absorption oder Belüftung erfordern. Indem der untere Teil der Ohren effektiv abgedeckt wird, ist vor allem der Bereich geschützt, welcher sich als besonders temperaturempfindlich erwiesen hat. Patentiert. Made in Austria.",
+  "features": [
+   "100% Naturmaterialien",
+   "patentierte 3D-Stricktechnologie",
+   "optimale Temperaturregulierung und Feuchtigkeitstransport",
+   "dünnstes Modell der Active Serie",
+   "Höhe 10cm"
+  ],
+  "material": {
+   "Material": "40% Merinowolle, 35% Modal, 25% Baumwolle"
+  },
+  "care": [
+   "Maschinenwäsche bei 30°C",
+   "Schonwaschgang",
+   "Bügeln auf niedriger Stufe"
+  ],
+  "weight_g": 20,
+  "technologies": [
+   "Atmungsaktiv",
+   "Feuchtigkeitsregulierend",
+   "Nachhaltig",
+   "Schnelltrocknend"
+  ],
+  "colors": [
+   {
+    "name": "Limette",
+    "images": [
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/25178_244_0001.png?v=1760452469",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/25178_244_002.png?v=1760454210"
+    ]
+   },
+   {
+    "name": "Schwarz",
+    "images": [
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/25178_009_001.png?v=1760452468",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/25178_009_002.png?v=1760454210",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/25178_009_010.jpg?v=1760454210",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/25178_009_020.jpg?v=1760454210",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/25178_009_030.jpg?v=1760454210",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/25178_009_040.jpg?v=1760454210"
+    ]
+   }
+  ],
+  "sizes": [
+   "Onesize"
+  ],
+  "source_url": "https://www.myeisbaer.com/products/active-pro-stirnband-unisex-high-performance-helmkompatibel"
+ },
+ {
+  "brand": "Eisbär",
+  "name": "Kaiser Norweger Pullover",
+  "article_no": "10127",
+  "gender": "Herren",
+  "category": "shirts",
+  "price_eur": 199.99,
+  "short": "Bild im Vollbildmodus öffnen",
+  "description": "Der Kaiser Norweger Pullover ist ein klassischer Rundhalspullover mit dem gewissen Etwas. Sein ausdrucksstarker Norweger-Jacquard trifft auf dezente Glanzakzente durch eingestricktes Goldgarn – ein eleganter Kontrast, der Tradition modern interpretiert. Das hochwertige Gestrick aus 50% Merinowolle und 50% recyceltem Polyester ist angenehm wärmend und zugleich atmungsaktiv. Ein besonderes Detail ist der angestrickte Ellbogenbereich – stilvoll und funktional zugleich. Gefertigt in Österreich, verbindet der Kaiser Norweger Pullover markante Optik mit nachhaltiger Qualität.",
+  "features": [
+   "Merinomix mit recyceltem Polyester (mulesingfrei)",
+   "Typischer Norweger-Jacquard mit goldfarbenem Akzentgarn",
+   "Besonderes Strickdetail am Ellbogen",
+   "Rippbündchen an Ärmeln und Saum"
+  ],
+  "material": {
+   "Material": "50% Merinowolle, 50% Polyacryl"
+  },
+  "care": [
+   "Maschinenwäsche bei 30°C",
+   "Nicht in den Trockner geben",
+   "Schonwaschgang",
+   "Weichspüler dürfen verwendet werden",
+   "Keine Bleichmittel zur Reinigung verwenden",
+   "Bügeln auf niedriger Stufe"
+  ],
+  "weight_g": 850,
+  "origin": "Österreich",
+  "technologies": [
+   "Atmungsaktiv",
+   "Feuchtigkeitsregulierend"
+  ],
+  "colors": [
+   {
+    "name": "Weiß",
+    "images": [
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/10127_100_002.png?v=1762171791",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/10127_100_001.png?v=1762171791",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/10127_100_010.jpg?v=1762333478",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/10127_100_011.jpg?v=1762333478",
+     "https://cdn.shopify.com/s/files/1/0951/1531/3483/files/10127_100_012.jpg?v=1762333478"
+    ]
+   }
+  ],
+  "sizes": [
+   "S",
+   "M",
+   "L"
+  ],
+  "source_url": "https://www.myeisbaer.com/products/kaiser-norweger-pullover"
+ }
+]

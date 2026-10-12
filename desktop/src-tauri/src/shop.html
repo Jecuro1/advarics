@@ -33,6 +33,7 @@ header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 8
 .card:hover{transform:translateY(-2px);box-shadow:0 12px 30px -12px rgba(16,24,40,.22)}
 .pic{aspect-ratio:1/1;background:linear-gradient(160deg,#f2f4f7,#e9edf3);display:grid;place-items:center;position:relative;overflow:hidden}
 .pic img{width:100%;height:100%;object-fit:cover}
+.thumbs{display:flex;gap:6px;margin-top:8px;overflow:auto}.thumbs button{width:62px;height:62px;flex:none;border:2px solid transparent;border-radius:10px;overflow:hidden;padding:0;background:#eee;cursor:pointer}.thumbs button[aria-pressed="true"]{border-color:var(--accent,#1d5fd1)}.thumbs img{width:100%;height:100%;object-fit:cover}
 .pic svg{width:56%;height:56%}
 .badge{position:absolute;left:10px;top:10px;background:var(--a);color:#fff;font-size:12px;font-weight:700;padding:3px 8px;border-radius:8px}
 .badge.neu{background:var(--t)}
@@ -108,7 +109,7 @@ footer p{margin:0;white-space:pre-line}
   const catName = id => meta().kategorien?.[id] || id;
   const col = k => meta().farben?.[k] || [k, '#98a2b3'];
   const toast = t => { const e = $('#toast'); e.textContent = t; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('on'), 2600); };
-  const pic = a => a.bild ? `<img src="/shop/bild/${encodeURIComponent(a.id)}" alt="" loading="lazy">` : `<svg viewBox="0 0 64 64" style="color:${col(a.farben?.[0])[1]};fill:currentColor">${meta().glyphs?.[a.glyph] || ''}</svg>`;
+  const pic = (a, mid) => a.bild ? `<img src="/shop/bild/${encodeURIComponent(a.id)}${mid ? '/' + mid : ''}" alt="" loading="lazy">` : `<svg viewBox="0 0 64 64" style="color:${col(a.farben?.[0])[1]};fill:currentColor">${meta().glyphs?.[a.glyph] || ''}</svg>`;
   const avail = a => { const vs = a.varianten; const free = vs.filter(v => v.frei).length; return free === 0 ? ['x', 'derzeit nicht verfügbar'] : vs.some(v => v.bestand === 'wenig') && free <= 2 ? ['w', 'nur noch wenige'] : ['', 'verfügbar']; };
   const priceHTML = a => a.preis == null ? '' : `<b class="${a.statt ? 'sale' : ''}">${eur(a.preis)}</b>${a.statt ? `<s>${eur(a.statt)}</s>` : ''}`;
   async function load() {
@@ -138,22 +139,26 @@ footer p{margin:0;white-space:pre-line}
   const open = html => { $('#sheet').innerHTML = `<button class="x" data-close aria-label="Schließen">×</button>` + html; $('#ov').classList.add('on'); document.body.style.overflow = 'hidden'; };
   const close = () => { $('#ov').classList.remove('on'); document.body.style.overflow = ''; if (location.hash) history.replaceState(null, '', location.pathname); };
   function openArt(a) {
-    let c = (a.varianten.find(v => v.frei) || a.varianten[0])?.farbe, s = null;
+    let c = (a.varianten.find(v => v.frei) || a.varianten[0])?.farbe, s = null, gsel = null;
     history.replaceState(null, '', '#' + encodeURIComponent(a.id));
     const draw = () => {
       const vs = a.varianten.filter(v => v.farbe === c);
       if (s && !vs.some(v => v.groesse === s && v.frei)) s = null;
       if (!s && vs.filter(v => v.frei).length === 1) s = vs.find(v => v.frei).groesse;
       const v = vs.find(x => x.groesse === s);
+      const gal = (a.galerie || []).filter(m => !m.farbe || m.farbe === c), cur = gal.find(m => m.id === gsel) || gal[0];
       const feats = Object.entries(a.felder || {}).filter(([, x]) => x !== '' && x != null && typeof x !== 'object').slice(0, 6);
-      open(`<div class="pd"><div class="pic">${pic({...a, farben: [c]})}</div><div class="pdb"><span class="mk">${esc(a.marke)}</span><h2>${esc(a.name)}</h2><div class="pr" style="padding:0">${priceHTML(a)}</div>
+      open(`<div class="pd"><div><div class="pic">${pic({...a, farben: [c]}, cur?.id)}</div>${gal.length > 1 ? `<div class="thumbs">${gal.map(m => `<button data-g="${m.id}" aria-pressed="${m.id === cur?.id}">${pic(a, m.id)}</button>`).join('')}</div>` : ''}</div><div class="pdb"><span class="mk">${esc(a.marke)}</span><h2>${esc(a.name)}</h2><div class="pr" style="padding:0">${priceHTML(a)}</div>
+        ${a.kurztext ? `<p class="muted" style="margin:0">${esc(a.kurztext)}</p>` : ''}
         ${feats.length ? `<dl class="feat">${feats.map(([k, x]) => `<dt>${esc(k)}</dt><dd style="margin:0">${esc(x)}</dd>`).join('')}</dl>` : ''}
         <div><div class="lbl">Farbe: ${esc(col(c)[0])}</div><div class="opts">${[...new Set(a.varianten.map(x => x.farbe))].map(f => `<button class="opt" data-col="${esc(f)}" aria-pressed="${f === c}"><i style="background:${col(f)[1]}"></i>${esc(col(f)[0])}</button>`).join('')}</div></div>
         <div><div class="lbl">Größe</div><div class="opts">${vs.map(x => `<button class="opt" data-size="${esc(x.groesse)}" aria-pressed="${x.groesse === s}" ${x.frei ? '' : 'disabled'}>${esc(x.groesse)}</button>`).join('')}</div></div>
+        ${a.beschreibung ? `<details><summary style="cursor:pointer;font-weight:600">Beschreibung</summary><p style="white-space:pre-wrap;margin:8px 0 0;font-size:13.5px;line-height:1.55">${esc(a.beschreibung)}</p>${(a.merkmale || []).length ? `<ul style="font-size:13.5px;padding-left:18px">${a.merkmale.slice(0, 12).map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}${a.material ? `<p style="font-size:13px"><b>Material:</b> ${esc(a.material)}</p>` : ''}</details>` : ''}
         <div class="muted">${v ? (v.frei ? (typeof v.bestand === 'number' ? `${v.bestand} Stück verfügbar` : v.bestand === 'wenig' ? 'Nur noch wenige verfügbar' : 'Im Geschäft verfügbar') : 'Derzeit nicht verfügbar') : 'Bitte Größe wählen'}</div>
         ${S.info.reservieren ? `<button class="btn" id="add" ${v && v.frei ? '' : 'disabled'}>Zur Reservierung hinzufügen</button><div class="muted">Kostenlos reservieren – wir legen die Ware ${S.info.abholtage || 3} Tage für Sie zurück. Bezahlt wird bei Abholung.</div>` : ''}</div></div>`);
       $('#sheet').onclick = e => {
-        const cc = e.target.closest('[data-col]'); if (cc) { c = cc.dataset.col; return draw(); }
+        const gg = e.target.closest('[data-g]'); if (gg) { gsel = +gg.dataset.g; return draw(); }
+        const cc = e.target.closest('[data-col]'); if (cc) { c = cc.dataset.col; gsel = null; return draw(); }
         const ss = e.target.closest('[data-size]'); if (ss && !ss.disabled) { s = ss.dataset.size; return draw(); }
         if (e.target.closest('#add') && v) {
           const ex = S.bag.find(b => b.ean === v.ean);

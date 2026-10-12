@@ -193,7 +193,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.14.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.15.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -326,6 +326,13 @@ const NAV = [
   {label: 'Preisänderungen', icon: 'tag', kids: [{id: 'preisaenderung', label: 'Preisänderung', icon: 'edit'}, {id: 'preis-uebersicht', label: 'Übersicht Preisänderungen', icon: 'list'}, {id: 'preis-geplant', label: 'Geplante Preisänderungen', icon: 'clock'}]},
   {label: 'Nachsortierung', icon: 'sync', kids: [{id: 'nachsortierung', label: 'Nachsortierung', icon: 'sync'}, {id: 'nachsort-nos', label: 'Nachsortierung aus NOS und Verkauf', icon: 'star'}, {id: 'nachsort-liste', label: 'Nachsortier-Lagerliste', icon: 'printer'}, {id: 'nachsort-param', label: 'Parameter für Nachsortierung', icon: 'sliders'}]},
   {label: 'Artikelpflege', icon: 'sliders', kids: [{id: 'artikel-import', label: 'Artikel-Import', icon: 'download'}, {id: 'import-protokoll', label: 'Protokoll Artikel-Importe', icon: 'history'}, {id: 'ean-zuordnung', label: 'Artikel-EAN/GTIN-Zuordnung', icon: 'barcode'}, {id: 'artikelsortierung', label: 'Manuelle Artikelsortierung', icon: 'list'}, {id: 'master-artikel', label: 'Master-Artikel', icon: 'copy'}, {id: 'etiketten', label: 'Etiketten', icon: 'printer'}]},
+  {g: 'FEDAS'},
+  {id: 'fedas-sync', label: 'FEDAS-Sync', icon: 'sync'},
+  {id: 'fedas-verbindung', label: 'Verbindung & Automatik', icon: 'link'},
+  {id: 'fedas-import', label: 'Datei-Import (CSV/JSON)', icon: 'download'},
+  {id: 'st-fedasklasse', label: 'FEDAS-Klassifikation', icon: 'list'},
+  {id: 'fedas-protokoll', label: 'Sync-Protokoll', icon: 'history'},
+  {id: 'demo-marken', label: 'Marken-Demosortiment', icon: 'star'},
   {g: 'Einkauf'},
   {label: 'Order', icon: 'truck', kids: [{id: 'einkauf', label: 'Order', icon: 'truck'}, {id: 'order-import', label: 'Order Import', icon: 'download'}, {id: 'order-typen', label: 'Order Typen', icon: 'list'}, {id: 'order-vorschlag', label: 'Order Vorschläge', icon: 'sparkle'}, {id: 'order-konfig', label: 'Order Vorschlags-Konfiguration', icon: 'sliders'}]},
   {label: 'Wareneingang', icon: 'download', kids: [{id: 'avis', label: 'Wareneingang Avis', icon: 'swap'}, {id: 'wareneingang', label: 'Wareneingang', icon: 'list'}, {id: 'we-scanner', label: 'Scanner Wareneingang', icon: 'barcode'}, {id: 'etiketten', label: 'Etikettendruck', icon: 'printer'}, {id: 'we-protokoll', label: 'Wareneingang Änderungsprotokoll', icon: 'history'}]},
@@ -453,6 +460,8 @@ const navGroupOf = id => { const p = navPath(id); return p ? [p.g, ...p.parents.
 /** Alle Menüpunkte (flach) – für Befehlspalette und Rechte */
 const navFlat = () => { const out = []; const walk = (l, path) => l.forEach(n => { if (n.kids) walk(n.kids, [...path, n.label]); else if (n.id) out.push({...n, path}); }); let g = ''; NAV.forEach(n => { if (n.g) g = n.g; else if (n.kids) walk(n.kids, [g, n.label]); else if (n.id) out.push({...n, path: [g]}); }); return out; };
 
+/** Symbol und Farbton je Hauptmenüpunkt – macht die Bereiche auf einen Blick unterscheidbar */
+const NAV_GROUP_STYLE = {Verkauf: ['register', 215], Marketing: ['percent', 330], Artikel: ['tag', 25], FEDAS: ['sync', 170], Einkauf: ['truck', 150], Kunden: ['users', 265], Versand: ['box', 45], Analyse: ['chart', 195], EDI: ['swap', 290], Webshop: ['globe', 235], Inventur: ['layers', 100], Stammdaten: ['database', 5], Einstellungen: ['sliders', 250], System: ['server', 215], Service: ['info', 185], Auswertung: ['chart', 195], Filialen: ['store', 60]};
 function renderNav() {
   let html = '', open = false;
   const item = (n, lvl) => {
@@ -465,7 +474,8 @@ function renderNav() {
   NAV.forEach(n => {
     if (n.g) {
       if (open) html += '</div>';
-      html += `<div class="nav-sec" data-sec="${esc(n.g)}" ${navClosed.has(n.g) ? 'data-closed' : ''}><button class="nav-group" data-grp="${esc(n.g)}" aria-expanded="${!navClosed.has(n.g)}">${esc(n.g)}${ic('chevron-down', 'i-xs chev')}</button>`;
+      const gi = NAV_GROUP_STYLE[n.g] || ['folder', 215];
+      html += `<div class="nav-sec" data-sec="${esc(n.g)}" style="--gh:${gi[1]}" ${navClosed.has(n.g) ? 'data-closed' : ''}><button class="nav-group" data-grp="${esc(n.g)}" aria-expanded="${!navClosed.has(n.g)}" data-tip="${esc(n.g)}" data-tip-pos="right"><span class="gi">${ic(gi[0])}</span><span class="gl">${esc(n.g)}</span>${ic('chevron-down', 'i-xs chev')}</button>`;
       open = true; return;
     }
     html += item(n, 0);

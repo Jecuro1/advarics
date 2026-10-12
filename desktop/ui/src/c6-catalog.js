@@ -17,12 +17,12 @@ function finishArt(a) {
 function artFromDb(d) {
   return finishArt({id: d.id, name: d.name, brand: d.brand, cat: d.category, g: d.glyph || 'shirt', price: d.price / 100, sale: d.sale_price ? d.sale_price / 100 : undefined,
     vat: d.vat, tag: d.tag || undefined, pop: d.popularity, colors: d.colors, sizes: d.sizes, fields: d.fields || {}, prompts: Array.isArray(d.prompts) ? d.prompts : undefined,
-    cost: d.cost != null ? d.cost / 100 : null, supplierId: d.supplier_id || '', minStock: d.min_stock ?? 2, image: d.image || null, baseSale: d.sale_price ? d.sale_price / 100 : null,
+    cost: d.cost != null ? d.cost / 100 : null, supplierId: d.supplier_id || '', minStock: d.min_stock ?? 2, image: d.image || null, details: d.details && typeof d.details === 'object' ? d.details : {}, media: d.media || [], baseSale: d.sale_price ? d.sale_price / 100 : null,
     variants: d.variants.map(v => ({vid: v.id, c: v.color, s: v.size, ean: v.ean, q: v.stock, other: null}))});
 }
 const artToDb = a => { const sale = 'baseSale' in a ? a.baseSale : a.sale; return {id: a.id, name: a.name, brand: a.brand || '', category: a.cat, glyph: a.g, price: Math.round(a.price * 100), sale_price: sale ? Math.round(sale * 100) : null,
   vat: a.vat ?? 20, tag: a.tag || null, popularity: a.pop || 0, colors: a.colors, sizes: a.sizes, fields: a.fields || {}, prompts: a.prompts || null,
-  cost: a.cost != null ? Math.round(a.cost * 100) : null, supplier_id: a.supplierId || null, min_stock: a.minStock ?? 2,
+  cost: a.cost != null ? Math.round(a.cost * 100) : null, supplier_id: a.supplierId || null, min_stock: a.minStock ?? 2, details: a.details || {},
   variants: a.variants.map(v => ({color: v.c, size: v.s, ean: v.ean, stock: v.q || 0}))}; };
 function replaceCatalog(list) { ART.length = 0; list.forEach(d => ART.push(artFromDb(d))); applyPromos(); }
 async function loadCatalog() {
@@ -30,10 +30,13 @@ async function loadCatalog() {
   try {
     let list = await invoke('catalog_list');
     if (!list.length) {
-      const n = await invoke('catalog_seed', {articles: ART.map(artToDb)});
+      let n = 0;
+      try { const r = await invoke('demo_brands_seed'); n = r.artikel; if (n) setTimeout(() => invoke('media_fetch_pending', {limit: 40}).catch(() => {}), 1500); } catch { /* */ }
+      if (!n) n = await invoke('catalog_seed', {articles: ART.map(artToDb)});
       list = await invoke('catalog_list');
       if (n) setTimeout(() => toast('Startsortiment angelegt', {t2: `${n} Artikel mit Varianten und Anfangsbestand – unter „Artikel“ bearbeitbar`, icon: 'tag', type: 'accent', dur: 6000}), 1200);
     }
+    try { if (typeof loadStamm === 'function') await loadStamm(true); } catch { /* */ }
     replaceCatalog(list);
     POS.no = await invoke('beleg_peek');
   } catch (e) { toast('Artikel konnten nicht geladen werden', {t2: String(e), type: 'warn', dur: 8000}); }

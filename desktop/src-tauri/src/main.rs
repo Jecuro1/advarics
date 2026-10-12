@@ -32,6 +32,9 @@ mod vouchers;
 mod vorgang;
 mod shop;
 mod stamm;
+mod media;
+mod fedas;
+mod demo;
 mod msg;
 
 use base64::Engine as _;
@@ -1708,6 +1711,117 @@ fn edi_done(db: State<db::Db>, name: String) -> Res<()> {
     msg::edi_done(&db.conn.lock().unwrap(), &name)
 }
 
+
+/* ── Paket 12: Bildergalerie, Produktseiten, FEDAS, Marken-Demo ── */
+
+#[tauri::command]
+fn article_media_list(db: State<db::Db>, id: String) -> Res<Vec<Value>> {
+    media::list(&db.conn.lock().unwrap(), &id)
+}
+#[tauri::command]
+async fn article_media_pick(app: AppHandle, id: String, color: Option<String>) -> Res<usize> {
+    let Some(files) = app.dialog().file().set_title("Artikelbilder wählen").add_filter("Bilder", &["jpg", "jpeg", "png", "webp"]).blocking_pick_files() else { return Ok(0) };
+    let db = app.state::<db::Db>();
+    let dd = data_dir(&db);
+    let c = db.conn.lock().unwrap();
+    let mut n = 0;
+    for f in files {
+        let Ok(p) = f.into_path() else { continue };
+        let bytes = std::fs::read(&p).map_err(err)?;
+        media::add_bytes(&c, &dd, &id, &bytes, color.as_deref().unwrap_or(""), None)?;
+        n += 1;
+    }
+    let _ = db::audit_append(&c, "catalog.article.media", &json!({ "artikel": id, "bilder": n }));
+    Ok(n)
+}
+#[tauri::command]
+async fn article_media_add_url(app: AppHandle, id: String, urls: Vec<String>, color: Option<String>) -> Res<Value> {
+    let p = app.state::<db::Db>().path.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let c = db::open(&p).map_err(err)?;
+        let dd = p.parent().unwrap().to_path_buf();
+        let (mut ok, mut bad) = (0, vec![]);
+        for u in urls.iter().map(|u| u.trim()).filter(|u| !u.is_empty()) {
+            match media::download(u, 15 * 1024 * 1024).and_then(|(b, _)| media::add_bytes(&c, &dd, &id, &b, color.as_deref().unwrap_or(""), Some(u))) {
+                Ok(_) => ok += 1,
+                Err(e) => bad.push(format!("{u}: {e}")),
+            }
+        }
+        let _ = db::audit_append(&c, "catalog.article.media", &json!({ "artikel": id, "bilder": ok, "fehler": bad.len() }));
+        Ok(json!({ "ok": ok, "fehler": bad }))
+    })
+    .await
+    .map_err(err)?
+}
+#[tauri::command]
+fn article_media_remove(db: State<db::Db>, id: i64) -> Res<()> {
+    let dd = data_dir(&db);
+    media::remove(&db.conn.lock().unwrap(), &dd, id)
+}
+#[tauri::command]
+fn article_media_update(db: State<db::Db>, id: String, items: Vec<Value>) -> Res<()> {
+    media::update(&db.conn.lock().unwrap(), &id, &items)
+}
+#[tauri::command]
+async fn media_fetch_pending(app: AppHandle, limit: Option<usize>, retry: Option<bool>) -> Res<Value> {
+    let p = app.state::<db::Db>().path.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let c = db::open(&p).map_err(err)?;
+        let (ok, bad, rest) = media::fetch_pending_retry(&c, p.parent().unwrap(), limit.unwrap_or(12), retry.unwrap_or(false))?;
+        Ok(json!({ "geladen": ok, "fehler": bad, "offen": rest }))
+    })
+    .await
+    .map_err(err)?
+}
+#[tauri::command]
+fn media_pending_count(db: State<db::Db>) -> Res<i64> {
+    Ok(db.conn.lock().unwrap().query_row("SELECT COUNT(*) FROM article_media WHERE status = 'offen'", [], |r| r.get(0)).unwrap_or(0))
+}
+#[tauri::command]
+async fn web_read_page(url: String) -> Res<Value> {
+    tauri::async_runtime::spawn_blocking(move || media::read_page(&url)).await.map_err(err)?
+}
+#[tauri::command]
+fn demo_brands_seed(db: State<db::Db>) -> Res<Value> {
+    let mut c = db.conn.lock().unwrap();
+    let (n, i) = demo::seed(&mut c)?;
+    Ok(json!({ "artikel": n, "bilder": i, "katalog": demo::count() }))
+}
+#[tauri::command]
+fn fedas_log_list(db: State<db::Db>, limit: Option<i64>) -> Res<Vec<Value>> {
+    fedas::log_list(&db.conn.lock().unwrap(), limit.unwrap_or(200))
+}
+#[tauri::command]
+async fn fedas_manufacturers(app: AppHandle) -> Res<Vec<Value>> {
+    let p = app.state::<db::Db>().path.clone();
+    tauri::async_runtime::spawn_blocking(move || fedas::manufacturers(&db::open(&p).map_err(err)?)).await.map_err(err)?
+}
+#[tauri::command]
+async fn fedas_sync(app: AppHandle, user: String, full: Option<bool>) -> Res<Value> {
+    let p = app.state::<db::Db>().path.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut c = db::open(&p).map_err(err)?;
+        let st = fedas::sync(&mut c, &user, full.unwrap_or(false))?;
+        Ok(json!({ "neu": st.neu, "aktualisiert": st.aktualisiert, "uebersprungen": st.uebersprungen, "bilder": st.bilder }))
+    })
+    .await
+    .map_err(err)?
+}
+#[tauri::command]
+fn fedas_import_file(db: State<db::Db>, content: String, format: String, user: String) -> Res<Value> {
+    let v: Value = if format == "csv" { fedas::parse_csv(&content) } else { serde_json::from_str(&content).map_err(|e| format!("Kein gültiges JSON: {e}"))? };
+    let items = fedas::parse_items(&v);
+    if items.is_empty() {
+        return Err("Keine Artikelzeilen mit EAN/GTIN erkannt – Spaltenüberschriften prüfen (EAN, Artikelnummer, Bezeichnung, Marke, Farbe, Größe, UVP)".into());
+    }
+    let mut c = db.conn.lock().unwrap();
+    let preise = db::setting_get(&c, "fedas.preise").and_then(|v| v.as_bool()).unwrap_or(true);
+    let n = items.len();
+    let st = fedas::apply_items(&mut c, items, preise, &user)?;
+    let _ = c.execute("INSERT INTO fedas_log(ts, art, hersteller, neu, aktualisiert, uebersprungen, user) VALUES (?1,'datei','',?2,?3,?4,?5)", rusqlite::params![db::now(), st.neu, st.aktualisiert, st.uebersprungen, user]);
+    Ok(json!({ "zeilen": n, "neu": st.neu, "aktualisiert": st.aktualisiert, "uebersprungen": st.uebersprungen, "bilder": st.bilder }))
+}
+
 /* ── Vorgänge (Einkauf, Faktura, Reklamation, Reservierung, Auswahl, Kampagnen …) ── */
 
 #[tauri::command]
@@ -1868,6 +1982,7 @@ fn main() {
             // Hintergrund-Dienste: Webhook-Zustellung, lokale REST-API (falls eingeschaltet)
             automation::start_worker(path.clone());
             verbund::start_worker(path.clone());
+            fedas::start_worker(path.clone());
             let api_cfg = (db::setting_get(&conn, "api.aktiv").and_then(|v| v.as_bool()).unwrap_or(false), db::setting_get(&conn, "api.lan").and_then(|v| v.as_bool()).unwrap_or(false), db::setting_get(&conn, "api.port").and_then(|v| v.as_u64()).unwrap_or(8787) as u16);
             if api_cfg.0 {
                 if let Err(e) = api::start(&app.state::<api::ApiState>(), path.clone(), api_cfg.1, api_cfg.2) {
@@ -1889,6 +2004,19 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            article_media_list,
+            article_media_pick,
+            article_media_add_url,
+            article_media_remove,
+            article_media_update,
+            media_fetch_pending,
+            media_pending_count,
+            web_read_page,
+            demo_brands_seed,
+            fedas_log_list,
+            fedas_manufacturers,
+            fedas_sync,
+            fedas_import_file,
             stamm_list,
             stamm_all,
             stamm_save,

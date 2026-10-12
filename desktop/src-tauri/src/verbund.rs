@@ -589,7 +589,7 @@ mod tests {
         let a = catalog::Article {
             id: "T1".into(), name: "Test".into(), brand: String::new(), category: "acc".into(), glyph: String::new(), price: 1000, sale_price: None, vat: 20, tag: None, popularity: 0,
             colors: vec!["rot".into()], sizes: vec!["M".into()], fields: json!({}), prompts: Value::Null, active: true,
-            variants: vec![catalog::Variant { id: None, color: "rot".into(), size: "M".into(), ean: "2000000000015".into(), stock: 0 }], cost: None, supplier_id: None, min_stock: 2, image: None,
+            variants: vec![catalog::Variant { id: None, color: "rot".into(), size: "M".into(), ean: "2000000000015".into(), stock: 0 }], cost: None, supplier_id: None, min_stock: 2, image: None, details: serde_json::Value::Null, media: vec![],
         };
         catalog::save(&tx, &a).unwrap();
         let vid: i64 = tx.query_row("SELECT id FROM variants WHERE ean = '2000000000015'", [], |r| r.get(0)).unwrap();

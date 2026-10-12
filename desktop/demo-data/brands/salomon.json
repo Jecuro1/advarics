@@ -1,0 +1,211 @@
+[
+ {
+  "brand": "Salomon",
+  "name": "GENESIS 2 GORE-TEX",
+  "article_no": "L49302000",
+  "gender": "Herren",
+  "category": "schuhe",
+  "price_eur": 170.0,
+  "short": "Trailrunning-Schuhe · Herren",
+  "description": "Die perfekte Wahl für dein Trailrunning: Der Genesis 2 GORE-TEX wurde auf beispiellose Performance in jedem Gelände ausgerichtet. Er kombiniert Dynamik, Komfort und Stabilität mit einem langlebigen Matryx®-Schaft, einer contaGRIP®-Außensohle mit starkem Grip und überarbeitetem activeCHASSIS™. Erobere die härtesten Trails voller Selbstbewusstsein. Mit dem ultimativen Begleiter auf deinen Trail-Abenteuern bleibst du sicher und trocken.",
+  "features": [
+   "Dynamische Unterstützung: Die optiFOAM-Zwischensohle mit verbesserter Rocker-Geometrie und Dämpfung erhöht die Dynamik, während das neue activeCHASSIS™ für extra Stabilität sorgt. Damit du selbstsicher durchstarten kannst.",
+   "Grip auf jedem Terrain: Eine neue Außensohle sorgt für verbesserten Grip, selbst in nassen und matschigen Bedingungen, Kilometer für Kilometer.",
+   "Langlebig und für alle Bedingungen gewappnet: Voll ausgestattet für nasses, unberechenbares Wetter: Leichtes Matryx®-Obermaterial und die GORE-TEX-Membran sorgen für dauerhaften wasserdichten Schutz.",
+   "Untergrund: Gemischtes Terrain, Steiniges und technisches Terrain",
+   "Laufgefühl: Stabil",
+   "Funktionalität: Wasserdicht"
+  ],
+  "colors": [
+   {
+    "name": "Oxford Tan / Walnut / Niagara",
+    "images": [
+     "https://cdn.dam.salomon.com/4750df86-1bb3-4027-a793-b48800eb1222/L49302000/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/a009ef3b-6993-4095-9e79-b489007ff12e/L49302000/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/285ae870-cdec-4dd5-a9ba-b489007ff202/L49302000/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/926f9701-2b9c-4d8d-99c1-b489007ff4cd/L49302000/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/60082479-7948-4117-92ce-b489007ff3c0/L49302000/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/393dd024-3767-488d-90b7-b489007ff2cf/L49302000/PNG-2000px-max-72dpi.png"
+    ]
+   },
+   {
+    "name": "Gibraltar Sea / Lunar Rock / Dragon Fire",
+    "images": [
+     "https://cdn.dam.salomon.com/b6d627a5-3cbb-4e12-ab06-b3e80095b507/L49301400/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/f1aa31f4-a330-4a3e-8861-b3ef00a152f7/L49301400/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/1bcec9a4-7002-4b28-bd90-b3e900e5e800/L49301400/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/64d8ff4f-66e6-420a-a4c1-b3f500d54622/L49301400/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/c097475e-d020-4549-94e4-b3e80118fd07/L49301400/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/9c49462e-3149-491f-bc3e-b3e9009d1b67/L49301400/PNG-2000px-max-72dpi.png"
+    ]
+   },
+   {
+    "name": "Black / Black / White",
+    "images": [
+     "https://cdn.dam.salomon.com/ca7ee87a-17a4-4031-a27c-b3e80095af6b/L49300300/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/9b764710-dbdc-47dd-be82-b3ef00a150c3/L49300300/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/c46546ac-1d7d-4692-bf40-b3e900e5e64c/L49300300/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/0e223c3b-6411-40b0-b18c-b3f500d544c6/L49300300/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/74db91b1-b755-4b66-b1ff-b3e80118fbf6/L49300300/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/ea5d290d-48a5-4741-aa95-b3e9009d19c2/L49300300/PNG-2000px-max-72dpi.png"
+    ]
+   }
+  ],
+  "sizes": [
+   "40",
+   "40 ⅔",
+   "41 ⅓",
+   "42",
+   "42 ⅔",
+   "43 ⅓",
+   "44",
+   "44 ⅔",
+   "45 ⅓",
+   "46",
+   "46 ⅔",
+   "47 ⅓",
+   "48",
+   "49 ⅓"
+  ],
+  "source_url": "https://www.salomon.com/de-at/product/genesis-2-gtx-li9188/L49302000",
+  "material": {
+   "Einlegesohle": "Textil",
+   "Futter": "Textil",
+   "Membran": "GORE-TEX",
+   "Außensohle": "Gummi",
+   "Schaft": "Textil/Synthetik",
+   "Zwischensohle": "optiFOAM™"
+  },
+  "weight_g": 291,
+  "technologies": [
+   "quickLACE™",
+   "activeCHASSIS",
+   "optiFOAM™",
+   "All-Terrain contaGRIP®",
+   "endoFit™"
+  ]
+ },
+ {
+  "brand": "Salomon",
+  "name": "BONATTI PRO",
+  "article_no": "LC2769800",
+  "gender": "Herren",
+  "category": "jacken",
+  "price_eur": 280.0,
+  "short": "Shelljacke Herren",
+  "description": "Durch die Kombination aus wasserdichter adv.DRY-Technologie und einer leichten Konstruktion bietet die Bonatti Pro die perfekte Balance aus Schutz und geringem Gewicht. Die Kapuze und der Bund der Jacke lassen sich verstellen, wenn du die Passform justieren und dich an wechselnde Bedingungen anpassen willst. Das aeroPACK™-System ermöglicht das Tragen eines Trinkrucksacks unter der Jacke. Rundum angebrachte Reflektoren und eine Brusttasche, in der sich die Jacke verstauen lässt, sorgen für maximale Funktionalität.",
+  "features": [
+   "Wasserdicht: Vollständiger Schutz vor eindringendem Wasser – hält dich auch bei starkem Regen oder Schnee trocken.",
+   "Atmungsaktivität: Durch die Ableitung von Feuchtigkeit wird Komfort gewährleistet, wenn du in Bewegung bist. Generell wird dieser Effekt durch atmungsaktive Membranen oder strukturiertes Gewebe erzielt.",
+   "Packbar: Kompakt, lässt sich einfach zusammenfalten oder platzsparend in einer kleinen Tasche oder einem Beutel verstauen – ideal für unterwegs.",
+   "Aktivitäten: Running",
+   "Passform: Slim",
+   "Wasserdichtigkeit: 20000 mm",
+   "Wasserdampfdurchgangswiderstand: 20000 g/m²"
+  ],
+  "colors": [
+   {
+    "name": "DEEP BLACK",
+    "images": [
+     "https://cdn.dam.salomon.com/ca7ec50a-973c-452b-8592-b34c00c31671/LC2769800/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/86a99d8e-f842-4474-a0e9-b34c00c3a278/LC2769800/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/39911832-6f03-4d8f-92c1-b40300cedc5a/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/4210e6e3-b945-4477-8bdb-b34c009c131c/LC2769800/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/9f4180a2-bc46-4ef5-a2c6-b34c009c4e17/LC2769800/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/764c8529-9054-4694-b5bc-b40300cedb93/PNG-2000px-max-72dpi.png"
+    ]
+   },
+   {
+    "name": "Castor Gray",
+    "images": [
+     "https://cdn.dam.salomon.com/50f76910-6fec-4952-8383-b3fe010a278d/LC2932100/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/6e93ee23-66c5-4b6e-8c14-b3fe010a284d/LC2932100/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/f5ad9022-ee3d-4f3a-b14d-b40300aacf06/LC2932100/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/ce902de6-bb31-4207-b7b7-b40300aad14a/LC2932100/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/40cbc89e-4144-4238-af95-b40300aacce0/LC2932100/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/198606b2-6e17-498a-bb2a-b40300aacdf0/LC2932100/PNG-2000px-max-72dpi.png"
+    ]
+   },
+   {
+    "name": "Acid Lime",
+    "images": [
+     "https://cdn.dam.salomon.com/343a368a-b1a0-4945-8ce3-b355008832b7/LC2769700/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/6d600f73-88ae-4680-b89e-b34c00c3a24a/LC2769700/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/a4da509b-a536-4612-bdc6-b3df00aa0bfd/LC2769700/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/ae8c0712-9fb5-4b8c-8812-b34c009c4cf5/LC2769700/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/0fde5a9a-a227-41bd-9060-b3df00aa09d9/LC2769700/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/e92e1641-4860-4e84-af81-b3df00aa0ab3/LC2769700/PNG-2000px-max-72dpi.png"
+    ]
+   }
+  ],
+  "sizes": [
+   "S",
+   "M",
+   "L",
+   "XL",
+   "2XL"
+  ],
+  "source_url": "https://www.salomon.com/de-at/product/bonatti-pro-lc14441/LC2769800",
+  "material": {
+   "Körper": "100% Polyamid"
+  },
+  "care": [
+   "Nicht bleichen",
+   "Im Trockner auf niedriger Stufe trocknen",
+   "Nicht chemisch reinigen",
+   "Bei niedriger Temperatur bügeln",
+   "Kalte Maschinenwäsche (30 °C)"
+  ],
+  "weight_g": 199
+ },
+ {
+  "brand": "Salomon",
+  "name": "QST 94 LILAC",
+  "article_no": "L49189300",
+  "gender": "Unisex",
+  "category": "ski",
+  "price_eur": 550.0,
+  "short": "Alpinski · Freeride · Unisex",
+  "description": "Mit einer breiteren Spitze für weicheren Schnee und 94 mm-Taillierung schlägt dieser Ski den Spagat zwischen All Mountain und Freeride. Konzipiert für vielseitigen Fahrspaß, mit herausragendem Grip und Stabilität auf der Piste und zusätzlichem Auftrieb genau dann, wenn du ihn brauchst.",
+  "features": [
+   "Performance in allen Bedingungen: Passend zum Rest der QST-Familie ist die Spitze auf Freeride ausgerichtet, während das Tail an der Piste orientiert ist. Für einen äußerst vielseitigen Ride.",
+   "Drehfreudigkeit: Die kürzere Auflagefläche und das dezente Tail Rocker-Profil beschleunigen den Kantenwechsel und erhöhen die Wendigkeit in jeder Kurve.",
+   "Verspielte Kreativität: Dieser vom Freeride inspirierte Ski mit einer schmaleren Taillierung ist ganz auf Fun und einen spritzigen Ride ausgerichtet. Die wichtigsten Merkmale: dynamisches Tail, verspielte Spitze und agiles Rocker-Profil.",
+   "Pack-Inhalt: Nur Ski",
+   "Kernkonstruktion: Pappel-Vollholzkern",
+   "Verstärkungen: Ti-Bindungsverstärkung, Superleichte Basaltfasern, Glasfaser",
+   "Ski-Konstruktion: Full Sandwich-Seitenwangen",
+   "Skitechnologien: Cork Damplifier",
+   "Könnensstufe: Fortgeschritten",
+   "Art des Schnees: Gemischt bis Tiefschnee",
+   "Kurvenradius: Mittel"
+  ],
+  "colors": [
+   {
+    "name": "Lilac / Black / Fusion Coral",
+    "images": [
+     "https://cdn.dam.salomon.com/f7204858-5aae-4ff2-a449-b45100dea002/L49189300%2B/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/6b88d749-1378-44bd-ab1d-b45100dea03c/L49189300%2B/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/3483a967-3af7-41f8-a169-b45100dea04e/L49189300%2B/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/c06b9623-8f61-42e3-80c6-b45100dea096/L49189300%2B/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/382ae98e-f5f8-4ac8-a944-b45100dea084/L49189300%2B/PNG-2000px-max-72dpi.png",
+     "https://cdn.dam.salomon.com/b11446a0-7e83-4a51-a238-b45100dea09f/L49189300%2B/PNG-2000px-max-72dpi.png"
+    ]
+   }
+  ],
+  "sizes": [
+   "156",
+   "164",
+   "172",
+   "180",
+   "188"
+  ],
+  "source_url": "https://www.salomon.com/de-at/product/qst-94-lilac-li9360/L49189300+",
+  "technologies": [
+   "Pappel-Vollholzkern",
+   "Ti-Bindungsverstärkung",
+   "Full Sandwich-Seitenwangen",
+   "Cork Damplifier"
+  ]
+ }
+]

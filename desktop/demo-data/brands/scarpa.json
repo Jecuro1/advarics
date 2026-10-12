@@ -1,0 +1,160 @@
+[
+ {
+  "brand": "Scarpa",
+  "name": "F1 RS",
+  "article_no": "12101-501_1",
+  "gender": "Herren",
+  "category": "schuhe",
+  "price_eur": 729.95,
+  "short": "Leichtigkeit und Präzision für Skitouren",
+  "description": "Entwickelt für Skifahrer, die Bewegungsfreiheit und Präzision in den Bergen suchen. Für Komfort, Kontrolle und Zuverlässigkeit an langen Tourentagen in wechselndem Gelände.\nDer F1 RS vereint geringes Gewicht, Performance und robuste Langlebigkeit. Die innovative SCARPA Overlap Flow Konstruktion ermöglicht einen schnellen, intuitiven Ein- und Ausstieg und bietet zugleich volle Bewegungsfreiheit beim Gehen und Tourengehen. Bei der Abfahrt sorgt das BOA® Fit System für Halt und eine präzise Kraftübertragung für eine souveräne Abfahrtsperformance. Handgefertigt in Asolo, Italien. Um das volle Potenzial deiner Skischuhe auszuschöpfen, empfehlen wir, die Innenschuhe bei einem Thermoformer aus dem SCARPA-Netzwerk individuell anpassen zu lassen. Kompatibilität Ideal für Ski mit einer Breite von 75 bis 105 mm und kompatibel mit allen Skitourenbindungen.",
+  "features": [
+   "SCARPA Overlap Flow Konstruktion",
+   "BOA® Remote Dial Verschlusssystem",
+   "Komfort dank Intuition-Innenschuh",
+   "Gewicht: 1340 g (Größe: 27)",
+   "Bindung: Alpine Touring - TLT",
+   "Schnalle: 2"
+  ],
+  "colors": [
+   {
+    "name": "Schwarz – Bronze",
+    "images": [
+     "https://scarpa.com/cdn/shop/files/12101-501-1_00_F1-RS_Blk-Bro.jpg",
+     "https://scarpa.com/cdn/shop/files/12101-501-1_01_F1-RS_Blk-Bro.jpg",
+     "https://scarpa.com/cdn/shop/files/12101-501-1_02_F1-RS_Blk-Bro.jpg",
+     "https://scarpa.com/cdn/shop/files/12101-501-1_03_F1-RS_Blk-Bro.jpg",
+     "https://scarpa.com/cdn/shop/files/12101-501-1_04_F1-RS_Blk-Bro.jpg",
+     "https://scarpa.com/cdn/shop/files/12101-501-1_05_F1-RS_Blk-Bro.jpg",
+     "https://scarpa.com/cdn/shop/files/12101-501-1_06_F1-RS_Blk-Bro.jpg",
+     "https://scarpa.com/cdn/shop/files/12101-501-1_07_F1-RS_Blk-Bro_1.jpg"
+    ]
+   }
+  ],
+  "sizes": [
+   "26",
+   "26.5",
+   "27",
+   "27.5",
+   "28",
+   "28.5",
+   "29",
+   "29.5",
+   "30",
+   "30.5"
+  ],
+  "source_url": "https://scarpa.com/de-at/products/f1-rs-backcountry-skitourenschuh-12101-501-1",
+  "weight_g": 1340,
+  "origin": "Italien (Asolo)",
+  "technologies": [
+   "BOA®",
+   "Intuition",
+   "Overlap Flow"
+  ]
+ },
+ {
+  "brand": "Scarpa",
+  "name": "Mojito Hike GTX",
+  "article_no": "63323-200_1",
+  "gender": "Herren",
+  "category": "schuhe",
+  "price_eur": 199.95,
+  "short": "Wasserdichter Stiefel fürs leichte Wandern auf Bergpfaden",
+  "description": "Der Mojito Hike GTX ist ein mittelhoher, wasserdichter Allround Wanderschuh, der besonders für moderate Wanderungen, Reisen und Städtetrips geeignet ist. Seine Sohlenkonstruktion bietet dir besten Grip auf jedem Untergrund, während das bis in die Zehenbox gezogene Schnürsystem eine präzise Anpassung an deinen Fuß ermöglicht. Die Wide-Version dieses Wanderschuhs bietet in wichtigen Bereichen mehr Platz und sorgt so für einen bequemeren Sitz, insbesondere für Menschen mit breiteren Füßen oder höherem Spann.",
+  "features": [
+   "Schlichtes Design mit außergewöhnlichem Stil",
+   "Gewicht: 495 g (Größe: 42)"
+  ],
+  "colors": [
+   {
+    "name": "Tiefblau Ocean",
+    "images": [
+     "https://scarpa.com/cdn/shop/files/63323-200-1_00_MOJ-HIK-GTX_Oce-LiO.jpg",
+     "https://scarpa.com/cdn/shop/files/63323-200-1_01_MOJ-HIK-GTX_Oce-LiO.jpg",
+     "https://scarpa.com/cdn/shop/files/63323-200-1_02_MOJ-HIK-GTX_Oce-LiO.jpg",
+     "https://scarpa.com/cdn/shop/files/63323-200-1_03_MOJ-HIK-GTX_Oce-LiO.jpg",
+     "https://scarpa.com/cdn/shop/files/63323-200-1_04_MOJ-HIK-GTX_Oce-LiO.jpg",
+     "https://scarpa.com/cdn/shop/files/63323-200-1_05_MOJ-HIK-GTX_Oce-LiO.jpg",
+     "https://scarpa.com/cdn/shop/files/63323-200-1_06_MOJ-HIK-GTX_Oce-LiO.jpg"
+    ]
+   }
+  ],
+  "sizes": [
+   "39",
+   "39.5",
+   "40",
+   "40.5",
+   "41",
+   "41.5",
+   "42",
+   "42.5",
+   "43",
+   "43.5",
+   "44",
+   "44.5",
+   "45",
+   "45.5",
+   "46",
+   "46.5",
+   "47",
+   "48",
+   "49",
+   "50"
+  ],
+  "source_url": "https://scarpa.com/de-at/products/mojito-hike-gtx-wasserdichter-wanderschuh-fur-gemischte-wege-63323-200-1",
+  "weight_g": 495
+ },
+ {
+  "brand": "Scarpa",
+  "name": "Crux 2 GTX",
+  "article_no": "72054-201_1",
+  "gender": "Herren",
+  "category": "schuhe",
+  "price_eur": 169.95,
+  "short": "Zuverlässige Stabilität für Zustiege in technischem Gelände",
+  "description": "Der Crux 2 GTX wurde für vielseitige Zustiege und anspruchsvolles Berggelände entwickelt und vereint Strapazierfähigkeit, Halt und zuverlässigen Schutz bei technischen Outdoor-Aktivitäten. Die bis in den Zehenbereich reichende Schnürung sorgt für eine präzise Anpassung und einen optimalen Sitz, während der umlaufende Geröllschutzrand zusätzlichen Schutz und eine lange Lebensdauer bietet. Die leistungsstarke Vibram®-Außensohle sorgt für zuverlässigen Grip und Stabilität auf Platten sowie bei technischen Abstiegen. Die GORE-TEX Membran bietet wasserdichten Schutz und atmungsaktiven Komfort.",
+  "features": [
+   "Komfort und Vielseitigkeit",
+   "Präzision in technischem Gelände",
+   "Gewicht: 420 g (Größe: 42)"
+  ],
+  "colors": [
+   {
+    "name": "Petrolgrün - Orange Rust",
+    "images": [
+     "https://scarpa.com/cdn/shop/files/72054-201-1_00_CRU-2-GTX_Pet-RuO.jpg",
+     "https://scarpa.com/cdn/shop/files/72054-201-1_01_CRU-2-GTX_Pet-RuO.jpg",
+     "https://scarpa.com/cdn/shop/files/72054-201-1_02_CRU-2-GTX_Pet-RuO.jpg",
+     "https://scarpa.com/cdn/shop/files/72054-201-1_03_CRU-2-GTX_Pet-RuO.jpg",
+     "https://scarpa.com/cdn/shop/files/72054-201-1_04_CRU-2-GTX_Pet-RuO.jpg",
+     "https://scarpa.com/cdn/shop/files/72054-201-1_05_CRU-2-GTX_Pet-RuO.jpg",
+     "https://scarpa.com/cdn/shop/files/72054-201-1_06_CRU-2-GTX_Pet-RuO.jpg"
+    ]
+   }
+  ],
+  "sizes": [
+   "40",
+   "40.5",
+   "41",
+   "41.5",
+   "42",
+   "42.5",
+   "43",
+   "43.5",
+   "44",
+   "44.5",
+   "45",
+   "45.5",
+   "46",
+   "46.5",
+   "47",
+   "48"
+  ],
+  "source_url": "https://scarpa.com/de-at/products/crux-2-gtx-wasserdichter-schutz-und-grip-in-technischem-gelande-72054-201-1",
+  "weight_g": 420,
+  "technologies": [
+   "GORE-TEX",
+   "Vibram®"
+  ]
+ }
+]

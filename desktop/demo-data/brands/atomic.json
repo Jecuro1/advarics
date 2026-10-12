@@ -1,0 +1,164 @@
+[
+ {
+  "brand": "Atomic",
+  "name": "REDSTER Q9 REVOSHOCK S + I 12 GW",
+  "article_no": "AASS03784",
+  "gender": "Unisex",
+  "category": "ski",
+  "price_eur": 1159.99,
+  "short": "Performance-Pistenski mit Revoshock S, Carbon Boost und I 12 GW Bindung.",
+  "description": "Der Atomic Redster Q9 Revoshock S bringt Weltcup-Technologie mit einer besonders hochwertigen Konstruktion zusammen und ist der optimale Ski für wechselnde Pistenverhältnisse. Die neueste Generation von Revoshock S fängt störende Schläge frühzeitig ab – für ein ruhiges, präzises Fahrgefühl. Als Performance-Ski richtet sich der Q9 an fortgeschrittene bis sehr starke Skifahrer:innen, die keine Kompromisse auf der Piste eingehen. Mit 75mm Mittelbreite und Multi Radius Sidecut fährt er sich bei jedem Schwung kraftvoll und agil – bei weiten Riesenslalomschwüngen auf der frisch präparierten Piste ebenso wie bei kurzen Radien durch Buckel oder zerfahrenen Schnee. Direkt unter dem Fuß versteift Carbon Boost den Ski gezielt für optimale Beschleunigung aus dem Schwung, während das Zusammenspiel aus Power Woodcore, Revoshock S und TI Powered Laminat für ein unschlagbares Handling sorgen – bei jeder Geschwindigkeit, von früh bis spät.",
+  "features": [
+   "Revoshock S: verwandelt Vibrationen in Laufruhe, zuverlässige Stabilität und top Beschleunigung.",
+   "Carbon Boost: versteift den Ski genau dort, wo man es braucht, für mehr Beschleunigung aus dem Schwung.",
+   "All-Condition Piste Shape: Multi Radius Sidecut und mehr Mittelbreite für Stabilität und zuverlässiges Handling.",
+   "Power Woodcore: dynamischer Kern aus Eschen- und Pappelholz.",
+   "Ultrawall: robuste Seitenwange für präzise Kraftübertragung und Kantengriff.",
+   "Active Camber 0/100/0",
+   "World Cup Belag",
+   "Mittelbreite: 75 mm",
+   "Seitlicher Kantenwinkel: 87°",
+   "Belagseitiger Kantenwinkel: 0,8°",
+   "Radius: 11,8 m (153 cm) bis 15 m (181 cm)"
+  ],
+  "technologies": [
+   "Revoshock S",
+   "Carbon Boost",
+   "All-Condition Piste Shape",
+   "Power Woodcore",
+   "Ultrawall"
+  ],
+  "weight_g": 3189,
+  "colors": [
+   {
+    "name": "Black / Dark Slate",
+    "images": [
+     "https://www.atomic.com/cdn/shop/files/ato-pim-b7eb78d5efd086ff-5f83247b6b724bbf_02cb2d9d-72c8-4805-a5d2-8921753add3d.webp?v=1786727094"
+    ]
+   }
+  ],
+  "sizes": [
+   "153 cm",
+   "160 cm",
+   "167 cm",
+   "174 cm",
+   "181 cm"
+  ],
+  "source_url": "https://www.atomic.com/de-at/products/redster-q9-revoshock-s-i-12-gw-aa7469-202600"
+ },
+ {
+  "brand": "Atomic",
+  "name": "HAWX ULTRA 130 S DUAL BOA",
+  "article_no": "AE5033580",
+  "gender": "Unisex",
+  "category": "schuhe",
+  "price_eur": 759.99,
+  "short": "Skischuh mit 98-mm-Leisten, Flex 130 und Dual-BOA-Fit-System.",
+  "description": "Der vielseitige Atomic Hawx Ultra 130 S Dual BOA ist das Modell mit dem kraftvollsten Flex innerhalb der Hawx Ultra Linie. Ein schmaler Skischuh mit kompakter 98mm-Passform für All-Mountain-Fahrer:innen mit schmalen Füßen. Durch die schlanke Prolite Konstruktion wird der Fuß sicher umschlossen, Verstärkungen an den Schlüsselstellen steigern die Kraftübertragung und Stabilität beim Abfahren. Das Dual BOA® Fit System mit zwei feineinstellbaren Drehverschlüssen sorgt für einen individuellen Fit und hält Fuß und Bein in Position. Der stabile, reaktionsfreudige Mimic Platinum Innenschuh legt sich bei der Mimic Thermoanpassung anatomisch um den Fuß und die 3D Zehenbox lässt dem großen Zeh etwas mehr Platz. Wer’s noch individueller mag, verstellt Vorlagewinkel und Flex per Power Shift, lässt sich die Schale und Manschette im Shop binnen Minuten mit dem Memory Fit Prozess personalisieren und positioniert die Zunge der anpassbaren Zungenkonstruktion so, dass sie auf Fuß und Rist passt.",
+  "features": [
+   "Flex: 130",
+   "Leisten: 98 mm (eng, wenig Volumen)",
+   "Vorneigung: 13°, 15° (Default), 17°",
+   "Rampenwinkel: 4°",
+   "Norm: GripWalk ISO 23223",
+   "Prolite: leichte Schalen- und Manschettenkonstruktion mit verstärkten Schlüsselstellen.",
+   "Memory Fit: Thermo-Anpassung von Schale, Manschette und Innenschuh.",
+   "Power Shift: schnelles, unabhängiges Verstellen von Flex und Vorlagewinkel.",
+   "Mimic Platinum Innenschuh, 3D Stretch Zehenbox, 3M Thinsulate",
+   "BOA H+i1 Dual Pull / Dual BOA Fit System Alpine"
+  ],
+  "material": {
+   "Obermaterial": "Vollständige PU-Konstruktion",
+   "Sohle": "Cantable GripWalk Grip Pads"
+  },
+  "technologies": [
+   "Prolite",
+   "Memory Fit",
+   "Hawx Geometrie",
+   "Power Shift",
+   "Energy Backbone"
+  ],
+  "weight_g": 1896,
+  "colors": [
+   {
+    "name": "Black / Red",
+    "images": [
+     "https://www.atomic.com/cdn/shop/files/ato-pim-9b50700602e48610-0f645dc1da02b246_9d4576ae-ba70-46f9-94ac-6ec6a1c86539.webp?v=1786998057"
+    ]
+   }
+  ],
+  "sizes": [
+   "25/25.5",
+   "26/26.5",
+   "27/27.5",
+   "28/28.5",
+   "29/29.5",
+   "30/30.5"
+  ],
+  "source_url": "https://www.atomic.com/de-at/products/hawx-ultra-130-s-dual-boa-ae0002296-202600"
+ },
+ {
+  "brand": "Atomic",
+  "name": "REDSTER 3L INSULATED JACKET",
+  "article_no": "AP5126830",
+  "gender": "Herren",
+  "category": "jacken",
+  "price_eur": 649.99,
+  "short": "Wasserdichte, gefütterte Premium-Skijacke für die Piste.",
+  "description": "In der Atomic Redster 3L Insulated Jacket steckt die gesammelte Erfahrung des Atomic Race Serviceteams, das jeden Tag am Berg im Einsatz ist. Die Premium-Skijacke ist für Pistenskifahrer gemacht und mit einer Thermore® Loosefill EcoDown-Isolierung aus recycelten Fasern gefüttert. Die sorgt – nach dem Body-Mapping-Prinzip – genau dort für Wärme, wo sie am meisten gebraucht wird. Dank des PFC-freien, OEKO-TEX®-zertifizierten 3LAYR Protect Außenmaterials hält die Jacke selbst bei widrigsten Bedingungen trocken. Vorgeformte Hyperfit-Zonen passen sich den natürlichen Bewegungen beim Skifahren optimal an. Weitere skispezifische Details sind die Unterarmbelüftung zur Temperaturregulierung, eine helmkompatible, verstellbare Kapuze sowie ein gefütterter Kapuzenhalter, der den Wind bei aufgestellter Kapuze abblockt.",
+  "features": [
+   "Atomic 3LAYR Protect (20.000 mm Wassersäule): extra robustes, wind- und wasserdichtes 3-Lagen-Material.",
+   "Thermore EcoDown Fibers Genius: isolierende synthetische Daune aus 100 % recycelten Plastikflaschen.",
+   "Hyperfit-Konstruktion mit vorgeformten Zonen für natürliche Skibewegungen.",
+   "Helmkompatible, verstellbare Kapuze mit Cohaesive Kapuzenverstellsystem und isoliertem Kapuzenhalter.",
+   "Unterarmbelüftung, Skipasstasche am Ärmel, Handwärmertaschen, Brusttaschen innen und außen, Powder Schneefang, YKK Reißverschlüsse",
+   "Passform: Relaxed",
+   "Wassersäule: 20.000 mm"
+  ],
+  "material": {
+   "Außenmaterial": "Atomic 3LAYR Protect (20.000 mm wc), Standard 100 by OEKO-TEX, ohne absichtlich zugesetzte PFAS, enthält recycelte Materialien",
+   "Isolierung": "Thermore Loosefill EcoDown (recycelte Fasern)"
+  },
+  "technologies": [
+   "Atomic 3LAYR Protect",
+   "Thermore EcoDown Fibers Genius",
+   "Hyperfit-Konstruktion",
+   "Cohaesive Kapuzenverstellsystem"
+  ],
+  "weight_g": 950,
+  "origin": "Indonesien",
+  "colors": [
+   {
+    "name": "Black / Racing Gradient",
+    "images": [
+     "https://www.atomic.com/cdn/shop/files/ato-pim-c93031f227a5484c-c6f9b9088c21cc7a_ffeb7111-efe6-4f9d-a3f9-ce3fb75c45b3.webp?v=1788348718",
+     "https://www.atomic.com/cdn/shop/files/ato-pim-c93031f227a5484c-c6f9b9088c21cc7a_489c1356-782a-4f5c-9b0e-e3a1598142a3.webp?v=1786990828"
+    ]
+   },
+   {
+    "name": "Black",
+    "images": [
+     "https://www.atomic.com/cdn/shop/files/ato-pim-66ed4d020dbfb7d1-47ed426f3309bc26_9cf203de-5cef-452e-9515-7627ac70059d.webp?v=1788348717",
+     "https://www.atomic.com/cdn/shop/files/ato-pim-66ed4d020dbfb7d1-47ed426f3309bc26_f3ffd9a9-922b-4056-8c5a-47a682ebc027.webp?v=1786990828"
+    ]
+   },
+   {
+    "name": "Racing Red",
+    "images": [
+     "https://www.atomic.com/cdn/shop/files/ato-pim-7ed28ad5073925b0-067d1a09a16e11b9_ff8932fe-a69e-4f06-8204-de6141542639.webp?v=1788348718",
+     "https://www.atomic.com/cdn/shop/files/ato-pim-7ed28ad5073925b0-067d1a09a16e11b9_f74eddb9-0b96-4261-b189-f13f687b5c3f.webp?v=1786990828"
+    ]
+   }
+  ],
+  "sizes": [
+   "XS",
+   "S",
+   "M",
+   "L",
+   "XL",
+   "2XL",
+   "3XL"
+  ],
+  "source_url": "https://www.atomic.com/de-at/products/redster-3l-insulated-jacket-ap5126800-202602"
+ }
+]

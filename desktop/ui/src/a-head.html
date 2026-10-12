@@ -1250,5 +1250,19 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
 @media (forced-colors:active){
   .w,.tile,.card,.modal,.palette{border:1px solid CanvasText}
 }
+
+/* Hauptmenüpunkte: deutlich sichtbare Bereichsleisten mit Symbol und Farbton */
+.nav-sec{--gh:215;margin-top:6px}
+button.nav-group.nav-group{display:flex;align-items:center;gap:10px;height:38px;padding:0 10px;margin:2px 0;border-radius:10px;font-size:13px;font-weight:700;letter-spacing:.04em;color:var(--text);text-transform:uppercase;background:hsl(var(--gh) 70% 50% / .09);border:1px solid hsl(var(--gh) 70% 50% / .16)}
+button.nav-group:hover{background:hsl(var(--gh) 70% 50% / .16);color:var(--text)}
+button.nav-group .gi{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;flex:none;background:hsl(var(--gh) 68% 48%);color:#fff}
+button.nav-group .gi .i{width:15px;height:15px;stroke:#fff}
+button.nav-group .gl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.nav-sec:not([data-closed]) button.nav-group{background:hsl(var(--gh) 70% 50% / .15);border-color:hsl(var(--gh) 70% 50% / .3)}
+.nav-sec:not([data-closed]) .nav-item:not(.nav-parent)[style*="--lvl:0"][aria-current="page"]{box-shadow:none}
+.nav-parent{font-weight:600;color:var(--text)}
+.sb-collapsed button.nav-group{width:44px;height:38px;padding:0;margin:4px auto;justify-content:center;color:inherit}
+.sb-collapsed button.nav-group .gl{display:none}
+.sb-collapsed button.nav-group::after{display:none}
 </style>
 </head>

@@ -1,0 +1,224 @@
+[
+  {
+    "brand": "Hestra",
+    "name": "Omni 5-Finger",
+    "article_no": "3004750",
+    "gender": "Unisex",
+    "category": "acc",
+    "price_eur": 150.0,
+    "description": "Der Omni ist ein kurzer, bequemer Freeride-Handschuh in schlichtem Design mit praktischen Funktionen. Mit elastischem Rippbündchen, das optimal warm hält und gut Platz im Jackenärmel findet. Die Handschlaufe verhindert, dass man den Handschuh verliert, wenn man ihn zum Beispiel im Lift oder zum Anpassen der Skibrille usw. auszieht.\n\nAußenmaterial aus strapazierfähigem, imprägniertem Rindsleder – elastisch und wetterfest. Der hohe Tragekomfort wird mit der Zeit durch das anschmiegsame Leder, das sich der Hand anpasst, noch verstärkt. Das Futter aus gebürstetem Polyester umschmeichelt die Hand daunenweich, und die feuchtigkeitsableitende Füllung aus synthetischem G-Loft-Material isoliert effektiv. Klassischer, vielseitiger Skihandschuh, der sich für Piste und Snowpark genauso eignet wie für eigene Wege abseits der präparierten Piste. Auch als Fausthandschuh erhältlich.",
+    "features": [
+      "Elastizität am Handgelenk",
+      "Rippstrick-Stulpe",
+      "Befestigungsschlaufen",
+      "Zugschlaufe an der Stulpe"
+    ],
+    "technologies": [
+      "G-Loft"
+    ],
+    "colors": [
+      {
+        "name": "Schwarz & Schwarz",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-1001001.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-100100_2_6a9ea12f-f8df-408b-86a2-fed2e97a63f7.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-100100_3_cecc699a-9802-42f5-857c-5c43756530a4.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-100100_4_e629f500-1975-4e5b-90a1-c5f90b27ad88.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-100100_5_686e44f2-4eb4-47e3-898c-e4ed88c0ade4.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-100100_6_fe28abe1-988b-4829-9ef9-8856a56f4f38.png"
+        ]
+      },
+      {
+        "name": "Königsblau & Königsblau",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-2502501.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-250250_2_a0c6756f-f8b7-49b1-a54f-3977d1cc3e2c.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-250250_3_1957f3de-8144-4f36-9ef3-e85776fda313.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-250250_4_af13123f-3732-441d-a410-be3f81756611.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-250250_5_a6338c3c-0fec-45fd-80d8-1505043c02d0.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-250250_6_42287d42-7018-45dd-bbbb-2694da4bb3c6.png"
+        ]
+      },
+      {
+        "name": "Gelbbraun & Gelbbraun",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-7017011.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-701701_2_1e85307f-3239-46df-8c3d-8a191d36bc20.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-701701_3_36edb25d-57fc-450a-8cba-11c7cec8d86d.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-701701_4_1f33b5f5-548f-4dcc-a027-24a4f7a5365f.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-701701_5_1d283c89-88d4-45ee-9fcb-12801cbeee49.png"
+        ]
+      },
+      {
+        "name": "Kirschrot & Kirschrot",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-9209201_a64a733b-2a46-430d-b315-8587022eb0bc.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-920920_2_a4c62f69-b1e1-4b10-bc79-46850a991219.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-920920_3_18432038-2fc2-4e6b-a053-5ae89a24c790.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-920920_4_e0f12398-2858-4147-a28e-beb13fc791e1.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004750-920920_5_d1b8f5f4-3d08-4e45-8283-aeb7f3add54d.png"
+        ]
+      }
+    ],
+    "sizes": [
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11"
+    ],
+    "source_url": "https://www.hestragloves.de/products/omni-5-finger-black-black"
+  },
+  {
+    "brand": "Hestra",
+    "name": "Ergo Grip HDry Descent 5-Finger",
+    "article_no": "3004990",
+    "gender": "Unisex",
+    "category": "acc",
+    "price_eur": 200.0,
+    "description": "Langer Alpinhandschuh mit dünnem, geschmeidigem Futter für sportliche Aktivitäten, bei denen es durch die Anstrengung warm wird und Bewegungsfreiheit für die Finger gefragt ist. Aus strapazierfähigem Ziegenleder. Oberseite aus wetterfestem, atmungsaktivem Stretchmaterial. Mit wasserdichter, atmungsaktiver HDry-Membran. Die Innenseite aus Mikrofleece leitet Feuchtigkeit ab. Die dünne Füllung aus synthetischem Material an der Oberseite sorgt für angenehme Wärme bei optimaler Bewegungsfreiheit.\n\nMit Ergo Grip-Konstruktion, bei der die Nähte überlappen und so platziert sind, dass der Handschuh optimale Griffigkeit und Bewegungsfreiheit bietet. Durch den langen Schaft gelangt kein Schnee hinein. Das glatte Futter auf der Innenseite sorgt dafür, dass keine Klettverschlüsse, z. B. am Jackenärmel, hängenbleiben. Der Schneefang lässt sich mit einer Hand einstellen. Mit Handschlaufen, damit man den Handschuh nicht verliert. Verlässliches, wetterfestes Modell für Ski- und Kletterabenteuer in hochalpinem Gelände.",
+    "features": [
+      "Befestigungsschlaufen",
+      "Zugschlaufe an der Stulpe",
+      "Ergo Grip",
+      "Schneeschutz",
+      "Elastizität am Handgelenk",
+      "Verstärkungsdetails"
+    ],
+    "technologies": [
+      "HDry",
+      "Ergo Grip"
+    ],
+    "colors": [
+      {
+        "name": "Schwarz & Cremeweiß",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004990-1000201.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004990-100020_2_9a1e9e9b-e81b-4a1c-8c7c-30cf07d8cf10.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004990-100020_3_3033dce0-7d29-4ccf-b692-d7d54452dcaf.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004990-100020_4_90ea5bdb-db96-4fb1-905f-57b7a240e022.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004990-100020_5_88fa5103-ea4e-42c5-8af0-71cfbd758ba4.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004990-100020_6_0d8c1506-729d-46a4-9149-7ee95b5cfb12.png"
+        ]
+      }
+    ],
+    "sizes": [
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11"
+    ],
+    "source_url": "https://www.hestragloves.de/products/ergo-grip-hdry-descent-5-finger-black-offwhite-1"
+  },
+  {
+    "brand": "Hestra",
+    "name": "Orion Fausthandschuh",
+    "article_no": "3004611",
+    "gender": "Unisex",
+    "category": "acc",
+    "price_eur": 85.0,
+    "description": "Der vielseitige Fausthandschuh Orion ist der perfekte Begleiter für die Skipiste wie auch für den Winterspaziergang. Mit wetterfestem Polyamid an der Oberseite und strapazierfähigem, griffigem Leder aus veganem Material. Der atmungsaktive Handschuh schützt vor Wind und Wetter, hat jedoch keine versiegelten Nähte und ist daher nicht völlig wasserdicht.\n\nDie weiche, gebürstete Innenseite mit einer Füllung aus synthetischem G-Loft-Material hält die Hände bei kalten Temperaturen schön warm. Das Neoprenbündchen mit verstellbarem Klettverschluss sorgt für eine enge Passform am Handgelenk und passt gut unter den Jackenärmel. Leichtes, elastisches Wintermodell – und eine gute Alternative für alle, die auf tierische Produkte verzichten wollen. Auch als 5-Finger-Handschuh erhältlich.",
+    "features": [
+      "Zubehör für Befestigungsschlaufen",
+      "Neopren-Stulpe mit Klettverschluss",
+      "Zugschlaufe an der Stulpe",
+      "Waschmaschinenfest",
+      "Elastizität am Handgelenk"
+    ],
+    "technologies": [
+      "G-Loft"
+    ],
+    "colors": [
+      {
+        "name": "Marineblau & Marineblau",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004611-2802801_1.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004611-280280_2_e6da62e2-490e-4f24-b0d1-ba309f0120b8.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004611-280280_3_8812faff-7d63-4e8a-8192-9076c366cb24.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004611-280280_4_2ad24612-c19f-464f-a330-421c080cce47.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004611-280280_5_27dbe4c0-e70c-4c1d-9de8-b24377a339cc.png"
+        ]
+      },
+      {
+        "name": "Bordeauxrot & Pflaume",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004611-5909701_1.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004611-590970_2_dafaa461-3c67-49ee-9fa7-b64731480fda.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004611-590970_3_fc2683db-6790-41d5-9fd9-179fcdf3afb5.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004611-590970_4_91ea274a-d11d-4d68-b199-bf3e2c976c43.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004611-590970_5_d9fd49bd-f16b-4801-a599-84291bcb3759.png"
+        ]
+      },
+      {
+        "name": "Beige & Olivengrün",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004611-6508701_1.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004611-650870_2_2bdf705a-c79e-47a4-9f05-c59431db25b2.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004611-650870_3_31b78e11-d038-429e-a5c0-99b99d567a4d.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004611-650870_4_9b36c47e-1251-4145-8372-ae731eaf469c.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004611-650870_5_4eb76b46-a81f-4372-a59e-768119198640.png"
+        ]
+      }
+    ],
+    "sizes": [
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11"
+    ],
+    "source_url": "https://www.hestragloves.de/products/orion-mitt-navy-navy"
+  },
+  {
+    "brand": "Hestra",
+    "name": "CZone Nova 5-Finger",
+    "article_no": "3004700",
+    "gender": "Damen",
+    "category": "acc",
+    "price_eur": 100.0,
+    "description": "Der CZone Nova eignet sich optimal für schneereiche Wintertage. Der Kordelzug am langen Schaft schließt eng am Jackenärmel ab, damit kein Schnee in den Handschuh gelangt. Die weiche, gebürstete Innenseite sorgt für ein angenehmes Tragegefühl. Die Füllung aus synthetischem Primaloft-Gold-Material hält die Hände behaglich warm. Wasserdicht und atmungsaktiv dank CZone-Membran.\n\nMit etwas schmalerem Schnitt für Frauenhände. Der Außenhandschuh besteht aus geschmeidigem Polyestergewebe und imprägniertem Lammnappa. 5-Finger-Modell für maximale Bewegungsfreiheit und perfekter Begleiter für den Winter. Für alle, die schnell kalte Finger bekommen, auch als wärmerer Fausthandschuh erhältlich.",
+    "features": [
+      "Zubehör für Befestigungsschlaufen",
+      "Handgelenkband mit Klettverschluss",
+      "Schneeschutz"
+    ],
+    "technologies": [
+      "CZone",
+      "PrimaLoft Gold"
+    ],
+    "colors": [
+      {
+        "name": "Schwarz",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004700-1001.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004700-100_2_fa92b425-8c6b-4499-aa16-1e3afa078ad0.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004700-100_3_a2b72ec9-c9d2-4b31-a709-03356867270f.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004700-100_4_c63028cc-2560-4f6a-a252-63069d28fe50.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004700-100_5_87ea8c27-67a8-4ab1-b004-dd3b277c5bda.png"
+        ]
+      },
+      {
+        "name": "Marineblau",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004700-2801.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004700-280_2_e9d702ba-683c-4fec-99fc-c6e02539d42c.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004700-280_3_f100c6e4-5e23-4bb4-9946-fc4774bce04c.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004700-280_4_619241ad-2367-42c6-bb82-4f62d2c766e7.png",
+          "https://cdn.shopify.com/s/files/1/0979/8058/0187/files/3004700-280_5_038fdbff-10cd-4dae-97ff-8e5cc3d297a5.png"
+        ]
+      }
+    ],
+    "sizes": [
+      "5",
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "source_url": "https://www.hestragloves.de/products/czone-nova-5-finger-black"
+  }
+]

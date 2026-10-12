@@ -1,0 +1,205 @@
+[
+ {
+  "brand": "Nike",
+  "name": "Nike Pegasus 42 Straßenlaufschuh (Herren)",
+  "article_no": "IB1873",
+  "gender": "Herren",
+  "category": "schuhe",
+  "price_eur": 139.99,
+  "short": "Reaktionsfreudige, durchgehende Dämpfung, die eine Ikone mit Energie versorgt.",
+  "description": "Die reaktionsfreudige Dämpfung im Pegasus 42 sorgt für ein energiegeladenes Laufgefühl bei täglichen Straßenläufen. Erlebe bei jedem Schritt dank des dynamischen Gefühls eines geschwungenen, durchgehenden Air Zoom-Elements und einer Mittelsohle aus ReactX-Schaumstoff eine enorme Kraft. Die aktualisierte Passform bietet dir mehr Platz im Vorfuß- und Zehenbereich.",
+  "features": [
+   "Größere Zehenfederung dank einer aktualisierten Silhouette mit einer stärkeren Aufwärtskurve im Zehenbereich.",
+   "Durchgehendes Air Zoom-Element statt der Vorfuß- und Fersenelemente früherer Modelle.",
+   "Durchgehendes Air Zoom-Element: Ein durchgehendes Air Zoom-Element passt sich deinem Fuß an und sorgt für ein dynamisches Laufgefühl und die höchste Energierückgabe von Nike – von der Ferse bis zu den Zehen.",
+   "Mittelsohle aus ReactX-Schaumstoff: Der ReactX-Schaumstoff ist 13 % reaktionsfreudiger als die bisherige React-Technologie.",
+   "Atmungsaktives Obermaterial: Das leichte Mesh ist weicher und atmungsaktiver als frühere Versionen und sorgt für einen optimalen Tragekomfort.",
+   "Besonders abriebfeste Gummi-Außensohle: Die überarbeitete Außensohle mit Waffelprofil ist leichter als bei früheren Modellen und bietet dank besonders abriebfestem Gummi und Flexkerben eine hohe Traktion und Flexibilität.",
+   "Breiter Zehenbereich: Wir haben die Passform für zusätzlichen Platz an den Zehen und im Vorfußbereich im Vergleich zum Pegasus 41 angepasst.",
+   "Sprengung: 10 mm"
+  ],
+  "colors": [
+   {
+    "name": "Schwarz / Photon Dust / Weiß",
+    "images": [
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/2d42e6b5-3b61-47c8-8186-00fdfbfc764d/AIR+ZOOM+PEGASUS+42.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/3fb4fc43-86dc-44e4-a840-8b68333916de/AIR+ZOOM+PEGASUS+42.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/daa788d4-9b1a-453e-9bf5-676dd8af8aad/AIR+ZOOM+PEGASUS+42.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/b12d8623-0b3c-4840-85b3-71093b077857/AIR+ZOOM+PEGASUS+42.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/999e1f37-9ff1-43bd-861f-50d2169546a2/AIR+ZOOM+PEGASUS+42.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/badfbcce-c6ba-4764-bf98-57b7af5eb4bb/AIR+ZOOM+PEGASUS+42.png"
+    ],
+    "article_no": "IB1873-001"
+   },
+   {
+    "name": "Weiß / Photon Dust / Schwarz",
+    "images": [
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/d22f9627-9d9c-46c7-aa7f-b65b0714ddd5/AIR+ZOOM+PEGASUS+42.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/d404625f-a313-4c53-a3b5-f3b2d45a6264/AIR+ZOOM+PEGASUS+42.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/21958d86-c1a0-42ba-a917-86a7506cea3c/AIR+ZOOM+PEGASUS+42.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/697ddd5e-f1ff-4d41-b29b-fa704b2d7626/AIR+ZOOM+PEGASUS+42.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/f8499062-40fa-4193-98bb-bb86e3082c43/AIR+ZOOM+PEGASUS+42.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/46ea6224-5771-4d6a-a5b9-1b04bd75b432/AIR+ZOOM+PEGASUS+42.png"
+    ],
+    "article_no": "IB1873-101"
+   }
+  ],
+  "sizes": [
+   "38.5",
+   "39",
+   "40",
+   "40.5",
+   "41",
+   "42",
+   "42.5",
+   "43",
+   "44",
+   "44.5",
+   "45",
+   "45.5",
+   "46",
+   "47",
+   "47.5",
+   "48.5",
+   "49.5"
+  ],
+  "source_url": "https://www.nike.com/de/t/pegasus-42-strassenlaufschuh-herren-M9ckDyR3/IB1873-001",
+  "weight_g": 300,
+  "technologies": [
+   "Air Zoom",
+   "ReactX"
+  ]
+ },
+ {
+  "brand": "Nike",
+  "name": "Nike Miler Repel Laufjacke mit UV-Schutz (Herren)",
+  "article_no": "IF2369",
+  "gender": "Herren",
+  "category": "jacken",
+  "price_eur": 84.99,
+  "short": "Repel-Laufjacke mit UV-Schutz (Herren)",
+  "description": "Laufen ohne Grenzen. Diese Jacke verfügt über eine wasserabweisende Beschichtung und UV-Schutz, damit du bei Regen und Sonnenschein angenehm trocken bleibst. Außerdem bringt das reflektierende Design mit charakteristischen Miler Streifen deine Ausrüstung zum Leuchten.",
+  "features": [
+   "Die wasserabweisende Beschichtung hält dich auch bei nassem Wetter angenehm trocken.",
+   "Die Raglanärmel verringern die Reibung, bieten eine bequeme Passform und ermöglichen mehr Bewegungsfreiheit."
+  ],
+  "colors": [
+   {
+    "name": "Schwarz / Schwarz",
+    "images": [
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/27334d8a-1881-4b65-936c-9f10b5e08e43/M+NK+UV+RPL+MILER+JKT.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/8ce6f2e8-6165-4a40-a23a-131d84ee580b/M+NK+UV+RPL+MILER+JKT.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/d08637e0-d3be-413c-b603-c7e89d42bd61/M+NK+UV+RPL+MILER+JKT.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/64b18810-7870-453a-a658-e60a454acfc0/M+NK+UV+RPL+MILER+JKT.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/d932d836-aa5a-4f65-9490-96e1ec53d6b2/M+NK+UV+RPL+MILER+JKT.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/6fd432ec-b499-4ff0-89ec-9a6e0653f2d8/M+NK+UV+RPL+MILER+JKT.png"
+    ],
+    "article_no": "IF2369-010"
+   },
+   {
+    "name": "Midnight Navy / Midnight Navy",
+    "images": [
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/fb02fb03-0f81-4471-8b4f-a510b950c530/M+NK+UV+RPL+MILER+JKT.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/26eb339f-ecdc-4ef3-8194-70417dd42089/M+NK+UV+RPL+MILER+JKT.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/4cbbdce8-2008-431e-a0cc-fe489c6ebfe6/M+NK+UV+RPL+MILER+JKT.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/637e248e-e1a1-4f76-b0a4-5bebcd374a99/M+NK+UV+RPL+MILER+JKT.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/c46f9f6c-75ba-468b-a03d-ede77176f87b/M+NK+UV+RPL+MILER+JKT.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/21555f2a-9914-4533-a725-f42bc2391a49/M+NK+UV+RPL+MILER+JKT.png"
+    ],
+    "article_no": "IF2369-410"
+   }
+  ],
+  "sizes": [
+   "XS",
+   "S",
+   "S Tall",
+   "M",
+   "M Tall",
+   "L",
+   "L Tall",
+   "XL",
+   "XXL"
+  ],
+  "source_url": "https://www.nike.com/de/t/miler-repel-laufjacke-mit-uv-schutz-herren-UUPuqOoN/IF2369-010",
+  "care": [
+   "Maschinenwäsche"
+  ],
+  "technologies": [
+   "Repel",
+   "UV-Schutz"
+  ]
+ },
+ {
+  "brand": "Nike",
+  "name": "Nike Vomero 18 Straßenlaufschuh (Herren)",
+  "article_no": "HM6803",
+  "gender": "Herren",
+  "category": "schuhe",
+  "price_eur": 159.99,
+  "short": "Die doppelte Lage aus Schaumstoff ermöglicht ein weiches, gepolstertes Laufgefühl.",
+  "description": "Der Vomero bietet mit maximaler Dämpfung Tragekomfort für tägliche Läufe. Bei diesem Schuh sorgt leichter ZoomX-Schaumstoff auf reaktionsfreudigem ReactX-Schaumstoff in der Mittelsohle für das weichste und am besten gedämpfte Laufgefühl, das Nike zu bieten hat. Das überarbeitete Traktionsprofil ermöglicht ein weiches Abrollen von der Ferse bis zu den Zehen.",
+  "features": [
+   "Obermaterial aus speziell entwickeltem Mesh: Das Obermaterial besteht aus speziell entwickeltem Mesh, das weich und atmungsaktiv ist.",
+   "Dual-Density-Mittelsohle: Unsere Dual-Density-Mittelsohle sorgt mit ZoomX-Schaumstoff und ReactX-Schaumstoff für 13 % mehr Reaktionsfreudigkeit als unsere bisherige React-Technologie und bietet ein bequemes Laufgefühl.",
+   "Pods rund um die Außensohle: Wir haben die Außensohle mit Pods versehen, die für bessere Wendigkeit und ein weicheres Abrollen von der Ferse bis zu den Zehen sorgen.",
+   "Weiche Polsterung: Die Lasche und das Futter sind besonders weich, für ein bequemes, eng anliegendes Tragegefühl.",
+   "Was ist neu?: Für zusätzlichen Tragekomfort wurden bei der neuen Mittelsohle zwei Schichten Schaumstoff kombiniert – oben unser hochwertiger ZoomX und darunter eine Schicht ReactX.",
+   "Sprengung: 10 mm",
+   "Reflektierende Designdetails"
+  ],
+  "colors": [
+   {
+    "name": "Schwarz / Dark Smoke Grey / Light Smoke Grey / Schwarz",
+    "images": [
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/47c3d001-a95c-4805-9c5c-c16be4776b1b/NIKE+VOMERO+18.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/d175ef25-1a13-4332-94e6-3e7210c27dea/NIKE+VOMERO+18.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/4493370e-a4bc-4163-ad75-7381e02f0cba/NIKE+VOMERO+18.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/c1666ac7-e34b-4fbd-90fa-dbaec849f4e6/NIKE+VOMERO+18.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/c6384dd4-8bb2-444f-b52e-bfa405f1e9fb/NIKE+VOMERO+18.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/ab4068ec-a152-4ec8-a7f7-7998a8992298/NIKE+VOMERO+18.png"
+    ],
+    "article_no": "HM6803-005"
+   },
+   {
+    "name": "Weiß / Volt Tint / Sapphire / Black Spruce",
+    "images": [
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/ef68a452-405c-4780-a7ef-216cd74b9af5/NIKE+VOMERO+18.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/8d38f3d3-a52a-45d0-a593-8ad8211552b5/NIKE+VOMERO+18.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/bc6b0f0c-e443-4955-9f4e-e3318feb5466/NIKE+VOMERO+18.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/6a832be8-21bb-4d5c-920c-4458540afd83/NIKE+VOMERO+18.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/7b380c29-241f-4228-b73a-8b2a9be16d04/NIKE+VOMERO+18.png",
+     "https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/aeb82e2e-2bfb-4d97-8a14-abf58e23bb18/NIKE+VOMERO+18.png"
+    ],
+    "article_no": "HM6803-111"
+   }
+  ],
+  "sizes": [
+   "38.5",
+   "39",
+   "40",
+   "40.5",
+   "41",
+   "42",
+   "42.5",
+   "43",
+   "44",
+   "44.5",
+   "50.5",
+   "45",
+   "51.5",
+   "45.5",
+   "52.5",
+   "46",
+   "47",
+   "47.5",
+   "48.5",
+   "49.5"
+  ],
+  "source_url": "https://www.nike.com/de/t/vomero-18-strassenlaufschuh-herren-SMtmxlKz/HM6803-005",
+  "weight_g": 325,
+  "technologies": [
+   "ZoomX",
+   "ReactX"
+  ]
+ }
+]

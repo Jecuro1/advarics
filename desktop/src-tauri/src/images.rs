@@ -41,6 +41,27 @@ pub fn import_article(data_dir: &Path, article_id: &str, src: &Path) -> Result<S
     Ok(name)
 }
 
+/// Galeriebild aus Bytes (Download oder Datei): max. 1400 px, JPEG.
+pub fn import_bytes(data_dir: &Path, article_id: &str, bytes: &[u8], n: usize) -> Result<String, String> {
+    if bytes.len() > 25 * 1024 * 1024 {
+        return Err("Bild ist größer als 25 MB".into());
+    }
+    let img = image::ImageReader::new(std::io::Cursor::new(bytes))
+        .with_guessed_format()
+        .map_err(|e| e.to_string())?
+        .decode()
+        .map_err(|e| format!("Kein unterstütztes Bild (JPEG, PNG, WebP): {e}"))?;
+    let img = if img.width() > 1400 || img.height() > 1400 { img.resize(1400, 1400, FilterType::Triangle) } else { img };
+    let d = dir(data_dir);
+    fs::create_dir_all(&d).map_err(|e| e.to_string())?;
+    let name = format!("{}-g{}-{}.jpg", safe(article_id), n, chrono::Local::now().format("%Y%m%d%H%M%S%3f"));
+    let rgb = DynamicImage::ImageRgb8(flatten_white(&img));
+    let mut f = fs::File::create(d.join(&name)).map_err(|e| e.to_string())?;
+    let mut enc = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut f, 86);
+    enc.encode_image(&rgb).map_err(|e| e.to_string())?;
+    Ok(name)
+}
+
 /// Logo übernehmen (PNG, Transparenz bleibt).
 pub fn import_logo(data_dir: &Path, src: &Path) -> Result<String, String> {
     let img = load(src)?;

@@ -1,0 +1,239 @@
+[
+ {
+  "brand": "On",
+  "name": "Cloudsurfer 2",
+  "article_no": "3MF1012",
+  "gender": "Herren",
+  "category": "schuhe",
+  "price_eur": 170.0,
+  "short": "Für deinen täglichen Lauf: geschmeidige Übergänge von der Ferse zu den Zehen, dank CloudTec Phase™. Weicher Helion™ Foam bleibt Kilometer für Kilometer bequem.",
+  "description": "Der Männer-Laufschuh für tägliche Strassenläufe: geschmeidige Übergänge von der Ferse zu den Zehen, dank CloudTec Phase™. Versand & Rückgabe kostenlos.",
+  "features": [
+   "CloudTec Phase™ Dämpfungssystem für geschmeidige Läufe",
+   "Helion™ Foam für softes Laufgefühl",
+   "Mit neuem Profil",
+   "Speziell entwickelter, atmungsaktiver Mesh-Oberschuh",
+   "Überarbeitete Zunge für bequemeren Fit",
+   "Gestickte Ösen und Overlays",
+   "Unterstützung: Neutral"
+  ],
+  "colors": [
+   {
+    "name": "Verdite | Surf",
+    "images": [
+     "https://images.ctfassets.net/hnk2vsx53n6l/3hLpJzXkzMz8j7DwzOfaK/4410052b5d795d8c29436120bfe4fe29/4b2e61bb71b83b63b1827d6fa9d4f1cbbc978d1f.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/3BUYKMocn6hc4LkxIetoyj/2450c73e85d8a1e2658e734b3e8cc6eb/447e16000f01935cab933d512ffb1b99438eafda.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/7vDHipUVYgDFR8Fnh7ct2i/24da8f0b01a69436e8c602e057eec698/2abf9a1f4c5fc8c28c7a568f8d4c1b41e334560d.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/Nk5TbK5P1WlZhoyPRlr6Y/de620c74578558b25c6746935a7fd396/9f8548915277890c209c9f5ddd2627ae38bf790a.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/4p2zsiCpVALlv9LvmCLKa7/be39409f43ad054e105e98b8c4ddd083/10fdbedd5045fa878854b3006e30cc20d1601587.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/4REvlLJdlnNAgyRSHCheq2/96888ec2bd30a2f9aefe41a1aa41a955/30ac62dee8ebe333848ecc206a7ae41f28198e5f.png"
+    ]
+   },
+   {
+    "name": "Ore | White",
+    "images": [
+     "https://images.ctfassets.net/hnk2vsx53n6l/6gm5rQJdilcEnutX7lMqkf/3e3032aa13b21b5049197bd137fca5ab/27b096ab414e16bf8db6c065dd6e6683bd312c6b.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/17eK1w3i3r4sRFNtSUl8fJ/18425a932a456382eae2f809987c979d/d990325e74c45eb4d3f44ae9d56d0557bc3842b1.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/5roKao5gARxSFXL8qSyvkh/2f7cee580cb5842acc4bb0f7bb18103b/a4df7bb8aa3983abd0a068a2c0eb848277d8dc7a.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/1TrQpfLHaYvA1zdrxuES8X/e01b8ab9306665861f23fb293baf318a/1767baf7034cb6f91f07bd99dbc6b46336d2ad17.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/2kQ1DFNYvYK8gsmxYNWgqG/c24ebf6cb76285ce1c6441a597b55b9f/a43e2b7f114b46bf97992af143ffb4a9dddbc176.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/3Ax0GYpt81y9yFwT4BWNuv/d8e5e4e80ef05d8f38a0defd8620ea50/7ae6e8320beebf3e0e40674cb3e6292950dccb78.png"
+    ]
+   },
+   {
+    "name": "Black | Malibu",
+    "images": [
+     "https://images.ctfassets.net/hnk2vsx53n6l/1Sqn9dnmqo6RhyODPz42jC/c252ddce21828956283b69f3ca16de21/87196302fc0fc5fc4ee8ebbcf13c6ce8bbee29cd.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/5cD16ILj9bP2A1QRg5Z4Qp/67bd5ed1e910b31ad2228e5a528d49c5/8d89bed03b22e38b74c7ba826db1a01b34d5188e.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/2jHOzSMvgAKWC307o4B16V/b3b7cf77ead1777841d04297112bfb17/0e58131287aad87b16a9ffde45ce311d89eb759b.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/5Xn96cMuJ1Su70q5z8QppC/38e3d6fa48dd02a278f66bd5d4504270/6dd933edb59c7f2f609a462480e941b5f51c9628.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/6eLiVUzxu2jRxZmIlU6egx/ff21a011a3744d6674a854c8478b9de9/0ac9895844cf0d06c55c41dfb76c76997dc20164.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/1o2FD0CWXSk5sSF7sLGVKQ/56441a89aeab6cdc6a7a9be863104ee0/6caba77088be66ab43a41b01439d1b91d6c23ff1.png"
+    ]
+   },
+   {
+    "name": "Sailor | Ivory",
+    "images": [
+     "https://images.ctfassets.net/hnk2vsx53n6l/1826HMoe3AfREwcUIyWK4c/629663d8248107046aefe985f6cd9e31/586a2d89975bb25afe2ae5ce6ec93c21a68c932a.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/4eAM4Ni68rYepdHiNmeuNE/c61dc6db95de05e2989005831acfc2bd/bb19f4cf989b3e2172f372d5b8c0de26d99cb69c.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/6xWvgkKOVMzcmpaDqDwOfB/738d79bdf3a92aa0411614aaa08b02eb/e77400559d5ba403d3af0a4124be1b3362111345.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/3GSWXb5Xh9gvTFjOFAkeB9/e2db12cc6ff3b390fa5318420d9664d4/305c08c8672d61693fa21a87d5e2debb8bae05c9.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/6n57LQZjh6EIKYPQPwZ39C/4cd4084e9e3b82678d5ab6e28180df67/1426a39a7a9ca5b78246ccb1b3f8ba65885546b8.png"
+    ]
+   }
+  ],
+  "sizes": [
+   "40",
+   "40.5",
+   "41",
+   "42",
+   "42.5",
+   "43",
+   "44",
+   "44.5",
+   "45",
+   "46",
+   "47",
+   "47.5",
+   "48",
+   "49"
+  ],
+  "source_url": "https://www.on.com/de-at/products/cloudsurfer-2-3mf1012/mens",
+  "material": {
+   "Material": "Polyester"
+  },
+  "origin": "Vietnam",
+  "technologies": [
+   "CloudTec Phase™",
+   "Helion™"
+  ],
+  "weight_g": 261
+ },
+ {
+  "brand": "On",
+  "name": "Weather Jacket",
+  "article_no": "1ME1031",
+  "gender": "Herren",
+  "category": "jacken",
+  "price_eur": 240.0,
+  "short": "Eine Laufjacke für federleichten Schutz vor den Elementen. Mit atmungsaktiven, winddichten Stoffen ist sie ideal für wechselhaftes Wetter.",
+  "description": "Diese Laufjacke für Männer ist winddicht, wiegt nur 230 g und verpackt sich in sich selbst. Wenn die Wetterbedingungen an Tempo zulegen, hältst du also locker mit. Versand & Rückgabe kostenlos.",
+  "features": [
+   "Winddicht: perfekt für stürmische Trails",
+   "Federleicht,mit nur 230 g.",
+   "Versteckte Belüftungsöffnungen",
+   "Brusttasche mit wasserabweisendem Reissverschluss",
+   "Die Jacke lässt sich in sich selbst verstauen",
+   "Für Bewegung gemacht: Spiralförmige Darts-Ellbogen",
+   "Reflektierende Details",
+   "Atmungsaktives Überlappungsdesign vorne und hinten"
+  ],
+  "colors": [
+   {
+    "name": "Black",
+    "images": [
+     "https://images.ctfassets.net/hnk2vsx53n6l/7CSphECA33LmGhgbzXNz08/59982e6e536b7c5de37cbfc6075fb9cd/ifm2gh5yifn7ktsh9ini.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/3mgB8wjg48Iskhpl8k7xxH/08235cc41dc92a358e79c8e384e21fdf/udmydjewu4svuny0h2gv.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/xDfTVPQXvjEIeHC7v8cRg/320175f4415dba502b28480a813268cd/jzgnvlshemrzcsp8thol.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/785mp9ug8FAl250eD1wNgS/a0d96c69304d4ac04e64285e888b83c5/vud3kycerq7gacegwd6l.png",
+     "https://images.ctfassets.net/hnk2vsx53n6l/6tMWwEJPtv4lMI73hLdrJL/96c09a6604a8eed829396a5011fcdefa/yecdt9kb4rtbjpwj4inq.png"
+    ]
+   },
+   {
+    "name": "Silver | Eclipse",
+    "images": [
+     "https://images.ctfassets.net/hnk2vsx53n6l/3BtyB2KmKZJczN617POOds/2a95dc2dd54b555f105c1f60693d8c13/9ecc8b79fd47641dfa563c754e4346e484e7f3f5.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/omVGHUNiH0sOBQD1Efo9Q/aa4b3e33fc876546c9b995204585bd5d/b123c5b11c014954fcb2895403d4eead0e31f7bf.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/4EvWMY9ijethAw6rYPDszO/7a0fff934b754a090bf4e65537b4dd64/7e179a944633a4bd4f2c480169fa032ace80e8c4.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/5DLQ06NHNPJ1jbREksmmOR/c23f1e20b4cd06dcab154e5fd6c79fe1/d6b6fef2b0987f74e922ede908d1164508e09a33.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/6uxYDeQRW0qHen89DP6T5s/c73a197350535763aacdf7862af25143/86055158f772879a0530b29d0740a47e9b16c1eb.jpg"
+    ]
+   }
+  ],
+  "sizes": [
+   "XS",
+   "S",
+   "M",
+   "L",
+   "XL",
+   "XXL"
+  ],
+  "source_url": "https://www.on.com/de-at/products/weather-jacket-m-1me1031",
+  "care": [
+   "Maschinenwäsche kalt",
+   "Nicht bleichen",
+   "Nicht chemisch reinigen",
+   "Nicht bügeln",
+   "Kann im Trockner auf niedriger Stufe getrocknet werden"
+  ],
+  "material": {
+   "Material": "Upper Part: Polyamide 87%, Elastane 13%. Lower Part: Polyamide 100%. Underarm: Polyester 80%, Elastane 20%. Lining: Polyamide 95%, Elastane 5%."
+  },
+  "origin": "Vietnam"
+ },
+ {
+  "brand": "On",
+  "name": "Performance-T",
+  "article_no": "1ME1023",
+  "gender": "Herren",
+  "category": "shirts",
+  "price_eur": 80.0,
+  "short": "Fühl dich wohl, auch bei vollem Tempo. Leichter Schutz mit atmungsaktivem, feuchtigkeitsableitendem und schnelltrocknendem On DryTec™ Stoff.",
+  "description": "Mit On DryTec™ Technologie. Das Laufshirt für Männer: schnelltrocknend, atmungsaktiv und schweissableitend. Mehr erfahren.",
+  "features": [
+   "Atmungsaktiver, feuchtigkeitsableitender On DryTec™ Stoff",
+   "Leichtes Material",
+   "Reflektierende Details",
+   "Glatte, geklebte Säume und kaum spürbare Nähte",
+   "Modernes, minimalistisches Design",
+   "Schweizer Technologie gibt Halt",
+   "Schweissableitend"
+  ],
+  "colors": [
+   {
+    "name": "Hare | Brume",
+    "images": [
+     "https://images.ctfassets.net/hnk2vsx53n6l/3YJoTR2c7Mc8GWqLTtV05X/529e2b0fb3b8f45d8a5f8a3831b20fab/a8cb068b4511d989db983b4518a544b86252e835.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/6qY3V1dwShs3kqUk1vdYM7/2f40509dac787c36d761775abb26a2b5/99d216c0304b84515bc930de3654a3af7e6f7233.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/1LY7sWCe7Nhe1vmG5Disyl/dfe0e7ec82bb5486eb2e7aaf4ab78a7c/f8e11dc94673b1442f21baeec4087a3d94a63418.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/7IguF4UoXHBmkzXR4grxYS/6ca4ec45b54ff209e3c2a8c5a809dd9d/ff5b5e3145a58f745c921015d61093d92fb9d435.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/2n5Ym981oQy0HpEngXRl90/084f6a807321559dce32a44fb8095779/8af860e00f4b405cca52ec85f929168858615ed9.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/3UkwNBTo6DuyvUtiRWY6yB/3d655ed38a0011ee25837576ecb86ea2/3367e6e2813a3acbb4b77d6f2ea29bedc00c2b3d.jpg"
+    ]
+   },
+   {
+    "name": "Verdite | Apollo",
+    "images": [
+     "https://images.ctfassets.net/hnk2vsx53n6l/6YNPjfP01Nqsmt471oMyrv/3b280e63dd7b8ca24992a73a78f3a3e6/4647c0bbcdd91bc1edcf9aaeabbc3307453816eb.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/uyCE7z57teZo2mItEXN4G/58ed56be2d3f9742914ccc2fe73b1774/837963bcf4b07c939f1b16000ba3d2aec547e56e.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/4fkUbx5UkPyDGK1E7iaPgD/60eb3e7b8f4a500ef35c32a300aa1bd6/c68272c381579eb8efbbefed954182d4858ed9c1.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/2X5mhsoHSmOzzsLEI8AXSC/0ce030c278ee2621241be114121fbb2b/da7a9e76ae447054b885a787ee3a638035c35eac.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/2ItkuzMki32NMfqWh02zZo/a6e2c6fe0dc7e7f21a521974471fd0cd/cfd3731dc0679485ad320974e0f5096840eac81c.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/3OeTLx0FqVst4zh780ZLPa/17eb60a0d6bace841afdfb18753f4d46/77d968874151ab57de962ee661a7dfc25ae50803.jpg"
+    ]
+   },
+   {
+    "name": "Black | Eclipse",
+    "images": [
+     "https://images.ctfassets.net/hnk2vsx53n6l/2zuSaFGYXTwSb8nTgtcRNi/55ff258e12ffddd0959a7cc67a96205f/5ece4224e34c5e6db93113e437f230e3d30df13a.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/6I9cH9W00HjrIK4PV6hDD8/ec4761d3badb32221d04c9163bea06a6/2696d6ec3c709bfa99164698f5e2bd7c61842255.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/6h1h0MhZvvXUVdL2pUJBlr/04e46781de36a718650a76592aaeb42c/14fff41dff6cac11a1ac1786eff690a1fb6c66cf.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/1wi3x9ujWXia8SwBy9xUXz/858d8725f483f4a9f498824459ab1e4d/95636c2984cf82e7fad991fcadffc580e68254f7.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/6PFeCCDajNpd6pdBFgnMgp/7706d0d25da6d13c379cff80e0b488ef/3b037f4a38cd5f12400c47a82545cd0fdbba87d7.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/3NdODsZ8fO0bKztIoxpu0G/3252495476f1f90cb956f26cf836fb7c/da7bba29d4c8b59f77ffa626b98393f35790f1f0.jpg"
+    ]
+   },
+   {
+    "name": "White | Silver",
+    "images": [
+     "https://images.ctfassets.net/hnk2vsx53n6l/1QWKN4vxX8driIif1Ac23t/627ae7477d93764f1c59fa652e84f5ec/7f34f84bc593aff0344e233cd57051397efeb8bc.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/3jPYeAAwQtUlAAfOApjCoH/b0a599db3649ffdda116c9cf9700ef5d/e1c0b065095bf6a5f70a9d2ae060b15272ecfd99.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/7t7Cq1QoMCPOIb4oP3g3IC/3caef926fbdefec8d9ea79e1e8b2aabc/293469bb15f0a3753b47bf6e56653a7dff35f4be.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/7n0f7GUg16wmFb0HfSkXxp/566b61c92c513f85a470d9d3c2a8e639/fc73e821fa6aec9823796712f417713889f95d4b.jpg",
+     "https://images.ctfassets.net/hnk2vsx53n6l/5ne076FmypzEis64IQVBw2/90859268c519fea95902c6ee799878b2/2b75d050e0b66aaba3e5a99a2b6cd4086cd10813.jpg"
+    ]
+   }
+  ],
+  "sizes": [
+   "XS",
+   "S",
+   "M",
+   "L",
+   "XL",
+   "XXL"
+  ],
+  "source_url": "https://www.on.com/de-at/products/performance-t-m-1me1023/mens",
+  "care": [
+   "Maschinenwäsche kalt",
+   "Nicht bleichen",
+   "Nicht chemisch reinigen",
+   "Nicht bügeln",
+   "Nicht im Trockner trocknen"
+  ],
+  "material": {
+   "Material": "Front: Polyester 90%, Elastane 10%. Back: Polyester 77%, Elastane 23%."
+  },
+  "origin": "Vietnam",
+  "weight_g": 94
+ }
+]

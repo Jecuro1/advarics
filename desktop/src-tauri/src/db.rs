@@ -535,6 +535,33 @@ const MIGRATIONS: &[&str] = &[
         user    TEXT
     );
     "#,
+    // 11 · Artikel-Details (Beschreibung, Material, Pflege, Maße …), Bildergalerie, FEDAS-Protokoll
+    r#"
+    ALTER TABLE articles ADD COLUMN details TEXT NOT NULL DEFAULT '{}';
+    CREATE TABLE article_media (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        article_id TEXT NOT NULL,
+        pos        INTEGER NOT NULL DEFAULT 0,
+        file       TEXT,
+        color      TEXT NOT NULL DEFAULT '',
+        caption    TEXT NOT NULL DEFAULT '',
+        source_url TEXT,
+        status     TEXT NOT NULL DEFAULT 'ok',
+        created_at TEXT NOT NULL
+    );
+    CREATE INDEX article_media_a ON article_media(article_id, pos);
+    CREATE TABLE fedas_log (
+        id      INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts      TEXT NOT NULL,
+        art     TEXT NOT NULL,
+        hersteller TEXT NOT NULL DEFAULT '',
+        neu     INTEGER NOT NULL DEFAULT 0,
+        aktualisiert INTEGER NOT NULL DEFAULT 0,
+        uebersprungen INTEGER NOT NULL DEFAULT 0,
+        fehler  TEXT NOT NULL DEFAULT '',
+        user    TEXT
+    );
+    "#,
 
 ];
 
