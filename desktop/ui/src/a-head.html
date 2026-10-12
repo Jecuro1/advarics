@@ -1485,5 +1485,39 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .ae-tabsw .ed-tab[aria-selected="true"]:hover{background:var(--accent-strong)}
 .sb-collapsed .nav-rec-t{display:none}
 .sb-collapsed #navRecent{border:0;margin:0}
+/* ════ Lesbarkeit v0.25.1: kräftigerer Kontrast in der Arbeitsfläche ════ */
+[data-theme="light"]{
+  --frame:#E6E9ED; --surface-2:#F1F3F6; --surface-3:#E3E6EB;
+  --line:rgba(17,24,39,.15); --line-2:rgba(17,24,39,.24); --line-3:rgba(17,24,39,.36);
+  --text:#0B0F14; --text-2:#27303B; --text-3:#4B5461; --text-4:#7B8492;
+  --shadow-1:0 1px 2px rgba(17,24,39,.10),0 2px 6px -2px rgba(17,24,39,.10);
+  --shadow-2:0 2px 4px rgba(17,24,39,.10),0 14px 30px -14px rgba(17,24,39,.28);
+}
+[data-theme="light"] .main{box-shadow:0 2px 6px rgba(17,24,39,.10),0 18px 40px -20px rgba(17,24,39,.30);border:1px solid var(--line)}
+.card,.ae-card,.ed-sec,.w{border-color:var(--line-2)}
+.input,select.input,textarea.input{border-color:var(--line-2);color:var(--text)}
+.input::placeholder{color:var(--text-3)}
+.btn-secondary{border-color:var(--line-3);color:var(--text)}
+.btn-ghost{color:var(--text-2)}
+.muted{color:var(--text-3)}
+.ae .field>span:first-child{font-size:12.5px;font-weight:600;color:var(--text-2)}
+.ae .field .input{border-color:var(--line-3);font-size:14.5px;color:var(--text)}
+.ae .ae-card h4,.ae .ed-sec .lab{font-size:15px;font-weight:700;color:var(--text);border-bottom-color:var(--line-2)}
+.ae-kv span{color:var(--text-2)}
+.ag-head{background:var(--surface-3)}
+.ag-h{color:var(--text);font-weight:700;font-size:13.5px}
+.ag-fi{opacity:.8}
+.ag-c{color:var(--text)}
+.ag-row{border-bottom-color:var(--line)}
+.ag-row:hover{background:var(--accent-soft)}
+.ag-scroll{border-color:var(--line-3)}
+.ag-filt input,.ag-filt select{border-color:var(--line-3);color:var(--text)}
+.ag-ph,.ag-drop{color:var(--text-3)}
+.ag-btn,.ag-tbtn,.ag-xbtn{color:var(--text)}
+.ag-bar{border-color:var(--line-3)}
+.ae-tabsw{border-color:var(--line-3)}
+.ae-tabsw .ed-tab{color:var(--text);font-weight:600}
+.tbl th{color:var(--text-2)}
+.tb-sub,.dash-meta{color:var(--text-3)}
 </style>
 </head>

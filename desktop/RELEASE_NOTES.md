@@ -1,3 +1,7 @@
+## Neu in 0.25.1
+
+- Bessere Erkennbarkeit in der Arbeitsfläche: deutlich dunklere Schrift und Beschriftungen, kräftigere Rahmen und Trennlinien, stärker abgesetzte Karten, dunklerer Hintergrund hinter den Karten, fettere Spaltenköpfe, größere Feldbeschriftungen.
+
 ## Neu in 0.25.0
 
 - Neues Farbdesign: dunkles Seitenmenü (Anthrazit) mit hellen Texten, helle neutrale Arbeitsfläche ohne Blaustich, Akzentfarbe Orange (Kontor-Orange) für aktive Punkte, Knöpfe, Reiter und Diagramme. Wird einmalig als Standard übernommen; unter Darstellung bleibt jede andere Akzentfarbe wählbar.
