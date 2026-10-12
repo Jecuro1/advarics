@@ -970,6 +970,7 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
 .nav-item{padding-left:calc(11px + var(--lvl,0) * 15px)}
 .nav-item[style*="--lvl:1"],.nav-item[style*="--lvl:2"]{font-size:13px;height:32px}
 .nav-parent{width:100%;cursor:pointer}
+.nav-item .nav-label{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .nav-parent .chev{margin-left:auto;transition:transform var(--d-2);opacity:.6;flex:none}
 .nav-parent[aria-expanded="false"] .chev{transform:rotate(-90deg)}
 .nav-parent[aria-expanded="true"]{color:var(--text)}
@@ -1609,7 +1610,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.12.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.13.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1719,28 +1720,28 @@ const NAV = [
   {id: 'dashboard', label: 'Dashboard', icon: 'dashboard'},
   {id: 'kasse', label: 'Kasse', icon: 'register', cart: true},
   {label: 'Warenkorb', icon: 'bag', kids: [{id: 'warenkorb-neu', label: 'Warenkorb erfassen', icon: 'plus'}, {id: 'warenkoerbe', label: 'Warenkörbe', icon: 'bag'}]},
-  {id: 'belege', label: 'Kassenbelege', icon: 'receipt'},
-  {id: 'manuell', label: 'Manuelle Verkäufe', icon: 'edit'},
-  {id: 'ungebucht', label: 'Ungebuchte Verkäufe', icon: 'alert'},
-  {label: 'Bon-Zuordnung', icon: 'users', kids: [{id: 'bon-verkaeufer', label: 'Verkäufer-Bon-Zuordnung', icon: 'user'}, {id: 'bon-kunden', label: 'Kunden-Bon-Zuordnung', icon: 'user-plus'}]},
-  {id: 'reservierungen', label: 'Reservierungen', icon: 'clock'},
-  {id: 'auswahl', label: 'Auswahlverwaltung', icon: 'layers'},
-  {id: 'gutscheine', label: 'Gutscheine', icon: 'gift'},
-  {label: 'Faktura', icon: 'idcard', kids: [{id: 'angebote', label: 'Angebote', icon: 'edit'}, {id: 'auftraege', label: 'Aufträge', icon: 'list'}, {id: 'lieferscheine', label: 'Lieferscheine', icon: 'truck'}, {id: 'rechnungen', label: 'Rechnungen', icon: 'receipt'}, {id: 'offene-posten', label: 'Offene Posten & Mahnungen', icon: 'clock'}]},
-  {id: 'kassenbuch', label: 'Kassenbuch', icon: 'cash'},
-  {id: 'tagesabschluesse', label: 'Tagesabschlüsse', icon: 'lock'},
-  {id: 'filialumsatz', label: 'Filialumsatz kompakt', icon: 'chart'},
+  {label: 'Belege & Verkäufe', icon: 'receipt', kids: [{id: 'belege', label: 'Kassenbelege', icon: 'receipt'}, {id: 'manuell', label: 'Manuelle Verkäufe', icon: 'edit'}, {id: 'ungebucht', label: 'Ungebuchte Verkäufe', icon: 'alert'}]},
+  {label: 'Verkäufer-Bon-Zuordnung', icon: 'user', kids: [{id: 'bon-verkaeufer', label: 'Verkäufer-Bon-Zuordnung', icon: 'user'}, {id: 'bon-verkaeufer-protokoll', label: 'Protokoll Verkäufer-Bon-Zuordnung', icon: 'history'}]},
+  {label: 'Kunden-Bon-Zuordnung', icon: 'user-plus', kids: [{id: 'bon-kunden', label: 'Kunden-Bon-Zuordnung', icon: 'user-plus'}, {id: 'bon-kunden-protokoll', label: 'Protokoll Bon-Zuordnung', icon: 'history'}]},
+  {label: 'Reservierungen', icon: 'clock', kids: [{id: 'reservierungen', label: 'Reservierungen', icon: 'clock'}, {id: 'reservierung-neu', label: 'Reservierung erstellen', icon: 'plus'}]},
+  {label: 'Auswahlverwaltung', icon: 'layers', kids: [{id: 'auswahl-neu', label: 'Neue Auswahl', icon: 'plus'}, {id: 'auswahl', label: 'Auswahlen', icon: 'layers'}, {id: 'auswahl-summen', label: 'Auswahl-Summen pro Kunde', icon: 'users'}]},
+  {label: 'Gutscheine', icon: 'gift', kids: [{id: 'gutscheine', label: 'Übersicht Gutscheine', icon: 'list'}, {id: 'gutscheine-pin', label: 'Übersicht Gutscheine mit PIN', icon: 'lock'}, {id: 'gutschein-buchungen', label: 'Buchungen Gutscheine', icon: 'receipt'}, {id: 'gutscheine-loeschen', label: 'Gutscheine Löschen', icon: 'trash'}, {id: 'gutscheine-geloescht', label: 'Protokoll gelöschter Gutscheine', icon: 'history'}, {id: 'gutschein-protokoll', label: 'Protokoll Gutscheine', icon: 'history'}, {id: 'gutscheine-extern', label: 'Buchungen externe Gutscheine', icon: 'gift'}]},
+  {label: 'Faktura', icon: 'idcard', kids: [{id: 'rechnungen', label: 'Kundenrechnungen', icon: 'receipt'}, {id: 'angebote-auftraege', label: 'Angebote/Aufträge', icon: 'edit'}, {id: 'lieferscheine', label: 'Lieferscheine', icon: 'truck'}, {id: 'kundenbestellungen', label: 'Kunden-Bestellungen', icon: 'list'}, {id: 'fremdrechnungen', label: 'Fremdrechnungen', icon: 'idcard'}, {id: 'offene-posten', label: 'Offene Posten', icon: 'alert'}, {id: 'mahnwesen', label: 'Mahnwesen', icon: 'mail'}]},
+  {label: 'Kasse & Abschluss', icon: 'cash', kids: [{id: 'kassenbuch', label: 'Kassenbuch', icon: 'cash'}, {id: 'tagesabschluesse', label: 'Tagesabschlüsse', icon: 'lock'}, {id: 'filialumsatz', label: 'Filialumsatz kompakt', icon: 'chart'}]},
   {g: 'Marketing'},
   {id: 'aktionen', label: 'Preisaktionen', icon: 'percent'},
   {id: 'rabattregeln', label: 'Rabattaktionssteuerung', icon: 'sliders'},
   {id: 'kampagnen', label: 'Kampagnen', icon: 'mail'},
   {id: 'salesaktionen', label: 'Sales-Aktionen', icon: 'target'},
   {id: 'schaufenster', label: 'Digitales Schaufenster', icon: 'store'},
-  {g: 'Sortiment'},
+  {g: 'Artikel'},
   {id: 'artikel', label: 'Artikel', icon: 'tag'},
-  {id: 'bestand', label: 'Bestand', icon: 'boxes'},
-  {id: 'inventur', label: 'Inventur', icon: 'layers'},
-  {id: 'etiketten', label: 'Etiketten', icon: 'barcode'},
+  {label: 'Artikelinfo', icon: 'info', kids: [{id: 'artikelinfo', label: 'Artikelinfo', icon: 'info'}, {id: 'artikelinfo-plus', label: 'Artikel-Info Plus', icon: 'chart'}, {id: 'artikelinfo-kompakt', label: 'Artikelinfo Kompakt', icon: 'barcode'}, {id: 'bestandsinfo', label: 'Bestandsinfo', icon: 'boxes'}, {id: 'umbuchungslog', label: 'Artikel-Umbuchungs-Log', icon: 'history'}]},
+  {label: 'Umlagerungen', icon: 'swap', kids: [{id: 'umlagerungen', label: 'Umlagerungs-Pool', icon: 'list'}, {id: 'ul-neu', label: 'Filialumlagerung', icon: 'edit'}, {id: 'ul-protokoll', label: 'Protokoll Umlagerungen', icon: 'history'}, {id: 'ul-positionen', label: 'Übersicht Umlagerungspositionen', icon: 'list'}, {id: 'ul-planung', label: 'Manuelle Umlagerungsplanung', icon: 'grid'}, {id: 'ul-anforderung', label: 'Umbuchungsanforderung', icon: 'swap'}, {id: 'ul-rechnung', label: 'Filial-Rechnungsstellung', icon: 'receipt'}, {id: 'ul-ungebucht', label: 'Ungebuchte Fil. Umbuchungen', icon: 'alert'}, {id: 'ul-kompakt', label: 'Umlagerungen Kompakt', icon: 'swap'}]},
+  {label: 'Bestand', icon: 'boxes', kids: [{id: 'bestand', label: 'Bestand', icon: 'boxes'}, {id: 'bestandskorrektur', label: 'Bestandskorrektur', icon: 'edit'}, {id: 'inventur', label: 'Inventur', icon: 'layers'}, {id: 'nos', label: 'NOS Sortimente', icon: 'star'}, {id: 'picklisten', label: 'Übersicht Picklisten', icon: 'list'}]},
+  {label: 'Preisänderungen', icon: 'tag', kids: [{id: 'preisaenderung', label: 'Preisänderung', icon: 'edit'}, {id: 'preis-uebersicht', label: 'Übersicht Preisänderungen', icon: 'list'}, {id: 'preis-geplant', label: 'Geplante Preisänderungen', icon: 'clock'}]},
+  {label: 'Nachsortierung', icon: 'sync', kids: [{id: 'nachsortierung', label: 'Nachsortierung', icon: 'sync'}, {id: 'nachsort-nos', label: 'Nachsortierung aus NOS und Verkauf', icon: 'star'}, {id: 'nachsort-liste', label: 'Nachsortier-Lagerliste', icon: 'printer'}, {id: 'nachsort-param', label: 'Parameter für Nachsortierung', icon: 'sliders'}]},
+  {label: 'Artikelpflege', icon: 'sliders', kids: [{id: 'artikel-import', label: 'Artikel-Import', icon: 'download'}, {id: 'import-protokoll', label: 'Protokoll Artikel-Importe', icon: 'history'}, {id: 'ean-zuordnung', label: 'Artikel-EAN/GTIN-Zuordnung', icon: 'barcode'}, {id: 'artikelsortierung', label: 'Manuelle Artikelsortierung', icon: 'list'}, {id: 'master-artikel', label: 'Master-Artikel', icon: 'copy'}, {id: 'etiketten', label: 'Etiketten', icon: 'printer'}]},
   {g: 'Einkauf'},
   {label: 'Order', icon: 'truck', kids: [{id: 'einkauf', label: 'Order', icon: 'truck'}, {id: 'order-import', label: 'Order Import', icon: 'download'}, {id: 'order-typen', label: 'Order Typen', icon: 'list'}, {id: 'order-vorschlag', label: 'Order Vorschläge', icon: 'sparkle'}, {id: 'order-konfig', label: 'Order Vorschlags-Konfiguration', icon: 'sliders'}]},
   {label: 'Wareneingang', icon: 'download', kids: [{id: 'avis', label: 'Wareneingang Avis', icon: 'swap'}, {id: 'wareneingang', label: 'Wareneingang', icon: 'list'}, {id: 'we-scanner', label: 'Scanner Wareneingang', icon: 'barcode'}, {id: 'etiketten', label: 'Etikettendruck', icon: 'printer'}, {id: 'we-protokoll', label: 'Wareneingang Änderungsprotokoll', icon: 'history'}]},
@@ -1807,18 +1808,37 @@ function renderNav() {
   if (S.view) navReveal(S.view);
 }
 /** Übergeordnete Menüpunkte der aktuellen Seite aufklappen */
+const navAccordion = () => prefs.navAkkordeon !== false;
 function navReveal(id) {
   const p = navPath(id); if (!p) return;
+  if (navAccordion()) {
+    // Akkordeon: nur der Pfad zur aktuellen Seite bleibt offen
+    const keep = new Set(p.parents.map(navKey));
+    [...navOpen].forEach(k => { if (!keep.has(k)) { navOpen.delete(k); $(`[data-par="${CSS.escape(k)}"]`)?.setAttribute('aria-expanded', 'false'); const kd = $(`[data-kids="${CSS.escape(k)}"]`); if (kd) kd.hidden = true; } });
+    $$('.nav-sec').forEach(sec => { const g = sec.dataset.sec; if (g !== p.g && !navClosed.has(g)) { navClosed.add(g); sec.setAttribute('data-closed', ''); sec.querySelector('.nav-group')?.setAttribute('aria-expanded', 'false'); } });
+  }
   p.parents.forEach(n => { const k = navKey(n); navOpen.add(k); $(`[data-par="${CSS.escape(k)}"]`)?.setAttribute('aria-expanded', 'true'); const kd = $(`[data-kids="${CSS.escape(k)}"]`); if (kd) kd.hidden = false; });
-  if (p.g && navClosed.has(p.g)) { navClosed.delete(p.g); const sec = $(`.nav-sec[data-sec="${CSS.escape(p.g)}"]`); sec?.removeAttribute('data-closed'); sec?.querySelector('.nav-group')?.setAttribute('aria-expanded', 'true'); persist.set('navClosed', [...navClosed]); }
-  persist.set('navOpen', [...navOpen]);
+  if (p.g && navClosed.has(p.g)) { navClosed.delete(p.g); const sec = $(`.nav-sec[data-sec="${CSS.escape(p.g)}"]`); sec?.removeAttribute('data-closed'); sec?.querySelector('.nav-group')?.setAttribute('aria-expanded', 'true'); }
+  persist.set('navClosed', [...navClosed]); persist.set('navOpen', [...navOpen]);
 }
 function navToggle(btn) {
   const k = btn.dataset.par;
   if ($('#app').classList.contains('sb-collapsed')) { const first = btn.nextElementSibling?.querySelector('[data-view]'); if (first) go(first.dataset.view); return; }
-  const on = !navOpen.has(k); on ? navOpen.add(k) : navOpen.delete(k);
+  const on = !navOpen.has(k);
+  if (on && navAccordion()) {
+    // Geschwister auf derselben Ebene schließen
+    [...btn.parentElement.children].filter(x => x !== btn && x.matches('[data-par]') && x.getAttribute('aria-expanded') === 'true').forEach(x => { navOpen.delete(x.dataset.par); x.setAttribute('aria-expanded', 'false'); const kd = x.nextElementSibling; if (kd) kd.hidden = true; });
+  }
+  on ? navOpen.add(k) : navOpen.delete(k);
   btn.setAttribute('aria-expanded', on); const kd = btn.nextElementSibling; if (kd) kd.hidden = !on;
   persist.set('navOpen', [...navOpen]);
+}
+/** Gruppe (Verkauf, Artikel, Einkauf …) auf-/zuklappen – im Akkordeon-Modus schließen sich die anderen */
+function navGroupToggle(g) {
+  const k = g.dataset.grp, sec = g.parentElement, open = navClosed.has(k);
+  if (open && navAccordion()) $$('.nav-sec').forEach(x => { if (x !== sec && !navClosed.has(x.dataset.sec)) { navClosed.add(x.dataset.sec); x.setAttribute('data-closed', ''); x.querySelector('.nav-group')?.setAttribute('aria-expanded', 'false'); } });
+  open ? navClosed.delete(k) : navClosed.add(k);
+  sec.toggleAttribute('data-closed', navClosed.has(k)); g.setAttribute('aria-expanded', !navClosed.has(k)); persist.set('navClosed', [...navClosed]);
 }
 /** Zähler an Menüpunkten (z. B. offene Bestellungen) */
 function navBadge(id, n) { $$(`[data-nb="${id}"]`).forEach(b => { b.hidden = !n; b.textContent = n > 99 ? '99+' : n; }); }
@@ -10245,6 +10265,695 @@ function bindMarketing() {
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   45 · ARTIKEL — Artikelinfo (Plus, Kompakt), Bestandsinfo, Umbuchungs-
+   Log, Umlagerungen (Pool, Planung, Anforderung, Filial-Rechnung …),
+   NOS-Sortimente, Bestandskorrektur, Picklisten, Preisänderungen,
+   Nachsortierung, Artikelpflege (Import, EAN, Sortierung, Master).
+   ════════════════════════════════════════════════════════════════════ */
+Object.assign(DEFAULTS, {'nos.sortimente': [], 'nachsort.param': {tage: 1, quelle: 'lager', min: 1, feld: 'Lagerplatz', nos: true}, 'ul.berechnet': []});
+Object.keys(DEFAULTS).forEach(k => { if (!(k in CFG)) CFG[k] = DEFAULTS[k]; });
+Object.assign(VIEW_PERM, {bestandskorrektur: 'bestand.buchen', preisaenderung: 'artikel.bearbeiten', 'preis-geplant': 'artikel.bearbeiten', 'ean-zuordnung': 'artikel.bearbeiten', artikelsortierung: 'artikel.bearbeiten', 'master-artikel': 'artikel.bearbeiten', 'artikel-import': 'artikel.bearbeiten', 'ul-rechnung': 'faktura', 'ul-planung': 'einkauf'});
+const vname = v => `${colorName(v.c)} · ${v.s}`;
+const lagerplatz = a => { const f = (CFG['nachsort.param'] || {}).feld || 'Lagerplatz'; return a?.fields?.[f] || ''; };
+const reloadArt = async () => { if (DESKTOP) { try { replaceCatalog(await invoke('catalog_list')); } catch { /* */ } } };
+
+/* ── Artikelsuche (für Info-Seiten) ── */
+function artPicker(id, q) {
+  const hits = q ? ART.filter(a => a.hay.includes(norm(q)) || a.variants.some(v => v.ean === q.trim())).slice(0, 8) : [];
+  return `<div style="position:relative"><label class="search-field" style="height:48px">${ic('search')}<input data-apq="${id}" value="${esc(q || '')}" placeholder="Artikel, Marke, Artikelnummer oder EAN scannen …" autocomplete="off"></label>
+    ${hits.length ? `<div class="card" style="position:absolute;left:0;right:0;top:52px;z-index:6;overflow:hidden;box-shadow:var(--shadow-3)">${hits.map(a => `<button class="pal-i" style="height:46px;border-radius:0" data-apk="${esc(a.id)}"><span style="flex:1;text-align:left"><b>${esc(a.name)}</b> <span class="muted">· ${esc(a.brand)} · ${esc(a.id)}</span></span><span class="muted">${a.stock} Stk.</span></button>`).join('')}</div>` : ''}</div>`;
+}
+const AIF = {sel: null, q: '', data: {}};
+async function aiData(a) {
+  if (AIF.data[a.id] && Date.now() - AIF.data[a.id].t < 30000) return AIF.data[a.id];
+  const d = {t: Date.now(), moves: [], sales: [], open: 0, res: {}};
+  if (DESKTOP) {
+    try { d.moves = await invoke('stock_moves', {articleId: a.id, limit: 200}); } catch { /* */ }
+    try { d.sales = (await invoke('sales_list', {limit: 3000})).filter(s => (s.kind || 'verkauf') === 'verkauf' && (s.data?.lines || []).some(l => l.sku === a.id)); } catch { /* */ }
+    try { d.res = await invoke('doc_reserved'); } catch { /* */ }
+    try { await loadPurchasing(); for (const p of EK.pos.filter(p => ['bestellt', 'teilgeliefert'].includes(p.status))) { const ls = await invoke('po_lines', {id: p.id}); ls.filter(l => l.article_id === a.id).forEach(l => { d.open += l.qty - l.received; }); } } catch { /* */ }
+  }
+  AIF.data[a.id] = d; return d;
+}
+function soldIn(d, a, days) { const from = Date.now() - days * 864e5; return d.sales.filter(s => new Date(s.ts) >= from).reduce((n, s) => n + s.data.lines.filter(l => l.sku === a.id).reduce((m, l) => m + l.qty, 0), 0); }
+function matrixHTML(a, d, big) {
+  const cols = a.colors, rows = a.sizes;
+  const cell = (c, s) => { const v = a.variants.find(x => x.c === c && x.s === s); if (!v) return '<td class="muted">–</td>'; const r = d?.res?.[v.ean] || 0; const o = v.other ? v.other.reduce((x, y) => x + y, 0) : null; return `<td class="r num" style="${big ? 'font-size:18px;' : ''}${v.q <= 0 ? 'color:var(--neg);' : v.q <= (a.minStock ?? 2) ? 'color:var(--warn);' : ''}font-weight:600">${v.q}${r ? `<div class="muted" style="font-size:11px;font-weight:400">${r} res.</div>` : ''}${o != null ? `<div class="muted" style="font-size:11px;font-weight:400">${o} andere</div>` : ''}</td>`; };
+  return `<div style="overflow:auto"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Größe</th>${cols.map(c => `<th class="r"><span class="dot" style="background:${COLORS[c]?.[1] || '#999'};width:10px;height:10px;display:inline-block;border-radius:50%;margin-right:6px"></span>${esc(colorName(c))}</th>`).join('')}<th class="r" style="padding-right:16px">Summe</th></tr></thead><tbody>${rows.map(s => `<tr><td style="padding-left:16px"><b>${esc(s)}</b></td>${cols.map(c => cell(c, s)).join('')}<td class="r num" style="padding-right:16px">${a.variants.filter(v => v.s === s).reduce((n, v) => n + v.q, 0)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+for (const [id, mode, title] of [['artikelinfo', 'info', 'Artikelinfo'], ['artikelinfo-plus', 'plus', 'Artikel-Info Plus'], ['artikelinfo-kompakt', 'kompakt', 'Artikelinfo Kompakt']]) {
+  registerPage(id, {title, sub: () => AIF.sel ? artById(AIF.sel)?.name || '' : 'Artikel suchen oder scannen', render: () => renderArtInfo(id, mode, title)});
+}
+async function renderArtInfo(id, mode, title) {
+  const v = $('#view-' + id), a = AIF.sel ? artById(AIF.sel) : null;
+  v.innerHTML = `<div class="cv">${pageHead(title, mode === 'kompakt' ? 'Schnell scannen – Bestand je Farbe und Größe auf einen Blick' : mode === 'plus' ? 'Mit Abverkauf, Reichweite, Marge, Lagerwert und Umschlag' : 'Preise, Bestände je Variante und Filiale, Reservierungen, offene Bestellungen, letzte Buchungen')}
+    ${artPicker(id, AIF.q)}<div data-aib style="margin-top:16px">${a ? loadingCard('Lade') : `<div class="card"><div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('barcode')}</div><h3>Artikel scannen oder suchen</h3><p>EAN scannen und Enter – oder Namen tippen.</p></div></div>`}</div></div>`;
+  if (!a) { setTimeout(() => $(`[data-apq="${id}"]`)?.focus(), 60); return; }
+  const d = await aiData(a), box = $('[data-aib]', v); if (!box) return;
+  const stock = a.variants.reduce((n, x) => n + x.q, 0), res = a.variants.reduce((n, x) => n + (d.res[x.ean] || 0), 0);
+  const vk = a.sale || a.price, ek = a.cost, marge = ek != null ? (vk / 1.2 - ek) / (vk / 1.2) * 100 : null;
+  const s30 = soldIn(d, a, 30), s90 = soldIn(d, a, 90), reich = s30 ? Math.round(stock / (s30 / 30)) : null;
+  const head = `<div class="card" style="padding:16px;display:flex;gap:16px;align-items:center;margin-bottom:14px"><div style="width:${mode === 'kompakt' ? 64 : 92}px;height:${mode === 'kompakt' ? 64 : 92}px;flex:none;border-radius:14px;overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${artVisual(a, COLORS[a.colors[0]]?.[1] || '#888')}</div>
+    <div style="min-width:0;flex:1"><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.06em">${esc(a.brand)} · ${esc(a.id)} · ${esc(CATS.find(c => c.id === a.cat)?.name || a.cat)}</div><div style="font-size:20px;font-weight:650">${esc(a.name)}</div><div class="muted" style="font-size:13px">${[a.supplierId ? esc(supName(a.supplierId)) : '', lagerplatz(a) ? 'Lagerplatz ' + esc(lagerplatz(a)) : ''].filter(Boolean).join(' · ')}</div></div>
+    <div style="text-align:right"><div style="font-size:22px;font-weight:700;${a.sale ? 'color:var(--accent)' : ''}">${eur(vk)}</div>${a.sale ? `<div class="muted" style="text-decoration:line-through">${eur(a.price)}</div>` : ''}${mode !== 'kompakt' && ek != null ? `<div class="muted" style="font-size:12.5px">EK ${eur(ek)}</div>` : ''}</div>
+    ${mode !== 'kompakt' ? `<button class="btn btn-secondary btn-sm" data-aied="${esc(a.id)}">${ic('edit', 'i-sm')}Bearbeiten</button>` : ''}</div>`;
+  if (mode === 'kompakt') { box.innerHTML = head + `<div class="card">${matrixHTML(a, d, true)}</div>`; return; }
+  const kpi = mode === 'plus' ? kpiCards([[num(stock), 'Bestand'], [num(res), 'reserviert', res ? 'warn' : ''], [num(d.open), 'offen bestellt'], [num(s30), 'verkauft 30 Tage'], [num(s90), 'verkauft 90 Tage'], [s30 + stock ? Math.round(s30 / (s30 + stock) * 100) + ' %' : '–', 'Abverkaufsquote 30 T'], [reich != null ? reich + ' Tage' : '–', 'Reichweite', reich != null && reich < 14 ? 'warn' : ''], [marge != null ? num(marge, 1) + ' %' : '–', 'Marge (netto)'], [ek != null ? eur0(stock * ek) : '–', 'Lagerwert EK'], [eur0(stock * vk), 'Lagerwert VK'], [ek != null && stock ? num(s90 * 4 / Math.max(1, stock), 1) : '–', 'Umschlag p. a.']])
+    : kpiCards([[num(stock), 'Bestand gesamt'], [num(res), 'davon reserviert', res ? 'warn' : ''], [num(d.open), 'offen bestellt'], [num(s30), 'verkauft 30 Tage']]);
+  box.innerHTML = head + kpi + `<div class="card" style="margin-bottom:14px"><div class="set-row"><div class="set-l">Bestand je Variante</div><div class="set-c"><button class="btn btn-ghost btn-sm" data-ailbl="${esc(a.id)}">${ic('printer', 'i-sm')}Etiketten</button><button class="btn btn-ghost btn-sm" data-goto="bestandskorrektur">Bestandskorrektur</button></div></div>${matrixHTML(a, d)}</div>
+    <div class="card"><div class="set-row"><div class="set-l">Letzte Bestandsbuchungen</div></div>${d.moves.length ? `<table class="tbl" style="margin:0"><tbody>${d.moves.slice(0, mode === 'plus' ? 30 : 12).map(m => `<tr><td style="padding-left:16px" class="muted num">${esc(fmtTs(m.ts))}</td><td>${esc(colorName(m.color))} · ${esc(m.size)}</td><td>${esc(m.reason)}</td><td class="mono muted">${esc(m.ref || '')}</td><td class="r num" style="color:var(--${m.delta >= 0 ? 'pos' : 'neg'})">${m.delta > 0 ? '+' : ''}${m.delta}</td><td class="r num" style="padding-right:16px">${m.stock_after}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:24px"><p>Noch keine Buchungen.</p></div>'}</div>`;
+}
+
+/* ── Bestandsinfo ── */
+const BI = {cat: 'alle', f: 'alle', q: ''};
+registerPage('bestandsinfo', {title: 'Bestandsinfo', sub: () => `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück`, render: renderBestandsinfo});
+function renderBestandsinfo() {
+  const v = $('#view-bestandsinfo'), n = norm(BI.q);
+  const rows = ART.filter(a => (BI.cat === 'alle' || a.cat === BI.cat) && (!n || a.hay.includes(n))).map(a => ({a, st: a.variants.reduce((s, x) => s + x.q, 0), neg: a.variants.filter(x => x.q < 0).length, low: a.variants.filter(x => x.q <= (a.minStock ?? 2)).length}))
+    .filter(r => BI.f === 'alle' || (BI.f === 'leer' && r.a.variants.some(x => x.q <= 0)) || (BI.f === 'min' && r.low) || (BI.f === 'neg' && r.neg));
+  const ek = rows.reduce((s, r) => s + r.st * (r.a.cost || 0), 0), vk = rows.reduce((s, r) => s + r.st * (r.a.sale || r.a.price), 0);
+  const byCat = {}; rows.forEach(r => { (byCat[r.a.cat] ||= {st: 0, ek: 0}); byCat[r.a.cat].st += r.st; byCat[r.a.cat].ek += r.st * (r.a.cost || 0); });
+  v.innerHTML = `<div class="cv">${pageHead('Bestandsinfo', 'Bestand und Lagerwert je Artikel und Warengruppe – Klick öffnet die Artikelinfo')}
+    ${kpiCards([[num(rows.reduce((s, r) => s + r.st, 0)), 'Stück'], [eur0(ek), 'Lagerwert EK'], [eur0(vk), 'Lagerwert VK'], [num(rows.filter(r => r.low).length), 'Artikel mit Varianten unter Minimum', 'warn'], [num(rows.filter(r => r.neg).length), 'mit negativem Bestand', 'neg']])}
+    <div class="filters"><input class="input" id="biQ" value="${esc(BI.q)}" placeholder="Suchen …" style="max-width:300px"><select class="input select" id="biCat" style="width:auto">${CATS.map(c => `<option value="${c.id}" ${c.id === BI.cat ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select><div class="seg" id="biSeg">${[['alle', 'Alle'], ['min', 'unter Minimum'], ['leer', 'ausverkauft'], ['neg', 'negativ']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${BI.f === k}">${l}</button>`).join('')}</div></div>
+    <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;align-items:start"><div class="card"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Artikel</th><th class="r">Varianten</th><th class="r">Bestand</th><th class="r">unter Min.</th><th class="r" style="padding-right:16px">Wert EK</th></tr></thead><tbody>${rows.slice(0, 400).map(r => `<tr data-aiopen="${esc(r.a.id)}" style="cursor:pointer"><td style="padding-left:16px"><b>${esc(r.a.name)}</b><div class="muted" style="font-size:12px">${esc(r.a.brand)} · ${esc(r.a.id)}</div></td><td class="r num">${r.a.variants.length}</td><td class="r num" style="font-weight:600;${r.neg ? 'color:var(--neg)' : ''}">${r.st}</td><td class="r num" style="color:${r.low ? 'var(--warn)' : 'inherit'}">${r.low || ''}</td><td class="r num" style="padding-right:16px">${r.a.cost != null ? eur0(r.st * r.a.cost) : '–'}</td></tr>`).join('')}</tbody></table></div>
+      <div class="card"><div class="set-row"><div class="set-l">Je Warengruppe</div></div><table class="tbl" style="margin:0"><tbody>${Object.entries(byCat).map(([c, x]) => `<tr><td style="padding-left:16px">${esc(CATS.find(y => y.id === c)?.name || c)}</td><td class="r num">${num(x.st)}</td><td class="r num" style="padding-right:16px">${eur0(x.ek)}</td></tr>`).join('')}</tbody></table></div></div></div>`;
+  initSeg($('#biSeg', v), b => { BI.f = b.dataset.v; renderBestandsinfo(); });
+  $('#biCat', v).onchange = e => { BI.cat = e.target.value; renderBestandsinfo(); };
+  $('#biQ', v).onchange = e => { BI.q = e.target.value; renderBestandsinfo(); };
+}
+
+/* ── Artikel-Umbuchungs-Log ── */
+const UL = {q: '', r: '', days: '7'};
+const UL_REASONS = [['', 'Alle'], ['Verkauf', 'Verkauf'], ['Wareneingang', 'Wareneingang'], ['Korrektur', 'Korrekturen'], ['Umlagerung', 'Umlagerung'], ['Retoure', 'Retouren'], ['Inventur', 'Inventur'], ['Auswahl', 'Auswahl'], ['Lieferschein', 'Lieferschein']];
+registerPage('umbuchungslog', {title: 'Artikel-Umbuchungs-Log', sub: () => 'alle Bestandsbewegungen', render: renderUmbLog});
+async function renderUmbLog() {
+  const v = $('#view-umbuchungslog');
+  if (!DESKTOP) { v.innerHTML = desktopEmpty('history', 'Umbuchungs-Log'); return; }
+  let m; try { m = await invoke('stock_moves', {articleId: null, limit: 8000}); } catch (e) { v.innerHTML = `<div class="cv"><div class="card" style="padding:18px">${esc(String(e))}</div></div>`; return; }
+  const from = UL.days === 'alle' ? '' : dIso(dayStart(+UL.days)), n = norm(UL.q);
+  const rows = m.filter(x => x.ts.slice(0, 10) >= from && (!UL.r || x.reason.includes(UL.r)) && (!n || norm(`${x.name} ${x.article_id} ${x.reason} ${x.ref || ''} ${x.user || ''}`).includes(n)));
+  v.innerHTML = `<div class="cv">${pageHead('Artikel-Umbuchungs-Log', 'Jede Bestandsbewegung mit Grund, Beleg, Benutzer und Bestand danach')}
+    ${kpiCards([[num(rows.length), 'Buchungen'], [num(rows.filter(x => x.delta > 0).reduce((s, x) => s + x.delta, 0)), 'Stück zu', 'pos'], [num(-rows.filter(x => x.delta < 0).reduce((s, x) => s + x.delta, 0)), 'Stück ab', 'neg']])}
+    <div class="filters"><input class="input" id="ulQ" value="${esc(UL.q)}" placeholder="Artikel, Beleg, Benutzer …" style="max-width:300px"><select class="input select" id="ulR" style="width:auto">${UL_REASONS.map(([k, l]) => `<option value="${k}" ${k === UL.r ? 'selected' : ''}>${l}</option>`).join('')}</select><div class="seg" id="ulSeg">${[['0', 'Heute'], ['7', '7 Tage'], ['30', '30 Tage'], ['alle', 'Alle']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${UL.days === k}">${l}</button>`).join('')}</div><button class="btn btn-ghost btn-sm" data-ulcsv>${ic('download', 'i-sm')}CSV</button></div>
+    <div class="card">${rows.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Zeit</th><th>Artikel</th><th>Variante</th><th>Grund</th><th>Beleg</th><th>Benutzer</th><th class="r">Menge</th><th class="r" style="padding-right:16px">Bestand</th></tr></thead><tbody>${rows.slice(0, 700).map(x => `<tr data-aiopen="${esc(x.article_id)}" style="cursor:pointer"><td style="padding-left:16px" class="muted num">${esc(fmtTs(x.ts))}</td><td><b>${esc(x.name)}</b></td><td>${esc(colorName(x.color))} · ${esc(x.size)}</td><td>${esc(x.reason)}</td><td class="mono muted">${esc(x.ref || '')}</td><td>${esc(x.user || '')}</td><td class="r num" style="color:var(--${x.delta >= 0 ? 'pos' : 'neg'})">${x.delta > 0 ? '+' : ''}${x.delta}</td><td class="r num" style="padding-right:16px">${x.stock_after}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Keine Buchungen im Filter.</p></div>'}</div></div>`;
+  initSeg($('#ulSeg', v), b => { UL.days = b.dataset.v; renderUmbLog(); });
+  $('#ulQ', v).onchange = e => { UL.q = e.target.value; renderUmbLog(); };
+  $('#ulR', v).onchange = e => { UL.r = e.target.value; renderUmbLog(); };
+  v._rows = rows;
+}
+
+/* ── Umlagerungen ── */
+const vbHint = (t, s) => `<div class="cv">${pageHead(t, s)}<div class="card"><div class="empty" style="padding:56px 20px"><div class="empty-icon">${ic('swap')}</div><h3>Nur im Filialverbund</h3><p>Umlagerungen gibt es, sobald mehrere Filialen verbunden sind (Einstellungen → Filialverbund).</p><button class="btn btn-primary" data-goto="filialen">Filialverbund einrichten</button></div></div></div>`;
+async function vbLoadTr() { await loadVerbund(); try { VB.transfers = await invoke('verbund_transfers'); } catch { VB.transfers = []; } return VB.transfers; }
+const trPill = s => `<span class="pill ${TR_STATE[s]?.[1] || ''}" style="height:20px">${esc(TR_STATE[s]?.[0] || s)}</span>`;
+const trVal = t => (t.lines || []).reduce((s, l) => { const x = findEan(l.ean); return s + (l.qty || 0) * (x?.a.cost || 0); }, 0);
+registerPage('ul-neu', {title: 'Filialumlagerung', sub: () => 'Ware an eine Filiale senden', render: () => {
+  const v = $('#view-ul-neu'); if (!vbOn()) { v.innerHTML = vbHint('Filialumlagerung', 'Ware zwischen Filialen umlagern'); return; }
+  v.innerHTML = `<div class="cv">${pageHead('Filialumlagerung', 'Ware aus dieser Filiale an eine andere senden – Bestand wird beim Versand ab- und beim Empfang zugebucht')}<div class="card"><div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('swap')}</div><h3>Neue Umlagerung</h3><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-primary" data-ulnew>${ic('plus', 'i-sm')}Umlagerung anlegen</button><button class="btn btn-secondary" data-goto="umlagerungen">Umlagerungs-Pool</button></div></div></div></div>`;
+  setTimeout(() => S.view === 'ul-neu' && !$('.layer') && openTransferNew(), 150);
+}});
+registerPage('ul-protokoll', {title: 'Protokoll Umlagerungen', sub: () => 'alle Umlagerungen', render: async () => {
+  const v = $('#view-ul-protokoll'); if (!vbOn()) { v.innerHTML = vbHint('Protokoll Umlagerungen', 'Verlauf aller Umlagerungen'); return; }
+  const tr = await vbLoadTr();
+  v.innerHTML = `<div class="cv">${pageHead('Protokoll Umlagerungen', 'Alle Umlagerungen mit Status, Zeitpunkt und Benutzer')}<div class="card">${tr.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Nummer</th><th>von</th><th>an</th><th>Status</th><th>angelegt</th><th>zuletzt</th><th>Benutzer</th><th class="r">Stück</th><th class="r" style="padding-right:16px">Wert EK</th></tr></thead><tbody>${tr.map(t => `<tr><td style="padding-left:16px" class="mono"><b>${esc(t.no)}</b></td><td>${esc(storeName(t.from))}</td><td>${esc(storeName(t.to))}</td><td>${trPill(t.status)}</td><td class="muted num">${esc(fmtTs(t.created_at))}</td><td class="muted num">${esc(fmtTs(t.updated_at))}</td><td>${esc(t.user || '')}</td><td class="r num">${num(t.lines.reduce((s, l) => s + l.qty, 0))}</td><td class="r num" style="padding-right:16px">${eur0(trVal(t))}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Noch keine Umlagerungen.</p></div>'}</div></div>`;
+}});
+registerPage('ul-positionen', {title: 'Übersicht Umlagerungspositionen', sub: () => 'je Artikel', render: async () => {
+  const v = $('#view-ul-positionen'); if (!vbOn()) { v.innerHTML = vbHint('Übersicht Umlagerungspositionen', 'Alle Positionen'); return; }
+  const tr = await vbLoadTr(), rows = tr.flatMap(t => t.lines.map(l => ({t, l})));
+  v.innerHTML = `<div class="cv">${pageHead('Übersicht Umlagerungspositionen', 'Jede umgelagerte Position einzeln – sortierbar nach Status')}<div class="card">${rows.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Umlagerung</th><th>Artikel</th><th>EAN</th><th>von → an</th><th>Status</th><th class="r" style="padding-right:16px">Menge</th></tr></thead><tbody>${rows.map(({t, l}) => `<tr><td style="padding-left:16px" class="mono">${esc(t.no)}</td><td><b>${esc(l.name || '')}</b></td><td class="mono muted">${esc(l.ean)}</td><td>${esc(t.from)} → ${esc(t.to)}</td><td>${trPill(t.status)}</td><td class="r num" style="padding-right:16px">${l.qty}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Keine Positionen.</p></div>'}</div></div>`;
+}});
+const UP = {sel: null, q: '', from: null};
+registerPage('ul-planung', {title: 'Manuelle Umlagerungsplanung', sub: () => 'Bestände ausgleichen', render: renderUlPlanung});
+async function renderUlPlanung() {
+  const v = $('#view-ul-planung'); if (!vbOn()) { v.innerHTML = vbHint('Manuelle Umlagerungsplanung', 'Bestände zwischen Filialen ausgleichen'); return; }
+  await loadVerbund();
+  const stores = [{id: vbOwn(), name: VB.info?.name || 'Diese Filiale'}, ...OTHER_STORES], a = UP.sel ? artById(UP.sel) : null;
+  UP.from ||= vbOwn();
+  v.innerHTML = `<div class="cv">${pageHead('Manuelle Umlagerungsplanung', 'Artikel wählen, Bestand je Filiale vergleichen, Mengen eintragen und als Umlagerungen anlegen')}${artPicker('ul-planung', UP.q)}
+    ${a ? `<div class="card" style="margin-top:14px"><div class="set-row"><div><div class="set-l">${esc(a.name)}</div><div class="set-h">Quelle: <select class="input select" id="upFrom" style="width:auto;height:28px;display:inline-block">${stores.map(s => `<option value="${esc(s.id)}" ${s.id === UP.from ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-upgo>${ic('truck', 'i-sm')}Umlagerungen anlegen</button></div></div>
+      <div style="overflow:auto"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Variante</th>${stores.map(s => `<th class="r">${esc(s.name)}</th>`).join('')}${stores.filter(s => s.id !== UP.from).map(s => `<th class="r">→ ${esc(s.name)}</th>`).join('')}</tr></thead><tbody>${a.variants.map(x => `<tr><td style="padding-left:16px"><b>${esc(vname(x))}</b><div class="muted" style="font-size:11.5px">${esc(x.ean)}</div></td>${stores.map(s => `<td class="r num">${s.id === vbOwn() ? x.q : (VB.stock?.[s.id]?.[x.ean] ?? 0)}</td>`).join('')}${stores.filter(s => s.id !== UP.from).map(s => `<td class="r"><input class="input num" data-upq="${esc(x.ean)}" data-to="${esc(s.id)}" value="" placeholder="0" style="width:60px;height:30px;text-align:right"></td>`).join('')}</tr>`).join('')}</tbody></table></div></div>` : ''}</div>`;
+}
+const UA = {sel: null, q: ''};
+registerPage('ul-anforderung', {title: 'Umbuchungsanforderung', sub: () => 'Ware aus anderer Filiale anfordern', render: async () => {
+  const v = $('#view-ul-anforderung'); if (!vbOn()) { v.innerHTML = vbHint('Umbuchungsanforderung', 'Ware aus einer anderen Filiale anfordern'); return; }
+  await loadVerbund(); const a = UA.sel ? artById(UA.sel) : null;
+  v.innerHTML = `<div class="cv">${pageHead('Umbuchungsanforderung', 'Ware aus einer anderen Filiale für diese Filiale anfordern – die andere Filiale sieht die Anforderung im Umlagerungs-Pool')}${artPicker('ul-anforderung', UA.q)}
+    ${a ? `<div class="card" style="margin-top:14px"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Variante</th><th class="r">hier</th>${OTHER_STORES.map(s => `<th class="r">${esc(s.name)}</th>`).join('')}<th class="r">Menge</th><th>aus Filiale</th></tr></thead><tbody>${a.variants.map(x => { const best = OTHER_STORES.slice().sort((p, q) => (VB.stock?.[q.id]?.[x.ean] ?? 0) - (VB.stock?.[p.id]?.[x.ean] ?? 0))[0]; return `<tr><td style="padding-left:16px"><b>${esc(vname(x))}</b></td><td class="r num">${x.q}</td>${OTHER_STORES.map(s => `<td class="r num">${VB.stock?.[s.id]?.[x.ean] ?? 0}</td>`).join('')}<td class="r"><input class="input num" data-uaq="${esc(x.ean)}" placeholder="0" style="width:60px;height:30px;text-align:right"></td><td><select class="input select" data-uaf="${esc(x.ean)}" style="height:30px;width:auto">${OTHER_STORES.map(s => `<option value="${esc(s.id)}" ${s.id === best?.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></td></tr>`; }).join('')}</tbody></table>
+      <div style="display:flex;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--line)"><button class="btn btn-primary" data-uago>${ic('swap', 'i-sm')}Anfordern</button></div></div>` : ''}</div>`;
+}});
+registerPage('ul-ungebucht', {title: 'Ungebuchte Fil. Umbuchungen', sub: () => 'offene Umlagerungen', render: async () => {
+  const v = $('#view-ul-ungebucht'); if (!vbOn()) { v.innerHTML = vbHint('Ungebuchte Fil. Umbuchungen', 'Offene Umlagerungen'); return; }
+  const tr = (await vbLoadTr()).filter(t => ['angefordert', 'versendet'].includes(t.status)), age = t => Math.floor((Date.now() - new Date(t.updated_at)) / 864e5);
+  v.innerHTML = `<div class="cv">${pageHead('Ungebuchte Fil. Umbuchungen', 'Angeforderte, noch nicht versendete und versendete, noch nicht empfangene Umlagerungen')}
+    ${kpiCards([[num(tr.filter(t => t.status === 'angefordert').length), 'nicht versendet', 'warn'], [num(tr.filter(t => t.status === 'versendet').length), 'unterwegs, nicht empfangen'], [num(tr.filter(t => age(t) >= 2).length), 'älter als 2 Tage', 'neg']])}
+    <div class="card">${tr.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Nummer</th><th>von → an</th><th>Status</th><th>seit</th><th class="r">Stück</th><th></th></tr></thead><tbody>${tr.map(t => `<tr><td style="padding-left:16px" class="mono"><b>${esc(t.no)}</b></td><td>${esc(storeName(t.from))} → ${esc(storeName(t.to))}</td><td>${trPill(t.status)}</td><td style="color:${age(t) >= 2 ? 'var(--neg)' : 'inherit'}">${age(t)} Tagen</td><td class="r num">${num(t.lines.reduce((s, l) => s + l.qty, 0))}</td><td class="r" style="padding-right:12px">${t.status === 'angefordert' && t.from === vbOwn() ? `<button class="btn btn-primary btn-sm" data-tst2="versendet" data-no="${esc(t.no)}">Versenden</button>` : ''}${t.status === 'versendet' && t.to === vbOwn() ? `<button class="btn btn-primary btn-sm" data-tst2="empfangen" data-no="${esc(t.no)}">Empfangen</button>` : ''}</td></tr>`).join('')}</tbody></table>` : `<div class="empty" style="padding:44px"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><p>Alle Umlagerungen gebucht.</p></div>`}</div></div>`;
+}});
+registerPage('ul-kompakt', {title: 'Umlagerungen Kompakt', sub: () => 'je Filialpaar', render: async () => {
+  const v = $('#view-ul-kompakt'); if (!vbOn()) { v.innerHTML = vbHint('Umlagerungen Kompakt', 'Zusammenfassung'); return; }
+  const tr = await vbLoadTr(), m = {};
+  tr.filter(t => t.status !== 'storniert').forEach(t => { const k = `${t.from}→${t.to}`; (m[k] ||= {from: t.from, to: t.to, n: 0, st: 0, w: 0, offen: 0}); m[k].n++; m[k].st += t.lines.reduce((s, l) => s + l.qty, 0); m[k].w += trVal(t); if (t.status !== 'empfangen') m[k].offen++; });
+  v.innerHTML = `<div class="cv">${pageHead('Umlagerungen Kompakt', 'Umlagerungen je Filialpaar: Anzahl, Stück, Warenwert (EK), offen')}<div class="card">${Object.keys(m).length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">von</th><th>an</th><th class="r">Umlagerungen</th><th class="r">Stück</th><th class="r">Wert EK</th><th class="r" style="padding-right:16px">offen</th></tr></thead><tbody>${Object.values(m).map(x => `<tr><td style="padding-left:16px"><b>${esc(storeName(x.from))}</b></td><td><b>${esc(storeName(x.to))}</b></td><td class="r num">${x.n}</td><td class="r num">${num(x.st)}</td><td class="r num">${eur0(x.w)}</td><td class="r num" style="padding-right:16px;color:${x.offen ? 'var(--warn)' : 'inherit'}">${x.offen}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Noch keine Umlagerungen.</p></div>'}</div></div>`;
+}});
+registerPage('ul-rechnung', {title: 'Filial-Rechnungsstellung', sub: () => 'Umlagerungen intern verrechnen', render: async () => {
+  const v = $('#view-ul-rechnung'); if (!vbOn()) { v.innerHTML = vbHint('Filial-Rechnungsstellung', 'Umlagerungen zwischen Filialen verrechnen'); return; }
+  const done = new Set(CFG['ul.berechnet'] || []), tr = (await vbLoadTr()).filter(t => t.status === 'empfangen' && t.from === vbOwn() && !done.has(t.no));
+  const by = {}; tr.forEach(t => (by[t.to] ||= []).push(t));
+  v.innerHTML = `<div class="cv">${pageHead('Filial-Rechnungsstellung', 'Empfangene Umlagerungen aus dieser Filiale an die empfangende Filiale zu Einstandspreisen verrechnen (Rechnung unter Faktura)')}
+    ${Object.keys(by).length ? Object.entries(by).map(([to, l]) => `<div class="card" style="margin-bottom:12px"><div class="set-row"><div><div class="set-l">${esc(storeName(to))}</div><div class="set-h">${l.length} Umlagerungen · ${eur(l.reduce((s, t) => s + trVal(t), 0))} EK netto</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-ulr="${esc(to)}">${ic('receipt', 'i-sm')}Rechnung erstellen</button></div></div><table class="tbl" style="margin:0"><tbody>${l.map(t => `<tr><td style="padding-left:16px" class="mono">${esc(t.no)}</td><td class="muted num">${esc(fmtTs(t.updated_at))}</td><td class="r num">${num(t.lines.reduce((s, x) => s + x.qty, 0))} Stk.</td><td class="r num" style="padding-right:16px">${eur(trVal(t))}</td></tr>`).join('')}</tbody></table></div>`).join('')
+      : `<div class="card"><div class="empty" style="padding:48px"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><p>Keine offenen Umlagerungen zu verrechnen.</p></div></div>`}</div>`;
+  v._by = by;
+}});
+
+/* ── NOS-Sortimente (Never out of Stock) ── */
+const nosList = () => Array.isArray(CFG['nos.sortimente']) ? CFG['nos.sortimente'] : [];
+const nosShort = () => { const out = {}; nosList().filter(n => n.aktiv !== false).forEach(n => (n.items || []).forEach(it => { const x = findEan(it.ean); if (!x) return; const fehl = (+it.soll || 0) - x.v.q; if (fehl > 0) out[it.ean] = Math.max(out[it.ean] || 0, fehl); })); return out; };
+registerPage('nos', {title: 'NOS Sortimente', sub: () => `${nosList().length} Sortimente`, render: renderNos});
+function renderNos() {
+  const v = $('#view-nos'), l = nosList();
+  v.innerHTML = `<div class="cv">${pageHead('NOS Sortimente', 'Never-out-of-Stock: Basisartikel mit Sollbestand – Fehlmengen fließen in Nachsortierung und Bestellvorschlag', `<button class="btn btn-primary" data-nos="neu">${ic('plus', 'i-sm')}Neues Sortiment</button>`)}
+    ${l.length ? l.map((n, i) => { const items = (n.items || []).map(it => ({it, x: findEan(it.ean)})).filter(r => r.x); const fehl = items.filter(r => r.x.v.q < +r.it.soll); return `<div class="card" style="margin-bottom:12px"><div class="set-row"><div><div class="set-l">${esc(n.name)} ${n.aktiv === false ? '<span class="pill" style="height:20px">inaktiv</span>' : ''}</div><div class="set-h">${items.length} Varianten · ${fehl.length ? `<span style="color:var(--warn)">${fehl.length} unter Soll (${num(fehl.reduce((s, r) => s + (+r.it.soll - r.x.v.q), 0))} Stück)</span>` : 'alles auf Soll'}</div></div><div class="set-c" style="gap:6px"><button class="btn btn-ghost btn-sm" data-nose="${i}">${ic('edit', 'i-sm')}Bearbeiten</button>${fehl.length ? `<button class="btn btn-primary btn-sm" data-goto="nachsort-nos">Nachsortieren</button>` : ''}</div></div>
+      <table class="tbl" style="margin:0"><tbody>${items.slice(0, 40).map(r => `<tr><td style="padding-left:16px"><b>${esc(r.x.a.name)}</b> <span class="muted">${esc(vname(r.x.v))}</span></td><td class="r num">Soll ${r.it.soll}</td><td class="r num" style="padding-right:16px;font-weight:600;color:${r.x.v.q < +r.it.soll ? 'var(--warn)' : 'var(--pos)'}">Ist ${r.x.v.q}</td></tr>`).join('')}</tbody></table></div>`; }).join('')
+      : `<div class="card"><div class="empty" style="padding:56px 20px"><div class="empty-icon">${ic('star')}</div><h3>Noch kein NOS-Sortiment</h3><p>Z. B. Basic-Socken, Merino-Shirts in allen Größen: Sollbestand festlegen – Kontor schlägt automatisch Nachschub vor.</p><button class="btn btn-primary" data-nos="neu">${ic('plus', 'i-sm')}Sortiment anlegen</button></div></div>`}</div>`;
+}
+function openNos(i) {
+  const n = i == null ? {id: uid(), name: '', aktiv: true, items: []} : JSON.parse(JSON.stringify(nosList()[i]));
+  const el = openLayer(`<div class="drawer-panel" style="width:min(680px,100%)" role="dialog" aria-modal="true"><div data-nb2 style="display:flex;flex-direction:column;min-height:0;flex:1"></div></div>`, {cls: 'drawer'});
+  const box = $('[data-nb2]', el); let q = '';
+  const render = () => {
+    const hits = q ? ART.filter(a => a.hay.includes(norm(q)) || a.variants.some(x => x.ean === q.trim())).slice(0, 6) : [];
+    box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('star')}</div><div><h2>${i == null ? 'Neues NOS-Sortiment' : esc(n.name)}</h2><p>Sollbestand je Variante</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="drawer-body" style="display:grid;gap:12px;align-content:start"><label class="field"><span>Name</span><input class="input" data-nn value="${esc(n.name)}" placeholder="z. B. Merino Basics"></label>
+        <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" data-na ${n.aktiv !== false ? 'checked' : ''}> aktiv</label>
+        <div style="position:relative"><label class="search-field" style="height:42px">${ic('search')}<input data-nq value="${esc(q)}" placeholder="Artikel hinzufügen (alle Varianten) …" autocomplete="off"></label>${hits.length ? `<div class="card" style="position:absolute;left:0;right:0;top:46px;z-index:6;overflow:hidden;box-shadow:var(--shadow-3)">${hits.map(a => `<button class="pal-i" style="height:44px;border-radius:0" data-nadd="${esc(a.id)}"><b>${esc(a.name)}</b>&nbsp;<span class="muted">· ${a.variants.length} Varianten</span></button>`).join('')}</div>` : ''}</div>
+        <div class="card">${n.items.length ? `<table class="tbl" style="margin:0"><tbody>${n.items.map((it, k) => { const x = findEan(it.ean); return `<tr><td style="padding-left:14px"><b>${esc(x?.a.name || it.ean)}</b> <span class="muted">${x ? esc(vname(x.v)) : ''}</span></td><td class="r num">Ist ${x?.v.q ?? '–'}</td><td class="r">Soll <input class="input num" data-ns="${k}" value="${esc(it.soll)}" style="width:60px;height:30px;text-align:right"></td><td><button class="btn btn-ghost btn-icon btn-sm" data-nx="${k}">${ic('x', 'i-sm')}</button></td></tr>`; }).join('')}</tbody></table>` : '<div class="empty" style="padding:22px"><p>Artikel oben suchen.</p></div>'}</div></div>
+      <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">${i != null ? `<button class="btn btn-danger" data-ndel>${ic('trash', 'i-sm')}Löschen</button>` : ''}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" data-nsave>${ic('check', 'i-sm')}Speichern</button></div>`;
+    if (q) { const x = $('[data-nq]', box); x.focus(); x.setSelectionRange(q.length, q.length); }
+  };
+  const read = () => { n.name = $('[data-nn]', box).value.trim(); n.aktiv = $('[data-na]', box).checked; $$('[data-ns]', box).forEach(x => { n.items[+x.dataset.ns].soll = Math.max(0, parseInt(x.value, 10) || 0); }); };
+  box.addEventListener('input', e => { if (e.target.matches('[data-nq]')) { read(); q = e.target.value; render(); } });
+  box.addEventListener('click', async e => {
+    const ad = e.target.closest('[data-nadd]'); if (ad) { read(); const a = artById(ad.dataset.nadd); a.variants.forEach(x => { if (!n.items.some(it => it.ean === x.ean)) n.items.push({ean: x.ean, soll: Math.max(2, a.minStock ?? 2)}); }); q = ''; return render(); }
+    const x = e.target.closest('[data-nx]'); if (x) { read(); n.items.splice(+x.dataset.nx, 1); return render(); }
+    if (e.target.closest('[data-ndel]')) { const l = nosList().slice(); l.splice(i, 1); await saveSettings({'nos.sortimente': l}); closeLayer(el); return renderNos(); }
+    if (e.target.closest('[data-nsave]')) { read(); if (n.name.length < 2) return toast('Name fehlt', {type: 'warn'}); const l = nosList().slice(); if (i == null) l.push(n); else l[i] = n; await saveSettings({'nos.sortimente': l}); closeLayer(el); renderNos(); }
+  });
+  render();
+}
+
+/* ── Bestandskorrektur ── */
+const BK = {ean: '', log: []};
+const BK_GRUENDE = ['Zählfehler', 'Bruch / Beschädigung', 'Diebstahl / Schwund', 'Eigenverbrauch', 'Musterteil / Deko', 'Fehlbuchung', 'Sonstiges'];
+registerPage('bestandskorrektur', {title: 'Bestandskorrektur', sub: () => 'mit Grund und Protokoll', render: renderBestKorr});
+async function renderBestKorr() {
+  const v = $('#view-bestandskorrektur'), x = BK.ean ? findEan(BK.ean) : null;
+  let log = []; if (DESKTOP) { try { log = (await invoke('stock_moves', {articleId: null, limit: 3000})).filter(m => m.reason.startsWith('Bestandskorrektur')).slice(0, 60); } catch { /* */ } }
+  v.innerHTML = `<div class="cv">${pageHead('Bestandskorrektur', 'Bestand einer Variante berichtigen – Zugang, Abgang oder gezählter Bestand, immer mit Grund (protokolliert, auswertbar)')}
+    <div class="card" style="padding:16px;display:grid;gap:12px"><label class="search-field" style="height:52px">${ic('barcode')}<input id="bkEan" value="${esc(BK.ean)}" placeholder="EAN scannen und Enter" autocomplete="off"></label>
+      ${x ? `<div style="display:flex;gap:12px;align-items:center"><div style="flex:1"><b>${esc(x.a.name)}</b> <span class="muted">· ${esc(vname(x.v))}</span><div class="muted" style="font-size:12.5px">aktueller Bestand <b style="color:var(--text)">${x.v.q}</b></div></div></div>
+        <div class="ed-grid"><label class="field"><span>Art</span><select class="input select" id="bkArt"><option value="ab">Abgang (−)</option><option value="zu">Zugang (+)</option><option value="ist">Gezählter Bestand (setzen)</option></select></label><label class="field"><span>Menge</span><input class="input num" id="bkQty" value="1" inputmode="numeric"></label>
+          <label class="field"><span>Grund</span><select class="input select" id="bkGrund">${BK_GRUENDE.map(g => `<option>${g}</option>`).join('')}</select></label><label class="field"><span>Notiz</span><input class="input" id="bkNote" placeholder="optional"></label></div>
+        <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" data-bkgo>${ic('check', 'i-sm')}Korrektur buchen</button></div>` : BK.ean ? `<div style="color:var(--neg)">EAN ${esc(BK.ean)} unbekannt</div>` : ''}</div>
+    <div class="card" style="margin-top:14px"><div class="set-row"><div class="set-l">Letzte Korrekturen</div><div class="set-h">${num(log.length)}</div></div>${log.length ? `<table class="tbl" style="margin:0"><tbody>${log.map(m => `<tr><td style="padding-left:16px" class="muted num">${esc(fmtTs(m.ts))}</td><td><b>${esc(m.name)}</b> <span class="muted">${esc(colorName(m.color))} · ${esc(m.size)}</span></td><td>${esc(m.reason.replace('Bestandskorrektur: ', ''))}</td><td>${esc(m.user || '')}</td><td class="r num" style="color:var(--${m.delta >= 0 ? 'pos' : 'neg'})">${m.delta > 0 ? '+' : ''}${m.delta}</td><td class="r num" style="padding-right:16px">${m.stock_after}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:24px"><p>Noch keine Korrekturen.</p></div>'}</div></div>`;
+  setTimeout(() => (x ? $('#bkQty') : $('#bkEan'))?.focus(), 60);
+}
+
+/* ── Picklisten ── */
+DK.pickliste = {t: 'Übersicht Picklisten', one: 'Pickliste', ic: 'list', page: 'picklisten', partner: 'kunde', optPartner: true, lines: true, print: 'Pickliste', sub: 'Ware für Umlagerungen, Lieferscheine, Reservierungen und Nachsortierung zusammenstellen',
+  head: [{k: 'data.zweck', l: 'Zweck', t: 'select', o: ['Nachsortierung', 'Umlagerung', 'Lieferschein', 'Reservierung', 'Auswahl', 'Sonstiges']}, {k: 'data.notiz', l: 'Notiz', full: true}],
+  acts: {offen: [['erledigen', 'Erledigt', 'primary'], ['stornieren', 'Verwerfen', 'danger']]}};
+DOC_EDIT.pickliste = ['offen'];
+Object.assign(DST, {durchgefuehrt: ['durchgeführt', 'pos'], geplant: ['geplant', 'info']});
+docPage('picklisten', 'pickliste', {tabs: [['offen', 'Offen', s => s === 'offen'], ['erledigt', 'Erledigt', s => s === 'erledigt'], ['alle', 'Alle', () => true]], newLabel: 'Leere Pickliste', actions: `<button class="btn btn-secondary" data-pl="auto">${ic('sparkle', 'i-sm')}Pickliste aus offenen Vorgängen</button>`,
+  cols: [{l: 'Zweck', f: d => esc(d.data.zweck || '')}, {l: 'Positionen', r: true, f: d => num((d.data.lines || []).length)}, {l: 'Stück', r: true, f: d => num((d.data.lines || []).reduce((s, l) => s + (+l.qty || 0), 0))}]});
+async function picklistAuto() {
+  const src = {};
+  const add = (ean, qty, q) => { if (!ean || !(qty > 0)) return; const x = findEan(ean); (src[ean] ||= {ean, qty: 0, quellen: new Set(), x}); src[ean].qty += qty; src[ean].quellen.add(q); };
+  try {
+    const docs = await docLoad(['lieferschein', 'reservierung', 'auswahl']);
+    docs.filter(d => (d.kind === 'lieferschein' && d.status === 'entwurf') || (d.kind === 'reservierung' && ['angefragt', 'reserviert'].includes(d.status)) || (d.kind === 'auswahl' && d.status === 'entwurf')).forEach(d => (d.data.lines || []).forEach(l => add(l.ean, +l.qty, d.no)));
+    if (vbOn()) (await vbLoadTr()).filter(t => t.status === 'angefordert' && t.from === vbOwn()).forEach(t => t.lines.forEach(l => add(l.ean, l.qty, t.no)));
+  } catch (e) { return toast('Nicht möglich', {t2: String(e), type: 'warn'}); }
+  const lines = Object.values(src).sort((a, b) => lagerplatz(a.x?.a).localeCompare(lagerplatz(b.x?.a))).map(r => ({ean: r.ean, sku: r.x?.a.id, name: `${r.x ? lineName(r.x.a, r.x.v) : r.ean}${lagerplatz(r.x?.a) ? ' · Platz ' + lagerplatz(r.x.a) : ''} · für ${[...r.quellen].join(', ')}`, qty: r.qty, price: 0, vat: 20}));
+  if (!lines.length) return toast('Nichts zu picken', {t2: 'Keine offenen Lieferscheine, Reservierungen, Auswahlen oder Umlagerungen', icon: 'check'});
+  openDoc('pickliste', null, {partner_name: 'Lager', data: {zweck: 'Sonstiges', lines}, focusSearch: false});
+}
+
+/* ── Preisänderungen ── */
+DK.preis = {t: 'Preisänderungen', one: 'Preisänderung', ic: 'tag', page: 'preis-uebersicht', perm: 'artikel.bearbeiten', partner: 'kunde', optPartner: true, lines: true, price: 'vk', sub: 'Verkaufspreise ändern – sofort oder geplant zu einem Datum',
+  head: [{k: 'date', l: 'Gültig ab', t: 'date'}, {k: 'data.grund', l: 'Grund', t: 'select', o: ['Preisanpassung Lieferant', 'Saisonwechsel', 'Abverkauf', 'Wettbewerb', 'Sonstiges']}],
+  acts: {geplant: [['durchfuehren', 'Jetzt durchführen', 'primary', {confirm: 'Preise jetzt ändern?'}], ['stornieren', 'Verwerfen', 'danger']]}};
+DOC_EDIT.preis = ['geplant'];
+DOC_AFTER.preis = {durchfuehren: async st => { await reloadArt(); toast('Preise geändert', {t2: `${st.data.lines.length} Artikel – Etiketten drucken?`, icon: 'tag', action: {label: 'Etiketten', run: () => openLabels(st.data.lines.map(l => artById(l.sku)).filter(Boolean).flatMap(a => a.variants.filter(v => v.q > 0).map(v => ({a, v, n: v.q}))))}}); }};
+docPage('preis-uebersicht', 'preis', {title: 'Übersicht Preisänderungen', tabs: [['alle', 'Alle', () => true], ['durch', 'Durchgeführt', s => s === 'durchgefuehrt']], defTab: 'alle', noNew: true, actions: `<button class="btn btn-primary" data-goto="preisaenderung">${ic('plus', 'i-sm')}Preisänderung</button>`,
+  cols: [{l: 'Gültig ab', f: d => esc(dDate(d.date))}, {l: 'Artikel', r: true, f: d => num((d.data.lines || []).length)}, {l: 'Grund', f: d => esc(d.data.grund || '')}]});
+docPage('preis-geplant', 'preis', {title: 'Geplante Preisänderungen', tabs: [['geplant', 'Geplant', s => s === 'geplant']], defTab: 'geplant', noNew: true, actions: `<button class="btn btn-primary" data-goto="preisaenderung">${ic('plus', 'i-sm')}Preisänderung</button>`,
+  cols: [{l: 'Gültig ab', f: d => `<b>${esc(dDate(d.date))}</b>`}, {l: 'Artikel', r: true, f: d => num((d.data.lines || []).length)}]});
+const PC = {cat: 'alle', brand: '', q: '', sel: new Set(), modus: 'prozent', wert: '', runden: '90', ab: '', grund: 'Saisonwechsel'};
+registerPage('preisaenderung', {title: 'Preisänderung', sub: () => 'mehrere Artikel auf einmal', render: renderPreisAend});
+const pcNew = a => { const w = parseAmt(PC.wert); if (!isFinite(w) || PC.wert === '') return null; let p = PC.modus === 'prozent' ? a.price * (1 + w / 100) : PC.modus === 'betrag' ? a.price + w : w; if (p <= 0) return null; if (PC.runden !== 'kein') { const c = +PC.runden / 100; p = Math.floor(p) + c; if (p < (PC.modus === 'prozent' ? a.price * (1 + w / 100) : p) - 0.5) p += 1; } return r2(p); };
+function renderPreisAend() {
+  const v = $('#view-preisaenderung'), n = norm(PC.q);
+  const list = ART.filter(a => (PC.cat === 'alle' || a.cat === PC.cat) && (!PC.brand || a.brand === PC.brand) && (!n || a.hay.includes(n)));
+  v.innerHTML = `<div class="cv">${pageHead('Preisänderung', 'Artikel auswählen, neuen Preis festlegen (Prozent, Betrag oder fix, mit Preisschwelle), sofort oder ab Datum', `<button class="btn btn-secondary" data-goto="preis-geplant">${ic('clock', 'i-sm')}Geplante</button>`)}
+    <div class="card" style="padding:16px;display:grid;gap:12px;margin-bottom:14px"><div class="ed-grid">
+      <label class="field"><span>Änderung</span><select class="input select" id="pcModus"><option value="prozent" ${PC.modus === 'prozent' ? 'selected' : ''}>um Prozent (+/−)</option><option value="betrag" ${PC.modus === 'betrag' ? 'selected' : ''}>um Betrag € (+/−)</option><option value="fix" ${PC.modus === 'fix' ? 'selected' : ''}>neuer Preis €</option></select></label>
+      <label class="field"><span>Wert</span><input class="input num" id="pcWert" value="${esc(PC.wert)}" placeholder="z. B. 5 oder −10"></label>
+      <label class="field"><span>Preisschwelle</span><select class="input select" id="pcRund">${[['kein', 'keine Rundung'], ['90', ',90'], ['95', ',95'], ['99', ',99'], ['0', ',00']].map(([k, l]) => `<option value="${k}" ${PC.runden === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="field"><span>Gültig ab (leer = sofort)</span><input class="input" type="date" id="pcAb" value="${esc(PC.ab)}"></label></div></div>
+    <div class="filters"><input class="input" id="pcQ" value="${esc(PC.q)}" placeholder="Suchen …" style="max-width:260px"><select class="input select" id="pcCat" style="width:auto">${CATS.map(c => `<option value="${c.id}" ${c.id === PC.cat ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select><select class="input select" id="pcBrand" style="width:auto"><option value="">alle Marken</option>${[...new Set(ART.map(a => a.brand))].sort().map(b => `<option ${b === PC.brand ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select><button class="btn btn-ghost btn-sm" data-pc="alle">alle wählen</button><span class="sp" style="flex:1"></span><button class="btn btn-primary" data-pc="go" ${PC.sel.size ? '' : 'disabled'}>${ic('check', 'i-sm')}${PC.sel.size} Artikel ${PC.ab && PC.ab > today() ? 'planen' : 'ändern'}</button></div>
+    <div class="card"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:34px"></th><th>Artikel</th><th class="r">EK</th><th class="r">VK alt</th><th class="r">VK neu</th><th class="r" style="padding-right:16px">Marge neu</th></tr></thead><tbody>${list.slice(0, 300).map(a => { const np = pcNew(a); return `<tr><td style="padding-left:16px"><input type="checkbox" data-pcs="${esc(a.id)}" ${PC.sel.has(a.id) ? 'checked' : ''}></td><td><b>${esc(a.name)}</b> <span class="muted">· ${esc(a.brand)}</span></td><td class="r num">${a.cost != null ? eur(a.cost) : '–'}</td><td class="r num">${eur(a.price)}</td><td class="r num" style="font-weight:650;color:${np == null ? 'inherit' : np > a.price ? 'var(--pos)' : 'var(--neg)'}">${np != null ? eur(np) : '–'}</td><td class="r num" style="padding-right:16px">${np != null && a.cost != null ? num((np / 1.2 - a.cost) / (np / 1.2) * 100, 1) + ' %' : '–'}</td></tr>`; }).join('')}</tbody></table></div></div>`;
+}
+async function preisGo() {
+  const lines = [...PC.sel].map(id => artById(id)).filter(Boolean).map(a => ({sku: a.id, name: a.name, alt: Math.round(a.price * 100), neu: Math.round((pcNew(a) || 0) * 100), qty: 1, price: Math.round((pcNew(a) || 0) * 100), vat: a.vat ?? 20})).filter(l => l.neu > 0);
+  if (!lines.length) return toast('Wert eingeben', {type: 'warn'});
+  try { await needPerm('artikel.bearbeiten', 'Preisänderung'); } catch { return; }
+  try {
+    const d = await invoke('doc_save', {doc: {kind: 'preis', partner_name: 'Preisänderung', date: PC.ab || today(), data: {lines, grund: PC.grund, modus: PC.modus, wert: PC.wert}}, user: S.user.name});
+    if (!PC.ab || PC.ab <= today()) { await invoke('doc_action', {id: d.id, action: 'durchfuehren', payload: {}, user: S.user.name}); await reloadArt(); toast('Preise geändert', {t2: `${lines.length} Artikel · ${d.no}`, type: 'pos', icon: 'tag', action: {label: 'Etiketten', run: () => openLabels(lines.map(l => artById(l.sku)).filter(Boolean).flatMap(a => a.variants.filter(v => v.q > 0).map(v => ({a, v, n: v.q}))))}}); }
+    else toast('Preisänderung geplant', {t2: `${lines.length} Artikel ab ${dDate(PC.ab)} · ${d.no}`, type: 'pos', icon: 'clock'});
+    Hooks.emit('pricing.change', {nr: d.no, artikel: lines.length, ab: PC.ab || today()}); PC.sel.clear(); renderPreisAend();
+  } catch (e) { toast('Nicht möglich', {t2: String(e), type: 'warn'}); }
+}
+// geplante Preisänderungen fällig → durchführen (beim Start und jede Minute)
+async function runDuePrices() {
+  if (!DESKTOP) return;
+  try { const l = (await invoke('doc_list', {kinds: ['preis'], status: 'geplant', limit: 100})).filter(d => d.date <= today()); for (const d of l) { await invoke('doc_action', {id: d.id, action: 'durchfuehren', payload: {}, user: 'Zeitplan'}); toast('Geplante Preisänderung durchgeführt', {t2: `${d.no} · ${d.data.lines.length} Artikel`, icon: 'tag', type: 'accent'}); } if (l.length) await reloadArt(); } catch { /* */ }
+}
+
+/* ── Nachsortierung ── */
+const nsParam = () => ({tage: 1, quelle: 'lager', min: 1, feld: 'Lagerplatz', nos: true, ...(CFG['nachsort.param'] || {})});
+async function nsRows(withNos) {
+  const p = nsParam(), since = dayStart(Math.max(0, p.tage - 1)), sold = {};
+  if (DESKTOP) { try { (await invoke('stock_moves', {articleId: null, limit: 8000})).filter(m => m.reason === 'Verkauf' && new Date(m.ts) >= since).forEach(m => { const a = artById(m.article_id), v = a?.variants.find(x => x.vid === m.variant_id); if (v) sold[v.ean] = (sold[v.ean] || 0) - m.delta; }); } catch { /* */ } }
+  const nos = withNos ? nosShort() : {};
+  const eans = new Set([...Object.keys(sold), ...Object.keys(nos)]);
+  return [...eans].map(ean => { const x = findEan(ean); const q = Math.max(sold[ean] || 0, nos[ean] || 0); return x && q >= p.min ? {x, ean, verkauft: sold[ean] || 0, nos: nos[ean] || 0, menge: q, platz: lagerplatz(x.a)} : null; }).filter(Boolean).sort((a, b) => a.platz.localeCompare(b.platz) || a.x.a.name.localeCompare(b.x.a.name));
+}
+for (const [id, nos, title] of [['nachsortierung', false, 'Nachsortierung'], ['nachsort-nos', true, 'Nachsortierung aus NOS und Verkauf']]) {
+  registerPage(id, {title, sub: () => 'Nachschub für die Verkaufsfläche', render: async () => {
+    const v = $('#view-' + id), p = nsParam(), rows = await nsRows(nos);
+    v.innerHTML = `<div class="cv">${pageHead(title, `${nos ? 'NOS-Fehlmengen und ' : ''}Verkäufe der letzten ${p.tage} Tag(e) nachfüllen – aus dem Lager (Pickliste), per Umlagerung oder Bestellung`, `<button class="btn btn-secondary" data-goto="nachsort-param">${ic('sliders', 'i-sm')}Parameter</button><button class="btn btn-secondary" data-ns="liste">${ic('printer', 'i-sm')}Lagerliste drucken</button><button class="btn btn-secondary" data-ns="pick" ${rows.length ? '' : 'disabled'}>${ic('list', 'i-sm')}Pickliste</button>${vbOn() && vbRole() === 'filiale' ? `<button class="btn btn-secondary" data-ns="ul" ${rows.length ? '' : 'disabled'}>${ic('swap', 'i-sm')}Bei Zentrale anfordern</button>` : ''}<button class="btn btn-primary" data-ns="po" ${rows.length ? '' : 'disabled'}>${ic('truck', 'i-sm')}Bestellentwürfe</button>`)}
+      ${kpiCards([[num(rows.length), 'Varianten'], [num(rows.reduce((s, r) => s + r.menge, 0)), 'Stück nachzusortieren'], [num(rows.filter(r => r.x.v.q <= 0).length), 'im Lager nicht vorrätig', 'warn']])}
+      <div class="card">${rows.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Lagerplatz</th><th>Artikel</th><th>Variante</th><th class="r">verkauft</th>${nos ? '<th class="r">NOS-Fehl</th>' : ''}<th class="r">Bestand</th><th class="r" style="padding-right:16px">Menge</th></tr></thead><tbody>${rows.map(r => `<tr><td style="padding-left:16px" class="mono">${esc(r.platz || '–')}</td><td><b>${esc(r.x.a.name)}</b></td><td>${esc(vname(r.x.v))}</td><td class="r num">${r.verkauft}</td>${nos ? `<td class="r num">${r.nos || ''}</td>` : ''}<td class="r num" style="color:${r.x.v.q <= 0 ? 'var(--neg)' : 'inherit'}">${r.x.v.q}</td><td class="r num" style="padding-right:16px;font-weight:650">${r.menge}</td></tr>`).join('')}</tbody></table>` : `<div class="empty" style="padding:48px"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><p>Nichts nachzusortieren.</p></div>`}</div></div>`;
+    v._rows = rows;
+  }});
+}
+registerPage('nachsort-liste', {title: 'Nachsortier-Lagerliste', sub: () => 'nach Lagerplatz', render: async () => {
+  const v = $('#view-nachsort-liste'), rows = await nsRows(nsParam().nos);
+  v.innerHTML = `<div class="cv">${pageHead('Nachsortier-Lagerliste', `Sortiert nach Lagerplatz (Artikelfeld „${esc(nsParam().feld)}“) – zum Ausdrucken und Abhaken im Lager`, `<button class="btn btn-primary" data-ns="liste">${ic('printer', 'i-sm')}Drucken</button>`)}<div class="card">${rows.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:40px">✓</th><th>Lagerplatz</th><th>Artikel</th><th>Variante</th><th>EAN</th><th class="r" style="padding-right:16px">Menge</th></tr></thead><tbody>${rows.map(r => `<tr><td style="padding-left:16px">☐</td><td class="mono"><b>${esc(r.platz || '–')}</b></td><td>${esc(r.x.a.name)}</td><td>${esc(vname(r.x.v))}</td><td class="mono muted">${esc(r.ean)}</td><td class="r num" style="padding-right:16px;font-weight:650">${r.menge}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:48px"><p>Nichts nachzusortieren.</p></div>'}</div></div>`;
+  v._rows = rows;
+}});
+function nsPrint(rows) {
+  printHTML(letterHead('Nachsortier-Lagerliste', '', [['Datum', new Date().toLocaleString('de-AT')], ['Positionen', String(rows.length)]]) + `<table><thead><tr><th style="width:8mm">✓</th><th>Lagerplatz</th><th>Artikel</th><th>Variante</th><th>EAN</th><th class="r">Menge</th></tr></thead><tbody>${rows.map(r => `<tr><td>☐</td><td><b>${esc(r.platz || '–')}</b></td><td>${esc(r.x.a.name)}</td><td>${esc(vname(r.x.v))}</td><td>${esc(r.ean)}</td><td class="r"><b>${r.menge}</b></td></tr>`).join('')}</tbody></table>`, 'Nachsortier-Lagerliste');
+}
+registerPage('nachsort-param', {title: 'Parameter für Nachsortierung', sub: () => 'Zeitraum, Mindestmenge, Lagerplatz', render: () => {
+  const v = $('#view-nachsort-param'), p = nsParam();
+  v.innerHTML = `<div class="cv">${pageHead('Parameter für Nachsortierung', 'Wie Kontor den Nachschub für die Verkaufsfläche berechnet', `<button class="btn btn-primary" data-ns="param">${ic('check', 'i-sm')}Speichern</button>`)}<div class="card">
+    <div class="set-row"><div><div class="set-l">Verkäufe der letzten</div><div class="set-h">1 = heute, 2 = heute und gestern …</div></div><div class="set-c"><input class="input num" id="npTage" value="${p.tage}" style="width:80px;text-align:right"> Tage</div></div>
+    <div class="set-row"><div><div class="set-l">Mindestmenge</div><div class="set-h">kleinere Mengen werden nicht vorgeschlagen</div></div><div class="set-c"><input class="input num" id="npMin" value="${p.min}" style="width:80px;text-align:right"> Stück</div></div>
+    <div class="set-row"><div><div class="set-l">Feld für Lagerplatz</div><div class="set-h">Artikelfeld, nach dem Lagerliste und Pickliste sortiert werden (z. B. „Lagerplatz“ mit Werten wie R2-04)</div></div><div class="set-c"><input class="input" id="npFeld" value="${esc(p.feld)}" style="width:180px"></div></div>
+    <div class="set-row" style="border-bottom:0"><div><div class="set-l">NOS-Fehlmengen in die Lagerliste</div><div class="set-h">Sollbestände aus den NOS-Sortimenten berücksichtigen</div></div><div class="set-c"><button class="switch" role="switch" id="npNos" aria-checked="${!!p.nos}"></button></div></div></div></div>`;
+}});
+
+/* ── Artikelpflege ── */
+registerPage('artikel-import', {title: 'Artikel-Import', sub: () => 'aus Excel/CSV', render: () => {
+  $('#view-artikel-import').innerHTML = `<div class="cv">${pageHead('Artikel-Import', 'Artikel aus Excel (als CSV gespeichert) übernehmen – eine Zeile je Variante, mit Spaltenzuordnung, Vorschau und Prüfung')}<div class="card"><div class="empty" style="padding:56px 20px"><div class="empty-icon">${ic('download')}</div><h3>Artikel importieren</h3><p>Neue Farben und Warengruppen werden automatisch angelegt. Alles oder nichts – bei Fehlern wird nichts übernommen.</p><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-primary" data-imp="artikel">${ic('download', 'i-sm')}Datei wählen …</button><button class="btn btn-secondary" data-imp="bestand">Bestände importieren</button><button class="btn btn-secondary" data-goto="import-protokoll">Protokoll</button></div></div></div></div>`;
+}});
+registerPage('import-protokoll', {title: 'Protokoll Artikel-Importe', sub: () => 'alle Importe', render: async () => {
+  const v = $('#view-import-protokoll'); let l = [];
+  if (DESKTOP) { try { l = await invoke('audit_query', {q: null, prefix: 'catalog.import', before: null, limit: 500}); } catch { /* */ } }
+  v.innerHTML = `<div class="cv">${pageHead('Protokoll Artikel-Importe', 'Wann wurde was von wem importiert')}<div class="card">${l.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Zeit</th><th>Benutzer</th><th class="r">Artikel</th><th class="r" style="padding-right:16px">Bestände</th></tr></thead><tbody>${l.map(x => `<tr><td style="padding-left:16px" class="muted num">${esc(fmtTs(x.ts))}</td><td>${esc(x.payload?.benutzer || '')}</td><td class="r num">${num(x.payload?.artikel || 0)}</td><td class="r num" style="padding-right:16px">${num(x.payload?.bestaende || 0)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Noch keine Importe.</p></div>'}</div></div>`;
+}});
+const EZ = {sel: null, q: ''};
+const eanOk = e => /^\d{13}$/.test(e) && ean13(e.slice(0, 12)) === e || /^\d{8}$/.test(e) || /^\d{12}$/.test(e) || /^\d{14}$/.test(e);
+registerPage('ean-zuordnung', {title: 'Artikel-EAN/GTIN-Zuordnung', sub: () => 'Barcodes pflegen', render: () => {
+  const v = $('#view-ean-zuordnung'), a = EZ.sel ? artById(EZ.sel) : null;
+  v.innerHTML = `<div class="cv">${pageHead('Artikel-EAN/GTIN-Zuordnung', 'Hersteller-Barcodes (EAN/GTIN) den Varianten zuordnen – mit Prüfziffernkontrolle; eigene Kontor-EANs bleiben möglich')}${artPicker('ean-zuordnung', EZ.q)}
+    ${a ? `<div class="card" style="margin-top:14px"><div class="set-row"><div class="set-l">${esc(a.name)}</div><div class="set-c"><button class="btn btn-primary btn-sm" data-ezsave>${ic('check', 'i-sm')}Speichern</button></div></div><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Variante</th><th>EAN / GTIN</th><th>Prüfung</th></tr></thead><tbody>${a.variants.map(x => `<tr><td style="padding-left:16px"><b>${esc(vname(x))}</b></td><td><input class="input mono" data-ez="${x.vid}" value="${esc(x.ean)}" style="height:32px;width:220px"></td><td data-ezc="${x.vid}">${eanOk(x.ean) ? `<span style="color:var(--pos)">${ic('check', 'i-xs')} gültig</span>` : `<span style="color:var(--warn)">${ic('alert', 'i-xs')} Prüfziffer?</span>`}</td></tr>`).join('')}</tbody></table></div>` : ''}</div>`;
+}});
+const AS = {cat: ''};
+registerPage('artikelsortierung', {title: 'Manuelle Artikelsortierung', sub: () => 'Reihenfolge an der Kasse', render: () => {
+  const v = $('#view-artikelsortierung'); AS.cat ||= CATS[1]?.id || 'alle';
+  const l = ART.filter(a => AS.cat === 'alle' || a.cat === AS.cat).sort((a, b) => b.pop - a.pop);
+  v.innerHTML = `<div class="cv">${pageHead('Manuelle Artikelsortierung', 'Reihenfolge der Kacheln an der Kasse festlegen (je Warengruppe) – oben = zuerst', `<button class="btn btn-primary" data-as="save">${ic('check', 'i-sm')}Reihenfolge speichern</button>`)}
+    <div class="filters"><div class="seg" id="asSeg">${CATS.map(c => `<button data-v="${c.id}" aria-pressed="${AS.cat === c.id}">${esc(c.name)}</button>`).join('')}</div></div>
+    <div class="card"><div id="asList">${l.map((a, i) => `<div class="set-row" data-asi="${esc(a.id)}" draggable="true" style="cursor:grab"><div style="display:flex;gap:12px;align-items:center"><span class="muted num" style="width:26px">${i + 1}</span><div style="width:40px;height:40px;border-radius:10px;overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${artVisual(a, COLORS[a.colors[0]]?.[1] || '#888')}</div><div><b>${esc(a.name)}</b><div class="muted" style="font-size:12px">${esc(a.brand)} · ${eur(a.sale || a.price)}</div></div></div><div class="set-c" style="gap:4px"><button class="btn btn-ghost btn-icon btn-sm" data-asu="${esc(a.id)}" aria-label="nach oben">${ic('up', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-asd="${esc(a.id)}" aria-label="nach unten">${ic('down', 'i-sm')}</button></div></div>`).join('')}</div></div></div>`;
+  initSeg($('#asSeg', v), b => { AS.cat = b.dataset.v; PAGES.artikelsortierung.render(); });
+}});
+registerPage('master-artikel', {title: 'Master-Artikel', sub: () => 'Vorlagen für neue Artikel', render: () => {
+  const v = $('#view-master-artikel'), masters = ART.filter(a => a.fields?.['Master'] === 'ja');
+  v.innerHTML = `<div class="cv">${pageHead('Master-Artikel', 'Artikel als Vorlage markieren und daraus neue Artikel (z. B. neue Saison, neues Modell) mit allen Feldern, Farben und Größen anlegen – neue EANs werden vergeben')}${artPicker('master-artikel', MA.q)}
+    <div class="card" style="margin-top:14px">${masters.length ? masters.map(a => `<div class="set-row"><div style="display:flex;gap:12px;align-items:center"><div style="width:40px;height:40px;border-radius:10px;overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${artVisual(a, COLORS[a.colors[0]]?.[1] || '#888')}</div><div><b>${esc(a.name)}</b><div class="muted" style="font-size:12px">${esc(a.id)} · ${a.colors.length} Farben × ${a.sizes.length} Größen · ${eur(a.price)}</div></div></div><div class="set-c" style="gap:6px"><button class="btn btn-secondary btn-sm" data-maneu="${esc(a.id)}">${ic('copy', 'i-sm')}Neuer Artikel daraus</button><button class="btn btn-ghost btn-sm" data-maoff="${esc(a.id)}">Kein Master</button></div></div>`).join('') : '<div class="empty" style="padding:40px"><p>Noch kein Master-Artikel – oben einen Artikel suchen und als Master markieren.</p></div>'}</div></div>`;
+}});
+const MA = {q: ''};
+async function artSave(a) { replaceCatalog(await invoke('article_save', {article: artToDb(a), user: S.user.name})); }
+
+function bindArtikel() {
+  // Artikelsuche in allen Info-/Planungsseiten
+  const pickers = {artikelinfo: AIF, 'artikelinfo-plus': AIF, 'artikelinfo-kompakt': AIF, 'ul-planung': UP, 'ul-anforderung': UA, 'ean-zuordnung': EZ, 'master-artikel': MA};
+  document.addEventListener('input', e => {
+    const q = e.target.closest?.('[data-apq]'); if (!q) return;
+    const st = pickers[q.dataset.apq]; st.q = q.value; clearTimeout(q._t);
+    q._t = setTimeout(() => { const host = q.closest('div[style*="position:relative"]'); host.outerHTML = artPicker(q.dataset.apq, st.q); const n = $(`[data-apq="${q.dataset.apq}"]`); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 120);
+  });
+  document.addEventListener('keydown', e => {
+    const q = e.target.closest?.('[data-apq]'); if (!q || e.key !== 'Enter') return;
+    const x = findEan(q.value.trim()), st = pickers[q.dataset.apq], a = x?.a || ART.find(y => y.hay.includes(norm(q.value)));
+    if (!a) return shakeEl(q);
+    if (st === MA) { a.fields = {...a.fields, Master: 'ja'}; artSave(a).then(() => { MA.q = ''; PAGES['master-artikel'].render(); toast(`${a.name} ist Master-Artikel`, {icon: 'copy', type: 'pos'}); }); return; }
+    st.sel = a.id; st.q = ''; PAGES[S.view].render();
+  });
+  document.addEventListener('click', async e => {
+    if (!e.target.closest('#views')) return;
+    const k = e.target.closest('[data-apk]'); if (k) { const p = k.closest('[style*="position:relative"]').querySelector('[data-apq]').dataset.apq, st = pickers[p]; if (st === MA) { const a = artById(k.dataset.apk); a.fields = {...a.fields, Master: 'ja'}; await artSave(a); MA.q = ''; return PAGES['master-artikel'].render(); } st.sel = k.dataset.apk; st.q = ''; return PAGES[S.view].render(); }
+    const ao = e.target.closest('[data-aiopen]'); if (ao) { AIF.sel = ao.dataset.aiopen; return go('artikelinfo'); }
+    const ed = e.target.closest('[data-aied]'); if (ed) return openEditor(artById(ed.dataset.aied));
+    const lb = e.target.closest('[data-ailbl]'); if (lb) { const a = artById(lb.dataset.ailbl); return openLabels(a.variants.filter(v => v.q > 0).map(v => ({a, v, n: v.q}))); }
+    // Umlagerungen
+    if (e.target.closest('[data-ulnew]')) return openTransferNew();
+    const ts = e.target.closest('[data-tst2]'); if (ts) { await transferStatus(ts.dataset.no, ts.dataset.tst2); return PAGES[S.view].render(); }
+    if (e.target.closest('[data-upgo]')) {
+      const by = {}; $$('[data-upq]').forEach(i => { const q = parseInt(i.value, 10) || 0; if (q > 0) { const x = findEan(i.dataset.upq); (by[i.dataset.to] ||= []).push({ean: i.dataset.upq, qty: q, name: x ? lineName(x.a, x.v) : ''}); } });
+      if (!Object.keys(by).length) return toast('Mengen eintragen', {type: 'warn'});
+      let n = 0; for (const [to, lines] of Object.entries(by)) { try { await invoke('verbund_transfer_create', {from: UP.from, to, lines, note: 'Umlagerungsplanung', user: S.user.name}); n++; } catch (err) { toast('Fehler', {t2: String(err), type: 'warn', dur: 8000}); } }
+      toast(`${n} Umlagerungen angelegt`, {t2: 'im Umlagerungs-Pool', type: 'pos', icon: 'swap'}); Hooks.emit('verbund.transfer.planned', {anzahl: n}); return renderUlPlanung();
+    }
+    if (e.target.closest('[data-uago]')) {
+      const by = {}; $$('[data-uaq]').forEach(i => { const q = parseInt(i.value, 10) || 0; if (q > 0) { const from = $(`[data-uaf="${i.dataset.uaq}"]`).value, x = findEan(i.dataset.uaq); (by[from] ||= []).push({ean: i.dataset.uaq, qty: q, name: x ? lineName(x.a, x.v) : ''}); } });
+      if (!Object.keys(by).length) return toast('Mengen eintragen', {type: 'warn'});
+      for (const [from, lines] of Object.entries(by)) { try { const t = await invoke('verbund_transfer_create', {from, to: vbOwn(), lines, note: 'Umbuchungsanforderung', user: S.user.name}); toast('Angefordert', {t2: `${t.no} aus ${storeName(from)}`, type: 'pos', icon: 'swap'}); } catch (err) { toast('Fehler', {t2: String(err), type: 'warn', dur: 8000}); } }
+      UA.sel = null; return PAGES['ul-anforderung'].render();
+    }
+    const ur = e.target.closest('[data-ulr]'); if (ur) {
+      const l = $('#view-ul-rechnung')._by[ur.dataset.ulr]; const agg = {};
+      l.forEach(t => t.lines.forEach(x => { const f = findEan(x.ean); (agg[x.ean] ||= {ean: x.ean, sku: f?.a.id, name: f ? lineName(f.a, f.v) : x.name, qty: 0, price: Math.round((f?.a.cost || 0) * 120), vat: 20}).qty += x.qty; }));
+      await saveSettings({'ul.berechnet': [...(CFG['ul.berechnet'] || []), ...l.map(t => t.no)]}, true);
+      openDoc('rechnung', null, {partner_name: `Filiale ${storeName(ur.dataset.ulr)}`, ref: l.map(t => t.no).join(', ').slice(0, 140), data: {bestand: false, zahlungsziel: 30, text: 'Interne Verrechnung der Umlagerungen zu Einstandspreisen (EK zzgl. USt).', lines: Object.values(agg)}, focusSearch: false});
+      return;
+    }
+    // NOS
+    if (e.target.closest('[data-nos="neu"]')) return openNos(null);
+    const ne = e.target.closest('[data-nose]'); if (ne) return openNos(+ne.dataset.nose);
+    // Bestandskorrektur
+    if (e.target.closest('[data-bkgo]')) {
+      const x = findEan(BK.ean); if (!x) return;
+      const art = $('#bkArt').value, q = parseInt($('#bkQty').value, 10); if (!(q >= 0) || (art !== 'ist' && !q)) return shakeEl($('#bkQty'));
+      try { await needPerm('bestand.buchen', 'Bestandskorrektur'); } catch { return; }
+      const reason = `Bestandskorrektur: ${$('#bkGrund').value}${$('#bkNote').value.trim() ? ' – ' + $('#bkNote').value.trim() : ''}`;
+      try { await bookStock(x.a, x.v, art === 'ab' ? -q : q, art === 'ist', reason); toast('Korrektur gebucht', {t2: `${x.a.name} · ${vname(x.v)} · Bestand ${x.v.q}`, type: 'pos', icon: 'edit'}); BK.ean = ''; renderBestKorr(); } catch (err) { toast('Nicht gebucht', {t2: String(err), type: 'warn'}); }
+      return;
+    }
+    if (e.target.closest('[data-pl="auto"]')) return picklistAuto();
+    // Preisänderung
+    const pcs = e.target.closest('[data-pcs]'); if (pcs) { pcs.checked ? PC.sel.add(pcs.dataset.pcs) : PC.sel.delete(pcs.dataset.pcs); const b = $('[data-pc="go"]'); b.disabled = !PC.sel.size; b.lastChild.textContent = `${PC.sel.size} Artikel ${PC.ab && PC.ab > today() ? 'planen' : 'ändern'}`; return; }
+    if (e.target.closest('[data-pc="alle"]')) { $$('[data-pcs]').forEach(c => PC.sel.add(c.dataset.pcs)); return renderPreisAend(); }
+    if (e.target.closest('[data-pc="go"]')) return preisGo();
+    // Nachsortierung
+    const ns = e.target.closest('[data-ns]'); if (ns) {
+      const rows = $('#view-' + S.view)?._rows || await nsRows(nsParam().nos);
+      if (ns.dataset.ns === 'liste') return nsPrint(rows);
+      if (ns.dataset.ns === 'pick') return openDoc('pickliste', null, {partner_name: 'Verkaufsfläche', data: {zweck: 'Nachsortierung', lines: rows.map(r => ({ean: r.ean, sku: r.x.a.id, name: `${lineName(r.x.a, r.x.v)}${r.platz ? ' · Platz ' + r.platz : ''}`, qty: r.menge, price: 0, vat: 20}))}, focusSearch: false});
+      if (ns.dataset.ns === 'ul') { try { const t = await invoke('verbund_transfer_create', {from: (VB.info?.stores || []).find(s => s.id !== vbOwn())?.id || 'ZEN', to: vbOwn(), lines: rows.map(r => ({ean: r.ean, qty: r.menge, name: lineName(r.x.a, r.x.v)})), note: 'Nachsortierung', user: S.user.name}); toast('Bei der Zentrale angefordert', {t2: t.no, type: 'pos', icon: 'swap'}); } catch (err) { toast('Nicht möglich', {t2: String(err), type: 'warn'}); } return; }
+      if (ns.dataset.ns === 'po') { await loadPurchasing(); const by = {}; rows.forEach(r => (by[r.x.a.supplierId || ''] ||= []).push(r)); let n = 0; for (const [sid, l] of Object.entries(by)) { if (!sid) continue; try { const id = await invoke('po_save', {id: null, supplier: sid, note: 'aus Nachsortierung', lines: l.map(r => ({variant_id: r.x.v.vid, qty: r.menge, cost: r.x.a.cost != null ? Math.round(r.x.a.cost * 100) : null})), user: S.user.name}); await invoke('po_set_type', {id, orderType: 'Nachorder'}); n++; } catch (err) { toast('Fehler', {t2: String(err), type: 'warn'}); } } EK.loaded = false; toast(`${n} Bestellentwürfe angelegt`, {t2: by[''] ? `${by[''].length} Varianten ohne Lieferant übersprungen` : 'unter Order prüfen', type: 'pos', icon: 'truck'}); return; }
+      if (ns.dataset.ns === 'param') { await saveSettings({'nachsort.param': {tage: Math.max(1, parseInt($('#npTage').value, 10) || 1), min: Math.max(1, parseInt($('#npMin').value, 10) || 1), feld: $('#npFeld').value.trim() || 'Lagerplatz', nos: $('#npNos').getAttribute('aria-checked') === 'true', quelle: 'lager'}}); return; }
+    }
+    const sw = e.target.closest('#npNos'); if (sw) sw.setAttribute('aria-checked', sw.getAttribute('aria-checked') !== 'true');
+    // Artikelpflege
+    const imp = e.target.closest('[data-imp]'); if (imp) return openImport(imp.dataset.imp);
+    if (e.target.closest('[data-ezsave]')) {
+      const a = artById(EZ.sel), vals = $$('[data-ez]').map(i => ({vid: +i.dataset.ez, ean: i.value.trim()}));
+      const all = new Set(ART.flatMap(x => x.variants.filter(v => !vals.some(y => y.vid === v.vid)).map(v => v.ean)));
+      const dup = vals.find(x => all.has(x.ean) || vals.filter(y => y.ean === x.ean).length > 1); if (dup) return toast(`EAN ${dup.ean} ist bereits vergeben`, {type: 'warn'});
+      if (vals.some(x => !/^\d{8,14}$/.test(x.ean))) return toast('EAN: 8 bis 14 Ziffern', {type: 'warn'});
+      try { await needPerm('artikel.bearbeiten', 'EAN ändern'); vals.forEach(x => { a.variants.find(v => v.vid === x.vid).ean = x.ean; }); await artSave(a); toast('EANs gespeichert', {t2: a.name, type: 'pos', icon: 'barcode'}); Hooks.emit('catalog.ean.changed', {sku: a.id}); } catch (err) { toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
+      return;
+    }
+    const au = e.target.closest('[data-asu]'), ad = e.target.closest('[data-asd]');
+    if (au || ad) { const row = $(`[data-asi="${CSS.escape((au || ad).dataset[au ? 'asu' : 'asd'])}"]`), sib = au ? row.previousElementSibling : row.nextElementSibling; if (sib) au ? sib.before(row) : sib.after(row); return; }
+    if (e.target.closest('[data-as="save"]')) {
+      const ids = $$('[data-asi]').map(r => r.dataset.asi), top = Math.max(...ART.map(a => a.pop || 0), 100) + ids.length;
+      try { await needPerm('artikel.bearbeiten', 'Artikelsortierung'); for (const [i, id] of ids.entries()) { const a = artById(id), p = top - i; if (a.pop !== p) { a.pop = p; await invoke('article_save', {article: artToDb(a), user: S.user.name}); } } await reloadArt(); toast('Reihenfolge gespeichert', {t2: 'gilt an der Kasse', type: 'pos', icon: 'list'}); } catch (err) { toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
+      return;
+    }
+    const mn = e.target.closest('[data-maneu]'); if (mn) {
+      const m = artById(mn.dataset.maneu), used = new Set(ART.flatMap(x => x.variants.map(v => v.ean))), id = nextArtId();
+      const copy = {...JSON.parse(JSON.stringify({...m, variants: []})), id, name: m.name + ' (neu)', fields: {...m.fields, Master: 'nein', 'Master-Artikel': m.id}, pop: 50, image: m.image};
+      copy.variants = m.variants.map(v => { const ean = newEan(id, used); used.add(ean); return {c: v.c, s: v.s, ean, q: 0, other: null}; });
+      finishArt(copy);
+      try { await artSave(copy); toast('Artikel angelegt', {t2: `${copy.id} aus Master ${m.id} – jetzt anpassen`, type: 'pos', icon: 'copy'}); openEditor(artById(id)); } catch (err) { toast('Nicht angelegt', {t2: String(err), type: 'warn'}); }
+      return;
+    }
+    const mo = e.target.closest('[data-maoff]'); if (mo) { const a = artById(mo.dataset.maoff); a.fields = {...a.fields, Master: 'nein'}; await artSave(a); return PAGES['master-artikel'].render(); }
+  });
+  document.addEventListener('change', e => {
+    if (e.target.id === 'upFrom') { UP.from = e.target.value; renderUlPlanung(); }
+    if (['pcModus', 'pcWert', 'pcRund', 'pcAb', 'pcQ', 'pcCat', 'pcBrand'].includes(e.target.id)) { PC.modus = $('#pcModus').value; PC.wert = $('#pcWert').value; PC.runden = $('#pcRund').value; PC.ab = $('#pcAb').value; PC.q = $('#pcQ').value; PC.cat = $('#pcCat').value; PC.brand = $('#pcBrand').value; renderPreisAend(); }
+    const ez = e.target.closest?.('[data-ez]'); if (ez) { const c = $(`[data-ezc="${ez.dataset.ez}"]`); c.innerHTML = eanOk(ez.value.trim()) ? `<span style="color:var(--pos)">${ic('check', 'i-xs')} gültig</span>` : `<span style="color:var(--warn)">${ic('alert', 'i-xs')} Prüfziffer?</span>`; }
+  });
+  $('#view-bestandskorrektur').addEventListener('keydown', e => { if (e.target.id === 'bkEan' && e.key === 'Enter') { BK.ean = e.target.value.trim(); renderBestKorr(); } });
+  $('#view-umbuchungslog').addEventListener('click', async e => {
+    if (!e.target.closest('[data-ulcsv]')) return;
+    const rows = $('#view-umbuchungslog')._rows || [];
+    const csv = ['Zeit;Artikel;Farbe;Größe;Grund;Beleg;Benutzer;Menge;Bestand'].concat(rows.map(x => [x.ts, x.name, colorName(x.color), x.size, x.reason, x.ref || '', x.user || '', x.delta, x.stock_after].join(';'))).join('\r\n');
+    try { const p = await invoke('save_text', {name: `Umbuchungs-Log_${today()}.csv`, content: csv, title: 'Umbuchungs-Log exportieren'}); if (p) toast('Exportiert', {t2: p, type: 'pos', icon: 'download'}); } catch (err) { toast('Fehler', {t2: String(err), type: 'warn'}); }
+  });
+  // Drag & Drop in der Artikelsortierung
+  let drag = null;
+  document.addEventListener('dragstart', e => { const r = e.target.closest?.('[data-asi]'); if (r) { drag = r; r.style.opacity = '.4'; } });
+  document.addEventListener('dragend', () => { if (drag) drag.style.opacity = ''; drag = null; });
+  document.addEventListener('dragover', e => { const r = e.target.closest?.('[data-asi]'); if (drag && r && r !== drag) { e.preventDefault(); const b = r.getBoundingClientRect(); e.clientY < b.top + b.height / 2 ? r.before(drag) : r.after(drag); } });
+  runDuePrices(); setInterval(runDuePrices, 60000);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   46 · VERKAUF II — Gutscheine (PIN, Buchungen, Löschen, Protokolle,
+   externe Gutscheine), Bon-Zuordnungs-Protokolle, Reservierung/Auswahl
+   erstellen, Auswahl-Summen, Faktura (Angebote/Aufträge, Kunden-
+   Bestellungen, Fremdrechnungen, Mahnwesen), Akkordeon-Einstellung.
+   ════════════════════════════════════════════════════════════════════ */
+Object.assign(DEFAULTS, {'gutschein.extern': ['Stadtgutschein', 'Verbundgutschein Sport 2000', 'Einkaufsgutschein Einkaufszentrum'], 'mahn.gebuehr': [0, 5, 10], 'mahn.tage': 14});
+Object.keys(DEFAULTS).forEach(k => { if (!(k in CFG)) CFG[k] = DEFAULTS[k]; });
+Object.assign(VIEW_PERM, {'gutscheine-loeschen': 'system', 'gutscheine-pin': 'kasse.kassenbuch', mahnwesen: 'faktura', fremdrechnungen: 'faktura', kundenbestellungen: 'faktura', 'angebote-auftraege': 'faktura'});
+Object.assign(DST, {gelöscht: ['gelöscht', 'neg'], bestellt: ['bestellt', 'info'], eingetroffen: ['eingetroffen', 'accent']});
+
+/* ── Gutschein mit PIN an der Kasse ── */
+{
+  const _vp = voucherPay;
+  voucherPay = async function (m, rem) {
+    const code = ($('#gsCode')?.value || '').trim().toUpperCase();
+    if (DESKTOP && code && PAY.vcheck !== code) {
+      let v; try { v = await invoke('voucher_get', {code}); } catch { return _vp(m, rem); }
+      if (v.pin && PAY.vpinFor !== v.code) {
+        const pin = await askText('Gutschein-PIN', `Gutschein ${v.code} ist mit einer PIN geschützt`, ''); if (!pin) return;
+        try { await invoke('voucher_check_pin', {code: v.code, pin}); } catch (e) { return toast('PIN falsch', {t2: String(e), type: 'warn'}); }
+        PAY.vpin = pin; PAY.vpinFor = v.code;
+      }
+    }
+    return _vp(m, rem);
+  };
+  const _ap = addPart;
+  addPart = function (m, amount, label, extra) { if (extra?.code && PAY.vpinFor === extra.code) extra = {...extra, pin: PAY.vpin}; return _ap(m, amount, label, extra); };
+  const _rd = recData;
+  recData = function (rec) { const d = _rd(rec); d.parts.forEach((p, i) => { if (rec.parts[i]?.pin) p.pin = rec.parts[i].pin; }); return d; };
+}
+/* ── Fremdgutschein als Zahlungsart ── */
+if (!BASE_METHODS.some(m => m.id === 'fremdgs')) { const f = {id: 'fremdgs', label: 'Fremdgutschein', sub: 'Stadt-/Verbundgutschein', icon: 'gift', kind: 'qr'}; BASE_METHODS.splice(BASE_METHODS.findIndex(m => m.id === 'gutschein') + 1, 0, f); METHODS.splice(METHODS.findIndex(m => m.id === 'gutschein') + 1, 0, {...f}); }
+{
+  const _rq = runQR;
+  runQR = async function (m, amount) {
+    if (m.id !== 'fremdgs') return _rq(m, amount);
+    const term = $('#term'), list = Array.isArray(CFG['gutschein.extern']) ? CFG['gutschein.extern'] : [];
+    term.innerHTML = `<div class="dev">${ic('gift')}</div><h3>${esc(eur(amount))} · Fremdgutschein</h3><div style="display:grid;gap:8px;max-width:340px;margin:8px auto 0;text-align:left"><select class="input select" id="fgA">${list.map(x => `<option>${esc(x)}</option>`).join('')}</select><input class="input" id="fgNr" placeholder="Gutscheinnummer"><input class="input num" id="fgB" value="${num(amount, 2)}" placeholder="Betrag"></div><div style="display:flex;gap:8px;justify-content:center;margin-top:10px"><button class="btn btn-primary" id="fgOk">${ic('check', 'i-sm')}Gutschein annehmen</button></div>`;
+    $('#fgOk').onclick = () => { const nr = $('#fgNr').value.trim(), b = Math.min(amount, parseAmt($('#fgB').value) || 0); if (!nr) return shakeEl($('#fgNr')); if (!(b > 0)) return shakeEl($('#fgB')); if (PAY) addPart(m, b, `${$('#fgA').value} ${nr}`, {ref: nr}); };
+    setTimeout(() => $('#fgNr')?.focus(), 50);
+  };
+}
+
+/* ── Gutschein-Seiten ── */
+async function gsAll() { return invoke('voucher_list'); }
+registerPage('gutscheine-pin', {title: 'Übersicht Gutscheine mit PIN', sub: () => 'geschützte Gutscheine', render: async () => {
+  const v = $('#view-gutscheine-pin'); if (!DESKTOP) { v.innerHTML = desktopEmpty('lock', 'Gutscheine'); return; }
+  const l = (await gsAll()).filter(g => g.pin);
+  v.innerHTML = `<div class="cv">${pageHead('Übersicht Gutscheine mit PIN', 'Gutscheine mit PIN werden an der Kasse nur nach Eingabe der PIN eingelöst – Schutz bei Verlust (z. B. Firmen- und Onlinegutscheine)', `<button class="btn btn-primary" data-gp="neu">${ic('lock', 'i-sm')}PIN vergeben</button>`)}
+    ${kpiCards([[num(l.length), 'Gutscheine mit PIN'], [eur0(l.filter(g => g.status === 'aktiv').reduce((s, g) => s + g.balance, 0) / 100), 'offener Wert']])}
+    <div class="card">${l.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Code</th><th>Status</th><th class="r">Wert</th><th class="r">Restwert</th><th>gültig bis</th><th></th></tr></thead><tbody>${l.map(g => `<tr><td style="padding-left:16px" class="mono"><b>${esc(g.code)}</b></td><td>${dPill(g.status)}</td><td class="r num">${cEur(g.initial)}</td><td class="r num">${cEur(g.balance)}</td><td>${g.valid_until ? esc(dDate(g.valid_until)) : '–'}</td><td class="r" style="padding-right:12px"><button class="btn btn-ghost btn-sm" data-gpx="${esc(g.code)}">PIN entfernen</button></td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Noch keine Gutscheine mit PIN.</p></div>'}</div></div>`;
+}});
+registerPage('gutschein-buchungen', {title: 'Buchungen Gutscheine', sub: () => 'Ausgabe, Einlösung, Rücknahme', render: async () => {
+  const v = $('#view-gutschein-buchungen'); if (!DESKTOP) { v.innerHTML = desktopEmpty('receipt', 'Buchungen'); return; }
+  const l = await invoke('voucher_moves', {limit: 3000}), q = norm(GB.q);
+  const f = l.filter(x => !q || norm(`${x.code} ${x.reason} ${x.ref || ''} ${x.user || ''}`).includes(q));
+  v.innerHTML = `<div class="cv">${pageHead('Buchungen Gutscheine', 'Jede Bewegung: Ausgabe, Einlösung, Rücknahme, PIN, Löschung – mit Beleg und Benutzer')}
+    ${kpiCards([[eur0(l.filter(x => x.delta > 0).reduce((s, x) => s + x.delta, 0) / 100), 'ausgegeben'], [eur0(-l.filter(x => x.reason === 'Einlösung').reduce((s, x) => s + x.delta, 0) / 100), 'eingelöst', 'pos'], [num(l.length), 'Buchungen']])}
+    <div class="filters"><input class="input" id="gbQ" value="${esc(GB.q)}" placeholder="Code, Beleg, Benutzer …" style="max-width:320px"></div>
+    <div class="card">${f.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Zeit</th><th>Gutschein</th><th>Buchung</th><th>Beleg</th><th>Benutzer</th><th class="r">Betrag</th><th class="r" style="padding-right:16px">Rest</th></tr></thead><tbody>${f.slice(0, 800).map(x => `<tr><td style="padding-left:16px" class="muted num">${esc(fmtTs(x.ts))}</td><td class="mono"><b>${esc(x.code)}</b></td><td>${esc(x.reason)}</td><td class="mono muted">${esc(x.ref || '')}</td><td>${esc(x.user || '')}</td><td class="r num" style="color:var(--${x.delta >= 0 ? 'pos' : 'neg'})">${x.delta ? (x.delta > 0 ? '+' : '') + cEur(x.delta) : ''}</td><td class="r num" style="padding-right:16px">${cEur(x.balance)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Keine Buchungen.</p></div>'}</div></div>`;
+  $('#gbQ', v).onchange = e => { GB.q = e.target.value; PAGES['gutschein-buchungen'].render(); };
+}});
+const GB = {q: ''}, GL = {code: '', v: null};
+registerPage('gutscheine-loeschen', {title: 'Gutscheine Löschen', sub: () => 'sperren mit Grund', render: () => {
+  const v = $('#view-gutscheine-loeschen'), g = GL.v;
+  v.innerHTML = `<div class="cv">${pageHead('Gutscheine Löschen', 'Gutschein sperren (z. B. verloren gemeldet, Missbrauch, Kulanz-Ersatz) – Restwert verfällt, der Vorgang wird mit Grund protokolliert. Freigabe durch Administrator nötig.')}
+    <div class="card" style="padding:16px;display:grid;gap:12px"><label class="search-field" style="height:50px">${ic('gift')}<input id="glCode" value="${esc(GL.code)}" placeholder="Gutscheincode scannen oder eingeben und Enter" autocomplete="off"></label>
+      ${g ? `<div class="kpis" style="margin:0">${[[g.code, 'Code'], [dPill(g.status), 'Status'], [cEur(g.initial), 'Wert'], [cEur(g.balance), 'Restwert']].map(([a, b]) => `<div class="card"><b>${a}</b><span>${b}</span></div>`).join('')}</div>
+        ${g.status === 'gelöscht' ? `<div class="prompt-hint blk">${ic('info', 'i-xs')}Bereits gelöscht: ${esc(g.note || '')}</div>` : `<label class="field"><span>Grund</span><select class="input select" id="glGrund">${['Verloren gemeldet (Ersatz ausgestellt)', 'Missbrauch / Betrugsverdacht', 'Fehlausgabe', 'Kulanz – ersetzt durch neuen Gutschein', 'Sonstiges'].map(x => `<option>${x}</option>`).join('')}</select></label><label class="field"><span>Notiz</span><input class="input" id="glNote" placeholder="z. B. Ersatzgutschein GS-…"></label><div style="display:flex;justify-content:flex-end"><button class="btn btn-danger" data-glgo>${ic('trash', 'i-sm')}Gutschein löschen</button></div>`}` : ''}</div></div>`;
+  setTimeout(() => $('#glCode')?.focus(), 60);
+}});
+registerPage('gutscheine-geloescht', {title: 'Protokoll gelöschter Gutscheine', sub: () => 'mit Grund und Restwert', render: async () => {
+  const v = $('#view-gutscheine-geloescht'); if (!DESKTOP) { v.innerHTML = desktopEmpty('history', 'Protokoll'); return; }
+  const [l, moves] = await Promise.all([gsAll(), invoke('voucher_moves', {limit: 5000})]); const del = l.filter(g => ['gelöscht', 'storniert'].includes(g.status));
+  v.innerHTML = `<div class="cv">${pageHead('Protokoll gelöschter Gutscheine', 'Gelöschte und zurückgenommene Gutscheine mit Grund, verfallenem Restwert, Zeitpunkt und Benutzer')}
+    ${kpiCards([[num(del.length), 'gelöscht / storniert'], [eur0(-moves.filter(m => m.reason.startsWith('Löschung')).reduce((s, m) => s + m.delta, 0) / 100), 'verfallener Restwert', 'warn']])}
+    <div class="card">${del.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Code</th><th>Status</th><th>Zeit</th><th>Grund</th><th>Benutzer</th><th class="r" style="padding-right:16px">Wert</th></tr></thead><tbody>${del.map(g => { const m = moves.find(x => x.code === g.code && (x.reason.startsWith('Löschung') || x.reason === 'Rücknahme')); return `<tr><td style="padding-left:16px" class="mono"><b>${esc(g.code)}</b></td><td>${dPill(g.status)}</td><td class="muted num">${m ? esc(fmtTs(m.ts)) : ''}</td><td>${esc(m?.reason.replace('Löschung: ', '') || g.note || '')}</td><td>${esc(m?.user || '')}</td><td class="r num" style="padding-right:16px">${cEur(g.initial)}</td></tr>`; }).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Keine gelöschten Gutscheine.</p></div>'}</div></div>`;
+}});
+registerPage('gutschein-protokoll', {title: 'Protokoll Gutscheine', sub: () => 'alle Gutschein-Ereignisse', render: async () => {
+  const v = $('#view-gutschein-protokoll'); if (!DESKTOP) { v.innerHTML = desktopEmpty('history', 'Protokoll'); return; }
+  const l = await invoke('audit_query', {q: 'gutschein', prefix: null, before: null, limit: 600});
+  v.innerHTML = `<div class="cv">${pageHead('Protokoll Gutscheine', 'Lückenloses Protokoll: Verkauf, Einlösung, PIN-Änderung, Löschung, Kampagnen-Gutscheine')}<div class="card">${l.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Zeit</th><th>Ereignis</th><th>Details</th></tr></thead><tbody>${l.map(x => `<tr><td style="padding-left:16px" class="muted num">${esc(fmtTs(x.ts))}</td><td class="mono">${esc(x.event)}</td><td class="muted" style="font-size:12.5px">${esc(prText(x.payload))}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Noch keine Einträge.</p></div>'}</div></div>`;
+}});
+registerPage('gutscheine-extern', {title: 'Buchungen externe Gutscheine', sub: () => 'Fremdgutscheine abrechnen', render: async () => {
+  const v = $('#view-gutscheine-extern'); if (!DESKTOP) { v.innerHTML = desktopEmpty('gift', 'Fremdgutscheine'); return; }
+  const sales = await invoke('sales_list', {limit: 5000});
+  const rows = sales.flatMap(s => (s.data?.parts || []).filter(p => p.m === 'fremdgs').map(p => ({s, p, anb: (CFG['gutschein.extern'] || []).find(x => (p.label || '').startsWith(x)) || 'sonstige'})));
+  const by = {}; rows.forEach(r => { (by[r.anb] ||= {n: 0, sum: 0}); by[r.anb].n++; by[r.anb].sum += r.p.amount; });
+  v.innerHTML = `<div class="cv">${pageHead('Buchungen externe Gutscheine', 'An der Kasse angenommene Fremdgutscheine (z. B. Stadtgutschein) – zur Abrechnung mit dem Aussteller', `<button class="btn btn-secondary" data-gx="cfg">${ic('sliders', 'i-sm')}Aussteller</button><button class="btn btn-primary" data-gx="csv" ${rows.length ? '' : 'disabled'}>${ic('download', 'i-sm')}Abrechnung (CSV)</button>`)}
+    <div class="ds-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:14px">${Object.entries(by).map(([k, x]) => `<div class="card" style="padding:14px"><div style="font-weight:650">${esc(k)}</div><div class="muted" style="font-size:12.5px">${x.n} Gutscheine</div><div style="font-size:20px;font-weight:650;margin-top:4px">${eur(x.sum)}</div></div>`).join('')}</div>
+    <div class="card">${rows.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Beleg</th><th>Zeit</th><th>Aussteller · Nummer</th><th>Kassier:in</th><th class="r" style="padding-right:16px">Betrag</th></tr></thead><tbody>${rows.map(r => `<tr><td style="padding-left:16px" class="mono">${esc(r.s.no)}</td><td class="muted num">${esc(fmtTs(r.s.ts))}</td><td>${esc(r.p.label)}</td><td>${esc(r.s.cashier || '')}</td><td class="r num" style="padding-right:16px;font-weight:600">${eur(r.p.amount)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty" style="padding:44px"><div class="empty-icon">${ic('gift')}</div><p>Noch keine Fremdgutscheine – an der Kasse Zahlungsart „Fremdgutschein“ wählen.</p></div>`}</div></div>`;
+  v._rows = rows;
+}});
+
+/* ── Bon-Zuordnung: Protokolle ── */
+for (const [id, key, title] of [['bon-verkaeufer-protokoll', 'verkaeufer', 'Protokoll Verkäufer-Bon-Zuordnung'], ['bon-kunden-protokoll', 'kunde', 'Protokoll Bon-Zuordnung']]) {
+  registerPage(id, {title, sub: () => 'nachträgliche Zuordnungen', render: async () => {
+    const v = $('#view-' + id); if (!DESKTOP) { v.innerHTML = desktopEmpty('history', 'Protokoll'); return; }
+    const l = (await invoke('audit_query', {q: null, prefix: 'pos.sale.assigned', before: null, limit: 1000})).filter(x => x.payload?.aenderung?.[key]);
+    v.innerHTML = `<div class="cv">${pageHead(title, 'Wer hat wann welchen Bon nachträglich zugeordnet')}<div class="card">${l.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Zeit</th><th>Beleg</th><th>Benutzer</th><th>${key === 'kunde' ? 'Kunde' : 'vorher → neu'}</th>${key === 'kunde' ? '<th class="r" style="padding-right:16px">Punkte</th>' : ''}</tr></thead><tbody>${l.map(x => { const a = x.payload.aenderung; return `<tr><td style="padding-left:16px" class="muted num">${esc(fmtTs(x.ts))}</td><td class="mono">${esc(x.payload.beleg)}</td><td>${esc(x.payload.benutzer || '')}</td><td>${key === 'kunde' ? esc(custById(a.kunde)?.name || a.kunde) : `${esc(a.verkaeufer.vorher || 'Kassier:in')} → <b>${esc(a.verkaeufer.neu || 'Kassier:in')}</b>`}</td>${key === 'kunde' ? `<td class="r num" style="padding-right:16px">+${a.punkte?.gutgeschrieben || 0}</td>` : ''}</tr>`; }).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Noch keine Zuordnungen.</p></div>'}</div></div>`;
+  }});
+}
+
+/* ── Reservierung / Auswahl erstellen, Auswahl-Summen ── */
+for (const [id, kind, title, txt] of [['reservierung-neu', 'reservierung', 'Reservierung erstellen', 'Ware für eine Kundin / einen Kunden zurücklegen'], ['auswahl-neu', 'auswahl', 'Neue Auswahl', 'Ware zur Ansicht mitgeben']]) {
+  registerPage(id, {title, sub: () => txt, render: () => {
+    $('#view-' + id).innerHTML = `<div class="cv">${pageHead(title, txt)}<div class="card"><div class="empty" style="padding:56px 20px"><div class="empty-icon">${ic(DK[kind].ic)}</div><h3>${esc(title)}</h3><p>${esc(DK[kind].sub)}</p><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-primary" data-dnew="${kind}">${ic('plus', 'i-sm')}${esc(title)}</button><button class="btn btn-secondary" data-goto="${DK[kind].page}">Zur Liste</button></div></div></div></div>`;
+    if (DESKTOP) setTimeout(() => S.view === id && !$$('.layer [data-dbox]').length && openDoc(kind, null), 150);
+  }});
+}
+registerPage('auswahl-summen', {title: 'Auswahl-Summen pro Kunde', sub: () => 'Ware außer Haus je Kunde', render: async () => {
+  const v = $('#view-auswahl-summen'); if (!DESKTOP) { v.innerHTML = desktopEmpty('users', 'Auswahl-Summen'); return; }
+  const l = await docLoad('auswahl'), by = {};
+  l.filter(d => d.status !== 'storniert').forEach(d => { const k = d.partner_name || '–'; (by[k] ||= {n: 0, offen: 0, wert: 0, gekauft: 0, zurueck: 0, ueber: 0}); const x = by[k]; x.n++; (d.data.lines || []).forEach(li => { const o = (+li.qty || 0) - (li.zurueck || 0) - (li.gekauft || 0); if (d.status === 'ausgegeben') { x.offen += o; x.wert += o * (li.price || 0); } x.gekauft += li.gekauft || 0; x.zurueck += li.zurueck || 0; }); if (d.status === 'ausgegeben' && d.due < today()) x.ueber++; });
+  v.innerHTML = `<div class="cv">${pageHead('Auswahl-Summen pro Kunde', 'Wie viel Ware ist bei wem – und wie oft wird aus Auswahlen gekauft')}<div class="card">${Object.keys(by).length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Kunde</th><th class="r">Auswahlen</th><th class="r">Teile offen</th><th class="r">Wert offen</th><th class="r">gekauft</th><th class="r">zurück</th><th class="r">Kaufquote</th><th class="r" style="padding-right:16px">überfällig</th></tr></thead><tbody>${Object.entries(by).sort((a, b) => b[1].wert - a[1].wert).map(([k, x]) => `<tr><td style="padding-left:16px"><b>${esc(k)}</b></td><td class="r num">${x.n}</td><td class="r num">${x.offen}</td><td class="r num" style="font-weight:600">${cEur(x.wert)}</td><td class="r num">${x.gekauft}</td><td class="r num">${x.zurueck}</td><td class="r num">${x.gekauft + x.zurueck ? Math.round(x.gekauft / (x.gekauft + x.zurueck) * 100) + ' %' : '–'}</td><td class="r num" style="padding-right:16px;color:${x.ueber ? 'var(--neg)' : 'inherit'}">${x.ueber || ''}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Noch keine Auswahlen.</p></div>'}</div></div>`;
+}});
+
+/* ── Faktura ── */
+docPage('angebote-auftraege', ['angebot', 'auftrag'], {title: 'Angebote/Aufträge', subShort: 'Angebote und Aufträge', newLabel: 'Neues Angebot', tabs: [['offen', 'Offen', s => s === 'offen'], ['alle', 'Alle', () => true]], actions: `<button class="btn btn-secondary" data-dnew="auftrag">${ic('plus', 'i-sm')}Neuer Auftrag</button>`});
+DK.kundenbestellung = {t: 'Kunden-Bestellungen', one: 'Kunden-Bestellung', ic: 'list', page: 'kundenbestellungen', perm: 'faktura', partner: 'kunde', price: 'vk', lines: true, free: true, print: 'Bestellbestätigung',
+  sub: 'Sonderbestellungen für Kund:innen (nicht lagernd, andere Größe/Farbe) – beim Lieferanten bestellen, bei Eintreffen informieren, an der Kasse abholen',
+  head: [{k: 'due', l: 'voraussichtlich da', t: 'date'}, {k: 'data.anzahlung', l: 'Anzahlung €', t: 'money'}, {k: 'data.lieferant', l: 'Lieferant', t: 'supplier'}, {k: 'data.kontakt', l: 'Telefon / E-Mail'}, {k: 'data.text', l: 'Wunsch / Notiz', t: 'area', full: true}],
+  acts: {offen: [['bestellt', 'Als bestellt markieren'], ['eingetroffen', 'Eingetroffen', 'primary'], ['stornieren', 'Stornieren', 'danger']], bestellt: [['eingetroffen', 'Eingetroffen', 'primary'], ['stornieren', 'Stornieren', 'danger']], eingetroffen: [['abholen', 'Abholung an Kasse', 'primary']]}};
+DOC_EDIT.kundenbestellung = ['offen'];
+docPage('kundenbestellungen', 'kundenbestellung', {tabs: [['offen', 'Offen', s => ['offen', 'bestellt', 'eingetroffen'].includes(s)], ['da', 'Eingetroffen', s => s === 'eingetroffen'], ['alle', 'Alle', () => true]], newLabel: 'Neue Kunden-Bestellung',
+  cols: [{l: 'voraussichtlich', f: d => esc(dDate(d.due))}, {l: 'Anzahlung', r: true, f: d => d.data.anzahlung ? cEur(d.data.anzahlung) : ''}]});
+DOC_BTNS.kundenbestellung = st => st.id && st.status === 'offen' ? `<button class="btn btn-ghost" data-kbpo>${ic('truck', 'i-sm')}Beim Lieferanten bestellen</button>` : '';
+DOC_CLICK.kundenbestellung = async (e, st, h) => {
+  if (!e.target.closest('[data-kbpo]')) return;
+  const lines = (st.data.lines || []).filter(l => l.ean).map(l => { const x = findEan(l.ean); return x ? {variant_id: x.v.vid, name: x.a.name, color: x.v.c, size: x.v.s, qty: String(l.qty), cost: x.a.cost != null ? Math.round(x.a.cost * 100) : null} : null; }).filter(Boolean);
+  if (!lines.length) return toast('Keine Artikel mit EAN', {t2: 'Freie Positionen bitte direkt beim Lieferanten bestellen', type: 'warn'});
+  await loadSuppliers(); await invoke('doc_action', {id: st.id, action: 'bestellt', payload: {}, user: S.user.name}); closeLayer(h.el); docRefresh();
+  openPO(null, {supplier: st.data.lieferant || findEan(st.data.lines.find(l => l.ean).ean)?.a.supplierId || SUPPLIERS[0]?.id, lines, type: 'Kommission'});
+};
+DOC_AFTER.kundenbestellung = {
+  abholen: (st, el) => { closeLayer(el); posLoadLines(st.data.lines, st.partner, st.no); if (st.data.anzahlung) toast('Anzahlung berücksichtigen', {t2: `${cEur(st.data.anzahlung)} wurden bereits bezahlt – als Rabatt oder Gutschein verrechnen`, icon: 'info', dur: 9000}); },
+  eingetroffen: async st => { const to = custById(st.partner)?.email || (st.data.kontakt || '').match(/\S+@\S+/)?.[0]; if (!to || !(await confirmBox(`Kund:in (${to}) informieren, dass die Bestellung da ist?`, 'E-Mail senden'))) return; const txt = `Guten Tag ${st.partner_name},\n\nIhre Bestellung ${st.no} ist eingetroffen und liegt zur Abholung bereit:\n${st.data.lines.map(l => `· ${l.qty} × ${l.name}`).join('\n')}\n\nIhr Team von ${CFG['firma.name']}`; try { await invoke('mail_send', {to, subject: `Ihre Bestellung ${st.no} ist da`, html: `<div style="font:15px/1.6 system-ui,sans-serif">${esc(txt).replace(/\n/g, '<br>')}</div>`, text: txt, qr: null, purpose: 'kundenbestellung'}); toast('Kund:in informiert', {t2: to, type: 'pos', icon: 'mail'}); } catch (err) { toast('E-Mail nicht gesendet', {t2: String(err), type: 'warn'}); } },
+};
+DK.fremdrechnung = {t: 'Fremdrechnungen', one: 'Fremdrechnung', ic: 'idcard', page: 'fremdrechnungen', perm: 'faktura', partner: 'kunde', amount: true, print: 'Rechnung',
+  sub: 'Ausgangsrechnungen aus anderen Systemen (Webshop, Altsystem, Werkstatt) – offene Posten, Zahlungseingang und Mahnung in Kontor',
+  head: [{k: 'data.rechnungsnr', l: 'Rechnungsnummer (extern)', req: true}, {k: 'date', l: 'Rechnungsdatum', t: 'date'}, {k: 'due', l: 'Fällig am', t: 'date'}, {k: 'data.betrag', l: 'Betrag brutto €', t: 'money'}, {k: 'data.quelle', l: 'Quelle', t: 'select', o: ['Webshop', 'Altsystem', 'Werkstatt', 'Verleih', 'Sonstiges']}, {k: 'data.text', l: 'Leistung / Notiz', t: 'area', full: true}],
+  acts: {offen: DK.rechnung.acts.offen.filter(a => a[0] !== 'stornieren').concat([['stornieren', 'Stornieren', 'danger']]), teilbezahlt: DK.rechnung.acts.teilbezahlt}};
+DOC_EDIT.fremdrechnung = ['offen'];
+docPage('fremdrechnungen', 'fremdrechnung', {tabs: [['offen', 'Offen', s => ['offen', 'teilbezahlt'].includes(s)], ['bezahlt', 'Bezahlt', s => s === 'bezahlt'], ['alle', 'Alle', () => true]], newLabel: 'Fremdrechnung erfassen',
+  cols: [{l: 'Rechnungsnr.', f: d => esc(d.data.rechnungsnr || '')}, {l: 'Quelle', f: d => esc(d.data.quelle || '')}, {l: 'Fällig', f: d => `<span class="num" style="${d.due && d.due < today() && d.open ? 'color:var(--neg);font-weight:600' : ''}">${esc(dDate(d.due))}</span>`}]});
+DOC_AFTER.fremdrechnung = {mahnen: st => docPrint(st, true)};
+// Druck für Belege ohne Positionen (Fremdrechnung, Mahnung)
+{ const _dh = docHTML; docHTML = function (st) { if ((st.data.lines || []).length || !st.total) return _dh(st); return _dh({...st, data: {...st.data, lines: [{name: `${st.kind === 'fremdrechnung' ? 'Rechnung ' + (st.data.rechnungsnr || '') + ' vom ' + dDate(st.date) : DK[st.kind].one}${st.data.text ? ' – ' + st.data.text : ''}`, qty: 1, price: st.total, vat: 20}]}}); }; }
+// Mahnung: Mahngebühr und Hinweis im Druck
+{ const _dh2 = docHTML; docHTML = function (st) { let h = _dh2(st); if (st._mahnung && st.data.mahnstufe) { const g = (CFG['mahn.gebuehr'] || [])[Math.min(st.data.mahnstufe, 3) - 1] || 0; h = h.replace('<div class="foot">', `<p style="margin-top:6mm"><b>${st.data.mahnstufe}. Mahnung:</b> Leider konnten wir zu dieser Rechnung noch keinen vollständigen Zahlungseingang feststellen. Offen: <b>${cEur(st.open)}</b>${g ? ` zzgl. Mahngebühr ${eur(g)}` : ''}. Bitte überweisen Sie den Betrag innerhalb von ${CFG['mahn.tage'] || 14} Tagen.${CFG['zahlung.iban'] ? ` IBAN ${esc(CFG['zahlung.iban'])}.` : ''} Sollte sich Ihre Zahlung mit diesem Schreiben überschnitten haben, betrachten Sie es bitte als gegenstandslos.</p><div class="foot">`); } return h; }; }
+
+registerPage('mahnwesen', {title: 'Mahnwesen', sub: () => 'überfällige Rechnungen mahnen', render: renderMahnwesen});
+async function renderMahnwesen() {
+  const v = $('#view-mahnwesen'); if (!DESKTOP) { v.innerHTML = desktopEmpty('mail', 'Mahnwesen'); return; }
+  const l = (await docLoad(['rechnung', 'fremdrechnung'])).filter(d => ['offen', 'teilbezahlt'].includes(d.status) && d.due && d.due < today());
+  DOCS.mahnwesen = l;
+  const age = d => Math.floor((Date.now() - new Date(d.due + 'T12:00:00')) / 864e5), last = d => (d.data.mahnungen || []).at(-1)?.datum;
+  const fae = d => !last(d) || (Date.now() - new Date(last(d) + 'T12:00:00')) / 864e5 >= (CFG['mahn.tage'] || 14);
+  v.innerHTML = `<div class="cv">${pageHead('Mahnwesen', `Überfällige Rechnungen – Mahnstufe 1 bis 3, frühestens alle ${CFG['mahn.tage'] || 14} Tage; Mahngebühren ${(CFG['mahn.gebuehr'] || []).map(g => eur(g)).join(' / ')}`, `<button class="btn btn-secondary" data-mw="cfg">${ic('sliders', 'i-sm')}Einstellungen</button><button class="btn btn-primary" data-mw="go" ${l.some(fae) ? '' : 'disabled'}>${ic('mail', 'i-sm')}Ausgewählte mahnen & drucken</button>`)}
+    ${kpiCards([[num(l.length), 'überfällige Rechnungen', 'neg'], [eur0(l.reduce((s, d) => s + d.open, 0) / 100), 'überfälliger Betrag'], [num(l.filter(fae).length), 'jetzt mahnbar', 'warn'], [num(l.filter(d => (d.data.mahnstufe || 0) >= 3).length), 'nach 3. Mahnung (Inkasso prüfen)']])}
+    <div class="card">${l.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:34px"><input type="checkbox" data-mwall checked></th><th>Rechnung</th><th>Kunde</th><th>fällig seit</th><th>Mahnstufe</th><th>letzte Mahnung</th><th class="r" style="padding-right:16px">offen</th></tr></thead><tbody>${l.map(d => `<tr data-dopen="${d.id}" style="cursor:pointer"><td style="padding-left:16px" onclick="event.stopPropagation()"><input type="checkbox" data-mws="${d.id}" ${fae(d) ? 'checked' : 'disabled'}></td><td><b class="mono">${esc(d.no)}</b><div class="muted" style="font-size:11.5px">${esc(DK[d.kind].one)}${d.data.rechnungsnr ? ' · ' + esc(d.data.rechnungsnr) : ''}</div></td><td>${esc(d.partner_name)}</td><td style="color:var(--neg)">${age(d)} Tagen</td><td>${d.data.mahnstufe ? `<span class="pill neg" style="height:20px">${d.data.mahnstufe}. Mahnung</span>` : '<span class="muted">–</span>'}</td><td class="muted">${last(d) ? esc(dDate(last(d))) : '–'}</td><td class="r num" style="padding-right:16px;font-weight:650">${cEur(d.open)}</td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty" style="padding:52px"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><h3>Nichts zu mahnen</h3><p>Keine überfälligen Rechnungen.</p></div>`}</div></div>`;
+}
+async function mahnGo() {
+  const ids = $$('[data-mws]').filter(c => c.checked).map(c => +c.dataset.mws); if (!ids.length) return;
+  try { await needPerm('faktura', 'Mahnungen'); } catch { return; }
+  const out = [];
+  for (const id of ids) { try { out.push(await invoke('doc_action', {id, action: 'mahnen', payload: {}, user: S.user.name})); } catch (e) { toast('Fehler', {t2: String(e), type: 'warn'}); } }
+  if (!out.length) return;
+  const c = /^#[0-9a-f]{6}$/i.test(CFG['a4.farbe'] || '') ? CFG['a4.farbe'] : '#111111';
+  printHTML(out.map(d => docHTML({...d, _mahnung: true})).join('<div style="page-break-after:always"></div>'), `Mahnungen ${today()}`, `h1{color:${c}}th{color:${c};border-color:${c}}.sum .tot td{border-color:${c};color:${c}}`);
+  toast(`${out.length} Mahnungen erstellt`, {t2: 'Druckdialog geöffnet', type: 'pos', icon: 'mail'}); Hooks.emit('faktura.mahnlauf', {anzahl: out.length}); renderMahnwesen();
+}
+
+/* ── Einstellungen: Menü-Akkordeon ── */
+{
+  const _rs = renderSettings;
+  renderSettings = function () {
+    _rs();
+    const box = $('#sec-darstellung .card') || $('#sec-kasse .card'); if (!box || $('#navAkk')) return;
+    box.insertAdjacentHTML('beforeend', `<div class="set-row"><div><div class="set-l">Menü als Akkordeon</div><div class="set-h">Nur der Bereich der aktuellen Seite ist aufgeklappt – übersichtlicher bei vielen Menüpunkten</div></div><div class="set-c"><button class="switch" role="switch" id="navAkk" aria-checked="${prefs.navAkkordeon !== false}"></button></div></div>`);
+  };
+}
+
+function bindVerkauf3() {
+  document.addEventListener('click', async e => {
+    if (!e.target.closest('#views')) return;
+    const t = e.target;
+    if (t.closest('#navAkk')) { const b = $('#navAkk'), on = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', on); prefs.navAkkordeon = on; persist.set('prefs', prefs); if (on) navReveal(S.view); return; }
+    // Gutscheine
+    if (t.closest('[data-gp="neu"]')) {
+      const code = await askText('PIN vergeben', 'Gutscheincode', ''); if (!code) return;
+      const pin = await askText('PIN vergeben', `4–8 Ziffern für ${code.toUpperCase()}`, String(Math.floor(1000 + Math.random() * 9000))); if (!pin) return;
+      try { await needPerm('kasse.kassenbuch', 'Gutschein-PIN'); await invoke('voucher_set_pin', {code, pin, user: S.user.name}); toast('PIN gesetzt', {t2: `${code.toUpperCase()} · PIN ${pin} – der Kundin/dem Kunden mitteilen`, type: 'pos', icon: 'lock', dur: 9000}); PAGES['gutscheine-pin'].render(); } catch (err) { toast('Nicht möglich', {t2: String(err), type: 'warn'}); }
+      return;
+    }
+    const gx = t.closest('[data-gpx]'); if (gx) { try { await invoke('voucher_set_pin', {code: gx.dataset.gpx, pin: null, user: S.user.name}); PAGES['gutscheine-pin'].render(); } catch (err) { toast('Nicht möglich', {t2: String(err), type: 'warn'}); } return; }
+    if (t.closest('[data-glgo]')) {
+      try { await stepUp({title: 'Gutschein löschen', text: `${GL.v.code} · Restwert ${cEur(GL.v.balance)} verfällt`, admin: true}); } catch { return; }
+      try { GL.v = await invoke('voucher_delete', {code: GL.v.code, reason: `${$('#glGrund').value}${$('#glNote').value.trim() ? ' – ' + $('#glNote').value.trim() : ''}`, user: S.user.name}); toast('Gutschein gelöscht', {t2: GL.v.code, type: 'pos', icon: 'trash'}); Hooks.emit('voucher.deleted', {code: GL.v.code}); PAGES['gutscheine-loeschen'].render(); } catch (err) { toast('Nicht möglich', {t2: String(err), type: 'warn'}); }
+      return;
+    }
+    const gxb = t.closest('[data-gx]'); if (gxb) {
+      if (gxb.dataset.gx === 'cfg') { const s = await askText('Aussteller externer Gutscheine', 'Durch Komma getrennt', (CFG['gutschein.extern'] || []).join(', ')); if (s != null) { await saveSettings({'gutschein.extern': s.split(',').map(x => x.trim()).filter(Boolean)}); PAGES['gutscheine-extern'].render(); } return; }
+      const rows = $('#view-gutscheine-extern')._rows || [];
+      const csv = ['Aussteller;Gutschein;Beleg;Datum;Betrag'].concat(rows.map(r => [r.anb, r.p.ref || r.p.label, r.s.no, r.s.ts.slice(0, 10), num(r.p.amount, 2)].join(';'))).join('\r\n');
+      try { const p = await invoke('save_text', {name: `Fremdgutscheine_${today()}.csv`, content: csv, title: 'Abrechnung Fremdgutscheine'}); if (p) toast('Exportiert', {t2: p, type: 'pos', icon: 'download'}); } catch (err) { toast('Fehler', {t2: String(err), type: 'warn'}); }
+      return;
+    }
+    // Mahnwesen
+    const mw = t.closest('[data-mw]'); if (mw) {
+      if (mw.dataset.mw === 'go') return mahnGo();
+      const g = await askText('Mahngebühren', 'Stufe 1, 2, 3 in € (durch Komma/Strichpunkt getrennt)', (CFG['mahn.gebuehr'] || []).map(x => num(x, 2)).join('; ')); if (g == null) return;
+      const tage = await askText('Mahnabstand', 'Tage zwischen zwei Mahnungen', String(CFG['mahn.tage'] || 14)); if (tage == null) return;
+      await saveSettings({'mahn.gebuehr': g.split(/[;|]/).map(x => parseAmt(x) || 0).slice(0, 3), 'mahn.tage': Math.max(1, parseInt(tage, 10) || 14)}); return renderMahnwesen();
+    }
+    const ma = t.closest('[data-mwall]'); if (ma) $$('[data-mws]:not([disabled])').forEach(c => { c.checked = ma.checked; });
+  });
+  $('#view-gutscheine-loeschen').addEventListener('keydown', async e => {
+    if (e.target.id !== 'glCode' || e.key !== 'Enter') return;
+    GL.code = e.target.value.trim().toUpperCase();
+    try { GL.v = await invoke('voucher_get', {code: GL.code}); } catch (err) { GL.v = null; toast('Gutschein unbekannt', {t2: String(err), type: 'warn'}); }
+    PAGES['gutscheine-loeschen'].render();
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════
    12 · ANMELDUNG — Sperrbildschirm mit PIN, Windows Hello, FIDO2, SSO
    ════════════════════════════════════════════════════════════════════ */
 /* ════════════════════════════════════════════════════════════════════
@@ -10553,8 +11262,7 @@ document.addEventListener('keydown', e => {
 
 function bindShell() {
   $('#nav').addEventListener('click', e => {
-    const g = e.target.closest('[data-grp]');
-    if (g) { const k = g.dataset.grp, sec = g.parentElement; navClosed.has(k) ? navClosed.delete(k) : navClosed.add(k); sec.toggleAttribute('data-closed', navClosed.has(k)); g.setAttribute('aria-expanded', !navClosed.has(k)); persist.set('navClosed', [...navClosed]); return; }
+    const g = e.target.closest('[data-grp]'); if (g) return navGroupToggle(g);
     const pa = e.target.closest('[data-par]'); if (pa) return navToggle(pa);
     const b = e.target.closest('[data-view]'); b && go(b.dataset.view);
   });
@@ -10590,7 +11298,7 @@ async function init() {
   if (DESKTOP) { await refreshInfo(); Hooks.on('*', (p, e) => { if (!e.evt.startsWith('config.settings')) invoke('audit_append', {event: e.evt, payload: e.payload ?? {}}).catch(() => {}); }); }
   $('#palKbd').innerHTML = `<span class="kbd">${MOD}</span><span class="kbd">K</span>`;
   renderNav(); permNav(); renderMe(); renderStore(); renderStatus();
-  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings(); bindStockViews(); bindP5(); bindCustom(); bindAutomation(); bindSecurity(); bindAiFibu(); bindPages(); bindImportDisplay(); bindVerbund(); bindAuth(); bindExtensions(); bindMore(); bindDocs(); bindEinkauf2(); bindVerkauf2(); bindMarketing();
+  bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings(); bindStockViews(); bindP5(); bindCustom(); bindAutomation(); bindSecurity(); bindAiFibu(); bindPages(); bindImportDisplay(); bindVerbund(); bindAuth(); bindExtensions(); bindMore(); bindDocs(); bindEinkauf2(); bindVerkauf2(); bindMarketing(); bindArtikel(); bindVerkauf3();
   go(location.hash.slice(1) || 'dashboard');
   if (DESKTOP) lock();   // Anmeldung mit PIN beim Start
   if (DESKTOP) { loadPurchasing().then(() => navBadge('wareneingang', EK.pos.filter(p => ['bestellt', 'teilgeliefert'].includes(p.status)).length)).catch(() => {}); if (CFG['display.auto']) setTimeout(() => toggleDisplay(true), 1500); }

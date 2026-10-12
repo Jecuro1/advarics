@@ -72,6 +72,10 @@ Stand 0.10.0 – alles mit lokaler Datenbank, ohne Server:
   Änderungsprotokoll; Eingangsrechnungen mit Rechnungsprüfung, Zahlungen und SEPA-Datei; Retourenmanagement mit
   Reklamationen und Lieferantenretouren; Wareneingangs-Verteilung; Lieferantenbonus; Faktura (Angebot bis Mahnung);
   Reservierungen, Auswahlen, Warenkörbe, Bon-Zuordnung; Rabattaktionssteuerung, Kampagnen, Sales-Aktionen.
+- **0.13:** Akkordeon-Menü; Artikelinfo (Plus/Kompakt), Bestandsinfo, Umbuchungs-Log; Umlagerungen (Pool, Planung, Anforderung,
+  Filial-Rechnung …); Bestandskorrektur, NOS-Sortimente, Picklisten; geplante Preisänderungen; Nachsortierung; EAN/GTIN-Zuordnung,
+  Artikelsortierung, Master-Artikel; Gutscheine mit PIN, Löschen, Protokolle, Fremdgutscheine; Kunden-Bestellungen,
+  Fremdrechnungen, Mahnwesen.
 - **Digitales Schaufenster** unter `/shop` am eingebauten Server (Click & Reserve).
 - **Noch offen:** echte RKSV-Signaturkarte bzw. A-Trust, TSE (Deutschland), App-Store-App, FIDO2-Schlüssel,
   Active-Directory/SAML-Anmeldung.

@@ -263,9 +263,14 @@ pub fn commit_sale(tx: &Transaction, lines: &[SaleLine], total: i64, cashier: &s
     for p in data["parts"].as_array().cloned().unwrap_or_default() {
         if p["m"] == "gutschein" {
             let code = p["code"].as_str().ok_or("Gutscheincode fehlt")?;
+            crate::vouchers::check_pin(tx, code, p["pin"].as_str())?;
             let amount = (p["amount"].as_f64().unwrap_or(0.0) * 100.0).round() as i64;
             crate::vouchers::redeem(tx, code, amount, &no, Some(cashier))?;
         }
+    }
+    // PINs nie speichern
+    if let Some(ps) = data["parts"].as_array_mut() {
+        ps.iter_mut().for_each(|p| { if let Some(o) = p.as_object_mut() { o.remove("pin"); } });
     }
     // RKSV
     let signed = crate::rksv::sign(tx, &no, &ts, &data, "beleg")?;

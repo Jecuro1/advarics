@@ -495,6 +495,29 @@ fn voucher_list(db: State<db::Db>) -> Res<Vec<Value>> {
     vouchers::list(&db.conn.lock().unwrap(), 500).map_err(err)
 }
 
+#[tauri::command]
+fn voucher_set_pin(db: State<db::Db>, code: String, pin: Option<String>, user: String) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    vouchers::set_pin(&c, &code, pin.as_deref(), Some(&user))?;
+    let _ = db::audit_append(&c, "voucher.pin", &json!({ "gutschein": code.trim().to_uppercase(), "pin": pin.as_deref().is_some_and(|p| !p.is_empty()), "benutzer": user }));
+    vouchers::get(&c, &code)
+}
+#[tauri::command]
+fn voucher_check_pin(db: State<db::Db>, code: String, pin: Option<String>) -> Res<()> {
+    vouchers::check_pin(&db.conn.lock().unwrap(), &code, pin.as_deref())
+}
+#[tauri::command]
+fn voucher_delete(db: State<db::Db>, code: String, reason: String, user: String) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    vouchers::delete(&c, &code, &reason, Some(&user))?;
+    let _ = db::audit_append(&c, "voucher.deleted", &json!({ "gutschein": code.trim().to_uppercase(), "grund": reason, "benutzer": user }));
+    vouchers::get(&c, &code)
+}
+#[tauri::command]
+fn voucher_moves(db: State<db::Db>, limit: Option<i64>) -> Res<Vec<Value>> {
+    vouchers::moves(&db.conn.lock().unwrap(), limit.unwrap_or(2000)).map_err(err)
+}
+
 /* ── Kassenbuch & Tagesabschluss ── */
 
 #[tauri::command]
@@ -1792,6 +1815,10 @@ fn main() {
             store_revenue,
             shop_status,
             open_url,
+            voucher_set_pin,
+            voucher_check_pin,
+            voucher_delete,
+            voucher_moves,
             audit_query,
             articles_import,
             customers_import,

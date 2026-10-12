@@ -50,6 +50,14 @@ pub const KINDS: &[Kind] = &[
         actions: &[("versendet", &["entwurf"], "versendet"), ("abschliessen", &["versendet"], "abgeschlossen")] },
     Kind { id: "praemie", prefix: "SA", name: "Sales-Aktion", initial: "aktiv", edit: &["aktiv"],
         actions: &[("beenden", &["aktiv"], "beendet"), ("reaktivieren", &["beendet"], "aktiv")] },
+    Kind { id: "pickliste", prefix: "PL", name: "Pickliste", initial: "offen", edit: &["offen"],
+        actions: &[("erledigen", &["offen"], "erledigt"), ("stornieren", &["offen"], "storniert")] },
+    Kind { id: "preis", prefix: "PA", name: "Preisänderung", initial: "geplant", edit: &["geplant"],
+        actions: &[("durchfuehren", &["geplant"], "durchgefuehrt"), ("stornieren", &["geplant"], "storniert")] },
+    Kind { id: "kundenbestellung", prefix: "KB", name: "Kunden-Bestellung", initial: "offen", edit: &["offen"],
+        actions: &[("bestellt", &["offen"], "bestellt"), ("eingetroffen", &["offen", "bestellt"], "eingetroffen"), ("abholen", &["eingetroffen"], "abgeholt"), ("stornieren", &["offen", "bestellt"], "storniert")] },
+    Kind { id: "fremdrechnung", prefix: "FR", name: "Fremdrechnung", initial: "offen", edit: &["offen"],
+        actions: &[("zahlung", &["offen", "teilbezahlt"], "*"), ("mahnen", &["offen", "teilbezahlt"], "*"), ("stornieren", &["offen"], "storniert")] },
     Kind { id: "bonus", prefix: "LB", name: "Lieferantenbonus", initial: "aktiv", edit: &["aktiv"],
         actions: &[("umlegen", &["aktiv"], "umgelegt"), ("reaktivieren", &["umgelegt"], "aktiv")] },
 ];
@@ -148,11 +156,11 @@ fn validate(k: &Kind, d: &Value) -> Result<(), String> {
             return Err(format!("Position {}: Bezeichnung oder EAN fehlt", i + 1));
         }
     }
-    let needs_lines = ["avis", "lretoure", "warenkorb", "angebot", "auftrag", "lieferschein", "rechnung", "reservierung", "auswahl"];
+    let needs_lines = ["avis", "lretoure", "warenkorb", "angebot", "auftrag", "lieferschein", "rechnung", "reservierung", "auswahl", "pickliste", "preis", "kundenbestellung"];
     if needs_lines.contains(&k.id) && !lines.iter().any(|l| l["qty"].as_f64().unwrap_or(0.0) > 0.0) {
         return Err("Mindestens eine Position mit Menge".into());
     }
-    let needs_partner = ["avis", "er", "zahlung", "lretoure", "angebot", "auftrag", "lieferschein", "rechnung", "auswahl", "bonus"];
+    let needs_partner = ["avis", "er", "zahlung", "lretoure", "angebot", "auftrag", "lieferschein", "rechnung", "auswahl", "bonus", "kundenbestellung", "fremdrechnung"];
     if needs_partner.contains(&k.id) && d["partner_name"].as_str().unwrap_or("").trim().is_empty() {
         return Err(if ["avis", "er", "zahlung", "lretoure", "bonus"].contains(&k.id) { "Lieferant fehlt".into() } else { "Kunde fehlt".into() });
     }
@@ -186,7 +194,7 @@ pub fn save(tx: &Transaction, d: &Value, user: &str) -> Result<Value, String> {
             if !k.edit.contains(&st) {
                 return Err(format!("{} {} ist „{st}“ und kann nicht mehr geändert werden", k.name, cur["no"].as_str().unwrap_or("")));
             }
-            let open = if ["er", "rechnung"].contains(&k.id) { total - (cur["total"].as_i64().unwrap_or(0) - cur["open"].as_i64().unwrap_or(0)) } else { 0 };
+            let open = if ["er", "rechnung", "fremdrechnung"].contains(&k.id) { total - (cur["total"].as_i64().unwrap_or(0) - cur["open"].as_i64().unwrap_or(0)) } else { 0 };
             tx.execute(
                 "UPDATE docs SET partner = ?2, partner_name = ?3, ref = ?4, date = ?5, due = ?6, total = ?7, open = ?8, data = ?9, updated_at = ?10 WHERE id = ?1",
                 params![id, d["partner"].as_str(), s("partner_name"), s("ref"), date, due, total, open, data.to_string(), now],
@@ -199,7 +207,7 @@ pub fn save(tx: &Transaction, d: &Value, user: &str) -> Result<Value, String> {
         None => {
             let no = next_no(tx, k)?;
             let status = if k.id == "reservierung" && d["status"] == "angefragt" { "angefragt" } else { k.initial };
-            let open = if k.id == "er" { total } else { 0 };
+            let open = if k.id == "er" || k.id == "fremdrechnung" { total } else { 0 };
             tx.execute(
                 &format!("INSERT INTO docs(kind, no, status, partner, partner_name, ref, date, due, total, open, data, created_at, updated_at, user) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?12,?13)"),
                 params![k.id, no, status, d["partner"].as_str(), s("partner_name"), s("ref"), date, due, total, open, data.to_string(), now, user],
@@ -345,7 +353,7 @@ pub fn action(tx: &Transaction, id: i64, act: &str, payload: &Value, user: &str)
                 tx.execute("UPDATE docs SET due = ?2 WHERE id = ?1", params![id, due]).map_err(|e| e.to_string())?;
             }
         }
-        ("rechnung", "zahlung") => {
+        ("rechnung" | "fremdrechnung", "zahlung") => {
             let b = cents(&payload["betrag"]);
             if b <= 0 || b > open {
                 return Err(format!("Betrag muss zwischen 0,01 und {:.2} € liegen", open as f64 / 100.0));
@@ -356,7 +364,7 @@ pub fn action(tx: &Transaction, id: i64, act: &str, payload: &Value, user: &str)
             open -= b;
             to = if open == 0 { "bezahlt".into() } else { "teilbezahlt".into() };
         }
-        ("rechnung", "mahnen") => {
+        ("rechnung" | "fremdrechnung", "mahnen") => {
             let st = data["mahnstufe"].as_i64().unwrap_or(0) + 1;
             data["mahnstufe"] = json!(st);
             let mut m = data["mahnungen"].as_array().cloned().unwrap_or_default();
@@ -364,6 +372,27 @@ pub fn action(tx: &Transaction, id: i64, act: &str, payload: &Value, user: &str)
             data["mahnungen"] = json!(m);
             to = cur.clone();
             detail = json!({ "stufe": st });
+        }
+        ("fremdrechnung", "stornieren") => {
+            if open != total {
+                return Err("Rechnung hat bereits Zahlungen".into());
+            }
+            open = 0;
+        }
+        ("preis", "durchfuehren") => {
+            // neue Preise übernehmen (VK; optional Aktionspreis) und vorher/nachher festhalten
+            let mut n = 0;
+            for l in &lines {
+                let Some(sku) = l["sku"].as_str() else { continue };
+                let feld = if l["feld"] == "sale_price" { "sale_price" } else { "price" };
+                let neu = l["neu"].as_i64();
+                if feld == "price" && !neu.is_some_and(|x| x > 0) {
+                    return Err(format!("{}: neuer Preis fehlt", l["name"].as_str().unwrap_or(sku)));
+                }
+                n += tx.execute(&format!("UPDATE articles SET {feld} = ?2, updated_at = ?3 WHERE id = ?1"), params![sku, neu, db::now()]).map_err(|e| e.to_string())?;
+            }
+            data["durchgefuehrt"] = json!({ "zeit": db::now(), "von": user, "artikel": n });
+            detail = json!({ "artikel": n });
         }
         ("rechnung", "stornieren") => {
             if cur == "offen" && open != total {
@@ -667,6 +696,16 @@ mod tests {
         assert!(action(&tx, rid, "zahlung", &json!({ "betrag": 5000 }), "t").is_err());
         let r = action(&tx, rid, "zahlung", &json!({ "betrag": 1000 }), "t").unwrap();
         assert_eq!(r["status"], "bezahlt");
+        // Preisänderung
+        let pa = save(&tx, &json!({ "kind": "preis", "partner_name": "Preisänderung", "data": { "lines": [{ "sku": "A1", "name": "Test", "qty": 1, "price": 1290, "alt": 1000, "neu": 1290 }] } }), "t").unwrap();
+        assert_eq!(pa["status"], "geplant");
+        action(&tx, pa["id"].as_i64().unwrap(), "durchfuehren", &json!({}), "t").unwrap();
+        assert_eq!(tx.query_row("SELECT price FROM articles WHERE id = 'A1'", [], |r| r.get::<_, i64>(0)).unwrap(), 1290);
+        // Fremdrechnung mit Teilzahlung
+        let fr = save(&tx, &json!({ "kind": "fremdrechnung", "partner_name": "Webshop-Kunde", "data": { "betrag": 5000 } }), "t").unwrap();
+        assert_eq!(fr["open"], 5000);
+        let f = action(&tx, fr["id"].as_i64().unwrap(), "zahlung", &json!({ "betrag": 2000 }), "t").unwrap();
+        assert_eq!((f["status"].as_str().unwrap(), f["open"].as_i64().unwrap()), ("teilbezahlt", 3000));
         // Reservierung zählt als reserviert
         save(&tx, &json!({ "kind": "reservierung", "partner_name": "Gast", "data": { "lines": [{ "ean": "2000000000015", "name": "Test", "qty": 2, "price": 1000 }] } }), "t").unwrap();
         assert_eq!(reserved(&tx).unwrap().get("2000000000015"), Some(&2));

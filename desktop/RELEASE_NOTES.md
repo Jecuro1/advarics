@@ -1,3 +1,15 @@
+## Neu in 0.13.0
+- **Aufgeräumtes Menü (Akkordeon):** Nur der Bereich der aktuellen Seite ist aufgeklappt, Unterpunkte sind gruppiert – über 100 Funktionen, trotzdem übersichtlich (abschaltbar unter Einstellungen → Kasse)
+- **Artikel:** Artikelinfo, Artikel-Info Plus (Abverkauf, Reichweite, Marge, Lagerwert, Umschlag), Artikelinfo Kompakt zum Scannen, Bestandsinfo mit Lagerwert je Warengruppe, Artikel-Umbuchungs-Log mit CSV-Export
+- **Umlagerungen:** Umlagerungs-Pool, Filialumlagerung, Protokoll, Übersicht Umlagerungspositionen, manuelle Umlagerungsplanung (Bestand je Filiale vergleichen), Umbuchungsanforderung, Filial-Rechnungsstellung zu Einstandspreisen, ungebuchte Filial-Umbuchungen, Umlagerungen kompakt
+- **Bestand:** Bestandskorrektur mit Grund (Bruch, Schwund, Zählfehler …), NOS-Sortimente mit Sollbestand, Übersicht Picklisten (automatisch aus offenen Lieferscheinen, Reservierungen, Auswahlen, Umlagerungen)
+- **Preisänderungen:** mehrere Artikel auf einmal (Prozent, Betrag oder fix, Preisschwelle ,90/,95/,99), sofort oder geplant zu einem Datum – geplante Änderungen werden automatisch durchgeführt; Übersicht und Etikettendruck
+- **Nachsortierung:** aus Verkäufen und NOS-Fehlmengen, Lagerliste nach Lagerplatz zum Drucken, Pickliste, Anforderung bei der Zentrale oder Bestellentwürfe; Parameter einstellbar
+- **Artikelpflege:** Artikel-Import mit Protokoll, EAN/GTIN-Zuordnung mit Prüfziffernkontrolle, manuelle Artikelsortierung für die Kasse (Ziehen oder Pfeile), Master-Artikel als Vorlage für neue Artikel
+- **Gutscheine:** Übersicht, Gutscheine mit PIN (Einlösung an der Kasse nur mit PIN), Buchungen, Gutscheine löschen mit Grund und Freigabe, Protokoll gelöschter Gutscheine, Protokoll, externe Gutscheine (neue Zahlungsart „Fremdgutschein“ mit Abrechnung je Aussteller)
+- **Verkauf:** Protokolle für Verkäufer- und Kunden-Bon-Zuordnung, Reservierung erstellen, Neue Auswahl, Auswahl-Summen pro Kunde
+- **Faktura:** Kundenrechnungen, Angebote/Aufträge, Kunden-Bestellungen (Sonderbestellungen mit Anzahlung, Bestellung beim Lieferanten, Benachrichtigung, Abholung an der Kasse), Fremdrechnungen (z. B. aus dem Webshop), Mahnwesen mit Mahnstufen, Mahngebühren und Sammeldruck
+
 ## Neu in 0.12.0
 - **Neue Menüstruktur mit Unterpunkten** (aufklappbar wie gewohnt aus der Warenwirtschaft): Verkauf, Marketing, Sortiment, Einkauf, Kunden, Auswertung, System – über 60 Menüpunkte, alle auch über die Befehlspalette (Strg K) erreichbar
 - **Order:** Order (Bestellungen mit Order-Typ), Order Import (Datei/Einfügen → Bestellentwurf), Order Typen, Order Vorschläge und Order Vorschlags-Konfiguration (Zeitraum, Reichweite, Sicherheitsfaktor, Packeinheit, Warengruppen)

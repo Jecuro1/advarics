@@ -193,7 +193,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.12.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.13.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -303,28 +303,28 @@ const NAV = [
   {id: 'dashboard', label: 'Dashboard', icon: 'dashboard'},
   {id: 'kasse', label: 'Kasse', icon: 'register', cart: true},
   {label: 'Warenkorb', icon: 'bag', kids: [{id: 'warenkorb-neu', label: 'Warenkorb erfassen', icon: 'plus'}, {id: 'warenkoerbe', label: 'Warenkörbe', icon: 'bag'}]},
-  {id: 'belege', label: 'Kassenbelege', icon: 'receipt'},
-  {id: 'manuell', label: 'Manuelle Verkäufe', icon: 'edit'},
-  {id: 'ungebucht', label: 'Ungebuchte Verkäufe', icon: 'alert'},
-  {label: 'Bon-Zuordnung', icon: 'users', kids: [{id: 'bon-verkaeufer', label: 'Verkäufer-Bon-Zuordnung', icon: 'user'}, {id: 'bon-kunden', label: 'Kunden-Bon-Zuordnung', icon: 'user-plus'}]},
-  {id: 'reservierungen', label: 'Reservierungen', icon: 'clock'},
-  {id: 'auswahl', label: 'Auswahlverwaltung', icon: 'layers'},
-  {id: 'gutscheine', label: 'Gutscheine', icon: 'gift'},
-  {label: 'Faktura', icon: 'idcard', kids: [{id: 'angebote', label: 'Angebote', icon: 'edit'}, {id: 'auftraege', label: 'Aufträge', icon: 'list'}, {id: 'lieferscheine', label: 'Lieferscheine', icon: 'truck'}, {id: 'rechnungen', label: 'Rechnungen', icon: 'receipt'}, {id: 'offene-posten', label: 'Offene Posten & Mahnungen', icon: 'clock'}]},
-  {id: 'kassenbuch', label: 'Kassenbuch', icon: 'cash'},
-  {id: 'tagesabschluesse', label: 'Tagesabschlüsse', icon: 'lock'},
-  {id: 'filialumsatz', label: 'Filialumsatz kompakt', icon: 'chart'},
+  {label: 'Belege & Verkäufe', icon: 'receipt', kids: [{id: 'belege', label: 'Kassenbelege', icon: 'receipt'}, {id: 'manuell', label: 'Manuelle Verkäufe', icon: 'edit'}, {id: 'ungebucht', label: 'Ungebuchte Verkäufe', icon: 'alert'}]},
+  {label: 'Verkäufer-Bon-Zuordnung', icon: 'user', kids: [{id: 'bon-verkaeufer', label: 'Verkäufer-Bon-Zuordnung', icon: 'user'}, {id: 'bon-verkaeufer-protokoll', label: 'Protokoll Verkäufer-Bon-Zuordnung', icon: 'history'}]},
+  {label: 'Kunden-Bon-Zuordnung', icon: 'user-plus', kids: [{id: 'bon-kunden', label: 'Kunden-Bon-Zuordnung', icon: 'user-plus'}, {id: 'bon-kunden-protokoll', label: 'Protokoll Bon-Zuordnung', icon: 'history'}]},
+  {label: 'Reservierungen', icon: 'clock', kids: [{id: 'reservierungen', label: 'Reservierungen', icon: 'clock'}, {id: 'reservierung-neu', label: 'Reservierung erstellen', icon: 'plus'}]},
+  {label: 'Auswahlverwaltung', icon: 'layers', kids: [{id: 'auswahl-neu', label: 'Neue Auswahl', icon: 'plus'}, {id: 'auswahl', label: 'Auswahlen', icon: 'layers'}, {id: 'auswahl-summen', label: 'Auswahl-Summen pro Kunde', icon: 'users'}]},
+  {label: 'Gutscheine', icon: 'gift', kids: [{id: 'gutscheine', label: 'Übersicht Gutscheine', icon: 'list'}, {id: 'gutscheine-pin', label: 'Übersicht Gutscheine mit PIN', icon: 'lock'}, {id: 'gutschein-buchungen', label: 'Buchungen Gutscheine', icon: 'receipt'}, {id: 'gutscheine-loeschen', label: 'Gutscheine Löschen', icon: 'trash'}, {id: 'gutscheine-geloescht', label: 'Protokoll gelöschter Gutscheine', icon: 'history'}, {id: 'gutschein-protokoll', label: 'Protokoll Gutscheine', icon: 'history'}, {id: 'gutscheine-extern', label: 'Buchungen externe Gutscheine', icon: 'gift'}]},
+  {label: 'Faktura', icon: 'idcard', kids: [{id: 'rechnungen', label: 'Kundenrechnungen', icon: 'receipt'}, {id: 'angebote-auftraege', label: 'Angebote/Aufträge', icon: 'edit'}, {id: 'lieferscheine', label: 'Lieferscheine', icon: 'truck'}, {id: 'kundenbestellungen', label: 'Kunden-Bestellungen', icon: 'list'}, {id: 'fremdrechnungen', label: 'Fremdrechnungen', icon: 'idcard'}, {id: 'offene-posten', label: 'Offene Posten', icon: 'alert'}, {id: 'mahnwesen', label: 'Mahnwesen', icon: 'mail'}]},
+  {label: 'Kasse & Abschluss', icon: 'cash', kids: [{id: 'kassenbuch', label: 'Kassenbuch', icon: 'cash'}, {id: 'tagesabschluesse', label: 'Tagesabschlüsse', icon: 'lock'}, {id: 'filialumsatz', label: 'Filialumsatz kompakt', icon: 'chart'}]},
   {g: 'Marketing'},
   {id: 'aktionen', label: 'Preisaktionen', icon: 'percent'},
   {id: 'rabattregeln', label: 'Rabattaktionssteuerung', icon: 'sliders'},
   {id: 'kampagnen', label: 'Kampagnen', icon: 'mail'},
   {id: 'salesaktionen', label: 'Sales-Aktionen', icon: 'target'},
   {id: 'schaufenster', label: 'Digitales Schaufenster', icon: 'store'},
-  {g: 'Sortiment'},
+  {g: 'Artikel'},
   {id: 'artikel', label: 'Artikel', icon: 'tag'},
-  {id: 'bestand', label: 'Bestand', icon: 'boxes'},
-  {id: 'inventur', label: 'Inventur', icon: 'layers'},
-  {id: 'etiketten', label: 'Etiketten', icon: 'barcode'},
+  {label: 'Artikelinfo', icon: 'info', kids: [{id: 'artikelinfo', label: 'Artikelinfo', icon: 'info'}, {id: 'artikelinfo-plus', label: 'Artikel-Info Plus', icon: 'chart'}, {id: 'artikelinfo-kompakt', label: 'Artikelinfo Kompakt', icon: 'barcode'}, {id: 'bestandsinfo', label: 'Bestandsinfo', icon: 'boxes'}, {id: 'umbuchungslog', label: 'Artikel-Umbuchungs-Log', icon: 'history'}]},
+  {label: 'Umlagerungen', icon: 'swap', kids: [{id: 'umlagerungen', label: 'Umlagerungs-Pool', icon: 'list'}, {id: 'ul-neu', label: 'Filialumlagerung', icon: 'edit'}, {id: 'ul-protokoll', label: 'Protokoll Umlagerungen', icon: 'history'}, {id: 'ul-positionen', label: 'Übersicht Umlagerungspositionen', icon: 'list'}, {id: 'ul-planung', label: 'Manuelle Umlagerungsplanung', icon: 'grid'}, {id: 'ul-anforderung', label: 'Umbuchungsanforderung', icon: 'swap'}, {id: 'ul-rechnung', label: 'Filial-Rechnungsstellung', icon: 'receipt'}, {id: 'ul-ungebucht', label: 'Ungebuchte Fil. Umbuchungen', icon: 'alert'}, {id: 'ul-kompakt', label: 'Umlagerungen Kompakt', icon: 'swap'}]},
+  {label: 'Bestand', icon: 'boxes', kids: [{id: 'bestand', label: 'Bestand', icon: 'boxes'}, {id: 'bestandskorrektur', label: 'Bestandskorrektur', icon: 'edit'}, {id: 'inventur', label: 'Inventur', icon: 'layers'}, {id: 'nos', label: 'NOS Sortimente', icon: 'star'}, {id: 'picklisten', label: 'Übersicht Picklisten', icon: 'list'}]},
+  {label: 'Preisänderungen', icon: 'tag', kids: [{id: 'preisaenderung', label: 'Preisänderung', icon: 'edit'}, {id: 'preis-uebersicht', label: 'Übersicht Preisänderungen', icon: 'list'}, {id: 'preis-geplant', label: 'Geplante Preisänderungen', icon: 'clock'}]},
+  {label: 'Nachsortierung', icon: 'sync', kids: [{id: 'nachsortierung', label: 'Nachsortierung', icon: 'sync'}, {id: 'nachsort-nos', label: 'Nachsortierung aus NOS und Verkauf', icon: 'star'}, {id: 'nachsort-liste', label: 'Nachsortier-Lagerliste', icon: 'printer'}, {id: 'nachsort-param', label: 'Parameter für Nachsortierung', icon: 'sliders'}]},
+  {label: 'Artikelpflege', icon: 'sliders', kids: [{id: 'artikel-import', label: 'Artikel-Import', icon: 'download'}, {id: 'import-protokoll', label: 'Protokoll Artikel-Importe', icon: 'history'}, {id: 'ean-zuordnung', label: 'Artikel-EAN/GTIN-Zuordnung', icon: 'barcode'}, {id: 'artikelsortierung', label: 'Manuelle Artikelsortierung', icon: 'list'}, {id: 'master-artikel', label: 'Master-Artikel', icon: 'copy'}, {id: 'etiketten', label: 'Etiketten', icon: 'printer'}]},
   {g: 'Einkauf'},
   {label: 'Order', icon: 'truck', kids: [{id: 'einkauf', label: 'Order', icon: 'truck'}, {id: 'order-import', label: 'Order Import', icon: 'download'}, {id: 'order-typen', label: 'Order Typen', icon: 'list'}, {id: 'order-vorschlag', label: 'Order Vorschläge', icon: 'sparkle'}, {id: 'order-konfig', label: 'Order Vorschlags-Konfiguration', icon: 'sliders'}]},
   {label: 'Wareneingang', icon: 'download', kids: [{id: 'avis', label: 'Wareneingang Avis', icon: 'swap'}, {id: 'wareneingang', label: 'Wareneingang', icon: 'list'}, {id: 'we-scanner', label: 'Scanner Wareneingang', icon: 'barcode'}, {id: 'etiketten', label: 'Etikettendruck', icon: 'printer'}, {id: 'we-protokoll', label: 'Wareneingang Änderungsprotokoll', icon: 'history'}]},
@@ -391,18 +391,37 @@ function renderNav() {
   if (S.view) navReveal(S.view);
 }
 /** Übergeordnete Menüpunkte der aktuellen Seite aufklappen */
+const navAccordion = () => prefs.navAkkordeon !== false;
 function navReveal(id) {
   const p = navPath(id); if (!p) return;
+  if (navAccordion()) {
+    // Akkordeon: nur der Pfad zur aktuellen Seite bleibt offen
+    const keep = new Set(p.parents.map(navKey));
+    [...navOpen].forEach(k => { if (!keep.has(k)) { navOpen.delete(k); $(`[data-par="${CSS.escape(k)}"]`)?.setAttribute('aria-expanded', 'false'); const kd = $(`[data-kids="${CSS.escape(k)}"]`); if (kd) kd.hidden = true; } });
+    $$('.nav-sec').forEach(sec => { const g = sec.dataset.sec; if (g !== p.g && !navClosed.has(g)) { navClosed.add(g); sec.setAttribute('data-closed', ''); sec.querySelector('.nav-group')?.setAttribute('aria-expanded', 'false'); } });
+  }
   p.parents.forEach(n => { const k = navKey(n); navOpen.add(k); $(`[data-par="${CSS.escape(k)}"]`)?.setAttribute('aria-expanded', 'true'); const kd = $(`[data-kids="${CSS.escape(k)}"]`); if (kd) kd.hidden = false; });
-  if (p.g && navClosed.has(p.g)) { navClosed.delete(p.g); const sec = $(`.nav-sec[data-sec="${CSS.escape(p.g)}"]`); sec?.removeAttribute('data-closed'); sec?.querySelector('.nav-group')?.setAttribute('aria-expanded', 'true'); persist.set('navClosed', [...navClosed]); }
-  persist.set('navOpen', [...navOpen]);
+  if (p.g && navClosed.has(p.g)) { navClosed.delete(p.g); const sec = $(`.nav-sec[data-sec="${CSS.escape(p.g)}"]`); sec?.removeAttribute('data-closed'); sec?.querySelector('.nav-group')?.setAttribute('aria-expanded', 'true'); }
+  persist.set('navClosed', [...navClosed]); persist.set('navOpen', [...navOpen]);
 }
 function navToggle(btn) {
   const k = btn.dataset.par;
   if ($('#app').classList.contains('sb-collapsed')) { const first = btn.nextElementSibling?.querySelector('[data-view]'); if (first) go(first.dataset.view); return; }
-  const on = !navOpen.has(k); on ? navOpen.add(k) : navOpen.delete(k);
+  const on = !navOpen.has(k);
+  if (on && navAccordion()) {
+    // Geschwister auf derselben Ebene schließen
+    [...btn.parentElement.children].filter(x => x !== btn && x.matches('[data-par]') && x.getAttribute('aria-expanded') === 'true').forEach(x => { navOpen.delete(x.dataset.par); x.setAttribute('aria-expanded', 'false'); const kd = x.nextElementSibling; if (kd) kd.hidden = true; });
+  }
+  on ? navOpen.add(k) : navOpen.delete(k);
   btn.setAttribute('aria-expanded', on); const kd = btn.nextElementSibling; if (kd) kd.hidden = !on;
   persist.set('navOpen', [...navOpen]);
+}
+/** Gruppe (Verkauf, Artikel, Einkauf …) auf-/zuklappen – im Akkordeon-Modus schließen sich die anderen */
+function navGroupToggle(g) {
+  const k = g.dataset.grp, sec = g.parentElement, open = navClosed.has(k);
+  if (open && navAccordion()) $$('.nav-sec').forEach(x => { if (x !== sec && !navClosed.has(x.dataset.sec)) { navClosed.add(x.dataset.sec); x.setAttribute('data-closed', ''); x.querySelector('.nav-group')?.setAttribute('aria-expanded', 'false'); } });
+  open ? navClosed.delete(k) : navClosed.add(k);
+  sec.toggleAttribute('data-closed', navClosed.has(k)); g.setAttribute('aria-expanded', !navClosed.has(k)); persist.set('navClosed', [...navClosed]);
 }
 /** Zähler an Menüpunkten (z. B. offene Bestellungen) */
 function navBadge(id, n) { $$(`[data-nb="${id}"]`).forEach(b => { b.hidden = !n; b.textContent = n > 99 ? '99+' : n; }); }

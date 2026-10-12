@@ -488,6 +488,11 @@ const MIGRATIONS: &[&str] = &[
     ALTER TABLE suppliers ADD COLUMN iban TEXT NOT NULL DEFAULT '';
     ALTER TABLE suppliers ADD COLUMN bic TEXT NOT NULL DEFAULT '';
     "#,
+    // 9 · Gutschein-PIN und Löschgrund
+    r#"
+    ALTER TABLE vouchers ADD COLUMN pin_hash TEXT;
+    ALTER TABLE vouchers ADD COLUMN note TEXT;
+    "#,
 
 ];
 
