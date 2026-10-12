@@ -1919,8 +1919,8 @@ fn store_revenue(db: State<db::Db>, days: i64) -> Res<Vec<Value>> {
 /// Adresse im Standardbrowser öffnen (nur http/https)
 #[tauri::command]
 fn open_url(url: String) -> Res<()> {
-    if !(url.starts_with("http://") || url.starts_with("https://")) {
-        return Err("Nur http(s)-Adressen".into());
+    if !(url.starts_with("http://") || url.starts_with("https://") || (url.starts_with("mailto:") && !url.contains(['\n', '\r', ' ']))) {
+        return Err("Nur http(s)- und mailto-Adressen".into());
     }
     auth::open_browser(&url)
 }

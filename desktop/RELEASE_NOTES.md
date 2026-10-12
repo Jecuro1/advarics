@@ -1,3 +1,9 @@
+## Neu in 0.15.1
+- **Echte Datenquelle für FEDAS-Daten: OUTTRA Data & Image Hub.** FEDAS ist der einheitliche 6-stellige Produktschlüssel der Sportartikelbranche – die Stammdaten der Marken liegen in Datenhubs. Kontor spricht jetzt die dokumentierte Händler-API von OUTTRA (api.outtra.com): freigeschaltete Marken laden, Varianten seitenweise abrufen, täglich nur Änderungen (updatedAfter), automatisches Warten bei Anfragelimit
+- Übernommen werden FEDAS-Schlüssel, Beschreibung, Merkmale, Material (außen/innen/Futter/Füllung/Sohle), Pflege, Herkunft, Zolltarif, Gewicht, Größen, UVP und Einkaufspreis, Dokumente (Anleitung, Größentabellen) und alle Bilder mit Ansicht (Front, Rück, Detail, Model) in der Reihenfolge des Herstellers
+- Schritt-für-Schritt-Anleitung für den kostenlosen Händlerzugang in der App (Registrierung, Marken freischalten, Token anfordern); eigene Schnittstelle bleibt als zweite Quelle wählbar
+- Mailto-Links (E-Mail an Support) funktionieren
+
 ## Neu in 0.15.0
 - **FEDAS-Sync:** Artikelstammdaten der Hersteller über FEDAS abholen – Herstellerliste, Artikel je Hersteller mit Varianten (EAN, Farbe, Größe), UVP und Mehrwertsteuer, Beschreibung, Material, Herkunft, Zolltarif, FEDAS-Produktschlüssel und Bilder. Neue Artikel werden angelegt, vorhandene über die EAN ergänzt (Bestand bleibt unberührt, eigene Felder bleiben erhalten)
 - **Täglicher Automatik-Abgleich:** auf Wunsch jeden Tag zur eingestellten Uhrzeit im Hintergrund, nur Änderungen seit dem letzten Lauf; verpasste Läufe werden nachgeholt; Protokoll mit Zahlen und Fehlern. Zugang (Adresse, Anmeldung, Pfade) frei einstellbar – dazu Datei-Import (CSV/JSON) und FEDAS-Klassifikation → Warengruppe

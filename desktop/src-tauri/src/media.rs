@@ -78,13 +78,17 @@ pub fn add_bytes(c: &Connection, data_dir: &Path, article_id: &str, bytes: &[u8]
 
 /// Bild-URL ohne Download vormerken (wird im Hintergrund geladen)
 pub fn queue_url(c: &Connection, article_id: &str, url: &str, color: &str) -> Result<(), String> {
+    queue_url_cap(c, article_id, url, color, "")
+}
+
+pub fn queue_url_cap(c: &Connection, article_id: &str, url: &str, color: &str, caption: &str) -> Result<(), String> {
     let exists: bool = c.query_row("SELECT 1 FROM article_media WHERE article_id = ?1 AND source_url = ?2", params![article_id, url], |_| Ok(true)).unwrap_or(false);
     if exists {
         return Ok(());
     }
     c.execute(
-        "INSERT INTO article_media(article_id, pos, file, color, source_url, status, created_at) VALUES (?1,?2,NULL,?3,?4,'offen',?5)",
-        params![article_id, next_pos(c, article_id), color, url, db::now()],
+        "INSERT INTO article_media(article_id, pos, file, color, caption, source_url, status, created_at) VALUES (?1,?2,NULL,?3,?6,?4,'offen',?5)",
+        params![article_id, next_pos(c, article_id), color, url, db::now(), caption],
     )
     .map_err(|e| e.to_string())?;
     Ok(())

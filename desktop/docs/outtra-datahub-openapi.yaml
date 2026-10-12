@@ -1,0 +1,1874 @@
+openapi: 3.0.3
+info:
+  title: 'OUTTRA DataHub API'
+  description: 'Documentation for the OUTTRA DataHub API'
+  version: 1.0.0
+servers:
+  -
+    url: 'https://datahub_api.test'
+paths:
+  /api/v2/datahub/products:
+    get:
+      summary: 'GET api/v2/datahub/products'
+      operationId: gETApiv2datahubproducts
+      description: "Query the DataHub for product information.\n\n**Important:**\n<aside class=\"info\"> You have to set at least one filter property.</aside>"
+      parameters:
+        -
+          in: query
+          name: language
+          description: 'Returns the data in the specific language, if available. Expects a ISO-639-1 two-character language code. Fallback is english (en).'
+          example: de
+          required: false
+          schema:
+            type: string
+            description: 'Returns the data in the specific language, if available. Expects a ISO-639-1 two-character language code. Fallback is english (en).'
+            example: de
+        -
+          in: query
+          name: 'page[size]'
+          description: 'Set the number of elements returned. Max is 30.'
+          example: 2
+          required: false
+          schema:
+            type: integer
+            description: 'Set the number of elements returned. Max is 30.'
+            example: 2
+        -
+          in: query
+          name: 'page[number]'
+          description: 'Pagination found under the links attribute in the response.'
+          example: 1
+          required: false
+          schema:
+            type: integer
+            description: 'Pagination found under the links attribute in the response.'
+            example: 1
+        -
+          in: query
+          name: 'filter[brand]'
+          description: 'Filters the data to a brand. Expects an ID that can be retrieved via the /datahub/my/brands endpoint.'
+          example: 136
+          required: false
+          schema:
+            type: integer
+            description: 'Filters the data to a brand. Expects an ID that can be retrieved via the /datahub/my/brands endpoint.'
+            example: 136
+        -
+          in: query
+          name: 'filter[gtin]'
+          description: 'The global identifier for a certain product. You can request for information about up to 1.000 gtins (or eans) seperated by comma.'
+          example: '04251422560870'
+          required: false
+          schema:
+            type: string
+            description: 'The global identifier for a certain product. You can request for information about up to 1.000 gtins (or eans) seperated by comma.'
+            example: '04251422560870'
+        -
+          in: query
+          name: 'filter[manufacturerArticleNumber]'
+          description: 'Filters the data to a specific manufacturer article number. Best combined with the brand filter as manufacturer article numbers may not be unique.'
+          example: 3391022XL
+          required: false
+          schema:
+            type: string
+            description: 'Filters the data to a specific manufacturer article number. Best combined with the brand filter as manufacturer article numbers may not be unique.'
+            example: 3391022XL
+        -
+          in: query
+          name: 'filter[productSetId]'
+          description: 'Filters the data to a specific product set. A product set includes all GTINs across all sizes and colors in a product.'
+          example: 5487.0
+          required: false
+          schema:
+            type: number
+            description: 'Filters the data to a specific product set. A product set includes all GTINs across all sizes and colors in a product.'
+            example: 5487.0
+        -
+          in: query
+          name: 'filter[colorSetId]'
+          description: 'Filters the data to a specific color set.'
+          example: 1.0
+          required: false
+          schema:
+            type: number
+            description: 'Filters the data to a specific color set.'
+            example: 1.0
+        -
+          in: query
+          name: 'filter[season]'
+          description: 'Filters the data to a specific season. There are the two values "autumn_winter" and "spring_sumer", followed by a "-" and a year with four digits.'
+          example: autumn_winter-2023
+          required: false
+          schema:
+            type: string
+            description: 'Filters the data to a specific season. There are the two values "autumn_winter" and "spring_sumer", followed by a "-" and a year with four digits.'
+            example: autumn_winter-2023
+        -
+          in: query
+          name: 'filter[updatedAfter]'
+          description: 'Filters the response to only include data that has been updated after the given date.'
+          example: '2022-06-30'
+          required: false
+          schema:
+            type: string
+            description: 'Filters the response to only include data that has been updated after the given date.'
+            example: '2022-06-30'
+        -
+          in: query
+          name: 'filter[manufacturerColor]'
+          description: 'Filters the data to a specific manufacturer color. Best combined with the brand filter as manufacturer colors may not be unique.'
+          example: sulphur-green
+          required: false
+          schema:
+            type: string
+            description: 'Filters the data to a specific manufacturer color. Best combined with the brand filter as manufacturer colors may not be unique.'
+            example: sulphur-green
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  data:
+                    -
+                      type: variant
+                      gtin: '01234567891234'
+                      attributes:
+                        gln: supplier-1
+                        product_identifier: '784544'
+                        product_short_description: "Men's Rain Jacket"
+                        brand:
+                          id: '845'
+                          name: 'Example Brand'
+                        media:
+                          images:
+                            -
+                              url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--B-01.png'
+                              position: 1
+                              hash: ec809ddf66ed7087
+                              updatedAt: '2023-04-09'
+                              shootType: hollow
+                              productView: front
+                            -
+                              url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--B-02.png'
+                              position: 2
+                              hash: bd4b61e1c2700ecb
+                              updatedAt: '2023-04-09'
+                              shootType: model
+                              productView: front
+                            -
+                              url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--M-01.jpg'
+                              position: 3
+                              hash: fbba25e06c2fe2d6
+                              updatedAt: '2023-04-09'
+                              shootType: hollow
+                              productView: back
+                            -
+                              url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--M-02.jpg'
+                              position: 4
+                              hash: 45273a6fac1bc168
+                              updatedAt: '2023-04-09'
+                              shootType: hollow
+                              productView: left
+                            -
+                              url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--D-01.jpg'
+                              position: 5
+                              hash: 335506130662c784
+                              updatedAt: '2023-04-09'
+                              shootType: hollow
+                              productView: right
+                            -
+                              url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--D-02.jpg'
+                              position: 6
+                              hash: 0814878367256eca
+                              updatedAt: '2023-04-09'
+                              shootType: detail
+                              productView: unkown
+                          videos:
+                            -
+                              url: 'https://www.example.com/123456789'
+                              type: video_product
+                            -
+                              url: 'https://www.example.com/123456789'
+                              type: video_instruction
+                        fedas_code: '201042'
+                        category_level_1: Clothing
+                        category_level_2: Jackets
+                        category_level_3: 'Rain Jackets'
+                        sex: Male
+                        kids: false
+                        age_group: '1'
+                        country_of_origin: DE
+                        customs_tariff_ch: '123456'
+                        customs_tariff_eu: '123456'
+                        customs_tariff_scandinavia: '123456'
+                        sales_unit: '1'
+                        packing_unit: '1'
+                        weight_packing_unit: '420'
+                        usps: 'Robust, elastic, lightweight rain jacket'
+                        material: '100% Polyester'
+                        product_longtext: 'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'
+                        activity: Hiking
+                        sustainability: 'Fair Wear Foundation'
+                        goretex: true
+                        vibram: false
+                        features: 'Breathable, Cooling, Quick drying'
+                        vegan: false
+                        care_instructions: 'Wash at 30°C, Do not bleach, Do not tumble dry, Do not iron, Do not dry clean'
+                        video_product: ''
+                        video_instruction: ''
+                        hazard_note: 'https://www.example.com/123456789'
+                        product_instructions_url: 'https://www.example.com/123456789'
+                        hang_tag_url: 'https://www.example.com/123456789'
+                        size_table_shoes_url: 'https://www.example.com/123456789'
+                        size_table_men_url: 'https://www.example.com/123456789'
+                        size_table_women_url: 'https://www.example.com/123456789'
+                        size_table_kids_url: 'https://www.example.com/123456789'
+                        manufacturer_color_code: '98754'
+                        manufacturer_color: 'green moss'
+                        base_color: Green
+                        season: autumn_winter-2023
+                        spin_360: 'https://www.example.com/123456789'
+                        product_dimensional_drawing_url: 'https://www.example.com/123456789'
+                        fedas_code_size: '54687'
+                        size_range: S-XXL
+                        manufacturer_size_code: L
+                        size_description: L
+                        size_description_2: '32'
+                        volume: ''
+                        volume_additional: ''
+                        gtin: '01234567891234'
+                        sku_supplier: JK-1234
+                        weight: '380'
+                        weight_unit: g
+                        weight_info: 'Weight in gramm'
+                        wholesale_price: '85'
+                        wholesale_price_unit: EUR
+                        wholesale_price_valid_from_date: '2023-01-01'
+                        rrp: '199'
+                        rrp_unit: EUR
+                        rrp_2: ''
+                        rrp_2_unit: ''
+                        rrp_3: ''
+                        rrp_3_unit: ''
+                        rrp_valid_from_date: '2023-01-01'
+                        delivery_date: '2023-01-01'
+                        height: '100'
+                        height_unit: cm
+                        width: '100'
+                        width_unit: cm
+                        length: '100'
+                        length_unit: cm
+                        diameter: '100'
+                        diameter_unit: cm
+                        packing_unit_height: '100'
+                        packing_unit_height_unit: cm
+                        packing_unit_width: '100'
+                        packing_unit_width_unit: cm
+                        packing_unit_length: '100'
+                        packing_unit_length_unit: cm
+                        packing_unit_diameter: '100'
+                        packing_unit_diameter_unit: cm
+                        delivery_unit_height: '100'
+                        delivery_unit_height_unit: cm
+                        delivery_unit_width: '100'
+                        delivery_unit_width_unit: cm
+                        delivery_unit_length: '100'
+                        delivery_unit_length_unit: cm
+                        carry_over_from_style: winter-2022
+                        carry_over_to_style: winter-2023
+                        carry_over_from_stylecolor: AB12345
+                        carry_over_to_stylecolor: CD67890
+                        main_material: ''
+                        main_material_information: ''
+                        outer_material: ''
+                        outer_material_information: ''
+                        outer_material_2: ''
+                        outer_material_2_information: ''
+                        inner_material: ''
+                        inner_material_information: ''
+                        inner_material_2: ''
+                        inner_material_2_information: ''
+                        liner_material: ''
+                        liner_material_information: ''
+                        filling_material: ''
+                        filling_material_information: ''
+                        sole: ''
+                        sole_information: ''
+                        textile_care_washing: ''
+                        textile_care_bleaching: ''
+                        textile_care_drying: ''
+                        textile_care_ironing: ''
+                        textile_care_professional_textile_care: ''
+                        workbook_picture_url: ''
+                  links:
+                    first: 'https://api.outtra.com/api/v2/datahub/products?filter%5Bbrand%5D=136&page%5Bnumber%5D=1'
+                    last: null
+                    prev: null
+                    next: 'https://api.outtra.com/api/v2/datahub/products?filter%5Bbrand%5D=136&page%5Bnumber%5D=2'
+                  meta:
+                    current_page: 1
+                    from: 1
+                    path: 'https://api.outtra.com/api/v2/datahub/products'
+                    per_page: 30
+                    to: 30
+                properties:
+                  data:
+                    type: array
+                    example:
+                      -
+                        type: variant
+                        gtin: '01234567891234'
+                        attributes:
+                          gln: supplier-1
+                          product_identifier: '784544'
+                          product_short_description: "Men's Rain Jacket"
+                          brand:
+                            id: '845'
+                            name: 'Example Brand'
+                          media:
+                            images:
+                              -
+                                url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--B-01.png'
+                                position: 1
+                                hash: ec809ddf66ed7087
+                                updatedAt: '2023-04-09'
+                                shootType: hollow
+                                productView: front
+                              -
+                                url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--B-02.png'
+                                position: 2
+                                hash: bd4b61e1c2700ecb
+                                updatedAt: '2023-04-09'
+                                shootType: model
+                                productView: front
+                              -
+                                url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--M-01.jpg'
+                                position: 3
+                                hash: fbba25e06c2fe2d6
+                                updatedAt: '2023-04-09'
+                                shootType: hollow
+                                productView: back
+                              -
+                                url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--M-02.jpg'
+                                position: 4
+                                hash: 45273a6fac1bc168
+                                updatedAt: '2023-04-09'
+                                shootType: hollow
+                                productView: left
+                              -
+                                url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--D-01.jpg'
+                                position: 5
+                                hash: 335506130662c784
+                                updatedAt: '2023-04-09'
+                                shootType: hollow
+                                productView: right
+                              -
+                                url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--D-02.jpg'
+                                position: 6
+                                hash: 0814878367256eca
+                                updatedAt: '2023-04-09'
+                                shootType: detail
+                                productView: unkown
+                            videos:
+                              -
+                                url: 'https://www.example.com/123456789'
+                                type: video_product
+                              -
+                                url: 'https://www.example.com/123456789'
+                                type: video_instruction
+                          fedas_code: '201042'
+                          category_level_1: Clothing
+                          category_level_2: Jackets
+                          category_level_3: 'Rain Jackets'
+                          sex: Male
+                          kids: false
+                          age_group: '1'
+                          country_of_origin: DE
+                          customs_tariff_ch: '123456'
+                          customs_tariff_eu: '123456'
+                          customs_tariff_scandinavia: '123456'
+                          sales_unit: '1'
+                          packing_unit: '1'
+                          weight_packing_unit: '420'
+                          usps: 'Robust, elastic, lightweight rain jacket'
+                          material: '100% Polyester'
+                          product_longtext: 'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'
+                          activity: Hiking
+                          sustainability: 'Fair Wear Foundation'
+                          goretex: true
+                          vibram: false
+                          features: 'Breathable, Cooling, Quick drying'
+                          vegan: false
+                          care_instructions: 'Wash at 30°C, Do not bleach, Do not tumble dry, Do not iron, Do not dry clean'
+                          video_product: ''
+                          video_instruction: ''
+                          hazard_note: 'https://www.example.com/123456789'
+                          product_instructions_url: 'https://www.example.com/123456789'
+                          hang_tag_url: 'https://www.example.com/123456789'
+                          size_table_shoes_url: 'https://www.example.com/123456789'
+                          size_table_men_url: 'https://www.example.com/123456789'
+                          size_table_women_url: 'https://www.example.com/123456789'
+                          size_table_kids_url: 'https://www.example.com/123456789'
+                          manufacturer_color_code: '98754'
+                          manufacturer_color: 'green moss'
+                          base_color: Green
+                          season: autumn_winter-2023
+                          spin_360: 'https://www.example.com/123456789'
+                          product_dimensional_drawing_url: 'https://www.example.com/123456789'
+                          fedas_code_size: '54687'
+                          size_range: S-XXL
+                          manufacturer_size_code: L
+                          size_description: L
+                          size_description_2: '32'
+                          volume: ''
+                          volume_additional: ''
+                          gtin: '01234567891234'
+                          sku_supplier: JK-1234
+                          weight: '380'
+                          weight_unit: g
+                          weight_info: 'Weight in gramm'
+                          wholesale_price: '85'
+                          wholesale_price_unit: EUR
+                          wholesale_price_valid_from_date: '2023-01-01'
+                          rrp: '199'
+                          rrp_unit: EUR
+                          rrp_2: ''
+                          rrp_2_unit: ''
+                          rrp_3: ''
+                          rrp_3_unit: ''
+                          rrp_valid_from_date: '2023-01-01'
+                          delivery_date: '2023-01-01'
+                          height: '100'
+                          height_unit: cm
+                          width: '100'
+                          width_unit: cm
+                          length: '100'
+                          length_unit: cm
+                          diameter: '100'
+                          diameter_unit: cm
+                          packing_unit_height: '100'
+                          packing_unit_height_unit: cm
+                          packing_unit_width: '100'
+                          packing_unit_width_unit: cm
+                          packing_unit_length: '100'
+                          packing_unit_length_unit: cm
+                          packing_unit_diameter: '100'
+                          packing_unit_diameter_unit: cm
+                          delivery_unit_height: '100'
+                          delivery_unit_height_unit: cm
+                          delivery_unit_width: '100'
+                          delivery_unit_width_unit: cm
+                          delivery_unit_length: '100'
+                          delivery_unit_length_unit: cm
+                          carry_over_from_style: winter-2022
+                          carry_over_to_style: winter-2023
+                          carry_over_from_stylecolor: AB12345
+                          carry_over_to_stylecolor: CD67890
+                          main_material: ''
+                          main_material_information: ''
+                          outer_material: ''
+                          outer_material_information: ''
+                          outer_material_2: ''
+                          outer_material_2_information: ''
+                          inner_material: ''
+                          inner_material_information: ''
+                          inner_material_2: ''
+                          inner_material_2_information: ''
+                          liner_material: ''
+                          liner_material_information: ''
+                          filling_material: ''
+                          filling_material_information: ''
+                          sole: ''
+                          sole_information: ''
+                          textile_care_washing: ''
+                          textile_care_bleaching: ''
+                          textile_care_drying: ''
+                          textile_care_ironing: ''
+                          textile_care_professional_textile_care: ''
+                          workbook_picture_url: ''
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          example: variant
+                        gtin:
+                          type: string
+                          example: '01234567891234'
+                        attributes:
+                          type: object
+                          properties:
+                            gln:
+                              type: string
+                              example: supplier-1
+                            product_identifier:
+                              type: string
+                              example: '784544'
+                            product_short_description:
+                              type: string
+                              example: "Men's Rain Jacket"
+                            brand:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  example: '845'
+                                name:
+                                  type: string
+                                  example: 'Example Brand'
+                            media:
+                              type: object
+                              properties:
+                                images:
+                                  type: array
+                                  example:
+                                    -
+                                      url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--B-01.png'
+                                      position: 1
+                                      hash: ec809ddf66ed7087
+                                      updatedAt: '2023-04-09'
+                                      shootType: hollow
+                                      productView: front
+                                    -
+                                      url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--B-02.png'
+                                      position: 2
+                                      hash: bd4b61e1c2700ecb
+                                      updatedAt: '2023-04-09'
+                                      shootType: model
+                                      productView: front
+                                    -
+                                      url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--M-01.jpg'
+                                      position: 3
+                                      hash: fbba25e06c2fe2d6
+                                      updatedAt: '2023-04-09'
+                                      shootType: hollow
+                                      productView: back
+                                    -
+                                      url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--M-02.jpg'
+                                      position: 4
+                                      hash: 45273a6fac1bc168
+                                      updatedAt: '2023-04-09'
+                                      shootType: hollow
+                                      productView: left
+                                    -
+                                      url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--D-01.jpg'
+                                      position: 5
+                                      hash: 335506130662c784
+                                      updatedAt: '2023-04-09'
+                                      shootType: hollow
+                                      productView: right
+                                    -
+                                      url: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--D-02.jpg'
+                                      position: 6
+                                      hash: 0814878367256eca
+                                      updatedAt: '2023-04-09'
+                                      shootType: detail
+                                      productView: unkown
+                                  items:
+                                    type: object
+                                    properties:
+                                      url: { type: string, example: 'https://imagehub.outtra.com/images/asd7nxil2i/3247hnoiau7n/01234567891234/mens-rain-jacket--B-01.png' }
+                                      position: { type: integer, example: 1 }
+                                      hash: { type: string, example: ec809ddf66ed7087 }
+                                      updatedAt: { type: string, example: '2023-04-09' }
+                                      shootType: { type: string, example: hollow }
+                                      productView: { type: string, example: front }
+                                videos:
+                                  type: array
+                                  example:
+                                    -
+                                      url: 'https://www.example.com/123456789'
+                                      type: video_product
+                                    -
+                                      url: 'https://www.example.com/123456789'
+                                      type: video_instruction
+                                  items:
+                                    type: object
+                                    properties:
+                                      url: { type: string, example: 'https://www.example.com/123456789' }
+                                      type: { type: string, example: video_product }
+                            fedas_code:
+                              type: string
+                              example: '201042'
+                            category_level_1:
+                              type: string
+                              example: Clothing
+                            category_level_2:
+                              type: string
+                              example: Jackets
+                            category_level_3:
+                              type: string
+                              example: 'Rain Jackets'
+                            sex:
+                              type: string
+                              example: Male
+                            kids:
+                              type: boolean
+                              example: false
+                            age_group:
+                              type: string
+                              example: '1'
+                            country_of_origin:
+                              type: string
+                              example: DE
+                            customs_tariff_ch:
+                              type: string
+                              example: '123456'
+                            customs_tariff_eu:
+                              type: string
+                              example: '123456'
+                            customs_tariff_scandinavia:
+                              type: string
+                              example: '123456'
+                            sales_unit:
+                              type: string
+                              example: '1'
+                            packing_unit:
+                              type: string
+                              example: '1'
+                            weight_packing_unit:
+                              type: string
+                              example: '420'
+                            usps:
+                              type: string
+                              example: 'Robust, elastic, lightweight rain jacket'
+                            material:
+                              type: string
+                              example: '100% Polyester'
+                            product_longtext:
+                              type: string
+                              example: 'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.'
+                            activity:
+                              type: string
+                              example: Hiking
+                            sustainability:
+                              type: string
+                              example: 'Fair Wear Foundation'
+                            goretex:
+                              type: boolean
+                              example: true
+                            vibram:
+                              type: boolean
+                              example: false
+                            features:
+                              type: string
+                              example: 'Breathable, Cooling, Quick drying'
+                            vegan:
+                              type: boolean
+                              example: false
+                            care_instructions:
+                              type: string
+                              example: 'Wash at 30°C, Do not bleach, Do not tumble dry, Do not iron, Do not dry clean'
+                            video_product:
+                              type: string
+                              example: ''
+                            video_instruction:
+                              type: string
+                              example: ''
+                            hazard_note:
+                              type: string
+                              example: 'https://www.example.com/123456789'
+                            product_instructions_url:
+                              type: string
+                              example: 'https://www.example.com/123456789'
+                            hang_tag_url:
+                              type: string
+                              example: 'https://www.example.com/123456789'
+                            size_table_shoes_url:
+                              type: string
+                              example: 'https://www.example.com/123456789'
+                            size_table_men_url:
+                              type: string
+                              example: 'https://www.example.com/123456789'
+                            size_table_women_url:
+                              type: string
+                              example: 'https://www.example.com/123456789'
+                            size_table_kids_url:
+                              type: string
+                              example: 'https://www.example.com/123456789'
+                            manufacturer_color_code:
+                              type: string
+                              example: '98754'
+                            manufacturer_color:
+                              type: string
+                              example: 'green moss'
+                            base_color:
+                              type: string
+                              example: Green
+                            season:
+                              type: string
+                              example: autumn_winter-2023
+                            spin_360:
+                              type: string
+                              example: 'https://www.example.com/123456789'
+                            product_dimensional_drawing_url:
+                              type: string
+                              example: 'https://www.example.com/123456789'
+                            fedas_code_size:
+                              type: string
+                              example: '54687'
+                            size_range:
+                              type: string
+                              example: S-XXL
+                            manufacturer_size_code:
+                              type: string
+                              example: L
+                            size_description:
+                              type: string
+                              example: L
+                            size_description_2:
+                              type: string
+                              example: '32'
+                            volume:
+                              type: string
+                              example: ''
+                            volume_additional:
+                              type: string
+                              example: ''
+                            gtin:
+                              type: string
+                              example: '01234567891234'
+                            sku_supplier:
+                              type: string
+                              example: JK-1234
+                            weight:
+                              type: string
+                              example: '380'
+                            weight_unit:
+                              type: string
+                              example: g
+                            weight_info:
+                              type: string
+                              example: 'Weight in gramm'
+                            wholesale_price:
+                              type: string
+                              example: '85'
+                            wholesale_price_unit:
+                              type: string
+                              example: EUR
+                            wholesale_price_valid_from_date:
+                              type: string
+                              example: '2023-01-01'
+                            rrp:
+                              type: string
+                              example: '199'
+                            rrp_unit:
+                              type: string
+                              example: EUR
+                            rrp_2:
+                              type: string
+                              example: ''
+                            rrp_2_unit:
+                              type: string
+                              example: ''
+                            rrp_3:
+                              type: string
+                              example: ''
+                            rrp_3_unit:
+                              type: string
+                              example: ''
+                            rrp_valid_from_date:
+                              type: string
+                              example: '2023-01-01'
+                            delivery_date:
+                              type: string
+                              example: '2023-01-01'
+                            height:
+                              type: string
+                              example: '100'
+                            height_unit:
+                              type: string
+                              example: cm
+                            width:
+                              type: string
+                              example: '100'
+                            width_unit:
+                              type: string
+                              example: cm
+                            length:
+                              type: string
+                              example: '100'
+                            length_unit:
+                              type: string
+                              example: cm
+                            diameter:
+                              type: string
+                              example: '100'
+                            diameter_unit:
+                              type: string
+                              example: cm
+                            packing_unit_height:
+                              type: string
+                              example: '100'
+                            packing_unit_height_unit:
+                              type: string
+                              example: cm
+                            packing_unit_width:
+                              type: string
+                              example: '100'
+                            packing_unit_width_unit:
+                              type: string
+                              example: cm
+                            packing_unit_length:
+                              type: string
+                              example: '100'
+                            packing_unit_length_unit:
+                              type: string
+                              example: cm
+                            packing_unit_diameter:
+                              type: string
+                              example: '100'
+                            packing_unit_diameter_unit:
+                              type: string
+                              example: cm
+                            delivery_unit_height:
+                              type: string
+                              example: '100'
+                            delivery_unit_height_unit:
+                              type: string
+                              example: cm
+                            delivery_unit_width:
+                              type: string
+                              example: '100'
+                            delivery_unit_width_unit:
+                              type: string
+                              example: cm
+                            delivery_unit_length:
+                              type: string
+                              example: '100'
+                            delivery_unit_length_unit:
+                              type: string
+                              example: cm
+                            carry_over_from_style:
+                              type: string
+                              example: winter-2022
+                            carry_over_to_style:
+                              type: string
+                              example: winter-2023
+                            carry_over_from_stylecolor:
+                              type: string
+                              example: AB12345
+                            carry_over_to_stylecolor:
+                              type: string
+                              example: CD67890
+                            main_material:
+                              type: string
+                              example: ''
+                            main_material_information:
+                              type: string
+                              example: ''
+                            outer_material:
+                              type: string
+                              example: ''
+                            outer_material_information:
+                              type: string
+                              example: ''
+                            outer_material_2:
+                              type: string
+                              example: ''
+                            outer_material_2_information:
+                              type: string
+                              example: ''
+                            inner_material:
+                              type: string
+                              example: ''
+                            inner_material_information:
+                              type: string
+                              example: ''
+                            inner_material_2:
+                              type: string
+                              example: ''
+                            inner_material_2_information:
+                              type: string
+                              example: ''
+                            liner_material:
+                              type: string
+                              example: ''
+                            liner_material_information:
+                              type: string
+                              example: ''
+                            filling_material:
+                              type: string
+                              example: ''
+                            filling_material_information:
+                              type: string
+                              example: ''
+                            sole:
+                              type: string
+                              example: ''
+                            sole_information:
+                              type: string
+                              example: ''
+                            textile_care_washing:
+                              type: string
+                              example: ''
+                            textile_care_bleaching:
+                              type: string
+                              example: ''
+                            textile_care_drying:
+                              type: string
+                              example: ''
+                            textile_care_ironing:
+                              type: string
+                              example: ''
+                            textile_care_professional_textile_care:
+                              type: string
+                              example: ''
+                            workbook_picture_url:
+                              type: string
+                              example: ''
+                  links:
+                    type: object
+                    properties:
+                      first:
+                        type: string
+                        example: 'https://api.outtra.com/api/v2/datahub/products?filter%5Bbrand%5D=136&page%5Bnumber%5D=1'
+                      last:
+                        type: string
+                        example: null
+                      prev:
+                        type: string
+                        example: null
+                      next:
+                        type: string
+                        example: 'https://api.outtra.com/api/v2/datahub/products?filter%5Bbrand%5D=136&page%5Bnumber%5D=2'
+                  meta:
+                    type: object
+                    properties:
+                      current_page:
+                        type: integer
+                        example: 1
+                      from:
+                        type: integer
+                        example: 1
+                      path:
+                        type: string
+                        example: 'https://api.outtra.com/api/v2/datahub/products'
+                      per_page:
+                        type: integer
+                        example: 30
+                      to:
+                        type: integer
+                        example: 30
+        400:
+          description: 'unknown filters detected'
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'unknown filters detected: […]'
+                properties:
+                  message:
+                    type: string
+                    example: 'unknown filters detected: […]'
+        429:
+          description: 'too many requests'
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Too many requests. Allowed per minute: X'
+                properties:
+                  message:
+                    type: string
+                    example: 'Too many requests. Allowed per minute: X'
+        500:
+          description: 'unknown error'
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'an error occurred, please check your query string. if the issue persist, contact support-en@outtra.com.'
+                properties:
+                  message:
+                    type: string
+                    example: 'an error occurred, please check your query string. if the issue persist, contact support-en@outtra.com.'
+      tags:
+        - Endpoints
+  /api/v2/datahub/units:
+    get:
+      summary: 'GET api/v2/datahub/units'
+      operationId: gETApiv2datahubunits
+      description: 'Query the DataHub for unit information.'
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  data:
+                    -
+                      type: unit
+                      outtra_unit_id: 1
+                      attributes:
+                        name: Kilogramm
+                        abbreviation: kg
+                    -
+                      type: unit
+                      outtra_unit_id: 2
+                      attributes:
+                        name: Gramm
+                        abbreviation: g
+                    -
+                      type: unit
+                      outtra_unit_id: 3
+                      attributes:
+                        name: Liter
+                        abbreviation: l
+                    -
+                      type: unit
+                      outtra_unit_id: 4
+                      attributes:
+                        name: Milliliter
+                        abbreviation: ml
+                    -
+                      type: unit
+                      outtra_unit_id: 5
+                      attributes:
+                        name: Millimeter
+                        abbreviation: mm
+                    -
+                      type: unit
+                      outtra_unit_id: 6
+                      attributes:
+                        name: Meter
+                        abbreviation: m
+                    -
+                      type: unit
+                      outtra_unit_id: 7
+                      attributes:
+                        name: Centimeter
+                        abbreviation: cm
+                    -
+                      type: unit
+                      outtra_unit_id: 8
+                      attributes:
+                        name: 'Grad Celsius'
+                        abbreviation: '° C'
+                    -
+                      type: unit
+                      outtra_unit_id: 9
+                      attributes:
+                        name: Percent
+                        abbreviation: '%'
+                    -
+                      type: unit
+                      outtra_unit_id: 13
+                      attributes:
+                        name: CHF
+                        abbreviation: CHF
+                    -
+                      type: unit
+                      outtra_unit_id: 10
+                      attributes:
+                        name: Euro
+                        abbreviation: €
+                    -
+                      type: unit
+                      outtra_unit_id: 11
+                      attributes:
+                        name: 'Pound Sterling'
+                        abbreviation: £
+                    -
+                      type: unit
+                      outtra_unit_id: 12
+                      attributes:
+                        name: 'US Dollar'
+                        abbreviation: $
+                    -
+                      type: unit
+                      outtra_unit_id: 14
+                      attributes:
+                        name: Kubikzentimeter
+                        abbreviation: cm³
+                    -
+                      type: unit
+                      outtra_unit_id: 15
+                      attributes:
+                        name: 'Norwegische Kronen'
+                        abbreviation: NOK
+                    -
+                      type: unit
+                      outtra_unit_id: 16
+                      attributes:
+                        name: Inch
+                        abbreviation: in
+                properties:
+                  data:
+                    type: array
+                    example:
+                      -
+                        type: unit
+                        outtra_unit_id: 1
+                        attributes:
+                          name: Kilogramm
+                          abbreviation: kg
+                      -
+                        type: unit
+                        outtra_unit_id: 2
+                        attributes:
+                          name: Gramm
+                          abbreviation: g
+                      -
+                        type: unit
+                        outtra_unit_id: 3
+                        attributes:
+                          name: Liter
+                          abbreviation: l
+                      -
+                        type: unit
+                        outtra_unit_id: 4
+                        attributes:
+                          name: Milliliter
+                          abbreviation: ml
+                      -
+                        type: unit
+                        outtra_unit_id: 5
+                        attributes:
+                          name: Millimeter
+                          abbreviation: mm
+                      -
+                        type: unit
+                        outtra_unit_id: 6
+                        attributes:
+                          name: Meter
+                          abbreviation: m
+                      -
+                        type: unit
+                        outtra_unit_id: 7
+                        attributes:
+                          name: Centimeter
+                          abbreviation: cm
+                      -
+                        type: unit
+                        outtra_unit_id: 8
+                        attributes:
+                          name: 'Grad Celsius'
+                          abbreviation: '° C'
+                      -
+                        type: unit
+                        outtra_unit_id: 9
+                        attributes:
+                          name: Percent
+                          abbreviation: '%'
+                      -
+                        type: unit
+                        outtra_unit_id: 13
+                        attributes:
+                          name: CHF
+                          abbreviation: CHF
+                      -
+                        type: unit
+                        outtra_unit_id: 10
+                        attributes:
+                          name: Euro
+                          abbreviation: €
+                      -
+                        type: unit
+                        outtra_unit_id: 11
+                        attributes:
+                          name: 'Pound Sterling'
+                          abbreviation: £
+                      -
+                        type: unit
+                        outtra_unit_id: 12
+                        attributes:
+                          name: 'US Dollar'
+                          abbreviation: $
+                      -
+                        type: unit
+                        outtra_unit_id: 14
+                        attributes:
+                          name: Kubikzentimeter
+                          abbreviation: cm³
+                      -
+                        type: unit
+                        outtra_unit_id: 15
+                        attributes:
+                          name: 'Norwegische Kronen'
+                          abbreviation: NOK
+                      -
+                        type: unit
+                        outtra_unit_id: 16
+                        attributes:
+                          name: Inch
+                          abbreviation: in
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          example: unit
+                        outtra_unit_id:
+                          type: integer
+                          example: 1
+                        attributes:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              example: Kilogramm
+                            abbreviation:
+                              type: string
+                              example: kg
+      tags:
+        - Endpoints
+  /api/v2/datahub/seasons:
+    get:
+      summary: 'GET api/v2/datahub/seasons'
+      operationId: gETApiv2datahubseasons
+      description: 'Query the DataHub for season information.'
+      parameters:
+        -
+          in: query
+          name: language
+          description: 'Returns the data in the specific language, if available. Expects a ISO-639-1 two-character language code. Fallback is english (en).'
+          example: de
+          required: false
+          schema:
+            type: string
+            description: 'Returns the data in the specific language, if available. Expects a ISO-639-1 two-character language code. Fallback is english (en).'
+            example: de
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  data:
+                    -
+                      type: season
+                      outtra_season_id: 8
+                      attributes:
+                        name: 'Frühjahr / Sommer 2020'
+                        code: spring_summer-2020
+                    -
+                      type: season
+                      outtra_season_id: 7
+                      attributes:
+                        name: 'Herbst / Winter 2020'
+                        code: autumn_winter-2020
+                    -
+                      type: season
+                      outtra_season_id: 6
+                      attributes:
+                        name: 'Frühjahr / Sommer 2021'
+                        code: spring_summer-2021
+                    -
+                      type: season
+                      outtra_season_id: 5
+                      attributes:
+                        name: 'Herbst / Winter 2021'
+                        code: autumn_winter-2021
+                    -
+                      type: season
+                      outtra_season_id: 1
+                      attributes:
+                        name: 'Frühjahr / Sommer 2022'
+                        code: spring_summer-2022
+                    -
+                      type: season
+                      outtra_season_id: 2
+                      attributes:
+                        name: 'Herbst / Winter 2022'
+                        code: autumn_winter-2022
+                    -
+                      type: season
+                      outtra_season_id: 3
+                      attributes:
+                        name: 'Frühjahr / Sommer 2023'
+                        code: spring_summer-2023
+                    -
+                      type: season
+                      outtra_season_id: 4
+                      attributes:
+                        name: 'Herbst / Winter 2023'
+                        code: autumn_winter-2023
+                    -
+                      type: season
+                      outtra_season_id: 9
+                      attributes:
+                        name: 'Frühjahr / Sommer 2024'
+                        code: spring_summer-2024
+                    -
+                      type: season
+                      outtra_season_id: 10
+                      attributes:
+                        name: 'Herbst / Winter 2024'
+                        code: autumn_winter-2024
+                properties:
+                  data:
+                    type: array
+                    example:
+                      -
+                        type: season
+                        outtra_season_id: 8
+                        attributes:
+                          name: 'Frühjahr / Sommer 2020'
+                          code: spring_summer-2020
+                      -
+                        type: season
+                        outtra_season_id: 7
+                        attributes:
+                          name: 'Herbst / Winter 2020'
+                          code: autumn_winter-2020
+                      -
+                        type: season
+                        outtra_season_id: 6
+                        attributes:
+                          name: 'Frühjahr / Sommer 2021'
+                          code: spring_summer-2021
+                      -
+                        type: season
+                        outtra_season_id: 5
+                        attributes:
+                          name: 'Herbst / Winter 2021'
+                          code: autumn_winter-2021
+                      -
+                        type: season
+                        outtra_season_id: 1
+                        attributes:
+                          name: 'Frühjahr / Sommer 2022'
+                          code: spring_summer-2022
+                      -
+                        type: season
+                        outtra_season_id: 2
+                        attributes:
+                          name: 'Herbst / Winter 2022'
+                          code: autumn_winter-2022
+                      -
+                        type: season
+                        outtra_season_id: 3
+                        attributes:
+                          name: 'Frühjahr / Sommer 2023'
+                          code: spring_summer-2023
+                      -
+                        type: season
+                        outtra_season_id: 4
+                        attributes:
+                          name: 'Herbst / Winter 2023'
+                          code: autumn_winter-2023
+                      -
+                        type: season
+                        outtra_season_id: 9
+                        attributes:
+                          name: 'Frühjahr / Sommer 2024'
+                          code: spring_summer-2024
+                      -
+                        type: season
+                        outtra_season_id: 10
+                        attributes:
+                          name: 'Herbst / Winter 2024'
+                          code: autumn_winter-2024
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          example: season
+                        outtra_season_id:
+                          type: integer
+                          example: 8
+                        attributes:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              example: 'Frühjahr / Sommer 2020'
+                            code:
+                              type: string
+                              example: spring_summer-2020
+      tags:
+        - Endpoints
+  /api/v2/datahub/my/brands:
+    get:
+      summary: 'GET api/v2/datahub/my/brands'
+      operationId: gETApiv2datahubmybrands
+      description: 'Query the DataHub for brands you have access to.'
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  data:
+                    -
+                      type: brand
+                      id: '136'
+                      attributes:
+                        name: Ortovox
+                        url: 'https://www.ortovox.de/'
+                        permissions:
+                          dataAccess: true
+                          imageAccess: true
+                        products:
+                          available: 763
+                          updated: '2023-04-09'
+                    -
+                      type: brand
+                      id: '150'
+                      attributes:
+                        name: Ziener
+                        url: 'https://ziener.com/'
+                        permissions:
+                          dataAccess: true
+                          imageAccess: true
+                        products:
+                          available: 595
+                          updated: '2023-02-22'
+                    -
+                      type: brand
+                      id: '221'
+                      attributes:
+                        name: Hanwag
+                        url: 'https://www.hanwag.de'
+                        permissions:
+                          dataAccess: true
+                          imageAccess: true
+                        products:
+                          available: 218
+                          updated: '2023-03-04'
+                  links:
+                    first: 'https://api.outtra.com/api/v2/datahub/my/brands?page%5Bnumber%5D=1'
+                    last: null
+                    prev: null
+                    next: null
+                  meta:
+                    current_page: 1
+                    from: 1
+                    path: 'https://api.outtra.com/api/v2/datahub/my/brands'
+                    per_page: 30
+                    to: 3
+                properties:
+                  data:
+                    type: array
+                    example:
+                      -
+                        type: brand
+                        id: '136'
+                        attributes:
+                          name: Ortovox
+                          url: 'https://www.ortovox.de/'
+                          permissions:
+                            dataAccess: true
+                            imageAccess: true
+                          products:
+                            available: 763
+                            updated: '2023-04-09'
+                      -
+                        type: brand
+                        id: '150'
+                        attributes:
+                          name: Ziener
+                          url: 'https://ziener.com/'
+                          permissions:
+                            dataAccess: true
+                            imageAccess: true
+                          products:
+                            available: 595
+                            updated: '2023-02-22'
+                      -
+                        type: brand
+                        id: '221'
+                        attributes:
+                          name: Hanwag
+                          url: 'https://www.hanwag.de'
+                          permissions:
+                            dataAccess: true
+                            imageAccess: true
+                          products:
+                            available: 218
+                            updated: '2023-03-04'
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          example: brand
+                        id:
+                          type: string
+                          example: '136'
+                        attributes:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              example: Ortovox
+                            url:
+                              type: string
+                              example: 'https://www.ortovox.de/'
+                            permissions:
+                              type: object
+                              properties:
+                                dataAccess:
+                                  type: boolean
+                                  example: true
+                                imageAccess:
+                                  type: boolean
+                                  example: true
+                            products:
+                              type: object
+                              properties:
+                                available:
+                                  type: integer
+                                  example: 763
+                                updated:
+                                  type: string
+                                  example: '2023-04-09'
+                  links:
+                    type: object
+                    properties:
+                      first:
+                        type: string
+                        example: 'https://api.outtra.com/api/v2/datahub/my/brands?page%5Bnumber%5D=1'
+                      last:
+                        type: string
+                        example: null
+                      prev:
+                        type: string
+                        example: null
+                      next:
+                        type: string
+                        example: null
+                  meta:
+                    type: object
+                    properties:
+                      current_page:
+                        type: integer
+                        example: 1
+                      from:
+                        type: integer
+                        example: 1
+                      path:
+                        type: string
+                        example: 'https://api.outtra.com/api/v2/datahub/my/brands'
+                      per_page:
+                        type: integer
+                        example: 30
+                      to:
+                        type: integer
+                        example: 3
+        429:
+          description: 'too many requests'
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Too many requests. Allowed per minute: X'
+                properties:
+                  message:
+                    type: string
+                    example: 'Too many requests. Allowed per minute: X'
+        500:
+          description: 'unknown error'
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'an error occurred, please check your query string. if the issue persist, contact support-en@outtra.com.'
+                properties:
+                  message:
+                    type: string
+                    example: 'an error occurred, please check your query string. if the issue persist, contact support-en@outtra.com.'
+      tags:
+        - Endpoints
+  '/api/v2/retailer-insights/{outtraBrandId}/lost-sales/{customerExternalId}':
+    get:
+      summary: 'GET Retailer Lost Sales Statistics'
+      operationId: gETRetailerLostSalesStatistics
+      description: "Returns lost sales statistics for a specific dealer of a brand.\nThe dealer is identified by the brand's internal customer ID.\n\nThis is an **Enterprise** feature. Access requires an active Enterprise subscription for the authenticated tenant."
+      parameters:
+        -
+          in: query
+          name: date_min
+          description: 'Start date in d.m.Y format.'
+          example: 01.01.2026
+          required: true
+          schema:
+            type: string
+            description: 'Start date in d.m.Y format.'
+            example: 01.01.2026
+        -
+          in: query
+          name: date_max
+          description: 'End date in d.m.Y format. Must not exceed 12 months from date_min.'
+          example: 31.01.2026
+          required: true
+          schema:
+            type: string
+            description: 'End date in d.m.Y format. Must not exceed 12 months from date_min.'
+            example: 31.01.2026
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  data:
+                    dealer_name: 'Bike Shop Mueller'
+                    customer_external_id: MAG-42
+                    brand_id: 134
+                    brand_name: MAGURA
+                    date_min: 01.01.2026
+                    date_max: 31.01.2026
+                    outtra_connected: true
+                    kpis:
+                      impressions: 279
+                      product_searches: 350
+                      market_potential_in_eur: 78888.0
+                      lost_sales_in_eur: 70254.0
+                      highlights: 279
+                    products:
+                      -
+                        product_identifier: Mt7
+                        article_number: mdp-9
+                        gtin: '04055184026014'
+                        article_name_de: 'Bremsscheibe MDR-P'
+                        article_name_en: 'Brake Disc MDR-P'
+                        searches: 120
+                        lost_revenue_in_eur: 3548.0
+                        uvp_max: 89.9
+                    chart_data:
+                      -
+                        label: '2026-01-15T00:00:00.000Z'
+                        market_potential_in_eur: 5000.0
+                        lost_sales_in_eur: 3500.0
+                        impressions: 25
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      dealer_name:
+                        type: string
+                        example: 'Bike Shop Mueller'
+                        description: 'Name of the dealer. Example: Bike Shop Mueller'
+                      customer_external_id:
+                        type: string
+                        example: MAG-42
+                        description: "The brand's customer ID for this dealer. Example: MAG-42"
+                      brand_id:
+                        type: integer
+                        example: 134
+                        description: 'The OUTTRA brand ID. Example: 134'
+                      brand_name:
+                        type: string
+                        example: MAGURA
+                        description: 'Name of the brand. Example: MAGURA'
+                      date_min:
+                        type: string
+                        example: 01.01.2026
+                        description: 'Start of the queried date range. Example: 01.01.2026'
+                      date_max:
+                        type: string
+                        example: 31.01.2026
+                        description: 'End of the queried date range. Example: 31.01.2026'
+                      outtra_connected:
+                        type: boolean
+                        example: true
+                        description: 'True if the dealer submits stock_items for this brand to OUTTRA, false otherwise. Example: true'
+                      kpis:
+                        type: object
+                        properties:
+                          impressions:
+                            type: integer
+                            example: 279
+                            description: 'How often the dealer appeared in Dealer Locator results across all devices (mobile, tablet, desktop). Example: 279'
+                          product_searches:
+                            type: integer
+                            example: 350
+                            description: "Number of product search events where this dealer was listed for the brand's products, regardless of stock status. Example: 350"
+                          market_potential_in_eur:
+                            type: number
+                            example: 78888.0
+                            description: 'Total recommended retail price (UVP) across all product searches where the dealer appeared. Represents the full revenue potential if every searched product had been available. Example: 78888.00'
+                          lost_sales_in_eur:
+                            type: number
+                            example: 70254.0
+                            description: 'Total UVP of product searches where the dealer appeared but the product was out of stock or not stocked. Example: 70254.00'
+                          highlights:
+                            type: integer
+                            example: 279
+                            description: 'Number of product searches where the dealer had the product in stock. Example: 279'
+                      products:
+                        type: array
+                        example:
+                          -
+                            product_identifier: Mt7
+                            article_number: mdp-9
+                            gtin: '04055184026014'
+                            article_name_de: 'Bremsscheibe MDR-P'
+                            article_name_en: 'Brake Disc MDR-P'
+                            searches: 120
+                            lost_revenue_in_eur: 3548
+                            uvp_max: 89.9
+                        description: 'Top 20 products sorted by lost revenue (UVP sum), descending.'
+                        items:
+                          type: object
+                          properties:
+                            product_identifier:
+                              type: string
+                              example: Mt7
+                            article_number:
+                              type: string
+                              example: mdp-9
+                            gtin:
+                              type: string
+                              example: '04055184026014'
+                            article_name_de:
+                              type: string
+                              example: 'Bremsscheibe MDR-P'
+                            article_name_en:
+                              type: string
+                              example: 'Brake Disc MDR-P'
+                            searches:
+                              type: integer
+                              example: 120
+                            lost_revenue_in_eur:
+                              type: number
+                              example: 3548.0
+                            uvp_max:
+                              type: number
+                              example: 89.9
+                      chart_data:
+                        type: array
+                        example:
+                          -
+                            label: '2026-01-15T00:00:00.000Z'
+                            market_potential_in_eur: 5000
+                            lost_sales_in_eur: 3500
+                            impressions: 25
+                        description: 'Time series data points. Uses daily intervals for ranges up to 31 days, monthly intervals for longer ranges.'
+                        items:
+                          type: object
+                          properties:
+                            label:
+                              type: string
+                              example: '2026-01-15T00:00:00.000Z'
+                            market_potential_in_eur:
+                              type: number
+                              example: 5000.0
+                            lost_sales_in_eur:
+                              type: number
+                              example: 3500.0
+                            impressions:
+                              type: integer
+                              example: 25
+        401:
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+        404:
+          description: 'Dealer not found'
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Dealer not found.'
+                properties:
+                  message:
+                    type: string
+                    example: 'Dealer not found.'
+        422:
+          description: 'Validation error'
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'The date min field is required.'
+                  errors:
+                    date_min:
+                      - 'The date min field is required.'
+                properties:
+                  message:
+                    type: string
+                    example: 'The date min field is required.'
+                  errors:
+                    type: object
+                    properties:
+                      date_min:
+                        type: array
+                        example:
+                          - 'The date min field is required.'
+                        items:
+                          type: string
+      tags:
+        - 'Retailer Insights (Enterprise)'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date_min:
+                  type: string
+                  description: 'Must be a valid date in the format <code>d.m.Y</code>.'
+                  example: 19.04.2026
+                date_max:
+                  type: string
+                  description: 'Must be a valid date in the format <code>d.m.Y</code>. Must be a date after or equal to <code>date_min</code>.'
+                  example: '2033-12-09'
+              required:
+                - date_min
+                - date_max
+    parameters:
+      -
+        in: path
+        name: outtraBrandId
+        description: 'The OUTTRA brand ID. Must match a brand accessible by the authenticated tenant.'
+        example: 134
+        required: true
+        schema:
+          type: integer
+      -
+        in: path
+        name: customerExternalId
+        description: "The brand's internal customer ID for the dealer."
+        example: MAG-42
+        required: true
+        schema:
+          type: string
+tags:
+  -
+    name: Endpoints
+    description: ''
+  -
+    name: 'Retailer Insights (Enterprise)'
+    description: ''
+components:
+  securitySchemes:
+    default:
+      type: http
+      scheme: bearer
+      description: 'You can request a token from our support team at support-en@outtra.com'
+security:
+  -
+    default: []

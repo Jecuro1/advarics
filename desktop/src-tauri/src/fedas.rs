@@ -117,6 +117,7 @@ pub struct Item {
     pub vat: Option<i64>,
     pub details: Map<String, Value>,
     pub images: Vec<String>,
+    pub captions: Vec<String>,
 }
 
 fn find_array(v: &Value) -> Vec<Value> {
@@ -366,9 +367,9 @@ pub fn apply_items(c: &mut Connection, items: Vec<Item>, preise: bool, user: &st
                             if !sizes.contains(&it.size) { sizes.push(it.size.clone()); }
                         }
                     }
-                    for u in &it.images {
+                    for (ui, u) in it.images.iter().enumerate() {
                         let before: i64 = tx.query_row("SELECT COUNT(*) FROM article_media WHERE article_id = ?1", [&aid], |r| r.get(0)).unwrap_or(0);
-                        media::queue_url(&tx, &aid, u, &ck)?;
+                        media::queue_url_cap(&tx, &aid, u, &ck, it.captions.get(ui).map(String::as_str).unwrap_or(""))?;
                         let after: i64 = tx.query_row("SELECT COUNT(*) FROM article_media WHERE article_id = ?1", [&aid], |r| r.get(0)).unwrap_or(0);
                         st.bilder += after - before;
                     }
@@ -397,7 +398,7 @@ pub fn apply_items(c: &mut Connection, items: Vec<Item>, preise: bool, user: &st
                     variants.push(catalog::Variant { id: None, color: ck, size: it.size.clone(), ean: it.gtin.clone(), stock: 0 });
                 }
                 let name = if first.name.is_empty() { first.style.clone() } else { first.name.clone() };
-                let cat = guess_category(&tx, det.get("fedas_code").and_then(|v| v.as_str()).unwrap_or(""), &name);
+                let cat = guess_category(&tx, det.get("fedas_code").and_then(|v| v.as_str()).unwrap_or(""), &format!("{} {}", name, det.get("kategorie_hersteller").and_then(|v| v.as_str()).unwrap_or("")));
                 let mut dv = Value::Object(det.clone());
                 dv["fedas_sync"] = json!(db::now());
                 let a = catalog::Article {
@@ -409,8 +410,8 @@ pub fn apply_items(c: &mut Connection, items: Vec<Item>, preise: bool, user: &st
                 catalog::save(&tx, &a).map_err(|e| format!("{}: {e}", a.id))?;
                 for it in &list {
                     let ck = ensure_color(&tx, &it.color);
-                    for u in &it.images {
-                        media::queue_url(&tx, &id, u, &ck)?;
+                    for (ui, u) in it.images.iter().enumerate() {
+                        media::queue_url_cap(&tx, &id, u, &ck, it.captions.get(ui).map(String::as_str).unwrap_or(""))?;
                         st.bilder += 1;
                     }
                 }
@@ -425,10 +426,21 @@ pub fn apply_items(c: &mut Connection, items: Vec<Item>, preise: bool, user: &st
 
 /* ── Abruf über die Schnittstelle ── */
 
+/// Datenquelle: „outtra“ (OUTTRA Data & Image Hub, dokumentierte Händler-API) oder „generisch“ (eigene Schnittstelle)
+pub fn provider(c: &Connection) -> &'static str {
+    match s(c, "fedas.quelle").as_str() {
+        "generisch" => "generisch",
+        "outtra" => "outtra",
+        _ => if s(c, "fedas.url").trim().is_empty() { "outtra" } else { "generisch" },
+    }
+}
+pub const OUTTRA_BASE: &str = "https://api.outtra.com";
+
 fn auth(c: &Connection, mut r: ureq::Request) -> ureq::Request {
     let (user, pass) = (s(c, "fedas.user"), s(c, "fedas.pass"));
-    match s(c, "fedas.auth").as_str() {
-        "bearer" => r = r.set("Authorization", &format!("Bearer {pass}")),
+    let mode = if provider(c) == "outtra" { "bearer".to_string() } else { s(c, "fedas.auth") };
+    match mode.as_str() {
+        "bearer" => r = r.set("Authorization", &format!("Bearer {}", pass.trim())),
         "header" => r = r.set(&{ let h = s(c, "fedas.header"); if h.is_empty() { "X-API-Key".to_string() } else { h } }, &pass),
         "basic" | "" => {
             use base64::Engine;
@@ -443,24 +455,181 @@ fn auth(c: &Connection, mut r: ureq::Request) -> ureq::Request {
 
 fn get_json(c: &Connection, url: &str) -> Result<Value, String> {
     let agent = ureq::AgentBuilder::new().try_proxy_from_env(!media::skip_proxy(url)).timeout(Duration::from_secs(90)).build();
-    match auth(c, agent.get(url)).call() {
-        Ok(r) => r.into_json::<Value>().map_err(|e| format!("Antwort ist kein JSON: {e}")),
-        Err(ureq::Error::Status(code, r)) => Err(format!("HTTP {code} von {url}: {}", r.into_string().unwrap_or_default().chars().take(200).collect::<String>())),
-        Err(e) => Err(format!("{url}: {e}")),
+    for attempt in 0..4 {
+        match auth(c, agent.get(url)).call() {
+            Ok(r) => return r.into_json::<Value>().map_err(|e| format!("Antwort ist kein JSON: {e}")),
+            // OUTTRA begrenzt die Anfragen je Minute (HTTP 429) – kurz warten und erneut versuchen
+            Err(ureq::Error::Status(429, _)) if attempt < 3 => std::thread::sleep(Duration::from_secs(if cfg!(test) { 0 } else { 20 })),
+            Err(ureq::Error::Status(401, _)) => return Err("Anmeldung abgelehnt (HTTP 401) – Zugriffstoken prüfen".into()),
+            Err(ureq::Error::Status(code, r)) => {
+                let body = r.into_string().unwrap_or_default();
+                let msg = serde_json::from_str::<Value>(&body).ok().and_then(|v| v["message"].as_str().map(str::to_string)).unwrap_or_else(|| body.chars().take(200).collect());
+                return Err(format!("HTTP {code}: {msg}"));
+            }
+            Err(e) => return Err(format!("{url}: {e}")),
+        }
     }
+    Err("Zu viele Anfragen (HTTP 429) – später erneut versuchen".into())
 }
 
 pub fn configured(c: &Connection) -> bool {
-    !s(c, "fedas.url").trim().is_empty()
+    if provider(c) == "outtra" { !s(c, "fedas.pass").trim().is_empty() } else { !s(c, "fedas.url").trim().is_empty() }
 }
 
 fn base(c: &Connection) -> String {
-    s(c, "fedas.url").trim().trim_end_matches('/').to_string()
+    let u = s(c, "fedas.url").trim().trim_end_matches('/').to_string();
+    if provider(c) == "outtra" && u.is_empty() { OUTTRA_BASE.to_string() } else { u }
+}
+
+/* ── OUTTRA Data & Image Hub (https://api.outtra.com/docs, OpenAPI siehe docs/outtra-datahub-openapi.yaml) ── */
+
+fn enc(v: &str) -> String {
+    url::form_urlencoded::byte_serialize(v.as_bytes()).collect()
+}
+
+/// Marken, für die der Händler freigeschaltet ist (GET /api/v2/datahub/my/brands, seitenweise)
+fn outtra_brands(c: &Connection) -> Result<Vec<Value>, String> {
+    let mut out = vec![];
+    let mut url = format!("{}/api/v2/datahub/my/brands", base(c));
+    for _ in 0..50 {
+        let v = get_json(c, &url)?;
+        for b in v["data"].as_array().cloned().unwrap_or_default() {
+            let a = &b["attributes"];
+            if a["permissions"]["dataAccess"] == json!(false) {
+                continue;
+            }
+            out.push(json!({ "id": b["id"].as_str().map(str::to_string).unwrap_or_else(|| b["id"].to_string()), "name": a["name"], "verfuegbar": a["products"]["available"], "stand": a["products"]["updated"], "bilder": a["permissions"]["imageAccess"] }));
+        }
+        match v["links"]["next"].as_str() {
+            Some(n) if !n.is_empty() => url = n.to_string(),
+            _ => break,
+        }
+    }
+    Ok(out)
+}
+
+fn de_zielgruppe(a: &Value) -> Option<String> {
+    if a["kids"] == json!(true) || a["age_group"].as_str() == Some("kids") {
+        return Some("Kinder".into());
+    }
+    match a["sex"].as_str().map(str::to_lowercase).as_deref() {
+        Some("male") => Some("Herren".into()),
+        Some("female") => Some("Damen".into()),
+        Some("unisex") => Some("Unisex".into()),
+        _ => None,
+    }
+}
+
+fn split_list(v: &Value) -> Vec<String> {
+    v.as_str().map(|x| x.split(['\n', ';', '|', ',']).map(|y| y.trim().to_string()).filter(|y| !y.is_empty()).collect()).unwrap_or_default()
+}
+
+/// Eine OUTTRA-Variante (GTIN) in eine Artikelzeile übersetzen
+pub fn outtra_item(v: &Value) -> Option<Item> {
+    let a = &v["attributes"];
+    let gtin: String = v["gtin"].as_str()?.chars().filter(|c| c.is_ascii_digit()).collect();
+    // GTIN-14 mit führender Null = EAN-13
+    let gtin = if gtin.len() == 14 && gtin.starts_with('0') { gtin[1..].to_string() } else { gtin };
+    if gtin.len() < 8 {
+        return None;
+    }
+    let t = |k: &str| a[k].as_str().map(|x| x.trim().to_string()).filter(|x| !x.is_empty());
+    let mut it = Item { gtin, style: t("product_identifier").unwrap_or_default(), ..Default::default() };
+    if it.style.is_empty() {
+        it.style = t("sku_supplier").unwrap_or_else(|| it.gtin.clone());
+    }
+    it.name = t("product_short_description").unwrap_or_default();
+    it.brand = a["brand"]["name"].as_str().unwrap_or("").to_string();
+    it.color = t("manufacturer_color").or_else(|| t("base_color")).unwrap_or_else(|| "Standard".into());
+    it.size = match (t("size_description"), t("size_description_2")) { (Some(x), Some(y)) => format!("{x}/{y}"), (Some(x), None) => x, _ => t("manufacturer_size_code").unwrap_or_else(|| "one size".into()) };
+    it.price = t("rrp").and_then(|x| money(&x)).filter(|x| *x > 0);
+    it.cost = t("wholesale_price").and_then(|x| money(&x)).filter(|x| *x > 0);
+    let mut d = Map::new();
+    let mut put = |k: &str, val: Option<String>| { if let Some(val) = val.filter(|x| !x.is_empty()) { d.insert(k.into(), json!(val)); } };
+    put("fedas_code", t("fedas_code"));
+    put("beschreibung", t("product_longtext"));
+    put("zielgruppe", de_zielgruppe(a));
+    put("saison", t("seasons"));
+    put("herkunft", t("country_of_origin"));
+    put("zolltarif", a["customs_tariff_eu"].as_i64().filter(|x| *x > 0).map(|x| x.to_string()).or_else(|| t("customs_tariff_eu")));
+    put("hersteller_artikelnr", Some(it.style.clone()));
+    put("farbbeschreibung", t("manufacturer_color"));
+    put("mat_zusammensetzung", t("material"));
+    put("mat_ober", t("outer_material").or_else(|| t("main_material")));
+    put("mat_futter", t("inner_material").or_else(|| t("liner_material")));
+    put("mat_fuellung", t("filling_material"));
+    put("mat_sohle", t("sole"));
+    put("groessenhinweis", t("size_range").map(|x| format!("Größenrahmen: {x}")));
+    put("volumen_l", t("volume"));
+    put("nachhaltigkeit", t("sustainability"));
+    put("kategorie_hersteller", Some([t("category_level_1"), t("category_level_2")].into_iter().flatten().collect::<Vec<_>>().join(" › ")));
+    put("pflege_symbole", t("textile_care_washing"));
+    if let (Some(w), unit) = (a["weight"].as_f64().filter(|x| *x > 0.0), t("weight_unit").unwrap_or_else(|| "g".into())) {
+        let g = if unit.eq_ignore_ascii_case("kg") { w * 1000.0 } else { w };
+        put("gewicht_g", Some(format!("{}", g.round() as i64)));
+        put("gewicht_hinweis", t("weight_info").map(|x| format!("Größe {x}")));
+    }
+    let mut feats = split_list(&a["usps"]);
+    for f in split_list(&a["features"]) {
+        if !feats.contains(&f) {
+            feats.push(f);
+        }
+    }
+    if !feats.is_empty() { d.insert("features".into(), json!(feats)); }
+    let care = if a["care_instructions"].as_str().is_some_and(|x| !x.trim().is_empty()) { split_list(&a["care_instructions"]) } else {
+        ["textile_care_washing", "textile_care_bleaching", "textile_care_drying", "textile_care_ironing", "textile_professional_textile_care"].iter().filter_map(|k| t(k)).collect()
+    };
+    if !care.is_empty() { d.insert("pflege".into(), json!(care)); }
+    let mut tech = vec![];
+    if a["goretex"] == json!(true) { tech.push("GORE-TEX".to_string()); }
+    if a["vegan"] == json!(true) { tech.push("vegan".to_string()); }
+    if !tech.is_empty() { d.insert("technologien".into(), json!(tech)); }
+    if let Some(act) = t("activity") { d.insert("einsatz".into(), json!(split_list(&json!(act)))); }
+    let mut docs = vec![];
+    for (k, l) in [("product_instructions_url", "Bedienungsanleitung"), ("hazard_note", "Gefahrenhinweis"), ("size_table_shoes", "Größentabelle Schuhe"), ("size_table_men_url", "Größentabelle Herren"), ("size_table_women_url", "Größentabelle Damen"), ("size_table_kids_url", "Größentabelle Kinder"), ("hang_tag_url", "Hangtag")] {
+        if let Some(u) = t(k).filter(|u| u.starts_with("http")) { docs.push(format!("{l} | {u}")); }
+    }
+    if !docs.is_empty() { d.insert("dokumente".into(), json!(docs)); }
+    d.insert("outtra".into(), json!({ "product_set_id": v["outtra_product_set_id"], "color_set_id": v["outtra_color_set_id"], "aktualisiert": t("updated_at") }));
+    it.details = d;
+    let mut imgs: Vec<(i64, String, String)> = a["media"]["images"].as_array().cloned().unwrap_or_default().iter().filter_map(|i| {
+        let u = i["url"].as_str()?.to_string();
+        let cap = [i["shootType"].as_str(), i["productView"].as_str()].iter().flatten().filter(|x| !["unknown", "other", ""].contains(x)).map(|x| *x).collect::<Vec<_>>().join(" · ");
+        Some((i["position"].as_i64().unwrap_or(999), u, cap))
+    }).collect();
+    imgs.sort_by_key(|x| x.0);
+    for (_, u, cap) in imgs {
+        it.images.push(u);
+        it.captions.push(cap);
+    }
+    Some(it)
+}
+
+/// Alle Varianten einer Marke seitenweise abrufen (max. 30 je Seite), optional nur Änderungen seit einem Datum
+fn outtra_items(c: &Connection, brand: &str, since: Option<&str>) -> Result<Vec<Item>, String> {
+    let mut items = vec![];
+    let mut url = format!("{}/api/v2/datahub/products?language=de&page%5Bsize%5D=30&page%5Bnumber%5D=1&filter%5Bbrand%5D={}", base(c), enc(brand));
+    if let Some(d) = since {
+        url.push_str(&format!("&filter%5BupdatedAfter%5D={}", enc(d)));
+    }
+    for _ in 0..3000 {
+        let v = get_json(c, &url)?;
+        let data = v["data"].as_array().cloned().unwrap_or_default();
+        items.extend(data.iter().filter_map(outtra_item));
+        match v["links"]["next"].as_str() {
+            Some(n) if !n.is_empty() && !data.is_empty() => url = n.to_string(),
+            _ => break,
+        }
+    }
+    Ok(items)
 }
 
 pub fn manufacturers(c: &Connection) -> Result<Vec<Value>, String> {
     if !configured(c) {
-        return Err("FEDAS-Adresse ist nicht eingestellt (FEDAS › Verbindung)".into());
+        return Err(if provider(c) == "outtra" { "OUTTRA-Zugriffstoken fehlt (FEDAS › Verbindung)".into() } else { "Adresse der Schnittstelle ist nicht eingestellt (FEDAS › Verbindung)".into() });
+    }
+    if provider(c) == "outtra" {
+        return outtra_brands(c);
     }
     let path = { let p = s(c, "fedas.pfad_hersteller"); if p.is_empty() { "/manufacturers".to_string() } else { p } };
     let v = get_json(c, &format!("{}{}", base(c), path))?;
@@ -494,7 +663,13 @@ pub fn sync(c: &mut Connection, user: &str, full: bool) -> Result<Stats, String>
         let name = m["name"].as_str().unwrap_or(id);
         let mut items: Vec<Item> = vec![];
         let mut page = 1;
+        let outtra_mode = provider(c) == "outtra";
         let res: Result<(), String> = (|| {
+            if outtra_mode {
+                let since = if !full && !last.is_empty() { last.get(0..10) } else { None };
+                items = outtra_items(c, id, since)?;
+                return Ok(());
+            }
             loop {
                 let mut url = format!("{}{}", base(c), path.replace("{id}", id));
                 let mut q = vec![];
@@ -600,6 +775,45 @@ pub fn start_worker(db_path: std::path::PathBuf) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn outtra_antwort_wird_uebernommen() {
+        // Aufbau laut https://api.outtra.com/docs (GET /api/v2/datahub/products)
+        let v = json!({ "data": [
+            { "type": "variant", "gtin": "01234567891234", "outtra_product_set_id": 123456, "outtra_color_set_id": 1, "attributes": {
+                "gln": "supplier-1", "product_identifier": "784544", "product_short_description": "Men's Rain Jacket", "brand": { "id": "845", "name": "Example Brand" },
+                "media": { "images": [
+                    { "url": "http://x/b.jpg", "position": 2, "shootType": "model", "productView": "front" },
+                    { "url": "http://x/a.png", "position": 1, "shootType": "hollow", "productView": "front" } ] },
+                "fedas_code": "201042", "category_level_1": "Clothing", "category_level_2": "Jackets", "sex": "Male", "kids": false,
+                "country_of_origin": "VN", "customs_tariff_eu": 62011290, "product_longtext": "Wasserdicht.", "usps": "Atmungsaktiv; Verschweißte Nähte", "activity": "Hiking",
+                "goretex": true, "material": "80% Cotton|20% Polyester", "outer_material": "100% Polyamid", "care_instructions": "Wash at 30°C, Do not bleach",
+                "manufacturer_color": "green moss", "base_color": "green", "seasons": "Autumn / Winter 2023", "size_description": "L", "size_description_2": "32",
+                "weight": 0.38, "weight_unit": "kg", "wholesale_price": "85,00", "rrp": "199,99", "rrp_unit": "EUR", "product_instructions_url": "https://x/manual.pdf" } },
+            { "type": "variant", "gtin": "123", "attributes": {} } ]});
+        let items: Vec<Item> = v["data"].as_array().unwrap().iter().filter_map(outtra_item).collect();
+        assert_eq!(items.len(), 1);
+        let it = &items[0];
+        assert_eq!((it.gtin.as_str(), it.style.as_str(), it.color.as_str(), it.size.as_str(), it.price, it.cost), ("1234567891234", "784544", "green moss", "L/32", Some(19999), Some(8500)));
+        assert_eq!(it.images, vec!["http://x/a.png", "http://x/b.jpg"]);
+        assert_eq!(it.captions[0], "hollow · front");
+        assert_eq!(it.details["zielgruppe"], json!("Herren"));
+        assert_eq!(it.details["gewicht_g"], json!("380"));
+        assert_eq!(it.details["technologien"], json!(["GORE-TEX"]));
+        assert_eq!(it.details["features"], json!(["Atmungsaktiv", "Verschweißte Nähte"]));
+        assert_eq!(it.details["pflege"], json!(["Wash at 30°C", "Do not bleach"]));
+        assert_eq!(it.details["dokumente"], json!(["Bedienungsanleitung | https://x/manual.pdf"]));
+        assert_eq!(it.details["zolltarif"], json!("62011290"));
+        let mut c = Connection::open_in_memory().unwrap();
+        db::migrate(&c).unwrap();
+        let st = apply_items(&mut c, items, true, "t").unwrap();
+        assert_eq!((st.neu, st.bilder), (1, 2));
+        let cat: String = c.query_row("SELECT category FROM articles", [], |r| r.get(0)).unwrap();
+        assert_eq!(cat, "jacken");
+        let cap: String = c.query_row("SELECT caption FROM article_media ORDER BY pos LIMIT 1", [], |r| r.get(0)).unwrap();
+        assert_eq!(cap, "hollow · front");
+        assert_eq!(provider(&c), "outtra");
+    }
 
     #[test]
     fn normalisieren_und_uebernehmen() {
