@@ -1,3 +1,7 @@
+## Neu in 0.29.1
+
+- Kassen-Konfiguration: die letzten Reiter sind jetzt befüllt – Synchronisierung, Pflichteingaben (Zuordnung der Kundenfelder), Tax-Free Dienste und Kd.-Filter. Zusatz-Buchungen und Beleg Zusatzinformationen sind zuordenbare Listen.
+
 ## Neu in 0.29.0
 
 - Einstellungen › Kassen › Kassen: Bearbeiten-Seite mit allen Reitern. Neu befüllt: Allgemein (wie Advarics), Fiskalisierung (echte RKSV-Daten), Signatureinheit, MwSt.-Sätze, Zahlungsarten, Zusatz-Buchung, Kassen-Summen, WGR.-MwSt.-Einstellungen, Beleg-Konfiguration, Kassen-Layouts, Kassen-Icon Sortierung (Rauf/Runter), Positionsinfo Sortieren.
