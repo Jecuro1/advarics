@@ -1,3 +1,7 @@
+## Neu in 0.23.4
+
+- Größenschlüssel „7 Schuhe Erw. UK“ mit seinen 24 Größen (3 bis 14,5 sowie 40 2/3, 42, 43 1/3, 44 2/3, 46, 47 1/3).
+
 ## Neu in 0.23.3
 
 - Größenschlüssel „6 Schuhe Erw. EU“ mit seinen 61 Größen (35 bis 51 inkl. Drittel- und Halbgrößen). Bei Halbgrößen (36½ …) und „One Size“ ist „Größe 1“ jetzt ausgefüllt (36 1/2 …).
