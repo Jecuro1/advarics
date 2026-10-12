@@ -12,7 +12,7 @@ const SIZE_ORDER = ['s', 'tall', 'm', 'wide', 'l', 'xl'];
 const PRESETS = {
   filialleitung: {name: 'Filialleitung', d: 'Umsatz, KI-Hinweise, Bestand und Betrieb', w: [['sales.revenue', 'm'], ['sales.receipts', 's'], ['sales.basket', 's'], ['sales.chart', 'l'], ['ai.insights', 'tall'], ['sales.top', 'tall'], ['stock.low', 'tall'], ['sales.stores', 'tall'], ['ops.registers', 'tall'], ['ops.system', 'tall'], ['ext.repairs', 'tall']]},
   einkauf: {name: 'Einkauf', d: 'Bestand, Warengruppen und Prognosen', w: [['stock.low', 'wide'], ['ai.insights', 'wide'], ['sales.categories', 'wide'], ['sales.top', 'wide'], ['sales.heatmap', 'xl']]},
-  kasse: {name: 'Kassa-Team', d: 'Tagesziel, Frequenz und Kassenstatus', w: [['sales.goal', 'm'], ['sales.receipts', 's'], ['sales.basket', 's'], ['sales.heatmap', 'l'], ['ops.registers', 'tall'], ['sales.top', 'wide'], ['ext.rental', 'wide']]},
+  kasse: {name: 'Kassa-Team', d: 'Tagesziel, Frequenz und Kassenstatus', w: [['sales.goal', 'm'], ['sales.receipts', 's'], ['sales.basket', 's'], ['sales.heatmap', 'l'], ['ops.registers', 'tall'], ['sales.top', 'wide'], ]},
 };
 const fromPreset = k => PRESETS[k].w.map(([t, s]) => ({id: uid(), t, s}));
 const Dash = {
@@ -215,12 +215,6 @@ const REPAIRS = [
   {t: 'Reißverschluss tauschen', c: 'Sophie Wieser', due: 'Fr', st: ['Angenommen', '']},
   {t: 'Bergschuh neu besohlen', c: 'Markus Hofer', due: '24.10.', st: ['Beim Partner', 'info']},
 ];
-const RENTALS = [
-  {t: 'Tourenset Damen · 164', c: 'Familie Rainer', due: '10:00', st: ['Zurück', 'pos']},
-  {t: 'Schneeschuhe Gr. 42', c: 'Paul Krismer', due: '12:00', st: ['Überfällig', 'neg']},
-  {t: 'Lawinenset LVS', c: 'Bergschule Inntal', due: '16:00', st: ['Offen', '']},
-  {t: 'Kinderski 120 + Helm', c: 'Familie Obex', due: '17:30', st: ['Offen', '']},
-];
 function topRows(d) {
   const ids = ['A1001', 'A3001', 'A7001', 'A1002', 'A3002', 'A6001', 'A2001'], u = [14, 11, 9, 8, 7, 6, 6];
   const rows = ids.filter(id => artById(id)).map((id, i) => { const a = artById(id); const units = Math.max(1, Math.round(u[i] * PMULT[d.p] * d.F)); return {a, units, rev: units * (a.sale || a.price)}; }).sort((x, y) => y.rev - x.rev);
@@ -321,9 +315,6 @@ const W = {
   'ext.repairs': {title: 'Reparaturaufträge', cat: 'Erweiterungen', icon: 'wrench', desc: 'Eigene Entität aus der Erweiterung „Werkstatt & Service“.', sizes: ['tall', 'wide'], plugin: 'Werkstatt & Service 1.2', demo: true,
     tools: () => `<span class="w-src">${ic('puzzle', 'i-xs')}Erweiterung</span>`,
     body: () => `<div class="wl">${extRows(REPAIRS)}</div><div class="wl-foot">${ic('puzzle', 'i-xs')} Eigene Entität · 7 Felder · 2 Workflows</div>`},
-  'ext.rental': {title: 'Verleih · Rückgaben heute', cat: 'Erweiterungen', icon: 'snow', desc: 'Rückgaben und Überfälliges aus „Verleih Pro“.', sizes: ['wide', 'tall'], plugin: 'Verleih Pro 2.0', demo: true,
-    tools: () => `<span class="w-src">${ic('puzzle', 'i-xs')}Erweiterung</span>`,
-    body: () => `<div class="wl">${extRows(RENTALS)}</div><div class="wl-foot">${ic('puzzle', 'i-xs')} Verleih Pro 2.0 · Partner-Erweiterung</div>`},
 };
 
 /* ── Rendern ── */

@@ -1,3 +1,7 @@
+## Neu in 0.26.2
+
+- Verleih / Rental Service komplett entfernt (Belegart, Tarife, Dashboard-Baustein, Vorlage).
+
 ## Neu in 0.26.1
 
 - Menüpunkt „Verleih (Rental Service)“ und „Stammdaten › Rental Service“ entfernt – wird nicht gebraucht.

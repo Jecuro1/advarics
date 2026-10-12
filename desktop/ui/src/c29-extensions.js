@@ -123,7 +123,7 @@ function extWidgetBody(key, w) {
   return `<div class="wl">${rows.slice(0, 6).map(r => `<div class="wl-row"><div class="wl-main"><div class="wl-t">${esc(r[f.titel] ?? '')}</div>${f.untertitel ? `<div class="wl-s">${esc(r[f.untertitel] ?? '')}</div>` : ''}</div>${f.wert ? `<span class="pill">${esc(r[f.wert] ?? '')}</span>` : ''}</div>`).join('')}${rows.length > 6 ? `<div class="muted" style="font-size:12px;padding:6px 2px">+ ${rows.length - 6} weitere</div>` : ''}</div>`;
 }
 // Vorschau-Widgets der Browser-Demo durch echte Erweiterungen ersetzen
-if (DESKTOP) { delete W['ext.repairs']; delete W['ext.rental']; }
+if (DESKTOP) { delete W['ext.repairs']; }
 
 /* ── Befehle in der Befehlspalette ── */
 {

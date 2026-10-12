@@ -29,32 +29,14 @@ DK.sendung = {t: 'Versand-Etiketten', one: 'Sendung', ic: 'truck', page: 'versan
   head: [{k: 'ref', l: 'Bezug (Rechnung, Lieferschein, Webshop-Bestellung)'}, {k: 'data.spediteur', l: 'Spediteur', t: 'select', get o() { return ['', ...stActive('spediteur').map(s => s.name)]; }}, {k: 'data.pakettyp', l: 'Paket-Typ', t: 'select', get o() { return ['', ...stActive('pakettyp').map(s => s.name)]; }},
     {k: 'data.gewicht', l: 'Gewicht kg', t: 'num'}, {k: 'data.pakete', l: 'Anzahl Pakete', t: 'int'}, {k: 'data.empfaenger', l: 'Empfänger (Name, Straße, PLZ Ort, Land)', t: 'area', full: true}, {k: 'data.telefon', l: 'Telefon für Zusteller'}, {k: 'data.inhalt', l: 'Inhalt'}],
   acts: {erstellt: [['versendet', 'Versendet', 'primary', {ask: [{k: 'tracking', l: 'Sendungsnummer'}]}], ['stornieren', 'Stornieren', 'danger']], versendet: [['zugestellt', 'Zugestellt', 'primary']]}};
-DK.verleih = {t: 'Verleih', one: 'Verleih', ic: 'clock', page: 'verleih', perm: 'kasse.verkaufen', partner: 'kunde', price: 'vk', lines: true, print: 'Verleihvertrag',
-  sub: 'Rental Service: Leihgeräte ausgeben (bucht aus) und zurücknehmen (bucht ein) – Leihgebühr und Kaution nach Tarif',
-  head: [{k: 'date', l: 'Ausgabe', t: 'date'}, {k: 'due', l: 'Rückgabe bis', t: 'date'}, {k: 'data.tarif', l: 'Tarif', t: 'select', get o() { return ['', ...stActive('verleihtarif').map(s => s.name)]; }}, {k: 'data.kaution', l: 'Kaution €', t: 'money'}, {k: 'data.ausweis', l: 'Ausweis / Pfand'}, {k: 'data.z_wert', l: 'Z-Wert / Einstellung'}, {k: 'data.notiz', l: 'Notiz', t: 'area', full: true}],
-  acts: {entwurf: [['ausgeben', 'Ausgeben (bucht aus)', 'primary', {confirm: 'Leihgeräte ausgeben? Der Bestand wird reduziert, bis sie zurückkommen.'}], ['stornieren', 'Verwerfen', 'danger']],
-    ausgegeben: [['zurueck', 'Rücknahme (bucht ein)', 'primary', {ask: [{k: 'zustand', l: 'Zustand', t: 'select', o: ['in Ordnung', 'verschmutzt', 'beschädigt', 'defekt']}, {k: 'nachzahlung', l: 'Nachzahlung / Schaden €', t: 'money'}]}]]}};
 docPage('versand-etiketten', 'sendung', {newLabel: 'Neue Sendung', tabs: [['offen', 'Offen', s => s === 'erstellt'], ['unterwegs', 'Unterwegs', s => s === 'versendet'], ['alle', 'Alle', () => true]],
   kpi: l => [[num(l.filter(d => d.status === 'erstellt').length), 'zu versenden', 'warn'], [num(l.filter(d => d.status === 'versendet').length), 'unterwegs'], [num(l.filter(d => d.status === 'zugestellt').length), 'zugestellt', 'pos']],
   cols: [{l: 'Spediteur', f: d => esc(d.data?.spediteur || '–')}, {l: 'Sendungsnr.', f: d => d.data?.tracking ? `<span class="mono" style="font-size:12px">${esc(d.data.tracking)}</span>` : '–'}]});
-docPage('verleih', 'verleih', {newLabel: 'Neuer Verleih', tabs: [['offen', 'Ausgegeben', s => ['entwurf', 'ausgegeben'].includes(s)], ['zurueck', 'Zurück', s => s === 'zurueckgegeben'], ['alle', 'Alle', () => true]],
-  kpi: l => [[num(l.filter(d => d.status === 'ausgegeben').length), 'ausgegeben', 'warn'], [num(l.filter(d => d.status === 'ausgegeben' && d.due && d.due < today()).length), 'überfällig', 'neg'], [num(l.filter(d => d.status === 'zurueckgegeben').length), 'zurück']],
-  cols: [{l: 'Tarif', f: d => esc(d.data?.tarif || '–')}, {l: 'Rückgabe', f: d => esc(dDate(d.due))}]});
 const trackUrl = d => { const s = stActive('spediteur').find(x => x.name === d.data?.spediteur); return s?.tracking && d.data?.tracking ? s.tracking.replace('{nr}', encodeURIComponent(d.data.tracking)) : null; };
 DOC_BTNS.sendung = st => st.id ? `<button class="btn btn-secondary" data-vslabel>${ic('printer', 'i-sm')}Etikett A6</button>${trackUrl(st) ? `<button class="btn btn-secondary" data-vstrack>${ic('globe', 'i-sm')}Sendung verfolgen</button>` : ''}` : '';
 DOC_CLICK.sendung = async (e, st) => {
   if (e.target.closest('[data-vslabel]')) printShipLabel(st);
   if (e.target.closest('[data-vstrack]')) { const u = trackUrl(st); if (u) invoke('open_url', {url: u}).catch(() => window.open(u, '_blank')); }
-};
-DOC_BTNS.verleih = st => `<button class="btn btn-secondary" data-vltarif>${ic('cash', 'i-sm')}Tarif berechnen</button>`;
-DOC_CLICK.verleih = async (e, st, {render}) => {
-  if (!e.target.closest('[data-vltarif]')) return;
-  const t = stActive('verleihtarif').find(x => x.name === st.data?.tarif); if (!t) return toast('Erst Tarif wählen', {type: 'warn'});
-  const tage = Math.max(1, Math.round((new Date(st.due || today()) - new Date(st.date || today())) / 864e5) + 1);
-  const preis = Math.min(tage * (+t.tag || 0), Math.ceil(tage / 7) * (+t.woche || 1e9));
-  (st.data.lines || []).forEach(l => { l.price = Math.round(preis * 100 / Math.max(1, (st.data.lines || []).length)); });
-  st.data.kaution = Math.round((+t.kaution || 0) * 100);
-  toast(`${tage} Tag${tage === 1 ? '' : 'e'} · ${eur(preis)}`, {t2: `Kaution ${eur(+t.kaution || 0)} – Preise in die Positionen übernommen`, icon: 'cash'}); render();
 };
 function printShipLabel(st) {
   const s = stActive('spediteur').find(x => x.name === st.data?.spediteur), nr = st.data?.tracking || st.no;

@@ -1912,7 +1912,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.26.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.26.2', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2480,7 +2480,7 @@ const SIZE_ORDER = ['s', 'tall', 'm', 'wide', 'l', 'xl'];
 const PRESETS = {
   filialleitung: {name: 'Filialleitung', d: 'Umsatz, KI-Hinweise, Bestand und Betrieb', w: [['sales.revenue', 'm'], ['sales.receipts', 's'], ['sales.basket', 's'], ['sales.chart', 'l'], ['ai.insights', 'tall'], ['sales.top', 'tall'], ['stock.low', 'tall'], ['sales.stores', 'tall'], ['ops.registers', 'tall'], ['ops.system', 'tall'], ['ext.repairs', 'tall']]},
   einkauf: {name: 'Einkauf', d: 'Bestand, Warengruppen und Prognosen', w: [['stock.low', 'wide'], ['ai.insights', 'wide'], ['sales.categories', 'wide'], ['sales.top', 'wide'], ['sales.heatmap', 'xl']]},
-  kasse: {name: 'Kassa-Team', d: 'Tagesziel, Frequenz und Kassenstatus', w: [['sales.goal', 'm'], ['sales.receipts', 's'], ['sales.basket', 's'], ['sales.heatmap', 'l'], ['ops.registers', 'tall'], ['sales.top', 'wide'], ['ext.rental', 'wide']]},
+  kasse: {name: 'Kassa-Team', d: 'Tagesziel, Frequenz und Kassenstatus', w: [['sales.goal', 'm'], ['sales.receipts', 's'], ['sales.basket', 's'], ['sales.heatmap', 'l'], ['ops.registers', 'tall'], ['sales.top', 'wide'], ]},
 };
 const fromPreset = k => PRESETS[k].w.map(([t, s]) => ({id: uid(), t, s}));
 const Dash = {
@@ -2683,12 +2683,6 @@ const REPAIRS = [
   {t: 'Reißverschluss tauschen', c: 'Sophie Wieser', due: 'Fr', st: ['Angenommen', '']},
   {t: 'Bergschuh neu besohlen', c: 'Markus Hofer', due: '24.10.', st: ['Beim Partner', 'info']},
 ];
-const RENTALS = [
-  {t: 'Tourenset Damen · 164', c: 'Familie Rainer', due: '10:00', st: ['Zurück', 'pos']},
-  {t: 'Schneeschuhe Gr. 42', c: 'Paul Krismer', due: '12:00', st: ['Überfällig', 'neg']},
-  {t: 'Lawinenset LVS', c: 'Bergschule Inntal', due: '16:00', st: ['Offen', '']},
-  {t: 'Kinderski 120 + Helm', c: 'Familie Obex', due: '17:30', st: ['Offen', '']},
-];
 function topRows(d) {
   const ids = ['A1001', 'A3001', 'A7001', 'A1002', 'A3002', 'A6001', 'A2001'], u = [14, 11, 9, 8, 7, 6, 6];
   const rows = ids.filter(id => artById(id)).map((id, i) => { const a = artById(id); const units = Math.max(1, Math.round(u[i] * PMULT[d.p] * d.F)); return {a, units, rev: units * (a.sale || a.price)}; }).sort((x, y) => y.rev - x.rev);
@@ -2789,9 +2783,6 @@ const W = {
   'ext.repairs': {title: 'Reparaturaufträge', cat: 'Erweiterungen', icon: 'wrench', desc: 'Eigene Entität aus der Erweiterung „Werkstatt & Service“.', sizes: ['tall', 'wide'], plugin: 'Werkstatt & Service 1.2', demo: true,
     tools: () => `<span class="w-src">${ic('puzzle', 'i-xs')}Erweiterung</span>`,
     body: () => `<div class="wl">${extRows(REPAIRS)}</div><div class="wl-foot">${ic('puzzle', 'i-xs')} Eigene Entität · 7 Felder · 2 Workflows</div>`},
-  'ext.rental': {title: 'Verleih · Rückgaben heute', cat: 'Erweiterungen', icon: 'snow', desc: 'Rückgaben und Überfälliges aus „Verleih Pro“.', sizes: ['wide', 'tall'], plugin: 'Verleih Pro 2.0', demo: true,
-    tools: () => `<span class="w-src">${ic('puzzle', 'i-xs')}Erweiterung</span>`,
-    body: () => `<div class="wl">${extRows(RENTALS)}</div><div class="wl-foot">${ic('puzzle', 'i-xs')} Verleih Pro 2.0 · Partner-Erweiterung</div>`},
 };
 
 /* ── Rendern ── */
@@ -6573,11 +6564,10 @@ async function moveField(id, dir) {
 function renderApEntities(box) {
   box.innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><span class="muted" style="font-size:12.5px">Eigene Objekte bekommen einen Menüpunkt, eigene Felder, Suche, CSV-Export, Regeln und REST-Endpunkte.</span><span class="sp" style="flex:1"></span><button class="btn btn-primary btn-sm" id="apEntNew">${ic('plus', 'i-sm')}Neues Objekt</button></div>
     <div class="card">${CF.ents.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Objekt</th><th>Felder</th><th class="r">Datensätze</th><th>REST-Endpunkt</th><th></th></tr></thead><tbody>${CF.ents.map(e => `<tr data-ent="${esc(e.id)}" style="cursor:pointer"><td style="padding-left:16px"><span style="display:inline-flex;gap:10px;align-items:center"><span class="reg-ic">${ic(e.icon || 'layers', 'i-sm')}</span><span><b>${esc(e.plural)}</b><div class="muted" style="font-size:11.5px">Einzahl: ${esc(e.name)}</div></span></span></td><td>${cfDefs('obj:' + e.id).map(d => esc(d.label)).join(' · ') || '<span class="muted">noch keine</span>'}</td><td class="r num">${num(e.count || 0)}</td><td class="mono" style="font-size:12px">/api/v1/objekte/${esc(e.id)}</td><td class="r" style="white-space:nowrap;padding-right:12px"><button class="btn btn-ghost btn-sm" data-entopen="${esc(e.id)}">Öffnen</button></td></tr>`).join('')}</tbody></table>`
-      : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('layers')}</div><h3>Noch keine eigenen Objekte</h3><p>Beispiele: Reparaturaufträge, Skiverleih, Kurse & Events, Maßanfertigungen, Leihgeräte. Jedes Objekt bekommt eigene Felder und einen eigenen Menüpunkt.</p><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:8px">${[['Reparaturauftrag', 'Reparaturaufträge', 'wrench'], ['Verleih', 'Verleih', 'snow'], ['Kurs', 'Kurse & Events', 'calendar']].map(([n, p, i]) => `<button class="btn btn-secondary btn-sm" data-enttpl="${esc(n)}|${esc(p)}|${i}">${ic(i, 'i-sm')}${esc(p)}</button>`).join('')}</div></div>`}</div>`;
+      : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('layers')}</div><h3>Noch keine eigenen Objekte</h3><p>Beispiele: Reparaturaufträge, Skiverleih, Kurse & Events, Maßanfertigungen, Leihgeräte. Jedes Objekt bekommt eigene Felder und einen eigenen Menüpunkt.</p><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:8px">${[['Reparaturauftrag', 'Reparaturaufträge', 'wrench'], ['Kurs', 'Kurse & Events', 'calendar']].map(([n, p, i]) => `<button class="btn btn-secondary btn-sm" data-enttpl="${esc(n)}|${esc(p)}|${i}">${ic(i, 'i-sm')}${esc(p)}</button>`).join('')}</div></div>`}</div>`;
 }
 const ENT_TEMPLATES = {
   'Reparaturauftrag': [['Kunde', 'text', true], ['Telefon', 'telefon'], ['Gegenstand', 'text', true], ['Auftrag', 'mehrzeilig'], ['Status', 'auswahl', true, ['Angenommen', 'In Arbeit', 'Abholbereit', 'Abgeholt']], ['Fertig bis', 'datum'], ['Preis', 'betrag']],
-  'Verleih': [['Kunde', 'text', true], ['Gerät', 'text', true], ['Von', 'datum', true], ['Bis', 'datum', true], ['Kaution', 'betrag'], ['Zurückgegeben', 'janein']],
   'Kurs': [['Titel', 'text', true], ['Datum', 'datum', true], ['Plätze', 'zahl'], ['Preis', 'betrag'], ['Leitung', 'text']],
 };
 function openEntityEditor(ent, tpl) {
@@ -8786,7 +8776,7 @@ function extWidgetBody(key, w) {
   return `<div class="wl">${rows.slice(0, 6).map(r => `<div class="wl-row"><div class="wl-main"><div class="wl-t">${esc(r[f.titel] ?? '')}</div>${f.untertitel ? `<div class="wl-s">${esc(r[f.untertitel] ?? '')}</div>` : ''}</div>${f.wert ? `<span class="pill">${esc(r[f.wert] ?? '')}</span>` : ''}</div>`).join('')}${rows.length > 6 ? `<div class="muted" style="font-size:12px;padding:6px 2px">+ ${rows.length - 6} weitere</div>` : ''}</div>`;
 }
 // Vorschau-Widgets der Browser-Demo durch echte Erweiterungen ersetzen
-if (DESKTOP) { delete W['ext.repairs']; delete W['ext.rental']; }
+if (DESKTOP) { delete W['ext.repairs']; }
 
 /* ── Befehle in der Befehlspalette ── */
 {
@@ -11472,13 +11462,11 @@ const STAMM_DEF = {
   watemplate: {t: 'WhatsApp Templates', ic: 'chat', sub: 'Eigene Vorlagen – Platzhalter {vorname}, {name}, {punkte}. Für die Business-API zusätzlich den freigegebenen Template-Namen eintragen', cols: [{k: 'name', l: 'Vorlage'}, {k: 'text', l: 'Text', t: 'area', w: 360}, {k: 'meta', l: 'Meta-Template-Name'}, {k: 'sprache', l: 'Sprache', w: 70}]},
   smsvorlage: {t: 'SMS Vorlagen', ic: 'chat', sub: 'Kurztexte für SMS (max. 160 Zeichen je Teil) – Platzhalter {vorname}, {name}, {punkte}', cols: [{k: 'name', l: 'Vorlage'}, {k: 'text', l: 'Text', t: 'area', w: 380}],
     seed: [{id: 'ABHOL', name: 'Abholbereit', text: 'Hallo {vorname}, Ihre Ware liegt zur Abholung bereit. Ihr Team von {firma}'}, {id: 'SERVICE', name: 'Service fertig', text: 'Hallo {vorname}, Ihr Ski-Service ist fertig. Ihr Team von {firma}'}]},
-  // ── Versand / Verleih
+  // ── Versand
   pakettyp: {t: 'Paket-Typen', ic: 'box', sub: 'Kartongrößen und Gewichtsgrenzen – Vorauswahl beim Versandetikett', cols: [{k: 'name', l: 'Paket-Typ'}, {k: 'l', l: 'L cm', t: 'num', w: 70}, {k: 'b', l: 'B cm', t: 'num', w: 70}, {k: 'h', l: 'H cm', t: 'num', w: 70}, {k: 'kg', l: 'max. kg', t: 'num', w: 80}, {k: 'preis', l: 'Porto €', t: 'num', w: 90}],
     seed: [{id: 'S', name: 'Klein (Schuhkarton)', l: 35, b: 25, h: 15, kg: 2, preis: 4.9}, {id: 'M', name: 'Mittel', l: 60, b: 40, h: 30, kg: 10, preis: 6.9}, {id: 'SKI', name: 'Skisack', l: 200, b: 30, h: 20, kg: 15, preis: 19.9}]},
   spediteur: {t: 'Spediteur', ic: 'truck', sub: 'Paketdienste mit Sendungsverfolgung – {nr} wird durch die Sendungsnummer ersetzt', cols: [{k: 'name', l: 'Spediteur'}, {k: 'tracking', l: 'Tracking-Link', w: 320}, {k: 'kundennr', l: 'Kundennummer'}],
     seed: [{id: 'POST', name: 'Österreichische Post', tracking: 'https://www.post.at/s/sendungsdetails?snr={nr}'}, {id: 'DPD', name: 'DPD', tracking: 'https://tracking.dpd.de/status/de_DE/parcel/{nr}'}, {id: 'GLS', name: 'GLS', tracking: 'https://gls-group.com/AT/de/paketverfolgung?match={nr}'}, {id: 'DHL', name: 'DHL', tracking: 'https://www.dhl.com/at-de/home/tracking.html?tracking-id={nr}'}]},
-  verleihtarif: {t: 'Rental Service – Tarife', ic: 'clock', sub: 'Leihpreise je Tag und Kaution – Verleih unter Verkauf › Verleih', cols: [{k: 'name', l: 'Tarif'}, {k: 'tag', l: '€ je Tag', t: 'num'}, {k: 'woche', l: '€ je Woche', t: 'num'}, {k: 'kaution', l: 'Kaution €', t: 'num'}, {k: 'warengruppe', l: 'Warengruppe', t: 'select', o: catOpts}],
-    seed: [{id: 'SKI', name: 'Ski Premium', tag: 39, woche: 189, kaution: 200, warengruppe: 'ski'}, {id: 'SCHUH', name: 'Skischuh', tag: 15, woche: 69, kaution: 50, warengruppe: 'schuhe'}]},
   // ── Einstellungen
   etikettentyp: {t: 'Etikettentypen', ic: 'tag', sub: 'Formate für Etikettendruck – Größe und Inhalt', cols: [{k: 'name', l: 'Typ'}, {k: 'b', l: 'Breite mm', t: 'num'}, {k: 'h', l: 'Höhe mm', t: 'num'}, {k: 'felder', l: 'Inhalt', t: 'list', w: 260, ph: 'Marke,Name,Größe,Preis,EAN'}], seed: [{id: 'STD', name: 'Standard 50×30', b: 50, h: 30, felder: ['Marke', 'Name', 'Farbe', 'Größe', 'Preis', 'EAN']}, {id: 'SCHUH', name: 'Schuhkarton 70×40', b: 70, h: 40, felder: ['Marke', 'Name', 'Größe', 'Preis', 'EAN']}]},
   etikettendrucker: {t: 'Einstellungen Etikettendrucker', ic: 'printer', sub: 'Etikettendrucker je Arbeitsplatz', cols: [{k: 'name', l: 'Drucker'}, {k: 'typ', l: 'Typ', t: 'select', o: [['zpl', 'ZPL (Zebra)'], ['windows', 'Windows-Drucker'], ['pdf', 'PDF']]}, {k: 'dpi', l: 'DPI', t: 'num'}, {k: 'platz', l: 'Arbeitsplatz'}]},
@@ -12603,32 +12591,14 @@ DK.sendung = {t: 'Versand-Etiketten', one: 'Sendung', ic: 'truck', page: 'versan
   head: [{k: 'ref', l: 'Bezug (Rechnung, Lieferschein, Webshop-Bestellung)'}, {k: 'data.spediteur', l: 'Spediteur', t: 'select', get o() { return ['', ...stActive('spediteur').map(s => s.name)]; }}, {k: 'data.pakettyp', l: 'Paket-Typ', t: 'select', get o() { return ['', ...stActive('pakettyp').map(s => s.name)]; }},
     {k: 'data.gewicht', l: 'Gewicht kg', t: 'num'}, {k: 'data.pakete', l: 'Anzahl Pakete', t: 'int'}, {k: 'data.empfaenger', l: 'Empfänger (Name, Straße, PLZ Ort, Land)', t: 'area', full: true}, {k: 'data.telefon', l: 'Telefon für Zusteller'}, {k: 'data.inhalt', l: 'Inhalt'}],
   acts: {erstellt: [['versendet', 'Versendet', 'primary', {ask: [{k: 'tracking', l: 'Sendungsnummer'}]}], ['stornieren', 'Stornieren', 'danger']], versendet: [['zugestellt', 'Zugestellt', 'primary']]}};
-DK.verleih = {t: 'Verleih', one: 'Verleih', ic: 'clock', page: 'verleih', perm: 'kasse.verkaufen', partner: 'kunde', price: 'vk', lines: true, print: 'Verleihvertrag',
-  sub: 'Rental Service: Leihgeräte ausgeben (bucht aus) und zurücknehmen (bucht ein) – Leihgebühr und Kaution nach Tarif',
-  head: [{k: 'date', l: 'Ausgabe', t: 'date'}, {k: 'due', l: 'Rückgabe bis', t: 'date'}, {k: 'data.tarif', l: 'Tarif', t: 'select', get o() { return ['', ...stActive('verleihtarif').map(s => s.name)]; }}, {k: 'data.kaution', l: 'Kaution €', t: 'money'}, {k: 'data.ausweis', l: 'Ausweis / Pfand'}, {k: 'data.z_wert', l: 'Z-Wert / Einstellung'}, {k: 'data.notiz', l: 'Notiz', t: 'area', full: true}],
-  acts: {entwurf: [['ausgeben', 'Ausgeben (bucht aus)', 'primary', {confirm: 'Leihgeräte ausgeben? Der Bestand wird reduziert, bis sie zurückkommen.'}], ['stornieren', 'Verwerfen', 'danger']],
-    ausgegeben: [['zurueck', 'Rücknahme (bucht ein)', 'primary', {ask: [{k: 'zustand', l: 'Zustand', t: 'select', o: ['in Ordnung', 'verschmutzt', 'beschädigt', 'defekt']}, {k: 'nachzahlung', l: 'Nachzahlung / Schaden €', t: 'money'}]}]]}};
 docPage('versand-etiketten', 'sendung', {newLabel: 'Neue Sendung', tabs: [['offen', 'Offen', s => s === 'erstellt'], ['unterwegs', 'Unterwegs', s => s === 'versendet'], ['alle', 'Alle', () => true]],
   kpi: l => [[num(l.filter(d => d.status === 'erstellt').length), 'zu versenden', 'warn'], [num(l.filter(d => d.status === 'versendet').length), 'unterwegs'], [num(l.filter(d => d.status === 'zugestellt').length), 'zugestellt', 'pos']],
   cols: [{l: 'Spediteur', f: d => esc(d.data?.spediteur || '–')}, {l: 'Sendungsnr.', f: d => d.data?.tracking ? `<span class="mono" style="font-size:12px">${esc(d.data.tracking)}</span>` : '–'}]});
-docPage('verleih', 'verleih', {newLabel: 'Neuer Verleih', tabs: [['offen', 'Ausgegeben', s => ['entwurf', 'ausgegeben'].includes(s)], ['zurueck', 'Zurück', s => s === 'zurueckgegeben'], ['alle', 'Alle', () => true]],
-  kpi: l => [[num(l.filter(d => d.status === 'ausgegeben').length), 'ausgegeben', 'warn'], [num(l.filter(d => d.status === 'ausgegeben' && d.due && d.due < today()).length), 'überfällig', 'neg'], [num(l.filter(d => d.status === 'zurueckgegeben').length), 'zurück']],
-  cols: [{l: 'Tarif', f: d => esc(d.data?.tarif || '–')}, {l: 'Rückgabe', f: d => esc(dDate(d.due))}]});
 const trackUrl = d => { const s = stActive('spediteur').find(x => x.name === d.data?.spediteur); return s?.tracking && d.data?.tracking ? s.tracking.replace('{nr}', encodeURIComponent(d.data.tracking)) : null; };
 DOC_BTNS.sendung = st => st.id ? `<button class="btn btn-secondary" data-vslabel>${ic('printer', 'i-sm')}Etikett A6</button>${trackUrl(st) ? `<button class="btn btn-secondary" data-vstrack>${ic('globe', 'i-sm')}Sendung verfolgen</button>` : ''}` : '';
 DOC_CLICK.sendung = async (e, st) => {
   if (e.target.closest('[data-vslabel]')) printShipLabel(st);
   if (e.target.closest('[data-vstrack]')) { const u = trackUrl(st); if (u) invoke('open_url', {url: u}).catch(() => window.open(u, '_blank')); }
-};
-DOC_BTNS.verleih = st => `<button class="btn btn-secondary" data-vltarif>${ic('cash', 'i-sm')}Tarif berechnen</button>`;
-DOC_CLICK.verleih = async (e, st, {render}) => {
-  if (!e.target.closest('[data-vltarif]')) return;
-  const t = stActive('verleihtarif').find(x => x.name === st.data?.tarif); if (!t) return toast('Erst Tarif wählen', {type: 'warn'});
-  const tage = Math.max(1, Math.round((new Date(st.due || today()) - new Date(st.date || today())) / 864e5) + 1);
-  const preis = Math.min(tage * (+t.tag || 0), Math.ceil(tage / 7) * (+t.woche || 1e9));
-  (st.data.lines || []).forEach(l => { l.price = Math.round(preis * 100 / Math.max(1, (st.data.lines || []).length)); });
-  st.data.kaution = Math.round((+t.kaution || 0) * 100);
-  toast(`${tage} Tag${tage === 1 ? '' : 'e'} · ${eur(preis)}`, {t2: `Kaution ${eur(+t.kaution || 0)} – Preise in die Positionen übernommen`, icon: 'cash'}); render();
 };
 function printShipLabel(st) {
   const s = stActive('spediteur').find(x => x.name === st.data?.spediteur), nr = st.data?.tracking || st.no;
