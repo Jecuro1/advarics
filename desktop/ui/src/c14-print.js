@@ -69,7 +69,7 @@ function reportOps(s, title) {
   ops.push({t: 'feed', n: 4}, {t: 'cut'});
   return ops;
 }
-const printReceipt = (rec, opts = {}) => printOps(receiptOps({...rec, copy: !!opts.copy}), `${kindLabel(rec)} ${rec.no}${opts.copy ? ' (Kopie)' : ''}`, opts.quiet);
+const printReceipt = async (rec, opts = {}) => { const n = opts.copy || typeof kkBelegAnzahl !== 'function' ? 1 : kkBelegAnzahl(rec); let r; for (let i = 0; i < n; i++) r = await printOps(receiptOps({...rec, copy: !!opts.copy}), `${kindLabel(rec)} ${rec.no}${opts.copy ? ' (Kopie)' : ''}`, opts.quiet); return r; };
 
 /* ── Einstellungen → Drucker ── */
 function printerSectionHTML() {

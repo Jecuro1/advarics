@@ -1,3 +1,13 @@
+## Neu in 0.31.0
+
+- Kassen-Konfiguration wirkt jetzt an der Kasse (Konfiguration der Kasse dieses Arbeitsplatzes unter Kassen › Allgemein):
+  - Prozesse nutzen: Menüpunkte (Reservierungen, Auswahl, Rechnungen, Umlagerungen, Reklamationen, Zeiterfassung, Kampagnen, Hilfe …) und Kassenfunktionen (Parken, Retoure/Umtausch, Gutschein verkaufen, Belegkopie, Kassenbuch-Buchungen) werden ein- oder ausgeblendet.
+  - Zahlungsarten: nur zugeordnete erscheinen im Bezahl-Dialog; Standard-Zahlungsart wird vorgewählt; die Kassenlade öffnet je Zahlungsart.
+  - Feste Rabatte: nur zugeordnete stehen zur Schnellwahl; Rabattgrenze der Konfiguration gilt.
+  - Kassenlade bei Bar-Einlage/Abschöpfung/Wechselgeld, automatische Sperre nach Inaktivität, Rückfrage ab Artikelmenge.
+  - Bon: Überschrift, Bezeichnungen, Rückgeld ausblenden, Teilezahl, Verkäufer am Ende, Rabatte zusammenfassen, AGB-Text, Anzahl Ausdrucke je Belegtyp.
+- Nicht wirksame Felder wurden aus den Reitern genommen und kommen erst zurück, wenn sie etwas bewirken.
+
 ## Neu in 0.30.1
 
 - Bonus Systeme, Kassen-Reiter (Feste Rabatte, MwSt., Zahlungsarten, Zusatz-Buchung, Kassen-Summen, WGR.-MwSt., Beleg-Konfiguration, Icon-Sortierung, Positionsinfo) und die Kassen-Konfiguration sind wieder da. Sie werden Schritt für Schritt an die Kasse angebunden.

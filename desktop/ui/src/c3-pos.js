@@ -333,7 +333,7 @@ function detachCustomer() {
 
 /* ── Rabatt mit Step-up-Freigabe ── */
 /** Feste Rabatte aus den Stammdaten (Einstellungen › Feste Rabatte) */
-const fixDisc = () => typeof stActive === 'function' ? stActive('festerrabatt') : [];
+const fixDisc = () => (typeof stActive === 'function' ? stActive('festerrabatt') : []).filter(r => typeof kkRabattOk !== 'function' || kkRabattOk(r.id));
 function openDiscount() {
   if (!POS.cart.length) return toast('Warenkorb ist leer', {type: 'warn', icon: 'percent'});
   const line = POS.cart.find(l => l.key === POS.sel);
@@ -641,7 +641,7 @@ async function finalizePayment() {
   }
   POS.last = {no: rec.no, total: t.total}; POS.lastRec = rec;
   if (DESKTOP && CFG['drucker.auto']) printReceipt(rec, {quiet: true});
-  if (rec.parts.some(p => p.m === 'bar')) openDrawer('Barzahlung', true);
+  if (rec.parts.some(p => typeof kkLade === 'function' ? kkLade(p.m) : p.m === 'bar')) openDrawer('Barzahlung', true);
   Hooks.emit('rksv.receipt.signed', {beleg: rec.no, kassenId: S.rksv?.kassen_id || CFG['kasse.id'] || 'INN-K01', betragSatzNormal: t.vat.find(v => v.rate === 20)?.gross || 0, betragSatzNull: t.zero, signatur: 'ES256 · …' + rec.sig.slice(-8), offline: rec.offline});
   if (!S.online) { S.queue++; renderStatus(); updateQueueInfo(); }
   Dash.session.rev += t.total; Dash.session.bons++;

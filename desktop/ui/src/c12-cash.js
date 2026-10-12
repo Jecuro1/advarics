@@ -40,14 +40,14 @@ async function xReport() {
 async function openCashBook() {
   if (desktopOnly('Kassenbuch')) return;
   let s; try { s = await invoke('cash_status'); } catch (e) { return toast('Kassenbuch nicht verfügbar', {t2: String(e), type: 'warn'}); }
-  const st = {kind: 'einlage', amt: '', reason: ''};
+  const st = {kind: ['einlage', 'entnahme', 'anfang'].find(k => typeof kkBuchungOk !== 'function' || kkBuchungOk(k)) || 'einlage', amt: '', reason: ''};
   const REASONS = {einlage: ['Wechselgeld', 'Einlage Tresor', 'Korrektur'], entnahme: ['Bank', 'Tresor', 'Barauslage', 'Korrektur'], anfang: ['Wechselgeld Tagesbeginn']};
   const el = openLayer(`<div class="modal" style="width:min(640px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="Kassenbuch"><div id="cbBody" style="display:flex;flex-direction:column;min-height:0"></div></div>`, {focus: '#cbAmt'});
   const box = $('#cbBody', el);
   const render = () => {
     box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('cash')}</div><div><h2>Kassenbuch</h2><p>Soll-Bestand Lade: <b style="color:var(--text)">${eur(c2e(s.cash.expected))}</b> · seit ${s.from ? esc(fmtTs(s.from)) : 'Beginn'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
       <div class="m-body" style="display:grid;gap:14px;overflow:auto">
-        <div class="seg" id="cbSeg" style="justify-self:start">${['einlage', 'entnahme', 'anfang'].map(k => `<button data-v="${k}" aria-pressed="${st.kind === k}">${MOVE_LBL[k]}</button>`).join('')}</div>
+        <div class="seg" id="cbSeg" style="justify-self:start">${['einlage', 'entnahme', 'anfang'].filter(k => typeof kkBuchungOk !== 'function' || kkBuchungOk(k)).map(k => `<button data-v="${k}" aria-pressed="${st.kind === k}">${MOVE_LBL[k]}</button>`).join('')}</div>
         <div class="amt-field"><label for="cbAmt">Betrag</label><div class="amt-input"><span>€</span><input id="cbAmt" inputmode="decimal" value="${esc(st.amt)}" placeholder="0,00" autocomplete="off"></div></div>
         <div><div class="field"><span>Grund</span></div><div class="reasons" style="margin-top:6px">${REASONS[st.kind].map(r => `<button class="chip" data-r="${esc(r)}" aria-pressed="${r === st.reason}">${esc(r)}</button>`).join('')}</div></div>
         ${st.kind === 'entnahme' ? `<div class="rule-box">${ic('shield')}<div>Entnahmen erfordern eine Freigabe durch die Filialleitung.</div></div>` : ''}
@@ -66,7 +66,7 @@ async function openCashBook() {
     catch (e) { return toast('Buchung nicht möglich', {t2: String(e), type: 'warn'}); }
     toast(`${MOVE_LBL[st.kind]} gebucht`, {t2: `${eur(v)} · ${st.reason} · Soll-Bestand ${eur(c2e(s.cash.expected))}`, type: 'pos', icon: 'cash'});
     Hooks.emit('cash.moved', {art: st.kind, betrag: v, grund: st.reason});
-    openDrawer(MOVE_LBL[st.kind], true);
+    if (typeof kkLadeBuchung !== 'function' || kkLadeBuchung(st.kind)) openDrawer(MOVE_LBL[st.kind], true);
     st.amt = ''; render();
   };
   box.addEventListener('click', e => { const r = e.target.closest('[data-r]'); if (r) { st.amt = $('#cbAmt', box).value; st.reason = r.dataset.r; render(); } if (e.target.closest('#cbGo')) go2(); });
