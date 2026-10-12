@@ -1441,5 +1441,49 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .ae-two .ag-search input{width:100%}
 .ae-two .ag-tools .ag-tbtn{padding:0 10px}
 .ag-h[data-agcol=""]{pointer-events:none}
+/* ════ Design v0.25: dunkles Menü, helle neutrale Arbeitsfläche, Akzent Orange ════ */
+:root{--ah:21;--as:88%}
+[data-theme="light"]{
+  --al:49%; --al2:41%; --al-soft:.10;
+  --frame:#F2F3F5; --panel:#FFFFFF; --surface:#FFFFFF; --surface-2:#F6F7F8; --surface-3:#ECEEF0;
+  --line:rgba(17,20,26,.08); --line-2:rgba(17,20,26,.13); --line-3:rgba(17,20,26,.2);
+  --text:#14171C; --text-2:#454B56; --text-3:#767D8A; --text-4:#A3A9B3;
+  --info:#2B6CB0;
+}
+[data-theme="light"] .app{background:var(--frame)}
+.app .sidebar{background:#1B2129;padding:16px 12px 8px;
+  --text:#EDEFF3; --text-2:#C3C9D3; --text-3:#8D96A5; --text-4:#6C7584;
+  --surface:#252C36; --surface-2:#2A323D; --surface-3:#323B48; --panel:#1B2129;
+  --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.13); --line-3:rgba(255,255,255,.2);
+  --accent:hsl(21 92% 58%); --accent-soft:hsl(21 92% 58% / .16);
+  color:var(--text)}
+.app .sidebar .nav-item[aria-current="page"]{background:hsl(21 92% 58% / .16);color:#fff}
+.app .sidebar .nav-item[aria-current="page"] .i{color:hsl(21 92% 62%)}
+.app .sidebar .nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.app .sidebar .nav-item .i{color:var(--text-3)}
+.app .sidebar button.nav-group{color:var(--text-2)}
+.app .sidebar button.nav-group:hover{background:rgba(255,255,255,.06);color:#fff}
+.app .sidebar .nav-sec:not([data-closed]) button.nav-group{color:#fff}
+.app .sidebar .nav-sec:not([data-closed]){border-bottom-color:rgba(255,255,255,.08)}
+.app .sidebar button.nav-group .gi{background:hsl(var(--gh) 65% 55% / .2)}
+.app .sidebar button.nav-group .gi,.app .sidebar button.nav-group .gi .i{color:hsl(var(--gh) 85% 76%);stroke:hsl(var(--gh) 85% 76%)}
+.app .sidebar .store-switch{background:var(--surface-2);border:1px solid var(--line);color:var(--text)}
+.app .sidebar .nav-search .input{background:var(--surface-2);border-color:var(--line);color:var(--text)}
+.app .sidebar .nav-search .input::placeholder{color:var(--text-3)}
+.app .sidebar .nav-rec-t{color:var(--text-3)}
+.app .sidebar #navRecent{border-bottom-color:rgba(255,255,255,.08)}
+.app .sidebar .sb-foot{border-top:1px solid rgba(255,255,255,.08)}
+.app .sidebar .brand-tenant{color:var(--text-3)}
+.app .sidebar .me-btn,.app .sidebar .collapse-btn{color:var(--text-2)}
+.app .sidebar .avatar{background:hsl(var(--h,21) 40% 30%);color:#fff}
+.main{margin:10px 10px 0 4px}
+[data-theme="light"] .main{border:0;box-shadow:0 1px 3px rgba(17,20,26,.06),0 8px 24px -12px rgba(17,20,26,.12)}
+.ag-bar{background:var(--surface);border:1px solid var(--line)}
+.ag-btn:hover .i{color:var(--accent)}
+.ae-tabsw .ed-tab[aria-selected="true"]{background:var(--accent);color:#fff}
+.ae-tabsw .ed-tab:hover{background:var(--surface-2)}
+.ae-tabsw .ed-tab[aria-selected="true"]:hover{background:var(--accent-strong)}
+.sb-collapsed .nav-rec-t{display:none}
+.sb-collapsed #navRecent{border:0;margin:0}
 </style>
 </head>

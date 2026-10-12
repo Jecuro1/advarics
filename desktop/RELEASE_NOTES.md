@@ -1,3 +1,7 @@
+## Neu in 0.25.0
+
+- Neues Farbdesign: dunkles Seitenmenü (Anthrazit) mit hellen Texten, helle neutrale Arbeitsfläche ohne Blaustich, Akzentfarbe Orange (Kontor-Orange) für aktive Punkte, Knöpfe, Reiter und Diagramme. Wird einmalig als Standard übernommen; unter Darstellung bleibt jede andere Akzentfarbe wählbar.
+
 ## Neu in 0.24.0
 
 - Größenschlüssel 34 Sohlen mit seinen 12 Größen (20 bis 31) – damit sind alle 34 von Hand angelegten Advarics-Größenschlüssel übernommen.

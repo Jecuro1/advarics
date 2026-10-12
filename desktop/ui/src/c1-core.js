@@ -73,6 +73,7 @@ const BINDINGS = [
    3 · DARSTELLUNG — Benutzer-Ebene der Token-Kaskade
    ════════════════════════════════════════════════════════════════════ */
 const ACCENTS = {
+  kontor: {h: 21, s: 88, name: 'Kontor-Orange'},
   ozean: {h: 214, s: 74, name: 'Ozean'},
   kupfer: {h: 26, s: 52, name: 'Kupfer'},
   amber: {h: 37, s: 70, name: 'Amber'},
@@ -80,15 +81,17 @@ const ACCENTS = {
   gletscher: {h: 205, s: 42, name: 'Gletscher'},
   graphit: {h: 240, s: 4, name: 'Graphit'},
 };
-const prefs = Object.assign({theme: 'light', accent: 'ozean', custom: null, density: 'comfort', radius: 'soft', motion: 'full', sidebar: false, tiles: 'media', tpl: 'classic'}, persist.get('prefs', {}));
+const prefs = Object.assign({theme: 'light', accent: 'kontor', custom: null, density: 'comfort', radius: 'soft', motion: 'full', sidebar: false, tiles: 'media', tpl: 'classic'}, persist.get('prefs', {}));
 // 0.10: neues helles Standard-Design einmalig übernehmen (danach gilt wieder die eigene Wahl)
 if ((prefs.v || 1) < 2) { prefs.theme = 'light'; prefs.accent = 'ozean'; prefs.v = 2; }
+// 0.25: neues Farbdesign (dunkles Menü, Akzent Orange) einmalig übernehmen
+if ((prefs.v || 1) < 3) { prefs.theme = 'light'; prefs.accent = 'kontor'; prefs.v = 3; }
 const resolvedTheme = () => prefs.theme === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : prefs.theme;
 function applyPrefs(animate) {
   const run = () => {
     const r = document.documentElement;
     r.dataset.theme = resolvedTheme(); r.dataset.density = prefs.density; r.dataset.radius = prefs.radius; r.dataset.motion = prefs.motion;
-    const a = prefs.accent === 'custom' && prefs.custom ? prefs.custom : (ACCENTS[prefs.accent] || ACCENTS.ozean);
+    const a = prefs.accent === 'custom' && prefs.custom ? prefs.custom : (ACCENTS[prefs.accent] || ACCENTS.kontor);
     r.style.setProperty('--ah', a.h); r.style.setProperty('--as', a.s + '%');
     const tb = $('#themeBtn use'); if (tb) tb.setAttribute('href', resolvedTheme() === 'dark' ? '#i-sun' : '#i-moon');
     persist.set('prefs', prefs);
@@ -193,7 +196,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.24.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.25.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
