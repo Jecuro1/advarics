@@ -1,3 +1,10 @@
+## Neu in 0.28.0
+
+- Einstellungen › Buchungsabschluss wie bei Advarics: Feld „Abschluss zum“ mit Sichern und Liste der Abschlüsse (Erstellt am, Abschluss zum, User-Nr., User). Datum darf nicht in der Zukunft und nicht vor dem letzten Abschluss liegen.
+- Einstellungen › Bonus Systeme: Liste und Bearbeiten-Seite mit den Reitern Allgemein, Filter und Staffeln (Pflichtfeld-Zähler am Reiter).
+- Einstellungen › Kassen: Liste mit allen 22 Spalten und Bearbeiten-Seite mit den Reitern Allgemein, Fiskalisierung, Signatureinheit, Rabatt (zugeordnet / nicht zugeordnet), Synchronisierung, RFID, EFT, FiBu und den weiteren Advarics-Reitern (noch ohne Inhalt: Fiskalisierung, Signatureinheit, MwSt.-Sätze, Zahlungsarten, Zusatz-Buchung, Kassen-Summen, WGR.-MwSt.-Einstellungen, Beleg-Konfiguration, Kassen-Layouts, Kassen-Icon Sortierung, Positionsinfo Sortieren).
+- Marken-Auswahl nutzt die Marken der Artikel, solange keine Marken-Stammdaten angelegt sind.
+
 ## Neu in 0.27.0
 
 - Einstellungen › Einstellungen Allgemein wie bei Advarics: Reiter Allgemein und E-Mail-Fußzeile, Karten Allgemein, Internationalisierung, Sonstige Standard-Einstellungen, Standard-Einstellungen f. Warengruppen, Gutscheine, Geräte-Registrierung und WebApp-Einstellungen. Auswahlfelder mit Suche, Löschen, Öffnen und Neu anlegen. Sichern und Änderungen zurücknehmen.

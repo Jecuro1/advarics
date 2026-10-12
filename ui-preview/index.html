@@ -1579,6 +1579,12 @@ input.ea-ro{width:100%}
 .ea-opt:hover{background:var(--accent-soft)}
 .ea-fuss{width:100%;min-height:50vh;resize:vertical;font-family:inherit}
 .ae-bar{height:auto;min-height:44px;flex-wrap:wrap;padding:4px 10px}
+.ea-pick.bad,.input.bad{border-color:var(--neg)}
+.ed-badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--neg);color:#fff;font-size:11px;font-weight:700;margin-left:4px}
+.ae-bar .sp{flex:1}
+.ae-nr{font-size:13px;font-weight:600;color:var(--text-2);padding:0 6px}
+.ae-tabsw .ed-tabs{flex-wrap:wrap}
+.ae>.ae-card.ea-card{flex:none}
 </style>
 </head>
 <body>
@@ -1954,7 +1960,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.27.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.28.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2161,9 +2167,10 @@ const NAV = [
   {id: 'einst-allgemein', label: 'Einstellungen Allgemein', icon: 'sliders'},
   {id: 'einst-buchungslogik', label: 'Buchungslogik', icon: 'sliders'},
   {id: 'buchungsabschluss', label: 'Buchungsabschluss', icon: 'lock'},
+  {id: 'st-bonussystem', label: 'Bonus Systeme', icon: 'gift'},
+  {label: 'Kassen', icon: 'register', kids: [{id: 'einst-kassen', label: 'Kassen', icon: 'register'}]},
   {id: 'einstellungen', label: 'Kontor-Einstellungen', icon: 'sliders'},
   {id: 'prozesskonfiguration', label: 'Prozesskonfiguration', icon: 'flow'},
-  {id: 'einst-kassen', label: 'Kassen', icon: 'register'},
   {id: 'einst-benutzer', label: 'Benutzer-Einstellungen', icon: 'user'},
   {id: 'nummernkreise', label: 'Nummernkreise', icon: 'list'},
   {label: 'Etiketten', icon: 'tag', kids: [{id: 'st-etikettentyp', label: 'Etikettentypen', icon: 'tag'}, {id: 'st-etikettendrucker', label: 'Einstellungen Etikettendrucker', icon: 'printer'}, {id: 'st-esl', label: 'elekt. Etiketten', icon: 'tag'}]},
@@ -13869,10 +13876,10 @@ function aeForm(title, fields, vals = {}, {del} = {}) {
   return new Promise(res => {
     const v = {...vals};
     const el = openLayer(`<div class="modal" style="width:min(560px,100%)" role="dialog" aria-modal="true"><div class="m-head"><div class="m-ic">${ic('edit')}</div><div><h2>${esc(title)}</h2></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
-      <div class="m-body" style="display:grid;gap:12px;grid-template-columns:1fr 1fr">${fields.map(f => `<label class="field" ${f.w === 'full' ? 'style="grid-column:1/-1"' : ''}><span>${esc(f.l)}${f.req ? ' <b class="req">*</b>' : ''}</span>${f.t === 'select' ? `<select class="input select" data-af="${f.k}"><option value="">–</option>${(typeof f.o === 'function' ? f.o(v) : f.o).map(([x, l]) => `<option value="${esc(x)}" ${String(v[f.k] ?? '') === String(x) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>` : `<input class="input ${f.t === 'num' ? 'num' : ''}" data-af="${f.k}" value="${esc(v[f.k] ?? '')}" ${f.ro ? 'disabled' : ''}>`}</label>`).join('')}</div>
+      <div class="m-body" style="display:grid;gap:12px;grid-template-columns:1fr 1fr">${fields.map(f => `<label class="field" ${f.w === 'full' ? 'style="grid-column:1/-1"' : ''}><span>${esc(f.l)}${f.req ? ' <b class="req">*</b>' : ''}</span>${f.t === 'select' ? `<select class="input select" data-af="${f.k}"><option value="">–</option>${(typeof f.o === 'function' ? f.o(v) : f.o).map(([x, l]) => `<option value="${esc(x)}" ${String(v[f.k] ?? '') === String(x) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>` : f.t === 'check' ? `<input type="checkbox" data-af="${f.k}" ${v[f.k] ? 'checked' : ''} style="width:22px;height:22px">` : `<input class="input ${f.t === 'num' ? 'num' : ''}" ${f.t === 'date' ? 'type="date"' : ''} data-af="${f.k}" value="${esc(v[f.k] ?? '')}" ${f.ro ? 'disabled' : ''}>`}</label>`).join('')}</div>
       <div class="m-foot">${del ? `<button class="btn btn-ghost" data-afdel style="color:var(--neg)">${ic('trash', 'i-sm')}Löschen</button>` : ''}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" data-afok>${ic('check', 'i-sm')}Übernehmen</button></div></div>`, {onClose: () => res(null)});
     $('[data-afok]', el).onclick = () => {
-      const o = {...vals}; $$('[data-af]', el).forEach(i => { o[i.dataset.af] = i.value.trim(); });
+      const o = {...vals}; $$('[data-af]', el).forEach(i => { o[i.dataset.af] = i.type === 'checkbox' ? i.checked : i.value.trim(); });
       const miss = fields.find(f => f.req && !String(o[f.k] ?? '').trim()); if (miss) { toast(`${miss.l} angeben`, {type: 'warn'}); return; }
       el._done = true; closeLayer(el); res(o);
     };
@@ -14298,7 +14305,7 @@ VIEW_PERM['st-groessenschluessel-edit'] = 'einstellungen';
    ═════════════════════════════════════════════════════════════════ */
 const EA_MONATE = ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 const EA_SPRACHEN = [['de-AT', 'de-AT'], ['de-DE', 'de-DE'], ['de-CH', 'de-CH'], ['en-GB', 'en-GB'], ['it-IT', 'it-IT'], ['fr-FR', 'fr-FR']];
-const eaStamm = (kind, nr = true) => () => stActive(kind).map(r => [r.id, `${r.name || r.id}${nr && r.nr != null && r.nr !== '' ? ` (${r.nr})` : ''}`]);
+const eaStamm = (kind, nr = true) => () => kind === 'marke' && !stActive('marke').length ? [...new Set(ART.map(a => a.brand).filter(Boolean))].sort().map(x => [x, x]) : stActive(kind).map(r => [r.id, `${r.name || r.id}${nr && r.nr != null && r.nr !== '' ? ` (${r.nr})` : ''}`]);
 /* Felder: k = Einstellungsschlüssel, t: text | num | combo | switch | ro | area */
 const EA_DEFAULTS = {
   'allg.gln': '', 'allg.startnr': 100000, 'allg.belegservice': true, 'allg.gjmonat': '5', 'allg.reservierung': 'Reservierung', 'allg.storno': false, 'allg.gutscheindruck': false,
@@ -14450,6 +14457,297 @@ async function blRender() {
 }
 registerPage('einst-buchungslogik', {title: 'Buchungslogik', sub: () => 'Einstellungen', render: () => blRender()});
 VIEW_PERM['einst-buchungslogik'] = 'einstellungen';
+/* ═════════════════════════════════════════════════════════════════
+   45 · EINSTELLUNGEN NACH ADVARICS (2) — Kassen, Buchungsabschluss, Bonus Systeme
+   ═════════════════════════════════════════════════════════════════ */
+const e2Back = () => history.length > 1 ? history.back() : go('dashboard');
+const e2Date = iso => iso ? String(iso).slice(0, 10).split('-').reverse().join('.') : '';
+
+/* ── Kassen ── */
+STAMM_DEF.kasse = {t: 'Kassen', ic: 'register', sub: 'Kassen je Filiale', cols: [{k: 'bez', l: 'Kassen-Bez'}],
+  seed: [{id: 'K1', filnr: '1', filname: 'Innsbruck', filgrp: '', land: 'Österreich', nr: 1, bez: 'Kasse 1', konfig: 'Standard', sync: true, core: true, inaktiv: false, kdStart: 1, kdEnde: 99999, reStart: 1, reEnde: 99999, letzteSync: '', mac: '', syncname: '', paket: '', langsam: false, region: 'de-AT', design: 'Kontor', ws: ''}]};
+const KA_FELDER = [
+  {k: 'filnr', l: 'Fil.-Nr.', t: 'num'}, {k: 'filname', l: 'Fil.-Name', t: 'select', o: () => STORES.map(s => [s.name, s.name])}, {k: 'filgrp', l: 'Fil.-Grp.'}, {k: 'land', l: 'Land'},
+  {k: 'nr', l: 'Kassen-Nr.', t: 'num', req: true}, {k: 'bez', l: 'Kassen-Bez', req: true}, {k: 'konfig', l: 'Kassen-Konfiguration'},
+  {k: 'sync', l: 'Synchronisiert', t: 'check'}, {k: 'core', l: 'Core Kasse aktiv', t: 'check'}, {k: 'inaktiv', l: 'Nicht aktiv', t: 'check'},
+  {k: 'kdStart', l: 'StartNummerKunden', t: 'num'}, {k: 'kdEnde', l: 'EndeNummerKunden', t: 'num'}, {k: 'reStart', l: 'StartNummerRechnung', t: 'num'}, {k: 'reEnde', l: 'EndeNummerRechnung', t: 'num'},
+  {k: 'mac', l: 'MAC-Adresse'}, {k: 'syncname', l: 'Sync-Name'}, {k: 'paket', l: 'Update-Kasse Paket'}, {k: 'langsam', l: 'Langsamer Sync-Speed', t: 'check'},
+  {k: 'region', l: 'Region und Sprache'}, {k: 'design', l: 'Aktives Design'}, {k: 'ws', l: 'Intersport Workstation-Nr.'}];
+const kaRows = () => stRows('kasse').map(r => ({...r, id: r.id}));
+async function kaEdit(id, done) {
+  const all = stRows('kasse'), r = id ? all.find(x => x.id === id) : null;
+  const base = r || {filnr: '1', filname: STORES[0].name, land: 'Österreich', nr: Math.max(0, ...all.map(x => +x.nr || 0)) + 1, kdStart: 1, kdEnde: 99999, reStart: 1, reEnde: 99999, region: 'de-AT', design: 'Kontor', sync: false, core: false, inaktiv: false, langsam: false};
+  const o = await aeForm(r ? 'Kasse bearbeiten' : 'Neue Kasse', KA_FELDER, base, {del: !!r}); if (!o) return;
+  try {
+    await needPerm('einstellungen', 'Kassen');
+    let list = all.map(x => ({...x}));
+    if (o._del) { if (list.length < 2) return toast('Die letzte Kasse kann nicht gelöscht werden', {type: 'warn'}); list = list.filter(x => x.id !== id); }
+    else {
+      const d = {...o}; ['nr', 'kdStart', 'kdEnde', 'reStart', 'reEnde'].forEach(k => { d[k] = parseInt(d[k], 10) || 0; });
+      if (r) list = list.map(x => x.id === id ? {...x, ...d} : x); else list.push({id: 'ka-' + aeUid(), _aktiv: true, ...d});
+    }
+    await stammSave('kasse', list); done();
+  } catch (err) { if (String(err.message || err) !== 'abgebrochen') toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
+}
+agridPage('einst-kassen', {
+  title: 'Kassen', rows: kaRows, count: () => stRows('kasse').length, sort: {k: 'bez', dir: 1},
+  toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}],
+  cols: [{k: 'filnr', l: 'Fil.-Nr.', t: 'num', w: 90}, {k: 'filname', l: 'Fil.-Name', w: 150}, {k: 'filgrp', l: 'Fil.-Grp.', w: 110}, {k: 'land', l: 'Land', w: 120}, {k: 'nr', l: 'Kassen-Nr.', t: 'num', w: 100}, {k: 'bez', l: 'Kassen-Bez', w: 150},
+    {k: 'konfig', l: 'Kassen-Konfiguration', w: 170}, {k: 'sync', l: 'Synchronisiert', t: 'check', w: 130}, {k: 'core', l: 'Core Kasse aktiv', t: 'check', w: 140}, {k: 'inaktiv', l: 'Nicht aktiv', t: 'check', w: 110},
+    {k: 'kdStart', l: 'StartNummerKunden', t: 'num', w: 150}, {k: 'kdEnde', l: 'EndeNummerKunden', t: 'num', w: 150}, {k: 'reStart', l: 'StartNummerRechnung', t: 'num', w: 160}, {k: 'reEnde', l: 'EndeNummerRechnung', t: 'num', w: 160},
+    {k: 'letzteSync', l: 'Letzte Sync.', w: 130}, {k: 'mac', l: 'MAC-Adresse', w: 140}, {k: 'syncname', l: 'Sync-Name', w: 130}, {k: 'paket', l: 'Update-Kasse Paket', w: 150}, {k: 'langsam', l: 'Langsamer Sync-Speed', t: 'check', w: 160}, {k: 'region', l: 'Region und Sprache', w: 140}, {k: 'design', l: 'Aktives Design', w: 130}, {k: 'ws', l: 'Intersport Workstation-Nr.', w: 190}],
+  actions: {back: e2Back, refresh: async () => { await loadStamm(true); PAGES['einst-kassen'].render(); }, new: () => kaEdit(null, () => PAGES['einst-kassen'].render())},
+  edit: (id, done) => kaEdit(id, done),
+  remove: async ids => { if (!await confirmBox(`${num(ids.length)} Kasse${ids.length > 1 ? 'n' : ''} löschen?`, 'Löschen')) throw new Error('abgebrochen'); await needPerm('einstellungen', 'Kassen'); const s = new Set(ids), rest = stRows('kasse').filter(r => !s.has(r.id)); if (!rest.length) throw new Error('Die letzte Kasse kann nicht gelöscht werden'); await stammSave('kasse', rest.map(r => ({...r}))); },
+});
+VIEW_PERM['einst-kassen'] = 'einstellungen';
+
+/* ── Buchungsabschluss ── */
+STAMM_DEF.buchungsabschluss = {t: 'Buchungsabschluss', ic: 'lock', sub: 'Abschlüsse der Buchungen', cols: [{k: 'abschluss', l: 'Abschluss zum'}]};
+const baRows = () => stRows('buchungsabschluss').map(r => ({id: r.id, erstellt: r.erstellt || '', abschluss: r.abschluss || '', usernr: r.usernr || '', user: r.user || ''}));
+function baRender() {
+  const host = $('#view-buchungsabschluss'); if (!host) return;
+  const rows = stRows('buchungsabschluss'), last = rows.map(r => r.abschluss).sort().pop() || '';
+  const el = document.createElement('div'); el.className = 'ae'; host.replaceChildren(el);
+  el.innerHTML = `<div class="ag-bar ae-bar"><button class="ag-btn" data-ba="back">${ic('chevron-left', 'i-sm')}<span>Zurück</span></button><button class="ag-btn" data-ba="refresh">${ic('sync', 'i-sm')}<span>Aktualisieren</span></button><button class="ag-btn" data-ba="save" disabled>${ic('check', 'i-sm')}<span>Sichern</span></button><button class="ag-btn" data-ba="undo" disabled>${ic('undo', 'i-sm')}<span>Änderungen zurücknehmen</span></button></div>
+    <div class="ae-card ea-card" style="max-width:none"><h4>Einstellungen</h4><label class="field" style="max-width:340px"><span>Abschluss zum</span><input class="input" type="date" data-ba-d value="${esc(last)}" max="${today()}"></label></div>
+    <div class="ba-grid" style="flex:1;display:flex;flex-direction:column;min-height:360px"></div>`;
+  AG['ba-grid'] = agNew({embed: true, title: 'Buchungsabschluss', rows: baRows, sort: {k: 'erstellt', dir: -1},
+    cols: [{k: 'erstellt', l: 'Erstellt am', w: 190, fmt: v => v ? `${e2Date(v)} ${String(v).slice(11, 16)}` : ''}, {k: 'abschluss', l: 'Abschluss zum', w: 170, fmt: e2Date}, {k: 'usernr', l: 'User-Nr.', t: 'num', w: 110}, {k: 'user', l: 'User', w: 220}],
+    extra: [{k: 'refresh', l: 'Aktualisieren', icon: 'sync'}], actions: {refresh: () => baRefresh()}});
+  agMount('ba-grid', $('.ba-grid', el));
+  const inp = $('[data-ba-d]', el), mark = () => $$('[data-ba="save"],[data-ba="undo"]', el).forEach(b => { b.disabled = inp.value === last; });
+  inp.addEventListener('input', mark);
+  el.addEventListener('click', async e => {
+    const b = e.target.closest('[data-ba]'); if (!b || b.disabled) return; const a = b.dataset.ba;
+    if (a === 'back') return e2Back();
+    if (a === 'refresh' || a === 'undo') return baRefresh();
+    try {
+      await needPerm('einstellungen', 'Buchungsabschluss');
+      const d = inp.value;
+      if (!d) return toast('Datum „Abschluss zum“ angeben', {type: 'warn'});
+      if (d > today()) return toast('Der Abschluss darf nicht in der Zukunft liegen', {type: 'warn'});
+      if (last && d < last) return toast(`Der Abschluss muss nach dem letzten (${e2Date(last)}) liegen`, {type: 'warn'});
+      if (!await confirmBox(`Buchungen bis ${e2Date(d)} abschließen?`, 'Abschließen')) return;
+      const now = new Date(), p = n => String(n).padStart(2, '0'), ts = `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}T${p(now.getHours())}:${p(now.getMinutes())}`;
+      await stammSave('buchungsabschluss', [...rows.map(r => ({...r})), {id: 'ba-' + aeUid(), _aktiv: true, erstellt: ts, abschluss: d, usernr: S.user.id || '', user: S.user.name}]);
+      await saveSettings({'buchung.abschluss': d}, true); toast('Buchungsabschluss gespeichert', {t2: `bis ${e2Date(d)}`, type: 'pos', icon: 'lock'}); baRefresh();
+    } catch (err) { if (err && String(err.message || err) !== 'abgebrochen') toast('Nicht gespeichert', {t2: String(err.message || err), type: 'warn'}); }
+  });
+}
+async function baRefresh() { await loadStamm(true); baRender(); }
+registerPage('buchungsabschluss', {title: 'Buchungsabschluss', sub: () => 'Einstellungen', render: async () => { await loadStamm(); baRender(); }});
+VIEW_PERM.buchungsabschluss = 'einstellungen';
+
+/* ── Bonus Systeme ── */
+STAMM_DEF.bonussystem = {t: 'Bonus Systeme', ic: 'gift', sub: 'Bonus-Systeme mit Filtern und Staffeln', cols: [{k: 'name', l: 'Name'}]};
+const BS_TYPEN = [['marke', 'Marke'], ['warengruppe', 'Warengruppe'], ['hauptabteilung', 'Haupt-Abteilung'], ['abteilung', 'Abteilung'], ['hauptbereich', 'Haupt-Bereich'], ['bereich', 'Bereich'], ['saison', 'Saison']];
+const bsNeu = () => ({name: '', kundenfilter: false, von: 0, bis: 0, nurReg: false, regulaer: false, reduziert: false, rabattiert: false, maxRabatt: 0, maxEinheit: '%', gutscheintyp: '', tage: 0, filter: [], staffeln: []});
+const bsStaffel = () => ({name: '', ab: 0, pLauf: 0, pLaufU: '%', bLauf: 0, pGesp: 0, pGespU: '%', bGesp: 0});
+const BS = {id: null, ids: [], draft: null, tab: 'allg', dirty: false};
+const bsLoad = id => { const r = id ? stRows('bonussystem').find(x => x.id === id) : null; return r ? JSON.parse(JSON.stringify({...bsNeu(), ...r})) : bsNeu(); };
+const bsOpt = kind => kind === 'marke' && !stActive('marke').length ? [...new Set(ART.map(a => a.brand).filter(Boolean))].sort().map(x => [x, x]) : stActive(kind).map(r => [r.id, `${r.name || r.id}${r.nr != null && r.nr !== '' ? ` (${r.nr})` : ''}`]);
+const bsLabel = (typ, id) => { const h = bsOpt(typ).find(x => x[0] === id); return h ? h[1] : ''; };
+function bsOpen(id, ids) {
+  BS.id = id; BS.ids = ids || BS.ids; BS.draft = bsLoad(id); BS.tab = 'allg'; BS.dirty = false;
+  if (S.view === 'st-bonussystem-edit') PAGES['st-bonussystem-edit'].render(); else go('st-bonussystem-edit');
+}
+agridPage('st-bonussystem', {
+  title: 'Bonus Systeme', count: () => stRows('bonussystem').length, sort: {k: 'name', dir: 1},
+  rows: () => stRows('bonussystem').map(r => ({id: r.id, name: r.name || '', kundenfilter: !!r.kundenfilter, von: +r.von || 0, bis: +r.bis || 0, nurReg: !!r.nurReg, regulaer: !!r.regulaer, reduziert: !!r.reduziert, rabattiert: !!r.rabattiert, maxRabatt: `${num(+r.maxRabatt || 0)} ${r.maxEinheit || '%'}`, gutscheintyp: stName('gutscheintyp', r.gutscheintyp) || '', tage: +r.tage || 0})),
+  toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}],
+  cols: [{k: 'name', l: 'Name', w: 220}, {k: 'kundenfilter', l: 'Kunden Filter verwenden', t: 'check', w: 190}, {k: 'von', l: 'Von Kundennummer', t: 'num', w: 160}, {k: 'bis', l: 'Bis Kundennummer', t: 'num', w: 160}, {k: 'nurReg', l: 'Nur für registrierte Kunden', t: 'check', w: 210},
+    {k: 'regulaer', l: 'Verwendung bei regulären Waren', t: 'check', w: 230}, {k: 'reduziert', l: 'Verwendung bei reduzierten Waren', t: 'check', w: 240}, {k: 'rabattiert', l: 'Verwendung bei rabattierten Waren', t: 'check', w: 240},
+    {k: 'maxRabatt', l: 'Maximaler Belegrabatt', w: 180}, {k: 'gutscheintyp', l: 'Gutscheintyp', w: 170}, {k: 'tage', l: 'Gültigkeit in Tagen', t: 'num', w: 160}],
+  actions: {back: e2Back, refresh: async () => { await loadStamm(true); PAGES['st-bonussystem'].render(); }, new: () => bsOpen(null, [])},
+  edit: id => bsOpen(id, (AG['st-bonussystem'].filtered || []).map(r => r.id)),
+  remove: async ids => { if (!await confirmBox(`${num(ids.length)} Bonus-System${ids.length > 1 ? 'e' : ''} löschen?`, 'Löschen')) throw new Error('abgebrochen'); await needPerm('einstellungen', 'Bonus Systeme'); const s = new Set(ids); await stammSave('bonussystem', stRows('bonussystem').filter(r => !s.has(r.id)).map(r => ({...r}))); },
+});
+VIEW_PERM['st-bonussystem'] = VIEW_PERM['st-bonussystem-edit'] = 'einstellungen';
+
+/* Pflichtfelder je Reiter → rote Zahl am Reiter */
+function bsMissing(D) {
+  const a = [], f = [], s = [];
+  if (!String(D.name).trim()) a.push('Name');
+  if (!D.gutscheintyp) a.push('Gutscheintyp');
+  D.filter.forEach((x, i) => { if (!x.wert) f.push(`Filter ${i + 1}`); });
+  D.staffeln.forEach((x, i) => { if (!String(x.name).trim()) s.push(`Staffel ${i + 1}: Name`); });
+  return {allg: a, filter: f, staffeln: s};
+}
+const bsSw = (path, l, on) => `<label class="ea-sw"><button type="button" class="switch" role="switch" data-bs-sw="${path}" aria-checked="${!!on}"></button><span>${esc(l)}</span></label>`;
+const bsNum = (path, l, v, step = 1) => `<label class="field"><span>${esc(l)}</span><input class="input num" type="number" step="${step}" data-bs="${path}" value="${esc(v)}"></label>`;
+const bsUnit = (path, l, v, uv, upath) => `<div class="field"><span>${esc(l)}</span><div class="ea-cmb-row"><input class="input num" type="number" step="0.01" data-bs="${path}" value="${esc(v)}" style="flex:1"><select class="input select" data-bs="${upath}" style="width:84px"><option ${uv === '%' ? 'selected' : ''}>%</option><option ${uv === '€' ? 'selected' : ''}>€</option></select></div></div>`;
+function bsCollect(el) {
+  $$('[data-bs]', el).forEach(i => {
+    const path = i.dataset.bs.split('.'); let o = BS.draft; while (path.length > 1) o = o[path.shift()];
+    const k = path[0]; o[k] = i.type === 'number' ? (i.value === '' ? 0 : +i.value) : i.value;
+  });
+}
+function bsRender() {
+  const host = $('#view-st-bonussystem-edit'); if (!host) return;
+  const D = BS.draft, miss = bsMissing(D), el = document.createElement('div'); el.className = 'ae'; host.replaceChildren(el);
+  const btn = (a, icon, l, dis) => `<button class="ag-btn" data-bs-a="${a}" ${dis ? 'disabled' : ''}>${ic(icon, 'i-sm')}<span>${l}</span></button>`;
+  const tab = (k, l) => `<button type="button" class="ed-tab" data-bs-t="${k}" aria-selected="${BS.tab === k}">${l}${miss[k].length ? ` <span class="ed-badge">${miss[k].length}</span>` : ''}</button>`;
+  let body = '';
+  if (BS.tab === 'allg') body = `<div class="ea-cols"><div class="ae-card ea-card"><h4>Allgemein</h4><div class="ea-fields">
+      <label class="field"><span>Name *</span><input class="input" data-bs="name" value="${esc(D.name)}"></label>
+      ${bsSw('kundenfilter', 'Kunden Filter verwenden', D.kundenfilter)}${bsNum('von', 'Von Kundennummer *', D.von)}${bsNum('bis', 'Bis Kundennummer *', D.bis)}
+      ${bsSw('nurReg', 'Nur für registrierte Kunden', D.nurReg)}${bsSw('regulaer', 'Verwendung bei regulären Waren', D.regulaer)}${bsSw('reduziert', 'Verwendung bei reduzierten Waren', D.reduziert)}${bsSw('rabattiert', 'Verwendung bei rabattierten Waren', D.rabattiert)}
+      ${bsUnit('maxRabatt', 'Maximaler Belegrabatt in Prozent *', D.maxRabatt, D.maxEinheit, 'maxEinheit')}
+      <div class="field ea-cmb"><span>Gutscheintyp *</span><div class="ea-cmb-row"><div class="input ea-pick ${D.gutscheintyp ? '' : 'bad'}" tabindex="0" data-bs-pick="gt"><span class="${D.gutscheintyp ? '' : 'ph'}">${esc(stName('gutscheintyp', D.gutscheintyp) || '')}</span>${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-bs-go="st-gutscheintyp" title="Öffnen">${ic('edit', 'i-sm')}</button><button type="button" class="ea-ib" data-bs-go="st-gutscheintyp" title="Neu anlegen">${ic('plus', 'i-sm')}</button><button type="button" class="ea-ib" data-bs-pick="gt" title="Suchen">${ic('search', 'i-sm')}</button></div></div>
+      ${bsNum('tage', 'Gültigkeit in Tagen', D.tage)}</div></div></div>`;
+  else if (BS.tab === 'filter') body = `<div class="ea-cols">${D.filter.map((x, i) => `<div class="ae-card ea-card" style="max-width:340px;flex:0 1 320px"><h4 style="display:flex;justify-content:space-between;align-items:center">${i + 1}<button type="button" class="ea-ib" data-bs-del="filter.${i}" title="Entfernen">${ic('trash', 'i-sm')}</button></h4><div class="ea-fields">
+      <label class="field"><span>Filter Typ</span><select class="input select" data-bs-typ="${i}">${BS_TYPEN.map(([k, l]) => `<option value="${k}" ${x.typ === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <div class="field ea-cmb"><span>Filter *</span><div class="ea-cmb-row"><div class="input ea-pick ${x.wert ? '' : 'bad'}" tabindex="0" data-bs-pick="f${i}"><span class="${x.wert ? '' : 'ph'}">${esc(bsLabel(x.typ, x.wert))}</span>${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-bs-pick="f${i}" title="Suchen">${ic('search', 'i-sm')}</button></div></div>
+      ${bsSw(`filter.${i}.einschl`, 'Einschließender Filter', x.einschl)}</div></div>`).join('')}<button type="button" class="ea-ib" data-bs-add="filter" title="Filter hinzufügen" style="width:44px;height:44px">${ic('plus')}</button></div>`;
+  else body = `<div class="ea-cols">${D.staffeln.map((x, i) => `<div class="ae-card ea-card" style="max-width:340px;flex:0 1 320px"><h4 style="display:flex;justify-content:space-between;align-items:center">${esc(x.name) || i + 1}<button type="button" class="ea-ib" data-bs-del="staffeln.${i}" title="Entfernen">${ic('trash', 'i-sm')}</button></h4><div class="ea-fields">
+      <label class="field"><span>Name *</span><input class="input ${x.name ? '' : 'bad'}" data-bs="staffeln.${i}.name" value="${esc(x.name)}"></label>
+      ${bsNum(`staffeln.${i}.ab`, 'Ab Betrag *', x.ab, 0.01)}${bsUnit(`staffeln.${i}.pLauf`, 'Prozent Laufkundschaft *', x.pLauf, x.pLaufU, `staffeln.${i}.pLaufU`)}${bsNum(`staffeln.${i}.bLauf`, 'Betrag Laufkundschaft *', x.bLauf, 0.01)}
+      ${bsUnit(`staffeln.${i}.pGesp`, 'Prozent gespeicherter Kunde *', x.pGesp, x.pGespU, `staffeln.${i}.pGespU`)}${bsNum(`staffeln.${i}.bGesp`, 'Betrag gespeicherter Kunde', x.bGesp, 0.01)}</div></div>`).join('')}<button type="button" class="ea-ib" data-bs-add="staffeln" title="Staffel hinzufügen" style="width:44px;height:44px">${ic('plus')}</button></div>`;
+  el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', 'Übersicht: Bonus Systeme')}${btn('refresh', 'sync', 'Aktualisieren', !BS.id)}${btn('save', 'check', 'Sichern', !BS.dirty)}${btn('new', 'plus', 'Neu', !BS.id)}${btn('undo', 'undo', 'Änderungen zurücknehmen', !BS.dirty)}${btn('del', 'trash', 'Löschen', !BS.id)}</div>
+    <div class="ae-tabsw"><div class="ed-tabs">${tab('allg', 'Allgemein')}${tab('filter', 'Filter')}${tab('staffeln', 'Staffeln')}</div></div>
+    <div class="ae-body"><div id="edBody">${body}</div></div>`;
+  const dirty = () => { BS.dirty = true; $$('[data-bs-a="save"],[data-bs-a="undo"]', el).forEach(b => { b.disabled = false; }); };
+  el.addEventListener('input', e => { if (e.target.closest('[data-bs]')) dirty(); });
+  el.addEventListener('change', async e => {
+    const t = e.target, ty = t.closest('[data-bs-typ]');
+    if (ty) { bsCollect(el); const x = BS.draft.filter[+ty.dataset.bsTyp]; x.typ = ty.value; x.wert = ''; BS.dirty = true; bsRender(); }
+    else if (t.closest('select[data-bs]')) { dirty(); }
+  });
+  el.addEventListener('click', async e => {
+    const t = e.target, sw = t.closest('[data-bs-sw]'), pk = t.closest('[data-bs-pick]'), gt = t.closest('[data-bs-go]'), dl = t.closest('[data-bs-del]'), ad = t.closest('[data-bs-add]'), tb = t.closest('[data-bs-t]'), b = t.closest('[data-bs-a]');
+    const walk = path => { const p = path.split('.'); let o = BS.draft; while (p.length > 1) o = o[p.shift()]; return [o, p[0]]; };
+    if (sw) { bsCollect(el); const [o, k] = walk(sw.dataset.bsSw); o[k] = !o[k]; BS.dirty = true; return bsRender(); }
+    if (tb) { bsCollect(el); BS.tab = tb.dataset.bsT; return bsRender(); }
+    if (ad) { bsCollect(el); if (ad.dataset.bsAdd === 'filter') BS.draft.filter.push({typ: 'marke', wert: '', einschl: false}); else BS.draft.staffeln.push(bsStaffel()); BS.dirty = true; return bsRender(); }
+    if (dl) { bsCollect(el); const [o, k] = walk(dl.dataset.bsDel); o.splice(+k, 1); BS.dirty = true; return bsRender(); }
+    if (pk) {
+      bsCollect(el); const key = pk.dataset.bsPick;
+      if (key === 'gt') { const v = await eaPick({l: 'Gutscheintyp', o: () => bsOpt('gutscheintyp')}); if (v !== undefined) { BS.draft.gutscheintyp = v; BS.dirty = true; bsRender(); } }
+      else { const x = BS.draft.filter[+key.slice(1)], l = BS_TYPEN.find(y => y[0] === x.typ)[1]; const v = await eaPick({l, o: () => bsOpt(x.typ)}); if (v !== undefined) { x.wert = v; BS.dirty = true; bsRender(); } }
+      return;
+    }
+    if (gt) { if (BS.dirty && !await confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen')) return; BS.dirty = false; return go(gt.dataset.bsGo); }
+    if (!b || b.disabled) return;
+    const a = b.dataset.bsA; bsCollect(el);
+    if (a === 'back') { if (BS.dirty && !await confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen')) return; BS.dirty = false; return go('st-bonussystem'); }
+    if (a === 'refresh' || a === 'undo') { await loadStamm(true); BS.draft = bsLoad(BS.id); BS.dirty = false; return bsRender(); }
+    if (a === 'new') { if (BS.dirty && !await confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen')) return; return bsOpen(null, BS.ids); }
+    try {
+      await needPerm('einstellungen', 'Bonus Systeme');
+      const all = stRows('bonussystem').map(x => ({...x}));
+      if (a === 'save') {
+        const m = bsMissing(BS.draft), first = [...m.allg, ...m.filter, ...m.staffeln][0];
+        if (first) { BS.tab = m.allg.length ? 'allg' : m.filter.length ? 'filter' : 'staffeln'; bsRender(); return toast(`${first} angeben`, {t2: 'Pflichtfeld', type: 'warn'}); }
+        const row = {...BS.draft}, list = BS.id ? all.map(x => x.id === BS.id ? {...x, ...row} : x) : [...all, {id: 'bs-' + aeUid(), _aktiv: true, ...row}];
+        await stammSave('bonussystem', list); BS.dirty = false; if (!BS.id) { BS.id = list[list.length - 1].id; BS.ids = [...BS.ids, BS.id]; }
+        toast('Gespeichert', {t2: BS.draft.name, type: 'pos', icon: 'check', dur: 1800}); return bsRender();
+      }
+      if (a === 'del') { if (!await confirmBox(`Bonus-System „${BS.draft.name}“ löschen?`, 'Löschen')) return; await stammSave('bonussystem', all.filter(x => x.id !== BS.id)); BS.dirty = false; go('st-bonussystem'); }
+    } catch (err) { if (err && String(err.message || err) !== 'abgebrochen') toast('Nicht möglich', {t2: String(err.message || err), type: 'warn'}); }
+  });
+}
+registerPage('st-bonussystem-edit', {title: 'Bonus Systeme', sub: () => BS.draft ? (BS.draft.name || 'neu') : '', render: async () => { await loadStamm(); if (!BS.draft) BS.draft = bsLoad(BS.id); bsRender(); }});
+/* ═════════════════════════════════════════════════════════════════
+   46 · KASSEN BEARBEITEN (Advarics: Reiter Allgemein … Positionsinfo Sortieren)
+   ═════════════════════════════════════════════════════════════════ */
+const KAE_TABS = [['allg', 'Allgemein'], ['fisk', 'Fiskalisierung'], ['sign', 'Signatureinheit'], ['rabatt', 'Rabatt'], ['sync', 'Synchronisierung'], ['rfid', 'RFID'], ['eft', 'EFT'], ['fibu', 'FiBu'], ['mwst', 'MwSt.-Sätze'], ['zahl', 'Zahlungsarten'], ['zusatz', 'Zusatz-Buchung'], ['summen', 'Kassen-Summen'], ['wgrmwst', 'WGR.-MwSt.-Einstellungen'], ['beleg', 'Beleg-Konfiguration'], ['layout', 'Kassen-Layouts'], ['icons', 'Kassen-Icon Sortierung'], ['posinfo', 'Positionsinfo Sortieren']];
+const KAE_NEU = () => { const all = stRows('kasse'); return {filnr: '1', filname: STORES[0].name, filgrp: '', land: 'Österreich', nr: Math.max(0, ...all.map(x => +x.nr || 0)) + 1, bez: '', konfig: 'Standard', sync: false, core: false, inaktiv: false, kdStart: 1, kdEnde: 99999, reStart: 1, reEnde: 99999, letzteSync: '', mac: '', syncname: '', paket: '', langsam: false, region: 'de-AT', design: 'Kontor', ws: '', rabatte: [], rfidUser: '', rfidPort: '', kostenstelle: 0, eftAktiv: false, eftConnector: 'PepperV2', eftTerminalTyp: 0, eftCom: 0, eftIp: '', eftSprache: 'German', eftOperator: '', eftCbEvent: 0, eftCbOption: 0, eftDevice: '', eftTimeout: 120, eftTid: '', eftMerchant: '', eftPass: '', eftConfigByte: 0, eftBaud: 0, eftTimeoutMs: 0, eftTrack: 0, eftKey: '', eftVorher: false}; };
+const KAE = {id: null, ids: [], draft: null, tab: 'allg', dirty: false};
+const kaeLoad = id => { const r = id ? stRows('kasse').find(x => x.id === id) : null; return JSON.parse(JSON.stringify({...KAE_NEU(), ...(r || {})})); };
+function kaeOpen(id, ids) {
+  KAE.id = id; KAE.ids = ids || KAE.ids; KAE.draft = kaeLoad(id); KAE.tab = 'allg'; KAE.dirty = false;
+  if (S.view === 'einst-kassen-edit') PAGES['einst-kassen-edit'].render(); else go('einst-kassen-edit');
+}
+/* Feldbeschreibungen je Reiter: t = text | num | check | select | ro */
+const KAE_FELDER = {
+  allg: [['Kasse', [['filnr', 'Fil.-Nr.', 'num'], ['filname', 'Fil.-Name', 'select', () => STORES.map(s => [s.name, s.name])], ['filgrp', 'Fil.-Grp.'], ['land', 'Land'], ['nr', 'Kassen-Nr. *', 'num'], ['bez', 'Kassen-Bez *'], ['konfig', 'Kassen-Konfiguration'], ['region', 'Region und Sprache'], ['design', 'Aktives Design'], ['ws', 'Intersport Workstation-Nr.']]],
+    ['Status', [['sync', 'Synchronisiert', 'check'], ['core', 'Core Kasse aktiv', 'check'], ['inaktiv', 'Nicht aktiv', 'check'], ['langsam', 'Langsamer Sync-Speed', 'check'], ['letzteSync', 'Letzte Sync.', 'ro'], ['mac', 'MAC-Adresse'], ['syncname', 'Sync-Name'], ['paket', 'Update-Kasse Paket']]],
+    ['Nummernkreise', [['kdStart', 'StartNummerKunden', 'num'], ['kdEnde', 'EndeNummerKunden', 'num'], ['reStart', 'StartNummerRechnung', 'num'], ['reEnde', 'EndeNummerRechnung', 'num']]]],
+  rfid: [['RFID', [['rfidUser', 'Benutzername/Workstation'], ['rfidPort', 'Port']]]],
+  fibu: [['Kostenstelle', [['kostenstelle', 'Kostenstelle', 'num']]]],
+  eft: [['Informationen', [['_', 'Eft Treiber-Typ', 'ro', () => (KAE.draft.eftAktiv ? KAE.draft.eftConnector : '')], ['_', 'EFT Treiber-Version', 'ro', () => ''], ['_', 'EFT Treiber-Lizenz-Key', 'ro', () => ''], ['_', 'EFT Treiber-Terminal-Typ', 'ro', () => String(KAE.draft.eftTerminalTyp || '')], ['_', 'EFT Treiber letzte Anmeldung', 'ro', () => '']]],
+    ['Einstellungen 1', [['eftAktiv', 'EFT benutzen', 'check'], ['eftConnector', 'EFT Connector Type', 'select', () => ['PepperV2', 'ZVT', 'OPI', 'Nexo'].map(x => [x, x])], ['eftTerminalTyp', 'Terminal-Typ *', 'num'], ['eftCom', 'COM-Port *', 'num'], ['eftIp', 'Terminal IP-Adresse *'], ['eftSprache', 'Sprache *', 'select', () => ['German', 'English', 'French', 'Italian'].map(x => [x, x])], ['eftOperator', 'Betreiber-Code (Operator-Code) *'], ['eftCbEvent', 'Callback-Event-Wert *', 'num'], ['eftCbOption', 'Callback-Option-Wert *', 'num'], ['eftDevice', 'Device Identification'], ['_', 'Lokale Kassen IP-Adresse', 'ro', () => ''], ['eftTimeout', 'Kassen-Timeout in Sekunden', 'num'], ['_', 'Info', 'ro', () => '(Bei "leer" ist das Standard-Time-Out 120 Sekunden)']]],
+    ['Einstellungen 2', [['eftTid', 'Terminal-ID'], ['eftMerchant', 'Merchant Identification'], ['eftPass', 'Merchant Password'], ['eftConfigByte', 'Config Byte Value', 'num'], ['eftBaud', 'Baud Rate Value', 'num'], ['eftTimeoutMs', 'Timeout in milliseconds', 'num'], ['eftTrack', 'TrackPresence', 'num'], ['eftKey', 'Key Identifier'], ['_', 'ServiceRequestChannel', 'ro', () => ''], ['_', 'DeviceRequestChannel', 'ro', () => ''], ['_', 'OPI Terminaltyp', 'ro', () => 'NA'], ['eftVorher', 'EFT vor der Transaktion verbinden', 'check'], ['_', 'Buttons für PIN oder ELV aktivieren', 'check-off']]]]
+};
+function kaeField([k, l, t, o]) {
+  const D = KAE.draft, v = D[k];
+  if (t === 'check') return `<label class="ea-sw"><button type="button" class="switch" role="switch" data-ke-sw="${k}" aria-checked="${!!v}"></button><span>${esc(l)}</span></label>`;
+  if (t === 'check-off') return `<label class="ea-sw dis"><button type="button" class="switch" disabled role="switch" aria-checked="false"></button><span>${esc(l)}</span></label>`;
+  if (t === 'ro') return `<label class="field"><span>${esc(l)}</span><input class="input ea-ro" readonly value="${esc(o ? o() : v ?? '')}"></label>`;
+  if (t === 'select') return `<label class="field"><span>${esc(l)}</span><select class="input select" data-ke="${k}">${o().map(([x, y]) => `<option value="${esc(x)}" ${String(v) === String(x) ? 'selected' : ''}>${esc(y)}</option>`).join('')}</select></label>`;
+  return `<label class="field"><span>${esc(l)}</span><input class="input ${t === 'num' ? 'num' : ''}" ${t === 'num' ? 'type="number"' : ''} data-ke="${k}" value="${esc(v ?? '')}"></label>`;
+}
+const kaeCards = list => `<div class="ea-cols">${list.map(([h, f]) => `<div class="ae-card ea-card"><h4>${esc(h)}</h4><div class="ea-fields">${f.map(kaeField).join('')}</div></div>`).join('')}</div>`;
+const kaeRabattRows = on => stActive('festerrabatt').filter(r => KAE.draft.rabatte.includes(r.id) === on).map((r, i) => ({id: r.id, pct: +r.pct || 0, wert: +r.wert || 0, alsWert: !!r.alsWert, typ: r.typ || 'Rabatt', von: r.von || '', bis: r.bis || '', sort: +r.sort || i + 1, modus: r.modus || 'Beide Ebenen aktiv'}));
+const kaeMiss = D => { const m = []; if (!String(D.bez).trim()) m.push('Kassen-Bez'); if (!(+D.nr > 0)) m.push('Kassen-Nr.'); return m; };
+
+function kaeRender() {
+  const host = $('#view-einst-kassen-edit'); if (!host) return;
+  const D = KAE.draft, pos = KAE.ids.indexOf(KAE.id), el = document.createElement('div'); el.className = 'ae'; host.replaceChildren(el);
+  const btn = (a, icon, l, dis) => `<button class="ag-btn" data-ke-a="${a}" ${dis ? 'disabled' : ''}>${ic(icon, 'i-sm')}<span>${l}</span></button>`;
+  let body;
+  if (KAE.tab === 'allg') body = kaeCards(KAE_FELDER.allg);
+  else if (KAE_FELDER[KAE.tab]) body = kaeCards(KAE_FELDER[KAE.tab]);
+  else if (KAE.tab === 'rabatt') body = `<div class="ae-pane ae-two"><div class="ae-card"><h4>Zugeordnet</h4><div data-kg="a"></div></div><div class="ae-card"><h4>Nicht zugeordnet</h4><div data-kg="b"></div></div></div>`;
+  else if (KAE.tab === 'sync') {
+    const ts = '–', ro = (l, v) => `<label class="field"><span>${esc(l)}</span><input class="input ea-ro" readonly value="${esc(v)}"></label>`, ctl = (l, on, dis, k) => `<label class="ea-sw ${dis ? 'dis' : ''}"><button type="button" class="switch" role="switch" ${dis ? 'disabled' : `data-ke-sw="${k}"`} aria-checked="${!!on}"></button><span>${esc(l)}</span></label>`;
+    body = `<div class="ea-cols"><div class="ae-card ea-card"><h4>Synchronisation-Info</h4><div class="ea-fields">${['Stammdaten', 'Artikel', 'Kunden', 'Gutscheine'].map(x => ro('TimeStamp ' + x, ts)).join('')}</div></div>
+      <div class="ae-card ea-card"><h4>Synchronisation-Info</h4><div class="ea-fields">${['Auswahlen', 'Rechnungen', 'Gutschein Gelöscht Sync-Zeitstempel', 'Artikel/Größen Umbuchung'].map(x => ro(x.startsWith('Gut') || x.startsWith('Art') ? 'TimeStamp ' + x : 'TimeStamp ' + x, ts)).join('')}</div></div>
+      <div class="ae-card ea-card"><h4>Synchronisation-Info</h4><div class="ea-fields">${['Artikel', 'Kunden', 'Gutscheine', 'Auswahlen', 'Rechnungen'].map(x => ro('Max-Id ' + x, '0')).join('')}</div></div>
+      <div class="ae-card ea-card" style="flex:1 1 320px"><h4>Synchronisation-Info</h4><div class="ea-fields">${ctl('Langsamer Sync-Speed', D.langsam, false, 'langsam')}${ctl('Reorg Wenn Sync', false, true)}${ctl('Kassen-Reorganisation', false, true)}</div></div></div>
+      <div data-kg="s" style="flex:1;min-height:200px;display:flex;flex-direction:column"></div>`;
+  } else body = `<div class="ae-card ea-card" style="max-width:none"><h4>${esc(KAE_TABS.find(t => t[0] === KAE.tab)[1])}</h4><div class="empty" style="padding:28px 12px"><p>Dieser Reiter wird gerade nach dem Advarics-Vorbild aufgebaut.</p></div></div>`;
+  el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', 'Übersicht: Kassen')}${btn('refresh', 'sync', 'Aktualisieren', !KAE.id)}${btn('save', 'check', 'Sichern', !KAE.dirty)}${btn('new', 'plus', 'Neu', !KAE.id)}${btn('undo', 'undo', 'Änderungen zurücknehmen', !KAE.dirty)}${btn('del', 'trash', 'Löschen', !KAE.id)}
+      <span class="sp"></span>${KAE.id ? `${btn('prev', 'chevron-left', '', pos <= 0)}<span class="ae-nr">${pos + 1}/${KAE.ids.length}</span>${btn('next', 'chevron-right', '', pos >= KAE.ids.length - 1)}` : ''}</div>
+    <div class="ae-tabsw"><div class="ed-tabs" style="flex-wrap:wrap">${KAE_TABS.map(([k, l]) => `<button type="button" class="ed-tab" data-ke-t="${k}" aria-selected="${KAE.tab === k}">${esc(l)}</button>`).join('')}</div></div>
+    <div class="ae-body"><div id="edBody">${body}</div></div>`;
+  const mk = (key, h, cfg) => { if (!h) return; AG[key] = agNew({embed: true, ...cfg}); agMount(key, h); };
+  const rc = [{k: 'pct', l: 'Rabatt %', t: 'num', w: 100, fmt: v => num(v) + ' %'}, {k: 'wert', l: 'Rabatt-Wert', t: 'num', w: 110, fmt: v => eur(Math.round(v * 100))}, {k: 'alsWert', l: 'Als Wert nutzen', t: 'check', w: 130}, {k: 'typ', l: 'Rabatt-Typ', w: 110}, {k: 'von', l: 'Gültig von', w: 110, fmt: e2Date}, {k: 'bis', l: 'Gültig bis', w: 110, fmt: e2Date}, {k: 'sort', l: 'Sortierung', t: 'num', w: 100}, {k: 'modus', l: 'Rabatt-Modus', w: 160}];
+  const mv = (ids, add) => { const s = new Set(D.rabatte); ids.forEach(i => add ? s.add(i) : s.delete(i)); D.rabatte = [...s]; KAE.dirty = true; kaeCollect(el); kaeRender(); };
+  if (KAE.tab === 'rabatt') {
+    mk('ke-a', $('[data-kg="a"]', el), {title: 'Zugeordnet', cols: rc, rows: () => kaeRabattRows(true), sort: {k: 'sort', dir: 1}, edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const s = [...AG['ke-a'].sel]; if (s.length) mv(s, false); }}});
+    mk('ke-b', $('[data-kg="b"]', el), {title: 'Nicht zugeordnet', cols: rc, rows: () => kaeRabattRows(false), sort: {k: 'sort', dir: 1}, edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ke-b'].sel]; if (s.length) mv(s, true); }}});
+  }
+  if (KAE.tab === 'sync') mk('ke-s', $('[data-kg="s"]', el), {title: 'Sync', cols: [{k: 'a', l: 'Artikel', w: 180}, {k: 'g', l: 'Gutscheine', w: 160}, {k: 'k', l: 'Kunde', w: 160}, {k: 'au', l: 'Auswahlen', w: 160}, {k: 'r', l: 'Rechnungen', w: 160}], rows: () => [{id: 1, a: `Geladen: 0 von ${num(ART.length)}`, g: 'Geladen: 0 von 0', k: 'Geladen: 0 von 0', au: 'Geladen: 0 von 0', r: 'Geladen: 0 von 0'}], extra: [{k: 'rf', l: 'Aktualisieren', icon: 'sync'}], actions: {rf: () => kaeRender()}});
+  el.addEventListener('input', e => { if (e.target.closest('[data-ke]')) { KAE.dirty = true; $$('[data-ke-a="save"],[data-ke-a="undo"]', el).forEach(b => { b.disabled = false; }); } });
+  el.addEventListener('click', async e => {
+    const t = e.target, sw = t.closest('[data-ke-sw]'), tb = t.closest('[data-ke-t]'), b = t.closest('[data-ke-a]');
+    if (sw) { kaeCollect(el); D[sw.dataset.keSw] = !D[sw.dataset.keSw]; KAE.dirty = true; return kaeRender(); }
+    if (tb) { kaeCollect(el); KAE.tab = tb.dataset.keT; return kaeRender(); }
+    if (!b || b.disabled) return;
+    const a = b.dataset.keA; kaeCollect(el);
+    const ask = async () => !KAE.dirty || await confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen');
+    if (a === 'back') { if (!await ask()) return; KAE.dirty = false; return go('einst-kassen'); }
+    if (a === 'refresh' || a === 'undo') { await loadStamm(true); KAE.draft = kaeLoad(KAE.id); KAE.dirty = false; return kaeRender(); }
+    if (a === 'new') { if (!await ask()) return; return kaeOpen(null, KAE.ids); }
+    if (a === 'prev' || a === 'next') { if (!await ask()) return; const id = KAE.ids[pos + (a === 'next' ? 1 : -1)]; if (id) kaeOpen(id); return; }
+    try {
+      await needPerm('einstellungen', 'Kassen');
+      const all = stRows('kasse').map(x => ({...x}));
+      if (a === 'save') {
+        const m = kaeMiss(KAE.draft); if (m.length) { KAE.tab = 'allg'; kaeRender(); return toast(`${m[0]} angeben`, {t2: 'Pflichtfeld', type: 'warn'}); }
+        const row = {...KAE.draft}; ['nr', 'kdStart', 'kdEnde', 'reStart', 'reEnde', 'kostenstelle', 'eftTerminalTyp', 'eftCom', 'eftCbEvent', 'eftCbOption', 'eftTimeout', 'eftConfigByte', 'eftBaud', 'eftTimeoutMs', 'eftTrack'].forEach(k => { row[k] = parseInt(row[k], 10) || 0; });
+        const list = KAE.id ? all.map(x => x.id === KAE.id ? {...x, ...row} : x) : [...all, {id: 'ka-' + aeUid(), _aktiv: true, ...row}];
+        await stammSave('kasse', list); KAE.dirty = false; if (!KAE.id) { KAE.id = list[list.length - 1].id; KAE.ids = [...KAE.ids, KAE.id]; }
+        toast('Gespeichert', {t2: row.bez, type: 'pos', icon: 'check', dur: 1800}); return kaeRender();
+      }
+      if (a === 'del') {
+        if (all.length < 2) return toast('Die letzte Kasse kann nicht gelöscht werden', {type: 'warn'});
+        if (!await confirmBox(`Kasse „${KAE.draft.bez}“ löschen?`, 'Löschen')) return; await stammSave('kasse', all.filter(x => x.id !== KAE.id)); KAE.dirty = false; go('einst-kassen');
+      }
+    } catch (err) { if (err && String(err.message || err) !== 'abgebrochen') toast('Nicht möglich', {t2: String(err.message || err), type: 'warn'}); }
+  });
+}
+function kaeCollect(el) {
+  $$('[data-ke]', el).forEach(i => { KAE.draft[i.dataset.ke] = i.type === 'number' ? (i.value === '' ? 0 : +i.value) : i.value; });
+}
+registerPage('einst-kassen-edit', {title: 'Kassen', sub: () => KAE.draft ? `${KAE.draft.bez || 'neu'} (${KAE.draft.nr})` : '', render: async () => { await loadStamm(); if (!KAE.draft) KAE.draft = kaeLoad(KAE.id); kaeRender(); }});
+VIEW_PERM['einst-kassen-edit'] = 'einstellungen';
+/* Liste: Doppelklick/Neu öffnet die Bearbeiten-Seite statt des Dialogs */
+{ const cfg = AG['einst-kassen'].cfg;
+  cfg.edit = id => kaeOpen(id, (AG['einst-kassen'].filtered || []).map(r => r.id));
+  cfg.actions.new = () => kaeOpen(null, []); }
 
 /* ════════════════════════════════════════════════════════════════════
    12 · ANMELDUNG — Sperrbildschirm mit PIN, Windows Hello, FIDO2, SSO

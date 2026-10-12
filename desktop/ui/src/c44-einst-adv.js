@@ -3,7 +3,7 @@
    ═════════════════════════════════════════════════════════════════ */
 const EA_MONATE = ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 const EA_SPRACHEN = [['de-AT', 'de-AT'], ['de-DE', 'de-DE'], ['de-CH', 'de-CH'], ['en-GB', 'en-GB'], ['it-IT', 'it-IT'], ['fr-FR', 'fr-FR']];
-const eaStamm = (kind, nr = true) => () => stActive(kind).map(r => [r.id, `${r.name || r.id}${nr && r.nr != null && r.nr !== '' ? ` (${r.nr})` : ''}`]);
+const eaStamm = (kind, nr = true) => () => kind === 'marke' && !stActive('marke').length ? [...new Set(ART.map(a => a.brand).filter(Boolean))].sort().map(x => [x, x]) : stActive(kind).map(r => [r.id, `${r.name || r.id}${nr && r.nr != null && r.nr !== '' ? ` (${r.nr})` : ''}`]);
 /* Felder: k = Einstellungsschlüssel, t: text | num | combo | switch | ro | area */
 const EA_DEFAULTS = {
   'allg.gln': '', 'allg.startnr': 100000, 'allg.belegservice': true, 'allg.gjmonat': '5', 'allg.reservierung': 'Reservierung', 'allg.storno': false, 'allg.gutscheindruck': false,
