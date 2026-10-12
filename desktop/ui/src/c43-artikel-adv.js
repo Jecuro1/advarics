@@ -274,15 +274,30 @@ openEditor = function (a, tab0, ids) {
 };
 
 /* ── Artikelliste als Datentabelle ── */
-const aeThumb = a => { const m = (a.media || []).find(x => x.file); const f = m?.file || a.image; return f ? `<img src="${esc(imgUrl(f))}" alt="" style="height:20px;width:20px;object-fit:contain;vertical-align:middle;border-radius:3px">` : ''; };
+/** Große Bildansicht mit Blättern (Pfeiltasten, Esc) */
+function openImageViewer(imgs, start = 0, title = '') {
+  if (!imgs.length) return;
+  let i = Math.max(0, Math.min(start, imgs.length - 1));
+  const el = openLayer(`<div class="imgv" role="dialog" aria-modal="true" aria-label="Bildansicht"><div class="imgv-main"><img alt=""><button class="imgv-nav" data-iv="-1" style="left:12px" aria-label="Zurück">‹</button><button class="imgv-nav" data-iv="1" style="right:12px" aria-label="Weiter">›</button></div>
+    <div><div class="imgv-cap"><b data-ivt></b><span data-ivn></span><button class="btn btn-secondary btn-sm" data-close>Schließen</button></div><div class="imgv-strip">${imgs.map((m, k) => `<img data-ivs="${k}" src="${esc(m.url)}" alt="">`).join('')}</div></div></div>`, {cls: '', focus: '[data-close]'});
+  const show = () => { $('.imgv-main img', el).src = imgs[i].url; $('[data-ivt]', el).textContent = imgs[i].caption || title; $('[data-ivn]', el).textContent = `${i + 1} / ${imgs.length}`; $$('[data-ivs]', el).forEach(x => x.setAttribute('aria-current', +x.dataset.ivs === i)); $$('[data-iv]', el).forEach(b => { b.style.display = imgs.length > 1 ? '' : 'none'; }); };
+  const step = d => { i = (i + d + imgs.length) % imgs.length; show(); };
+  el.addEventListener('click', e => { const b = e.target.closest('[data-iv]'), s = e.target.closest('[data-ivs]'); if (b) step(+b.dataset.iv); else if (s) { i = +s.dataset.ivs; show(); } });
+  el.addEventListener('keydown', e => { if (e.key === 'ArrowRight') step(1); else if (e.key === 'ArrowLeft') step(-1); });
+  show();
+}
+window.openImageViewer = openImageViewer;
+const artImages = a => { const l = (a.media || []).filter(m => m.file).map(m => ({url: imgUrl(m.file), caption: m.caption || ''})); if (!l.length && a.image) l.push({url: imgUrl(a.image), caption: ''}); return l; };
+const aeThumb = a => { const m = (a.media || []).find(x => x.file); const f = m?.file || a.image; return f ? `<img class="ag-thumb" data-agimg="${esc(a.id)}" src="${esc(imgUrl(f))}" alt="Bild vergrößern" title="Bild vergrößern">` : `<span class="ag-nothumb">${ic('image', 'i-sm')}</span>`; };
 const aeRows = () => ART.map(a => ({id: a.id, a, brand: a.brand, nr: a.details?.hersteller_artikelnr || a.id, name: a.name, fnr: a.colors[0] || '', fname: colorName(a.colors[0]), ek: a.cost, vk: a.price, visu: a.sale || a.price, stock: a.stock, vars: a.variants.length, wg: catName(a.cat), lief: SUPPLIERS.find(s => s.id === a.supplierId)?.name || '', saison: a.details?.saison || '', tag: a.tag || ''}));
 agridPage('artikel', {
-  title: 'Artikel',
+  title: 'Artikel', rowH: 68,
+  onImage: id => { const a = artById(id); if (a) openImageViewer(artImages(a), 0, a.name); },
   rows: aeRows,
   count: () => ART.length,
   toolbar: [{k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}, {k: 'imp', l: 'Import', icon: 'download'}, {k: 'label', l: 'Etiketten', icon: 'tag'}],
   cols: [
-    {k: 'img', l: '', w: 40, html: r => aeThumb(r.a), get: () => ''},
+    {k: 'img', l: '', w: 80, html: r => aeThumb(r.a), get: () => ''},
     {k: 'brand', l: 'Marke', w: 130}, {k: 'nr', l: 'Artikel-Nr.', w: 120}, {k: 'name', l: 'Artikel-Name', w: 280}, {k: 'fnr', l: 'Lief.-Farb-Nr.', w: 110}, {k: 'fname', l: 'Lief.-Farb-Name', w: 130},
     {k: 'ek', l: 'EK', t: 'num', w: 80, fmt: v => v == null ? '' : eur(v)}, {k: 'vk', l: 'VK', t: 'num', w: 80, fmt: v => eur(v)}, {k: 'visu', l: 'Visu. VK', t: 'num', w: 90, fmt: v => eur(v)},
     {k: 'stock', l: 'Bestand', t: 'num', w: 80, sum: true}, {k: 'vars', l: 'Varianten', t: 'num', w: 80}, {k: 'wg', l: 'Warengruppe', w: 220}, {k: 'lief', l: 'Lieferant', w: 200}, {k: 'saison', l: 'Saison', w: 110}, {k: 'tag', l: 'Kennzeichnung', w: 110, show: false}, {k: 'id', l: 'Intern-ID', w: 130, show: false},

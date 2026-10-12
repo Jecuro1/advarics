@@ -187,6 +187,7 @@ function artEditorMount(host, a, tab0) {
     if (t.closest('#edRefresh')) { try { if (DESKTOP) replaceCatalog(await invoke('catalog_list')); } catch { /* */ } return remount(a ? ART.find(x => x.id === a.id) || a : null, tab); }
     const nv = t.closest('#edPrev, #edNext'); if (nv && !nv.disabled) { const id = (AE.ids || [])[pos + (nv.id === 'edNext' ? 1 : -1)]; const nx = id && ART.find(x => x.id === id); if (nx) return remount(nx, tab); return; }
     if (t.closest('#edService')) { collect(); return aeService(ctx, t.closest('#edService')); }
+    const gi = t.closest('[data-mid] img'); if (gi) { const ms = media().filter(m => m.file).map(m => ({url: imgUrl(m.file), caption: m.caption || ''})); const idx = media().filter(m => m.file).findIndex(m => String(m.id) === gi.closest('[data-mid]').dataset.mid); openImageViewer(ms, Math.max(0, idx), st.name); return; }
     const tb = t.closest('[data-tab]'); if (tb) { collect(); tab = tb.dataset.tab; return render(); }
     const col = t.closest('[data-col]'); if (col) { collect(); const k = col.dataset.col, i = st.colors.indexOf(k); i >= 0 ? st.colors.splice(i, 1) : st.colors.push(k); return render(); }
     const sz = t.closest('[data-sz]'); if (sz) { collect(); st.sizes = sz.dataset.sz; return render(); }

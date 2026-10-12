@@ -319,6 +319,7 @@ function bindShell() {
   $('#paletteBtn').onclick = () => openPalette();
   $('#aiBtn').onclick = () => openPalette('? ');
   $('#themeBtn').onclick = toggleTheme;
+  $('#zoomOutBtn').onclick = () => stepZoom(-1); $('#zoomInBtn').onclick = () => stepZoom(1);
   $('#appearBtn').onclick = e => openAppearance(e.currentTarget);
   $('#notifBtn').onclick = e => openNotifications(e.currentTarget);
   $('#collapseBtn').onclick = toggleSidebar;

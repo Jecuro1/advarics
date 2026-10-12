@@ -1522,5 +1522,20 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 [data-theme="light"] body{font-weight:500}
 .ag-c,.tbl td,.input,.nav-item,.btn{font-weight:500}
 .btn-primary,.ag-h,.ed-tab,h1,h2,h3,h4,b,strong{font-weight:650}
+.ag-rows .ag-row{height:var(--agrow,40px)}
+.ag-rows .ag-c{height:var(--agrow,40px);line-height:var(--agrow,40px)}
+.ag-thumb{height:calc(var(--agrow,40px) - 12px);width:calc(var(--agrow,40px) - 12px);object-fit:contain;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);cursor:zoom-in;vertical-align:middle;transition:transform .12s,box-shadow .12s}
+.ag-thumb:hover{transform:scale(1.08);box-shadow:var(--shadow-2);border-color:var(--accent)}
+.ag-nothumb{display:inline-grid;place-items:center;height:calc(var(--agrow,40px) - 12px);width:calc(var(--agrow,40px) - 12px);border-radius:10px;background:var(--surface-2);color:var(--text-4);vertical-align:middle}
+.imgv{display:grid;grid-template-rows:1fr auto;gap:12px;width:min(1100px,94vw);height:min(86vh,900px);padding:16px;background:var(--surface);border-radius:18px;box-shadow:var(--shadow-3)}
+.imgv-main{position:relative;display:grid;place-items:center;min-height:0;background:var(--surface-2);border-radius:14px;overflow:hidden}
+.imgv-main img{max-width:100%;max-height:100%;object-fit:contain}
+.imgv-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:64px;border-radius:12px;background:rgba(17,24,39,.55);color:#fff;font-size:26px;display:grid;place-items:center;cursor:pointer;border:0}
+.imgv-nav:hover{background:rgba(17,24,39,.8)}
+.imgv-strip{display:flex;gap:8px;overflow-x:auto;align-items:center}
+.imgv-strip img{height:64px;width:64px;object-fit:contain;border-radius:10px;border:2px solid transparent;background:var(--surface-2);cursor:pointer}
+.imgv-strip img[aria-current="true"]{border-color:var(--accent)}
+.imgv-cap{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;color:var(--text-2)}
+.zoom-b{font-weight:700;font-size:13px}
 </style>
 </head>

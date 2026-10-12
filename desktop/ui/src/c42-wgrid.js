@@ -13,7 +13,7 @@ function agNew(cfg) {
 function agMount(key, v) {
   const st = AG[key], cfg = st.cfg;
   st.rows = cfg.rows();
-  v.innerHTML = `<div class="agrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}">
+  v.innerHTML = `<div class="agrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
       ${cfg.toolbar?.length ? `<div class="ag-bar">${cfg.toolbar.map(b => `<button class="ag-btn" data-ag="${b.k}">${ic(b.icon, 'i-sm')}<span>${esc(b.l)}</span></button>`).join('')}<button class="ag-btn ag-del" data-ag="del" hidden>${ic('trash', 'i-sm')}<span>Löschen</span></button></div>` : ''}
       <div class="ag-tools"><div class="ag-drop" data-agdrop><span class="ag-ph">Zu gruppierende Spalten hierhin ziehen…</span></div>
         ${(cfg.extra || []).map(b => `<button class="ag-xbtn" data-ag="${b.k}">${ic(b.icon || 'plus', 'i-sm')}${esc(b.l)}</button>`).join('')}
@@ -100,7 +100,7 @@ function agHead(page, v, vis) {
 function agRows(page, v, vis) {
   const st = AG[page], sc = $('[data-agscroll]', v), host = $('[data-agrows]', v);
   vis ||= st.cols.filter(c => c.show);
-  const n = st.view.length, H = AGRID_ROW;
+  const n = st.view.length, H = st.cfg.rowH || AGRID_ROW;
   host.style.height = (n * H) + 'px';
   const top = Math.max(0, Math.floor(sc.scrollTop / H) - 10), cnt = Math.ceil(sc.clientHeight / H) + 24, end = Math.min(n, top + cnt);
   let html = '';
@@ -132,6 +132,7 @@ function agBind(page, v) {
   v.onchange = e => { const t = e.target; if (t.tagName === 'SELECT' && t.dataset.agf) { st.filters[t.dataset.agf] = t.value; refresh(true); } };
   v.onclick = async e => {
     const t = e.target;
+    const im = t.closest('[data-agimg]'); if (im && cfg.onImage) { e.stopPropagation(); cfg.onImage(im.dataset.agimg); return; }
     const ung = t.closest('[data-agung]'); if (ung) { st.group = st.group.filter(k => k !== ung.dataset.agung); refresh(true); return; }
     const grp = t.closest('[data-aggrp]'); if (grp) { const id = grp.dataset.aggrp; st.collapsed.has(id) ? st.collapsed.delete(id) : st.collapsed.add(id); refresh(false); return; }
     if (t.closest('[data-agall]')) { const all = st.filtered.length && st.filtered.every(r => st.sel.has(r.id)); st.filtered.forEach(r => all ? st.sel.delete(r.id) : st.sel.add(r.id)); agHead(page, v, st.cols.filter(c => c.show)); agRows(page, v); agSelInfo(page, v); return; }

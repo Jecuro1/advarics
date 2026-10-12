@@ -1522,6 +1522,21 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 [data-theme="light"] body{font-weight:500}
 .ag-c,.tbl td,.input,.nav-item,.btn{font-weight:500}
 .btn-primary,.ag-h,.ed-tab,h1,h2,h3,h4,b,strong{font-weight:650}
+.ag-rows .ag-row{height:var(--agrow,40px)}
+.ag-rows .ag-c{height:var(--agrow,40px);line-height:var(--agrow,40px)}
+.ag-thumb{height:calc(var(--agrow,40px) - 12px);width:calc(var(--agrow,40px) - 12px);object-fit:contain;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);cursor:zoom-in;vertical-align:middle;transition:transform .12s,box-shadow .12s}
+.ag-thumb:hover{transform:scale(1.08);box-shadow:var(--shadow-2);border-color:var(--accent)}
+.ag-nothumb{display:inline-grid;place-items:center;height:calc(var(--agrow,40px) - 12px);width:calc(var(--agrow,40px) - 12px);border-radius:10px;background:var(--surface-2);color:var(--text-4);vertical-align:middle}
+.imgv{display:grid;grid-template-rows:1fr auto;gap:12px;width:min(1100px,94vw);height:min(86vh,900px);padding:16px;background:var(--surface);border-radius:18px;box-shadow:var(--shadow-3)}
+.imgv-main{position:relative;display:grid;place-items:center;min-height:0;background:var(--surface-2);border-radius:14px;overflow:hidden}
+.imgv-main img{max-width:100%;max-height:100%;object-fit:contain}
+.imgv-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:64px;border-radius:12px;background:rgba(17,24,39,.55);color:#fff;font-size:26px;display:grid;place-items:center;cursor:pointer;border:0}
+.imgv-nav:hover{background:rgba(17,24,39,.8)}
+.imgv-strip{display:flex;gap:8px;overflow-x:auto;align-items:center}
+.imgv-strip img{height:64px;width:64px;object-fit:contain;border-radius:10px;border:2px solid transparent;background:var(--surface-2);cursor:pointer}
+.imgv-strip img[aria-current="true"]{border-color:var(--accent)}
+.imgv-cap{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;color:var(--text-2)}
+.zoom-b{font-weight:700;font-size:13px}
 </style>
 </head>
 <body>
@@ -1672,6 +1687,7 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
       <div class="tb-actions">
         <button class="btn btn-ghost btn-icon" id="aiBtn" aria-label="KI fragen" data-tip="KI fragen (lokal)"><svg class="i"><use href="#i-sparkle"/></svg></button>
         <button class="btn btn-ghost btn-icon has-dot" id="notifBtn" aria-label="Mitteilungen" data-tip="Mitteilungen"><svg class="i"><use href="#i-bell"/></svg></button>
+        <button class="btn btn-ghost btn-icon zoom-b" id="zoomOutBtn" aria-label="Anzeige kleiner" data-tip="Anzeige kleiner  Strg −">A−</button><button class="btn btn-ghost btn-icon zoom-b" id="zoomInBtn" aria-label="Anzeige größer" data-tip="Anzeige größer  Strg +">A+</button>
         <button class="btn btn-ghost btn-icon" id="appearBtn" aria-label="Darstellung" data-tip="Darstellung"><svg class="i"><use href="#i-palette"/></svg></button>
         <button class="btn btn-ghost btn-icon" id="themeBtn" aria-label="Hell oder Dunkel" data-tip="Hell / Dunkel"><svg class="i"><use href="#i-sun"/></svg></button>
       </div>
@@ -1896,7 +1912,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.25.2', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.26.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -13276,6 +13292,7 @@ function artEditorMount(host, a, tab0) {
     if (t.closest('#edRefresh')) { try { if (DESKTOP) replaceCatalog(await invoke('catalog_list')); } catch { /* */ } return remount(a ? ART.find(x => x.id === a.id) || a : null, tab); }
     const nv = t.closest('#edPrev, #edNext'); if (nv && !nv.disabled) { const id = (AE.ids || [])[pos + (nv.id === 'edNext' ? 1 : -1)]; const nx = id && ART.find(x => x.id === id); if (nx) return remount(nx, tab); return; }
     if (t.closest('#edService')) { collect(); return aeService(ctx, t.closest('#edService')); }
+    const gi = t.closest('[data-mid] img'); if (gi) { const ms = media().filter(m => m.file).map(m => ({url: imgUrl(m.file), caption: m.caption || ''})); const idx = media().filter(m => m.file).findIndex(m => String(m.id) === gi.closest('[data-mid]').dataset.mid); openImageViewer(ms, Math.max(0, idx), st.name); return; }
     const tb = t.closest('[data-tab]'); if (tb) { collect(); tab = tb.dataset.tab; return render(); }
     const col = t.closest('[data-col]'); if (col) { collect(); const k = col.dataset.col, i = st.colors.indexOf(k); i >= 0 ? st.colors.splice(i, 1) : st.colors.push(k); return render(); }
     const sz = t.closest('[data-sz]'); if (sz) { collect(); st.sizes = sz.dataset.sz; return render(); }
@@ -13573,7 +13590,7 @@ function agNew(cfg) {
 function agMount(key, v) {
   const st = AG[key], cfg = st.cfg;
   st.rows = cfg.rows();
-  v.innerHTML = `<div class="agrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}">
+  v.innerHTML = `<div class="agrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
       ${cfg.toolbar?.length ? `<div class="ag-bar">${cfg.toolbar.map(b => `<button class="ag-btn" data-ag="${b.k}">${ic(b.icon, 'i-sm')}<span>${esc(b.l)}</span></button>`).join('')}<button class="ag-btn ag-del" data-ag="del" hidden>${ic('trash', 'i-sm')}<span>Löschen</span></button></div>` : ''}
       <div class="ag-tools"><div class="ag-drop" data-agdrop><span class="ag-ph">Zu gruppierende Spalten hierhin ziehen…</span></div>
         ${(cfg.extra || []).map(b => `<button class="ag-xbtn" data-ag="${b.k}">${ic(b.icon || 'plus', 'i-sm')}${esc(b.l)}</button>`).join('')}
@@ -13660,7 +13677,7 @@ function agHead(page, v, vis) {
 function agRows(page, v, vis) {
   const st = AG[page], sc = $('[data-agscroll]', v), host = $('[data-agrows]', v);
   vis ||= st.cols.filter(c => c.show);
-  const n = st.view.length, H = AGRID_ROW;
+  const n = st.view.length, H = st.cfg.rowH || AGRID_ROW;
   host.style.height = (n * H) + 'px';
   const top = Math.max(0, Math.floor(sc.scrollTop / H) - 10), cnt = Math.ceil(sc.clientHeight / H) + 24, end = Math.min(n, top + cnt);
   let html = '';
@@ -13692,6 +13709,7 @@ function agBind(page, v) {
   v.onchange = e => { const t = e.target; if (t.tagName === 'SELECT' && t.dataset.agf) { st.filters[t.dataset.agf] = t.value; refresh(true); } };
   v.onclick = async e => {
     const t = e.target;
+    const im = t.closest('[data-agimg]'); if (im && cfg.onImage) { e.stopPropagation(); cfg.onImage(im.dataset.agimg); return; }
     const ung = t.closest('[data-agung]'); if (ung) { st.group = st.group.filter(k => k !== ung.dataset.agung); refresh(true); return; }
     const grp = t.closest('[data-aggrp]'); if (grp) { const id = grp.dataset.aggrp; st.collapsed.has(id) ? st.collapsed.delete(id) : st.collapsed.add(id); refresh(false); return; }
     if (t.closest('[data-agall]')) { const all = st.filtered.length && st.filtered.every(r => st.sel.has(r.id)); st.filtered.forEach(r => all ? st.sel.delete(r.id) : st.sel.add(r.id)); agHead(page, v, st.cols.filter(c => c.show)); agRows(page, v); agSelInfo(page, v); return; }
@@ -14091,15 +14109,30 @@ openEditor = function (a, tab0, ids) {
 };
 
 /* ── Artikelliste als Datentabelle ── */
-const aeThumb = a => { const m = (a.media || []).find(x => x.file); const f = m?.file || a.image; return f ? `<img src="${esc(imgUrl(f))}" alt="" style="height:20px;width:20px;object-fit:contain;vertical-align:middle;border-radius:3px">` : ''; };
+/** Große Bildansicht mit Blättern (Pfeiltasten, Esc) */
+function openImageViewer(imgs, start = 0, title = '') {
+  if (!imgs.length) return;
+  let i = Math.max(0, Math.min(start, imgs.length - 1));
+  const el = openLayer(`<div class="imgv" role="dialog" aria-modal="true" aria-label="Bildansicht"><div class="imgv-main"><img alt=""><button class="imgv-nav" data-iv="-1" style="left:12px" aria-label="Zurück">‹</button><button class="imgv-nav" data-iv="1" style="right:12px" aria-label="Weiter">›</button></div>
+    <div><div class="imgv-cap"><b data-ivt></b><span data-ivn></span><button class="btn btn-secondary btn-sm" data-close>Schließen</button></div><div class="imgv-strip">${imgs.map((m, k) => `<img data-ivs="${k}" src="${esc(m.url)}" alt="">`).join('')}</div></div></div>`, {cls: '', focus: '[data-close]'});
+  const show = () => { $('.imgv-main img', el).src = imgs[i].url; $('[data-ivt]', el).textContent = imgs[i].caption || title; $('[data-ivn]', el).textContent = `${i + 1} / ${imgs.length}`; $$('[data-ivs]', el).forEach(x => x.setAttribute('aria-current', +x.dataset.ivs === i)); $$('[data-iv]', el).forEach(b => { b.style.display = imgs.length > 1 ? '' : 'none'; }); };
+  const step = d => { i = (i + d + imgs.length) % imgs.length; show(); };
+  el.addEventListener('click', e => { const b = e.target.closest('[data-iv]'), s = e.target.closest('[data-ivs]'); if (b) step(+b.dataset.iv); else if (s) { i = +s.dataset.ivs; show(); } });
+  el.addEventListener('keydown', e => { if (e.key === 'ArrowRight') step(1); else if (e.key === 'ArrowLeft') step(-1); });
+  show();
+}
+window.openImageViewer = openImageViewer;
+const artImages = a => { const l = (a.media || []).filter(m => m.file).map(m => ({url: imgUrl(m.file), caption: m.caption || ''})); if (!l.length && a.image) l.push({url: imgUrl(a.image), caption: ''}); return l; };
+const aeThumb = a => { const m = (a.media || []).find(x => x.file); const f = m?.file || a.image; return f ? `<img class="ag-thumb" data-agimg="${esc(a.id)}" src="${esc(imgUrl(f))}" alt="Bild vergrößern" title="Bild vergrößern">` : `<span class="ag-nothumb">${ic('image', 'i-sm')}</span>`; };
 const aeRows = () => ART.map(a => ({id: a.id, a, brand: a.brand, nr: a.details?.hersteller_artikelnr || a.id, name: a.name, fnr: a.colors[0] || '', fname: colorName(a.colors[0]), ek: a.cost, vk: a.price, visu: a.sale || a.price, stock: a.stock, vars: a.variants.length, wg: catName(a.cat), lief: SUPPLIERS.find(s => s.id === a.supplierId)?.name || '', saison: a.details?.saison || '', tag: a.tag || ''}));
 agridPage('artikel', {
-  title: 'Artikel',
+  title: 'Artikel', rowH: 68,
+  onImage: id => { const a = artById(id); if (a) openImageViewer(artImages(a), 0, a.name); },
   rows: aeRows,
   count: () => ART.length,
   toolbar: [{k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}, {k: 'imp', l: 'Import', icon: 'download'}, {k: 'label', l: 'Etiketten', icon: 'tag'}],
   cols: [
-    {k: 'img', l: '', w: 40, html: r => aeThumb(r.a), get: () => ''},
+    {k: 'img', l: '', w: 80, html: r => aeThumb(r.a), get: () => ''},
     {k: 'brand', l: 'Marke', w: 130}, {k: 'nr', l: 'Artikel-Nr.', w: 120}, {k: 'name', l: 'Artikel-Name', w: 280}, {k: 'fnr', l: 'Lief.-Farb-Nr.', w: 110}, {k: 'fname', l: 'Lief.-Farb-Name', w: 130},
     {k: 'ek', l: 'EK', t: 'num', w: 80, fmt: v => v == null ? '' : eur(v)}, {k: 'vk', l: 'VK', t: 'num', w: 80, fmt: v => eur(v)}, {k: 'visu', l: 'Visu. VK', t: 'num', w: 90, fmt: v => eur(v)},
     {k: 'stock', l: 'Bestand', t: 'num', w: 80, sum: true}, {k: 'vars', l: 'Varianten', t: 'num', w: 80}, {k: 'wg', l: 'Warengruppe', w: 220}, {k: 'lief', l: 'Lieferant', w: 200}, {k: 'saison', l: 'Saison', w: 110}, {k: 'tag', l: 'Kennzeichnung', w: 110, show: false}, {k: 'id', l: 'Intern-ID', w: 130, show: false},
@@ -14571,6 +14604,7 @@ function bindShell() {
   $('#paletteBtn').onclick = () => openPalette();
   $('#aiBtn').onclick = () => openPalette('? ');
   $('#themeBtn').onclick = toggleTheme;
+  $('#zoomOutBtn').onclick = () => stepZoom(-1); $('#zoomInBtn').onclick = () => stepZoom(1);
   $('#appearBtn').onclick = e => openAppearance(e.currentTarget);
   $('#notifBtn').onclick = e => openNotifications(e.currentTarget);
   $('#collapseBtn').onclick = toggleSidebar;

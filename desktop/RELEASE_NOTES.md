@@ -1,3 +1,8 @@
+## Neu in 0.26.0
+
+- Artikelbilder direkt anklicken: In der Artikelliste sind die Bilder jetzt groß (Zeilen höher), ein Klick öffnet die große Bildansicht mit Blättern (Pfeile, Pfeiltasten, Vorschaustreifen, Esc). Auch in der Artikelmaske (Reiter Bilder-Zuordnung) öffnet ein Klick auf ein Bild die große Ansicht.
+- Schnell größer/kleiner: Knöpfe „A−“ und „A+“ oben rechts neben der Palette (zusätzlich Strg + / Strg −).
+
 ## Neu in 0.25.2
 
 - Alles größer und besser lesbar: Standard-Anzeigegröße jetzt 125 % (einmalig übernommen), Schrift etwas kräftiger. Die Anzeigegröße lässt sich jederzeit ändern: Darstellung-Menü (Palette oben rechts) mit 100–160 %, Einstellungen oder Strg + / Strg - / Strg 0.
