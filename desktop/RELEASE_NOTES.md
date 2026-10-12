@@ -1,3 +1,9 @@
+## Neu in 0.34.3
+
+- Die Anzeige passt sich jetzt stufenlos und laufend an Gerät und Bildschirm an (Auto-Fit): Kontor misst die tatsächliche Fenstergröße samt Windows-Skalierung und wählt daraus die Anzeigegröße – Ziel sind etwa 920 logische Pixel Höhe bei mindestens 1200 Pixel Breite. Beim Maximieren, Fenster-Verkleinern, Monitorwechsel oder Drehen eines Tablets wird sofort neu berechnet; vorher wurde nur einmal beim Start in groben Stufen entschieden.
+- Geräte-Stufen für das Layout: Handy, Tablet, Laptop, Desktop und Wide (als Attribut an der Seite und als Variablen `--ui-lw`/`--ui-lh`).
+- „Anzeigegröße“ ist jetzt eine Feinjustierung auf die Automatik (Kleiner · Automatisch · Größer · Groß · Sehr groß). Strg + / Strg − / Strg 0 funktionieren wie bisher. Frühere feste Prozentwerte werden einmalig auf „Automatisch“ zurückgesetzt.
+
 ## Neu in 0.34.2
 
 - Fehler behoben: Seit 0.34.1 stand das Dashboard in einer einzigen Spalte (die Tabellen-Stile haben das Kachelraster überschrieben). Die Kacheln stehen wieder nebeneinander und nutzen breite Bildschirme bis 2400 px.

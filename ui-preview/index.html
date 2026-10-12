@@ -1982,7 +1982,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.34.2', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.34.3', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -3944,7 +3944,7 @@ const DEFAULTS = {
   'firma.adresse': 'Maria-Theresien-Str. 18, 6020 Innsbruck', 'firma.uid': 'ATU00000000', 'firma.telefon': '0512 000000',
   'kasse.id': 'INN-K01', 'kasse.name': 'Kasse 1', 'kasse.freigabe': true, 'kasse.rabattGrenze': 20,
   'kasse.vereinsregel': true, 'kasse.retoureGrenze': 100, 'ziel.tag': 2500, 'kasse.pflichtfelder': true, 'kasse.bonFuss': 'Danke für Ihren Einkauf! Umtausch innerhalb von 30 Tagen mit Beleg.',
-  'anzeige.zoom': 1.25, 'anzeige.zoom.v2': false, 'anzeige.zoom.auto': true, 'backup.dir': '', 'backup.auto': true, 'backup.keep': 14, 'update.kanal': 'stable', 'update.auto': true, 'update.freigabe': null,
+  'anzeige.zoom': 1.25, 'anzeige.zoom.v2': false, 'anzeige.zoom.auto': true, 'anzeige.zoom.mul': 1, 'anzeige.zoom.v3': false, 'backup.dir': '', 'backup.auto': true, 'backup.keep': 14, 'update.kanal': 'stable', 'update.auto': true, 'update.freigabe': null,
   'drucker.art': 'aus', 'drucker.adresse': '', 'drucker.name': '', 'drucker.breite': 48, 'drucker.auto': false, 'drucker.lade': false, 'gutschein.jahre': 3,
   'bon.logo': '', 'bon.logoDruck': true, 'bon.ersparnis': true, 'bon.artikelnr': false, 'bon.kopf': '', 'bon.fussA4': '',
   'mail.host': '', 'mail.port': 587, 'mail.tls': 'starttls', 'mail.user': '', 'mail.pass': '', 'mail.from': '', 'etikett.art': 'a4', 'etikett.adresse': '', 'etikett.name': '', 'etikett.format': '3x8',
@@ -3969,26 +3969,66 @@ function applySettings() {
   POS.flow.approval = !!CFG['kasse.freigabe'];
   POS.flow.approvalPct = clamp(+CFG['kasse.rabattGrenze'] || 20, 0, 100);
   const t = $('.brand-tenant'); if (t) t.textContent = CFG['firma.name'];
-  // 0.25.2: größere Anzeige als neuer Standard (einmalig)
-  if (!CFG['anzeige.zoom.v2']) { CFG['anzeige.zoom.v2'] = true; CFG['anzeige.zoom'] = Math.max(+CFG['anzeige.zoom'] || 1, 1.25); try { saveSettings({'anzeige.zoom.v2': true, 'anzeige.zoom': CFG['anzeige.zoom']}, true); } catch { /* */ } }
-  applyZoom(CFG['anzeige.zoom.auto'] === false ? (+CFG['anzeige.zoom'] || 1.25) : autoZoom());
+  // 0.35.0: Anzeige passt sich stufenlos an Gerät und Bildschirm an (einmalig auf Automatik zurücksetzen)
+  if (!CFG['anzeige.zoom.v3']) { CFG['anzeige.zoom.v3'] = true; CFG['anzeige.zoom.auto'] = true; CFG['anzeige.zoom.mul'] = 1; try { saveSettings({'anzeige.zoom.v3': true, 'anzeige.zoom.auto': true, 'anzeige.zoom.mul': 1}, true); } catch { /* */ } }
+  uiRefit(true);
   if (S.view) renderTopbar();
 }
-/** Größe passend zum Bildschirm, solange sie nicht von Hand eingestellt wurde (A−/A+) */
-let AUTO_ZOOM = 0;   // einmal beim Start messen – nach dem Zoomen meldet die WebView kleinere Breiten
-const autoZoom = () => AUTO_ZOOM ||= (w => w >= 3000 ? 1.5 : w >= 2500 ? 1.4 : w >= 1900 ? 1.25 : 1.1)(Math.max(window.screen?.width || 0, window.innerWidth || 0));
+/* ════════════════════════════════════════════════════════════════════
+   Auto-Fit: Die Oberfläche passt sich laufend an Gerät und Bildschirm an.
+   • misst die Fenstergröße in CSS-Pixeln bei Zoom 1 (enthält die Windows-Skalierung)
+   • wählt daraus stufenlos die Anzeigegröße: Ziel ≈ 920 logische Pixel Höhe, mindestens 1200 Pixel Breite
+   • schaltet je Gerät Stufen (phone · tablet · laptop · desktop · wide) für das Layout
+   • rechnet bei jeder Fensteränderung neu (Maximieren, Monitorwechsel, Drehen)
+   • „Anzeigegröße“ ist nur noch eine Feinjustierung (Multiplikator) auf die Automatik
+   ════════════════════════════════════════════════════════════════════ */
+const UI = {zoom: 1, lw: 0, lh: 0, dev: '', base: [0, 0]};
+const UI_TARGET_H = 920, UI_MIN_W = 1200, UI_MUL_STEPS = [.7, .8, .9, 1, 1.1, 1.2, 1.35, 1.5];
+/** reine Rechenfunktion: Wb × Hb = Fenstergröße (CSS-px bei Zoom 1), mul = Feinjustierung → Zoomfaktor */
+function uiFit(Wb, Hb, mul = 1) {
+  if (!(Wb > 0 && Hb > 0)) return 1;
+  if (Wb < 900) return clamp(Math.round(mul * 100) / 100, .8, 1.4);                 // Handy / Tablet hochkant: nativ, Layout wird schmal
+  let s = Math.min(Hb / UI_TARGET_H, Wb / UI_MIN_W);
+  s = clamp(s, .85, 2.2) * mul;
+  s = Math.min(s, Wb / 900);                                                         // logische Breite nie unter 900
+  return clamp(Math.round(s * 100) / 100, .6, 2.6);
+}
+function uiDevice(lw, lh) {
+  const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  return lw < 720 ? 'phone' : (lw < 1100 || (touch && lw < 1400)) ? 'tablet' : lw < 1500 ? 'laptop' : lw < 2000 ? 'desktop' : 'wide';
+}
+function uiRefit(force) {
+  const emu = window.__UI_EMU;                                                       // Testhaken: „tu so, als wäre das Fenster w × h physisch groß“
+  const desktopLike = DESKTOP || !!emu;
+  const base = emu ? [emu.w, emu.h] : DESKTOP ? [innerWidth * UI.zoom, innerHeight * UI.zoom] : [innerWidth, innerHeight];
+  const manual = CFG['anzeige.zoom.auto'] === false;
+  const mul = clamp(+CFG['anzeige.zoom.mul'] || 1, .6, 1.6);
+  const f = manual ? clamp(+CFG['anzeige.zoom'] || 1.25, .6, 2.6) : uiFit(base[0], base[1], mul);
+  const eff = desktopLike ? f : 1;                                                   // im Browser skaliert der Browser selbst (Strg +/−)
+  if (force || Math.abs(eff - UI.zoom) > .004) applyZoom(eff);
+  UI.base = base; UI.lw = Math.round(base[0] / eff); UI.lh = Math.round(base[1] / eff);
+  const dev = uiDevice(UI.lw, UI.lh);
+  const r = document.documentElement;
+  if (UI.dev !== dev) { UI.dev = dev; r.dataset.dev = dev; }
+  r.style.setProperty('--ui-lw', UI.lw + 'px'); r.style.setProperty('--ui-lh', UI.lh + 'px');
+}
 function applyZoom(f) {
-  f = clamp(Math.round(f * 100) / 100, .7, 2);
-  if (DESKTOP) invoke('set_zoom', {factor: f}).catch(() => {});
-  else { document.documentElement.style.zoom = f === 1 ? '' : f; document.documentElement.style.setProperty('--zoom', f); }
+  f = clamp(Math.round(f * 100) / 100, .6, 2.6);
+  UI.zoom = f;
+  if (DESKTOP) invoke('set_zoom', {factor: f}).then(() => setTimeout(() => uiRefit(), 160)).catch(() => { UI.zoom = 1; });
+  else if (!window.__UI_EMU) { document.documentElement.style.zoom = f === 1 ? '' : f; document.documentElement.style.setProperty('--zoom', f); }
 }
+{ let t = 0; const again = () => { clearTimeout(t); t = setTimeout(() => uiRefit(), 120); };
+  addEventListener('resize', again); addEventListener('orientationchange', again); }
+window.KONTOR_UI = {fit: uiFit, device: uiDevice, state: UI, refit: uiRefit};
 function stepZoom(dir) {
-  const steps = [.8, .9, 1, 1.1, 1.25, 1.4, 1.5, 1.75];
-  const cur = +CFG['anzeige.zoom'] || 1, i = steps.findIndex(s => s >= cur - .001);
-  const next = dir === 0 ? 1 : steps[clamp((i < 0 ? 2 : i) + dir, 0, steps.length - 1)];
-  saveSettings({'anzeige.zoom': next, 'anzeige.zoom.auto': false}, true); toast(`Anzeigegröße ${Math.round(next * 100)} %`, {icon: 'eye', dur: 1400});
-  if (S.view === 'einstellungen') $$('#zoomSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v !== 'auto' && +b.dataset.v === next));
+  const cur = clamp(+CFG['anzeige.zoom.mul'] || 1, .6, 1.6), i = UI_MUL_STEPS.findIndex(x => x >= cur - .001);
+  const next = dir === 0 ? 1 : UI_MUL_STEPS[clamp((i < 0 ? 3 : i) + dir, 0, UI_MUL_STEPS.length - 1)];
+  saveSettings({'anzeige.zoom.mul': next, 'anzeige.zoom.auto': true}, true);
+  toast(next === 1 ? 'Anzeigegröße: automatisch' : `Anzeigegröße: automatisch ${next > 1 ? '+' : '−'} ${Math.abs(Math.round((next - 1) * 100))} %`, {icon: 'eye', dur: 1400});
+  if (S.view === 'einstellungen') $$('#zoomSeg button').forEach(b => b.setAttribute('aria-pressed', Math.abs(+b.dataset.v - next) < .01));
 }
+const ZOOM_CHOICES = [[.8, 'Kleiner'], [1, 'Automatisch'], [1.15, 'Größer'], [1.3, 'Groß'], [1.5, 'Sehr groß']];
 
 /* ── Systeminfo & Datensicherung ── */
 async function refreshInfo() {
@@ -4030,8 +4070,7 @@ function field(key, label, help, type = 'text', extra = '') {
 }
 function renderSettings() {
   const v = $('#view-einstellungen');
-  const zoom = +CFG['anzeige.zoom'] || 1;
-  const zoomAuto = CFG['anzeige.zoom.auto'] !== false;
+  const zoomAuto = CFG['anzeige.zoom.auto'] !== false, zoomMul = clamp(+CFG['anzeige.zoom.mul'] || 1, .6, 1.6);
   const segRow = (lbl, help, key, opts) => `<div class="set-row"><div><div class="set-l">${lbl}</div><div class="set-h">${help}</div></div><div class="set-c"><div class="seg" data-pref="${key}">${opts.map(([val, l]) => `<button data-v="${val}" aria-pressed="${prefs[key] === val}">${l}</button>`).join('')}</div></div></div>`;
   v.innerHTML = `<div class="set">
     <nav class="set-nav" aria-label="Bereiche">${SET_SECTIONS.map(([id, l, i]) => `<button data-sec="${id}">${ic(i, 'i-sm')}${l}</button>`).join('')}
@@ -4059,7 +4098,7 @@ function renderSettings() {
       </div></section>
       ${usersSectionHTML()}${bonSectionHTML()}${printerSectionHTML()}${labelSectionHTML()}${mailSectionHTML()}${rksvSectionHTML()}
       <section class="set-sec" id="sec-anzeige"><h2>Darstellung</h2><p>Gilt für den angemeldeten Benutzer. Anzeigegröße auch mit <span class="kbd">Strg</span> <span class="kbd">+</span> / <span class="kbd">−</span> / <span class="kbd">0</span>.</p><div class="card">
-        <div class="set-row"><div><div class="set-l">Anzeigegröße</div><div class="set-h">Für große Bildschirme oder Touch-Kassen</div></div><div class="set-c"><div class="seg" id="zoomSeg"><button data-v="auto" aria-pressed="${zoomAuto}" title="passend zum Bildschirm: ${Math.round(autoZoom() * 100)} %">Automatisch</button>${[.8, .9, 1, 1.1, 1.25, 1.5].map(z => `<button data-v="${z}" aria-pressed="${!zoomAuto && Math.abs(z - zoom) < .001}">${Math.round(z * 100)} %</button>`).join('')}</div></div></div>
+        <div class="set-row"><div><div class="set-l">Anzeigegröße</div><div class="set-h" id="zoomInfo">Passt sich automatisch an Bildschirm und Fenster an – hier nur feinjustieren</div></div><div class="set-c"><div class="seg" id="zoomSeg">${ZOOM_CHOICES.map(([m, l]) => `<button data-v="${m}" aria-pressed="${zoomAuto && Math.abs(m - zoomMul) < .08}">${l}</button>`).join('')}</div></div></div>
         ${segRow('Modus', 'Hell, Dunkel oder wie Windows', 'theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['system', 'System']])}
         <div class="set-row"><div><div class="set-l">Akzentfarbe</div><div class="set-h">Oder eigene Markenfarbe</div></div><div class="set-c"><div class="swatch-row">${Object.entries(ACCENTS).map(([k, a]) => `<button class="swb" data-acc="${k}" aria-pressed="${prefs.accent === k}" style="--sw:hsl(${a.h} ${a.s}% 55%)" title="${a.name}" aria-label="${a.name}"></button>`).join('')}<label class="swb custom" title="Eigene Farbe" aria-pressed="${prefs.accent === 'custom'}"><input type="color" id="setAccCustom" value="#c98a5a" aria-label="Eigene Akzentfarbe"></label></div></div></div>
         ${segRow('Dichte', 'Touch vergrößert alle Bedienflächen', 'density', [['compact', 'Kompakt'], ['comfort', 'Komfort'], ['touch', 'Touch']])}
@@ -4074,7 +4113,7 @@ function renderSettings() {
       </section>
     </div></div>`;
   $$('.seg', v).forEach(s => initSeg(s, b => {
-    if (s.id === 'zoomSeg') return saveSettings(b.dataset.v === 'auto' ? {'anzeige.zoom.auto': true} : {'anzeige.zoom': +b.dataset.v, 'anzeige.zoom.auto': false}, true);
+    if (s.id === 'zoomSeg') return saveSettings({'anzeige.zoom.mul': +b.dataset.v, 'anzeige.zoom.auto': true}, true);
     if (s.id === 'chanSeg') return saveSettings({'update.kanal': b.dataset.v});
     if (s.dataset.pref) { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }
   }));
@@ -15359,7 +15398,7 @@ function openAppearance(anchor) {
   const el = openPopover(anchor, `<div class="pop-h">Darstellung · gilt für ${esc(S.user.name)}</div>
     ${segRow('Modus', 'theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['system', 'System']])}
     <div class="pop-row"><span>Akzent</span><div class="swatch-row">${Object.entries(ACCENTS).map(([k, a]) => `<button class="swb" data-acc="${k}" aria-pressed="${prefs.accent === k}" style="--sw:hsl(${a.h} ${a.s}% 55%)" aria-label="${a.name}" title="${a.name}"></button>`).join('')}<label class="swb custom" title="Eigene Markenfarbe" aria-pressed="${prefs.accent === 'custom'}"><input type="color" id="accCustom" value="#c98a5a" aria-label="Eigene Akzentfarbe"></label></div></div>
-    <div class="pop-row"><span>Anzeigegröße</span><div class="seg" id="apZoom">${[[1, '100 %'], [1.15, '115 %'], [1.25, '125 %'], [1.4, '140 %'], [1.6, '160 %']].map(([v, l]) => `<button data-z="${v}" aria-pressed="${Math.abs((+CFG['anzeige.zoom'] || 1) - v) < .01}">${l}</button>`).join('')}</div></div>
+    <div class="pop-row"><span>Anzeigegröße</span><div class="seg" id="apZoom">${ZOOM_CHOICES.map(([v, l]) => `<button data-z="${v}" aria-pressed="${CFG['anzeige.zoom.auto'] !== false && Math.abs((+CFG['anzeige.zoom.mul'] || 1) - v) < .08}">${l}</button>`).join('')}</div></div>
     ${segRow('Dichte', 'density', [['compact', 'Kompakt'], ['comfort', 'Komfort'], ['touch', 'Touch']])}
     ${segRow('Ecken', 'radius', [['sharp', 'Präzise'], ['soft', 'Weich']])}
     ${segRow('Bewegung', 'motion', [['full', 'Voll'], ['reduced', 'Reduziert']])}
@@ -15369,7 +15408,7 @@ function openAppearance(anchor) {
   if (!el) return;
   $$('.seg', el).forEach(s => initSeg(s, b => { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }));
   el.addEventListener('click', e => {
-    const z = e.target.closest('[data-z]'); if (z) { saveSettings({'anzeige.zoom': +z.dataset.z, 'anzeige.zoom.auto': false}, true); $$('[data-z]', el).forEach(b => b.setAttribute('aria-pressed', b === z)); return; }
+    const z = e.target.closest('[data-z]'); if (z) { saveSettings({'anzeige.zoom.mul': +z.dataset.z, 'anzeige.zoom.auto': true}, true); $$('[data-z]', el).forEach(b => b.setAttribute('aria-pressed', b === z)); return; }
     const a = e.target.closest('[data-acc]');
     if (a) { prefs.accent = a.dataset.acc; applyPrefs(true); $$('[data-acc],.swb.custom', el).forEach(b => b.setAttribute('aria-pressed', b === a)); }
     if (e.target.closest('#apSave')) { closePopover(); toast('Design-Vorlage gespeichert', {t2: '„Alpenlicht · Eigene“ – zuweisbar an Mandant, Filiale oder Rolle', type: 'pos', icon: 'palette'}); Hooks.emit('config.theme.saved', {vorlage: 'Alpenlicht · Eigene', modus: prefs.theme, akzent: prefs.accent}); }
