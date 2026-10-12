@@ -1264,6 +1264,19 @@ button.nav-group .gl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .sb-collapsed button.nav-group{width:44px;height:38px;padding:0;margin:4px auto;justify-content:center;color:inherit}
 .sb-collapsed button.nav-group .gl{display:none}
 .sb-collapsed button.nav-group::after{display:none}
+/* Ruhiges Menü (v0.16.1): schlichte Bereichstitel statt farbiger Leisten */
+.nav-sec{margin-top:2px}
+button.nav-group.nav-group{height:32px;gap:9px;padding:0 10px;margin:1px 0;border-radius:8px;font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--text-2);background:transparent;border:0}
+button.nav-group:hover{background:var(--surface-2);color:var(--text)}
+button.nav-group .gi{width:20px;height:20px;border-radius:6px;background:hsl(var(--gh) 60% 50% / .14);color:hsl(var(--gh) 60% 42%)}
+button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
+.nav-sec:not([data-closed]) button.nav-group{background:transparent;border:0;color:var(--text);font-weight:700}
+.nav-sec:not([data-closed]){padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--line)}
+.nav-sec:not([data-closed]) .nav-item{margin-left:6px}
+.nav-parent{font-weight:500;color:var(--text-2)}
+.sb-collapsed button.nav-group{width:40px;height:34px;margin:3px auto}
+.sb-collapsed .nav-sec:not([data-closed]){border:0}
+.sb-collapsed .nav-sec:not([data-closed]) .nav-item{margin-left:auto}
 </style>
 </head>
 <body>
@@ -1634,7 +1647,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.16.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.16.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1905,6 +1918,8 @@ const navFlat = () => { const out = []; const walk = (l, path) => l.forEach(n =>
 const NAV_GROUP_STYLE = {Verkauf: ['register', 215], Marketing: ['percent', 330], Artikel: ['tag', 25], FEDAS: ['sync', 170], Einkauf: ['truck', 150], Kunden: ['users', 265], Versand: ['box', 45], Analyse: ['chart', 195], EDI: ['swap', 290], Webshop: ['globe', 235], Inventur: ['layers', 100], Stammdaten: ['database', 5], Einstellungen: ['sliders', 250], System: ['server', 215], Service: ['info', 185], Auswertung: ['chart', 195], Filialen: ['store', 60]};
 function renderNav() {
   let html = '', open = false;
+  // Erststart des ruhigen Menüs: alle Bereiche eingeklappt, nur der aktuelle wird per navReveal geöffnet
+  if (!persist.get('navCalm', false)) { NAV.forEach(n => { if (n.g) navClosed.add(n.g); }); persist.set('navCalm', true); persist.set('navClosed', [...navClosed]); }
   const item = (n, lvl) => {
     if (n.kids) {
       const k = navKey(n), on = navOpen.has(k);

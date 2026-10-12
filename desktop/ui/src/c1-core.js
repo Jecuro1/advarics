@@ -193,7 +193,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.16.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.16.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -464,6 +464,8 @@ const navFlat = () => { const out = []; const walk = (l, path) => l.forEach(n =>
 const NAV_GROUP_STYLE = {Verkauf: ['register', 215], Marketing: ['percent', 330], Artikel: ['tag', 25], FEDAS: ['sync', 170], Einkauf: ['truck', 150], Kunden: ['users', 265], Versand: ['box', 45], Analyse: ['chart', 195], EDI: ['swap', 290], Webshop: ['globe', 235], Inventur: ['layers', 100], Stammdaten: ['database', 5], Einstellungen: ['sliders', 250], System: ['server', 215], Service: ['info', 185], Auswertung: ['chart', 195], Filialen: ['store', 60]};
 function renderNav() {
   let html = '', open = false;
+  // Erststart des ruhigen Menüs: alle Bereiche eingeklappt, nur der aktuelle wird per navReveal geöffnet
+  if (!persist.get('navCalm', false)) { NAV.forEach(n => { if (n.g) navClosed.add(n.g); }); persist.set('navCalm', true); persist.set('navClosed', [...navClosed]); }
   const item = (n, lvl) => {
     if (n.kids) {
       const k = navKey(n), on = navOpen.has(k);

@@ -1,3 +1,7 @@
+## Neu in 0.16.1
+
+- Ruhigeres linkes Menü: schlichte Bereichstitel statt farbiger Leisten, beim ersten Start alle Bereiche eingeklappt (nur der aktuelle ist offen), kompaktere Abstände.
+
 ## Neu in 0.16.0
 - **Advarics-Import (Artikel → Artikelpflege):** Artikelexport aus Advarics (Excel „GridExport“) einlesen – Vorschau mit Zahlen, dann Import mit Fortschrittsanzeige. Marke, Artikel-Nr., Name, Farben, EK, VK, Bestand, Hauptlieferant, Warengruppe, Saison und Lagerplatz werden übernommen; mehrere Zeilen derselben Artikelnummer werden zu einem Artikel mit mehreren Farben
 - **Bilder:** in der Tabelle eingebettete Bilder werden gespeichert, Bild-Links (z. B. Bildserver des Verbands) im Hintergrund geladen

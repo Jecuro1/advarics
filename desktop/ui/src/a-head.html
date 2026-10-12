@@ -1264,5 +1264,18 @@ button.nav-group .gl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .sb-collapsed button.nav-group{width:44px;height:38px;padding:0;margin:4px auto;justify-content:center;color:inherit}
 .sb-collapsed button.nav-group .gl{display:none}
 .sb-collapsed button.nav-group::after{display:none}
+/* Ruhiges Menü (v0.16.1): schlichte Bereichstitel statt farbiger Leisten */
+.nav-sec{margin-top:2px}
+button.nav-group.nav-group{height:32px;gap:9px;padding:0 10px;margin:1px 0;border-radius:8px;font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--text-2);background:transparent;border:0}
+button.nav-group:hover{background:var(--surface-2);color:var(--text)}
+button.nav-group .gi{width:20px;height:20px;border-radius:6px;background:hsl(var(--gh) 60% 50% / .14);color:hsl(var(--gh) 60% 42%)}
+button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
+.nav-sec:not([data-closed]) button.nav-group{background:transparent;border:0;color:var(--text);font-weight:700}
+.nav-sec:not([data-closed]){padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--line)}
+.nav-sec:not([data-closed]) .nav-item{margin-left:6px}
+.nav-parent{font-weight:500;color:var(--text-2)}
+.sb-collapsed button.nav-group{width:40px;height:34px;margin:3px auto}
+.sb-collapsed .nav-sec:not([data-closed]){border:0}
+.sb-collapsed .nav-sec:not([data-closed]) .nav-item{margin-left:auto}
 </style>
 </head>
