@@ -365,3 +365,47 @@ function bindArtikel2() {
   // Bilder aus der Warteschlange nach und nach im Hintergrund laden – Katalog dabei aktualisieren
   if (DESKTOP) { let last = 0; setInterval(async () => { try { const n = await invoke('media_pending_count'); if (n !== last && (last > 0 || n === 0)) { replaceCatalog(await invoke('catalog_list')); if (S.view === 'artikel') renderArtTable(); } last = n; } catch { /* */ } }, 20000); }
 }
+
+/* ── Advarics-Import (XLSX) ── */
+const ADV = {path: '', pv: null, opt: {inaktiv: false, bestand: true, preise: true, bilder: true, demo_weg: true}, busy: false, res: null, timer: null};
+registerPage('advarics-import', {title: 'Advarics-Import', sub: () => ADV.pv ? `${num(ADV.pv.artikel)} Artikel in der Datei` : 'Artikelexport als Excel-Datei', render: async () => {
+  const v = $('#view-advarics-import');
+  if (!DESKTOP) { v.innerHTML = desktopEmpty('download', 'Advarics-Import'); return; }
+  const pv = ADV.pv, o = ADV.opt, r = ADV.res;
+  const sw = (k, l, h) => `<div class="set-row"><div><div class="set-l">${l}</div><div class="set-h">${h}</div></div><div class="set-c"><button class="switch" role="switch" data-advo="${k}" aria-checked="${!!o[k]}"></button></div></div>`;
+  v.innerHTML = `<div class="cv">${pageHead('Advarics-Import', 'Artikelexport aus Advarics (Excel „GridExport“) einlesen: Artikel mit Farben, Preisen, Bestand, Lieferanten, Warengruppen und Bildern', `<button class="btn btn-secondary" data-advpick ${ADV.busy ? 'disabled' : ''}>${ic('folder', 'i-sm')}${ADV.path ? 'Andere Datei …' : 'Datei wählen …'}</button>`)}
+    ${!ADV.path ? `<div class="card"><div class="empty" style="padding:56px 20px"><div class="empty-icon">${ic('download')}</div><h3>Advarics-Export wählen</h3><p>In Advarics die Artikelliste als Excel exportieren (mit Spalten Marke, Artikel-Nr., Artikel-Name, Farbe, EK, VK, Bestand …) und hier auswählen. Eingebettete Bilder und Bild-Links werden mitgenommen.</p><button class="btn btn-primary" data-advpick>${ic('folder', 'i-sm')}Datei wählen …</button></div></div>` : `
+    <div class="card" style="padding:12px 16px;margin-bottom:14px;font-size:13px" class="mono">${ic('folder', 'i-sm')} <span class="mono">${esc(ADV.path)}</span></div>
+    ${pv ? `${kpiCards([[num(pv.zeilen), 'Zeilen'], [num(pv.artikel), 'Artikel (nach Nr.)'], [num(pv.marken), 'Marken'], [num(pv.lieferanten), 'Lieferanten'], [num(pv.warengruppen), 'Warengruppen'], [num(pv.bestand), 'Stück Bestand'], [num(pv.bilder_eingebettet), 'eingebettete Bilder'], [num(pv.bilder_links), 'Bild-Links']])}
+      <div class="card" style="margin-bottom:14px"><div class="set-row"><div class="set-l">Optionen</div></div>
+        ${sw('bestand', 'Bestand übernehmen', 'bucht den Bestand je Farbe als „Anfangsbestand (Advarics-Import)“ – Größen sind im Export nicht enthalten (Größe „one size“)')}
+        ${sw('preise', 'VK-Preise bereits vorhandener Artikel aktualisieren', 'neue Artikel erhalten immer den VK aus der Datei')}
+        ${sw('bilder', 'Bilder übernehmen', 'eingebettete Bilder werden gespeichert, Bild-Links im Hintergrund geladen')}
+        ${sw('inaktiv', `Inaktive Artikel mitimportieren (${num(pv.inaktiv)})`, 'sonst werden als inaktiv markierte Artikel übersprungen')}
+        ${sw('demo_weg', 'Demo-Artikel vorher deaktivieren', 'das Marken-Demosortiment verschwindet aus Kasse und Liste')}</div>
+      <div class="card" style="padding:14px 16px;margin-bottom:14px;font-size:13px;line-height:1.55">${ic('info', 'i-sm')} Zeilen ohne VK-Preis (${num(pv.ohne_vk)}), z. B. Kassenpositionen wie „Anzahlung“, „Service“, „Verleih“ oder Displays, werden nicht als Artikel angelegt und nach dem Import aufgelistet. Mehrere Zeilen mit gleicher Marke und Artikel-Nr. werden zu <b>einem Artikel mit mehreren Farben</b>. Lieferanten und Warengruppen werden angelegt. Ein zweiter Import derselben Datei legt nichts doppelt an. ${pv.negativ ? `<br><b>${pv.negativ}</b> Artikel haben negativen Bestand in Advarics – er wird so übernommen.` : ''}</div>
+      <div style="display:flex;gap:10px;align-items:center"><button class="btn btn-primary" data-advgo ${ADV.busy ? 'disabled' : ''} style="height:44px;padding:0 22px">${ic('download', 'i-sm')}${ADV.busy ? 'Import läuft …' : `${num(pv.artikel)} Artikel importieren`}</button><span data-advprog class="muted" style="font-size:13px"></span></div>` : loadingCard('Lese Datei')}`}
+    ${r ? `<div class="card" style="padding:16px 18px;margin-top:16px;border-color:var(--pos)"><b style="color:var(--pos)">${ic('check', 'i-sm')} Import abgeschlossen</b><div style="margin-top:8px;font-size:13.5px;line-height:1.7">${num(r.neu)} Artikel neu · ${num(r.aktualisiert)} aktualisiert · ${num(r.varianten)} Varianten · ${num(r.lieferanten_neu)} Lieferanten · ${num(r.warengruppen_neu)} Warengruppen · ${num(r.bilder_eingebettet)} Bilder übernommen · ${num(r.bilder_links)} Bild-Links werden im Hintergrund geladen${r.demo_entfernt ? ` · ${num(r.demo_entfernt)} Demo-Artikel deaktiviert` : ''}${r.inaktiv_uebersprungen ? ` · ${num(r.inaktiv_uebersprungen)} inaktive übersprungen` : ''}</div>
+      ${(r.ohne_vk || []).length ? `<details style="margin-top:10px"><summary style="cursor:pointer">${r.ohne_vk.length} Zeilen ohne VK-Preis nicht importiert</summary><div class="mono" style="font-size:12px;max-height:200px;overflow:auto;margin-top:6px">${r.ohne_vk.map(esc).join('<br>')}</div></details>` : ''}
+      ${(r.fehler || []).length ? `<details open style="margin-top:10px"><summary style="cursor:pointer;color:var(--neg)">${r.fehler.length} Fehler</summary><div class="mono" style="font-size:12px;max-height:200px;overflow:auto;margin-top:6px">${r.fehler.map(esc).join('<br>')}</div></details>` : ''}
+      <div style="margin-top:12px"><button class="btn btn-secondary" data-goto="artikel">${ic('tag', 'i-sm')}Zu den Artikeln</button></div></div>` : ''}</div>`;
+  const poll = async () => { if (!ADV.busy) return; try { const s = await invoke('settings_get'); const p = s['import.fortschritt']; const el = $('[data-advprog]'); if (el && p) el.textContent = `${{lesen: 'Datei wird gelesen', artikel: 'Artikel', bilder: 'Bilder', fertig: 'fertig'}[p.phase] || p.phase}${p.gesamt ? ` ${num(p.fertig)} / ${num(p.gesamt)}` : ''}`; } catch { /* */ } ADV.timer = setTimeout(poll, 2000); };
+  if (ADV.busy) { clearTimeout(ADV.timer); poll(); }
+  v.onclick = async e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.advpick != null) {
+      try { const p = await invoke('advarics_pick'); if (!p) return; ADV.path = p; ADV.pv = null; ADV.res = null; PAGES['advarics-import'].render(); ADV.pv = await invoke('advarics_preview', {path: p}); PAGES['advarics-import'].render(); } catch (err) { ADV.pv = null; toast('Datei nicht lesbar', {t2: String(err), type: 'warn', dur: 9000}); PAGES['advarics-import'].render(); }
+      return;
+    }
+    if (b.dataset.advo) { ADV.opt[b.dataset.advo] = !ADV.opt[b.dataset.advo]; b.setAttribute('aria-checked', ADV.opt[b.dataset.advo]); return; }
+    if (b.dataset.advgo != null) {
+      try { await needPerm('artikel.bearbeiten', 'Advarics-Import'); } catch { return; }
+      if (!await confirmBox(`${num(ADV.pv.artikel)} Artikel aus Advarics importieren? Das kann einige Minuten dauern – Kontor bleibt dabei bedienbar.`, 'Importieren')) return;
+      ADV.busy = true; ADV.res = null; PAGES['advarics-import'].render();
+      try { ADV.res = await invoke('advarics_import', {path: ADV.path, ...{inaktiv: ADV.opt.inaktiv, bestand: ADV.opt.bestand, preise: ADV.opt.preise, bilder: ADV.opt.bilder, demoWeg: ADV.opt.demo_weg}, user: S.user.name}); await loadStamm(true); replaceCatalog(await invoke('catalog_list')); try { await loadSuppliers(); } catch { /* */ } toast('Import abgeschlossen', {t2: `${ADV.res.neu} Artikel neu`, type: 'pos', icon: 'download'}); Hooks.emit('catalog.advarics.import', {neu: ADV.res.neu, aktualisiert: ADV.res.aktualisiert}); }
+      catch (err) { toast('Import fehlgeschlagen', {t2: String(err), type: 'warn', dur: 9000}); }
+      ADV.busy = false; clearTimeout(ADV.timer); if (S.view === 'advarics-import') PAGES['advarics-import'].render();
+    }
+  };
+}});
+VIEW_PERM['advarics-import'] = 'artikel.bearbeiten';

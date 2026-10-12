@@ -35,6 +35,7 @@ mod stamm;
 mod media;
 mod fedas;
 mod demo;
+mod advarics;
 mod msg;
 
 use base64::Engine as _;
@@ -1822,6 +1823,28 @@ fn fedas_import_file(db: State<db::Db>, content: String, format: String, user: S
     Ok(json!({ "zeilen": n, "neu": st.neu, "aktualisiert": st.aktualisiert, "uebersprungen": st.uebersprungen, "bilder": st.bilder }))
 }
 
+
+/* ── Advarics-Artikelexport (XLSX) einlesen ── */
+
+#[tauri::command]
+async fn advarics_pick(app: AppHandle) -> Res<Option<String>> {
+    Ok(app.dialog().file().set_title("Advarics-Artikelexport wählen (XLSX)").add_filter("Excel", &["xlsx"]).blocking_pick_file().and_then(|f| f.into_path().ok()).map(|p| p.display().to_string()))
+}
+#[tauri::command]
+async fn advarics_preview(path: String) -> Res<Value> {
+    tauri::async_runtime::spawn_blocking(move || advarics::preview(std::path::Path::new(&path))).await.map_err(err)?
+}
+#[tauri::command]
+async fn advarics_import(app: AppHandle, path: String, inaktiv: bool, bestand: bool, preise: bool, bilder: bool, demo_weg: bool, user: String) -> Res<Value> {
+    let p = app.state::<db::Db>().path.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut c = db::open(&p).map_err(err)?;
+        advarics::import(&mut c, p.parent().unwrap(), std::path::Path::new(&path), &advarics::Opts { inaktiv, bestand, preise, bilder, demo_weg }, &user)
+    })
+    .await
+    .map_err(err)?
+}
+
 /* ── Vorgänge (Einkauf, Faktura, Reklamation, Reservierung, Auswahl, Kampagnen …) ── */
 
 #[tauri::command]
@@ -1972,6 +1995,8 @@ fn main() {
         .setup(move |app| {
             let dir = match &portable { Some(d) => PathBuf::from(d), None => app.path().app_data_dir()? };
             std::fs::create_dir_all(&dir)?;
+            // Artikelbilder über das Asset-Protokoll – auch bei abweichendem Datenverzeichnis erlauben
+            let _ = app.asset_protocol_scope().allow_directory(dir.join("bilder"), true);
             let path = dir.join("kontor.db");
             let conn = db::open(&path).map_err(|e| format!("Datenbank konnte nicht geöffnet werden: {e}"))?;
             let _ = db::audit_append(&conn, "system.started", &json!({ "version": app.package_info().version.to_string() }));
@@ -2004,6 +2029,9 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            advarics_pick,
+            advarics_preview,
+            advarics_import,
             article_media_list,
             article_media_pick,
             article_media_add_url,

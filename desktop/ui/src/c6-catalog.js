@@ -76,7 +76,7 @@ function renderArtikel() {
     <div class="cv-head"><div><h2 class="h-title">Artikel</h2><div class="dash-meta" style="margin-top:6px"><span id="artCount"></span>${DESKTOP ? '' : '<span>·</span><span class="pill warn" style="height:20px">Vorschau – Änderungen werden nicht gespeichert</span>'}</div></div>
       <button class="btn btn-primary" id="artNew">${ic('plus', 'i-sm')}Neuer Artikel</button></div>
     <div class="cv-tools"><label class="search-field">${ic('search')}<input id="artQ" placeholder="Name, Marke, Artikelnummer oder EAN …" value="${esc(AV.q)}" autocomplete="off"></label>
-      <div class="cats" id="artCats" style="flex:1;min-width:0">${CATS.map(c => `<button class="cat" data-acat="${c.id}" aria-pressed="${AV.cat === c.id}">${c.name}</button>`).join('')}</div></div>
+      ${CATS.length > 16 ? `<select class="input select" id="artCatSel" style="flex:1;min-width:0;max-width:420px">${(() => { const n = {}; ART.forEach(a => { n[a.cat] = (n[a.cat] || 0) + 1; }); return [CATS[0], ...CATS.slice(1).filter(c => n[c.id] || c.id === AV.cat).sort((x, y) => x.name.localeCompare(y.name, 'de'))].map(c => `<option value="${esc(c.id)}" ${AV.cat === c.id ? 'selected' : ''}>${esc(c.name)}${c.id === 'alle' ? ` (${ART.length})` : ` (${n[c.id] || 0})`}</option>`).join(''); })()}</select>` : `<div class="cats" id="artCats" style="flex:1;min-width:0">${CATS.map(c => `<button class="cat" data-acat="${c.id}" aria-pressed="${AV.cat === c.id}">${c.name}</button>`).join('')}</div>`}</div>
     <div class="card" id="artTable"></div></div>`;
   renderArtTable();
 }
@@ -261,6 +261,7 @@ function openBooking(a, v) {
 function bindCatalog() {
   const av = $('#view-artikel');
   av.addEventListener('input', e => { if (e.target.id === 'artQ') { AV.q = e.target.value; renderArtTable(); } });
+  av.addEventListener('change', e => { if (e.target.id === 'artCatSel') { AV.cat = e.target.value; renderArtTable(); } });
   av.addEventListener('click', e => {
     const c = e.target.closest('[data-acat]'); if (c) { AV.cat = c.dataset.acat; $$('[data-acat]', av).forEach(b => b.setAttribute('aria-pressed', b === c)); return renderArtTable(); }
     if (e.target.closest('#artNew')) return openEditor(null);

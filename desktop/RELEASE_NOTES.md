@@ -1,3 +1,10 @@
+## Neu in 0.16.0
+- **Advarics-Import (Artikel → Artikelpflege):** Artikelexport aus Advarics (Excel „GridExport“) einlesen – Vorschau mit Zahlen, dann Import mit Fortschrittsanzeige. Marke, Artikel-Nr., Name, Farben, EK, VK, Bestand, Hauptlieferant, Warengruppe, Saison und Lagerplatz werden übernommen; mehrere Zeilen derselben Artikelnummer werden zu einem Artikel mit mehreren Farben
+- **Bilder:** in der Tabelle eingebettete Bilder werden gespeichert, Bild-Links (z. B. Bildserver des Verbands) im Hintergrund geladen
+- Lieferanten und Warengruppen werden automatisch angelegt; Kassenpositionen wie „Anzahlung“ oder „Service“ (ohne VK) werden nicht als Artikel importiert und aufgelistet; ein zweiter Import legt nichts doppelt an
+- Option, das Demo-Sortiment vorher zu deaktivieren
+- Artikelliste: bei vielen Warengruppen eine Auswahlliste mit Anzahl statt Kacheln
+
 ## Neu in 0.15.1
 - **Echte Datenquelle für FEDAS-Daten: OUTTRA Data & Image Hub.** FEDAS ist der einheitliche 6-stellige Produktschlüssel der Sportartikelbranche – die Stammdaten der Marken liegen in Datenhubs. Kontor spricht jetzt die dokumentierte Händler-API von OUTTRA (api.outtra.com): freigeschaltete Marken laden, Varianten seitenweise abrufen, täglich nur Änderungen (updatedAfter), automatisches Warten bei Anfragelimit
 - Übernommen werden FEDAS-Schlüssel, Beschreibung, Merkmale, Material (außen/innen/Futter/Füllung/Sohle), Pflege, Herkunft, Zolltarif, Gewicht, Größen, UVP und Einkaufspreis, Dokumente (Anleitung, Größentabellen) und alle Bilder mit Ansicht (Front, Rück, Detail, Model) in der Reihenfolge des Herstellers

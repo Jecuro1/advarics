@@ -81,6 +81,7 @@ Stand 0.10.0 – alles mit lokaler Datenbank, ohne Server:
   mit Vorlagen und Zeitsteuerung; EDIFACT (PRICAT, DESADV, INVOIC, ORDRSP ein – ORDERS, SLSRPT, INVRPT aus); Webshop-
   Bestellungen per REST-API; Inventur-Erfassungspool; Zeiterfassung; Prozesskonfiguration, Nummernkreise, EK-Verschlüsselung.
 - **0.15:** FEDAS-Sync über den OUTTRA Data & Image Hub (täglich automatisch, Datei-Import), komplett neue Artikelmaske mit Reitern und Bildergalerie, Marken-Demosortiment mit Originaldaten, farbige Hauptmenüs.
+- **0.16:** Advarics-Import (XLSX mit Bildern, Lieferanten, Warengruppen, Bestand).
 - **Digitales Schaufenster** unter `/shop` am eingebauten Server (Click & Reserve).
 - **Noch offen:** echte RKSV-Signaturkarte bzw. A-Trust, TSE (Deutschland), App-Store-App, FIDO2-Schlüssel,
   Active-Directory/SAML-Anmeldung.

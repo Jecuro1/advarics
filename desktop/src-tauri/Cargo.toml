@@ -1,6 +1,6 @@
 [package]
 name = "kontor"
-version = "0.15.1"
+version = "0.16.0"
 description = "Kontor – Warenwirtschaft & Kasse (On-Premise)"
 authors = ["Kontor"]
 edition = "2021"
@@ -40,6 +40,9 @@ tiny_http = "0.12"
 sha1 = "0.10"
 # Paket 8: Single Sign-On (RS256-Signaturen der Identitätsanbieter)
 rsa = "0.9"
+# Paket 12: Import von Advarics-Exporten (XLSX mit eingebetteten Bildern)
+calamine = { version = "0.36", default-features = false }
+zip = { version = "4", default-features = false, features = ["deflate"] }
 
 [target.'cfg(windows)'.dependencies]
 # Bondrucker über den Windows-Druckerspooler (RAW)
