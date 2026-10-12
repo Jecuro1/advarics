@@ -1,3 +1,7 @@
+## Neu in 0.21.1
+
+- Datentabellen (Warengruppen, Artikel) und Artikelmaske im eigenen Kontor-Stil: helle Werkzeugleiste und Reiter in der Designfarbe statt dunkelblau/orange. Alle Funktionen bleiben.
+
 ## Neu in 0.21.0
 
 - Artikel im Advarics-Stil: Artikelliste als Datentabelle (Gruppieren, Spaltenfilter, Spalten-Auswahl, Export, Auswahl, Etiketten) und Artikelmaske als eigene Seite mit Werkzeugleiste (Übersicht, Aktualisieren, Sichern, Neu, Änderungen zurücknehmen, Löschen, Artikel-Service), Datensatz-Navigation und den Reitern Allgemein, Basispreise, Filial-Preise, Scancodes, Bestand, Preisänderungen, Buchungen, Artikel-Karte, Zusätzl. Lieferanten, Artikel-Merkmale, Zusatz-Preise, Bilder-Zuordnung, Attribut-Zuordnung, Text-Zuordnung, Übersetzung, NOS Monatswerte, Vorgänger-Artikel – dazu die bisherigen Reiter Beschreibung, Material, Technik, Klassifikation, Webshop, Farben & Größen.

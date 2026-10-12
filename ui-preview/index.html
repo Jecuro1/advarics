@@ -1371,6 +1371,15 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .ae-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
 .ae-total{border:1px solid var(--line);border-radius:8px;overflow:hidden;max-width:420px}
 .ae-totalh{background:var(--surface-2);text-align:center;font-weight:600;padding:6px}
+/* Eigener Stil: helle Werkzeugleiste und Reiter im Kontor-Design (Funktionen wie Advarics) */
+.ag-bar{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-1)}
+.ag-btn{color:var(--text-2)}
+.ag-btn:hover{background:var(--surface-2);color:var(--text)}
+.ag-btn .i{stroke:currentColor}
+.ag-btn:hover .i{color:var(--accent)}
+.ae-nav{color:var(--text-2)}
+.ae-tabsw .ed-tab[aria-selected="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600;border-radius:8px}
+.ae-tabsw .ed-tab:hover{background:var(--surface-2)}
 </style>
 </head>
 <body>
@@ -1742,7 +1751,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.21.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.21.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
