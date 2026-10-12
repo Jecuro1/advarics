@@ -1,3 +1,14 @@
+## Neu in 0.32.0
+
+- Kassen-Konfiguration, weitere Reiter mit Wirkung:
+  - Passwort-Verwaltung: Passwort 1/2 (nur als Prüfsumme gespeichert) schützen Tagesabschluss, Retoure/Storno, manuelles Öffnen der Lade und Kassenbuch.
+  - Hot Items: zugeordnete Warengruppen stehen an der Kasse zuerst.
+  - Scan-Regeln: Code-Länge, Start Position und Gelesene Länge bestimmen, wie gescannte Codes gelesen werden.
+  - Pflichteingaben: Kundenfelder, die beim Speichern eines Kunden ausgefüllt sein müssen.
+  - Beleg Zusatzinformationen: nur zugeordnete werden beim Bezahlen abgefragt.
+  - Artikel-Info: 0-Bestände in der Bestandsmatrix ein-/ausblenden.
+- Kassen: „Menü Mehr sortieren“ ordnet die Einträge des Menüs „Mehr“ an der Kasse; „Positionsinfo Sortieren“ zeigt Zusatzinfos (Artikelnr., Farbe, EAN, Warengruppe, Marke, Seriennr., Verkäufer) unter jeder Warenkorbposition.
+
 ## Neu in 0.31.0
 
 - Kassen-Konfiguration wirkt jetzt an der Kasse (Konfiguration der Kasse dieses Arbeitsplatzes unter Kassen › Allgemein):

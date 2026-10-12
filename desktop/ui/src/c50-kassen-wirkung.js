@@ -116,3 +116,81 @@ setInterval(() => { const min = +kkVal('inaktivMin', 0); if (min > 0 && S.starte
   const _st = applySettings;
   applySettings = function () { const r = _st.apply(this, arguments); try { kkApplyFlow(); } catch (e) { /* */ } return r; };
 }
+
+/* 7) Passwörter für sensible Aktionen */
+const KK_PWKEY = {tagesabschluss: 'pwTagesabschluss', storno: 'pwStorno', lade: 'pwLade', kassenbuch: 'pwKassenbuch'};
+function kkPw(thema, titel) {
+  const c = kkActive(), n = c?.[KK_PWKEY[thema]], hash = n ? c['pw' + n + 'h'] : '';
+  if (!n || !hash) return Promise.resolve(true);
+  return new Promise(res => {
+    const el = openLayer(`<div class="modal" style="width:min(400px,100%)" role="dialog" aria-modal="true"><div class="m-head"><div class="m-ic">${ic('lock')}</div><div><h2>${esc(titel)}</h2><p>Passwort ${esc(n)} erforderlich</p></div></div>
+      <div class="m-body"><input class="input" id="kkpw" type="password" autocomplete="off" placeholder="Passwort" style="height:50px;font-size:18px"></div>
+      <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="kkpwok">${ic('check', 'i-sm')}Bestätigen</button></div></div>`, {onClose: () => res(false)});
+    const inp = $('#kkpw', el); setTimeout(() => inp.focus(), 60);
+    const ok = async () => { if (await kkSha(inp.value) === hash) { res(true); closeLayer(el); } else { toast('Passwort falsch', {type: 'warn', icon: 'lock'}); inp.value = ''; inp.focus(); } };
+    $('#kkpwok', el).onclick = ok; inp.addEventListener('keydown', e => { if (e.key === 'Enter') ok(); });
+  });
+}
+{ const _oc = openClosing; openClosing = async function () { if (!await kkPw('tagesabschluss', 'Tagesabschluss')) return; return _oc.apply(this, arguments); };
+  const _ors = openReturnStart; openReturnStart = async function () { if (!await kkPw('storno', 'Retoure / Storno')) return; return _ors.apply(this, arguments); };
+  const _or = openReturn; openReturn = async function () { if (!await kkPw('storno', 'Retoure / Storno')) return; return _or.apply(this, arguments); };
+  const _od = openDrawer; openDrawer = async function (reason) { if (reason === 'manuell' && !await kkPw('lade', 'Kassenlade öffnen')) return; return _od.apply(this, arguments); };
+  const _cb = openCashBook; openCashBook = async function () { if (!await kkPw('kassenbuch', 'Kassenbuch')) return; return _cb.apply(this, arguments); };
+}
+
+/* 8) Hot Items: Warengruppen-Schnellwahl zuerst */
+{ const _rc = renderCats;
+  renderCats = function () {
+    const r = _rc.apply(this, arguments); const hot = kkOn('hotItems') ? (kkActive()?.hotcats || []) : []; if (!hot.length) return r;
+    const box = $('#cats'); if (!box) return r;
+    const btns = [...box.querySelectorAll('[data-cat]')], first = btns.find(b => b.dataset.cat === 'alle');
+    let ref = first; hot.forEach(id => { const b = btns.find(x => x.dataset.cat === id); if (b) { b.classList.add('hot'); ref ? ref.after(b) : box.prepend(b); ref = b; } });
+    return r;
+  };
+}
+
+/* 9) Scan-Regeln */
+const kkScan = code => {
+  const rules = [...(kkActive()?.scanRegeln || [])].sort((a, b) => (+b.sort || 0) - (+a.sort || 0));
+  for (const r of rules) if (+r.laenge === code.length) return code.substr((+r.start || 1) - 1, +r.gelesen || code.length);
+  return null;
+};
+{ const _he = handleEnter;
+  handleEnter = function () {
+    const input = $('#posSearch'), raw = input?.value.trim() || '';
+    if (raw && !/^\d{13}$/.test(raw)) { const v = kkScan(raw); if (v && v !== raw) { input.value = v; POS.q = ''; } }
+    return _he.apply(this, arguments);
+  };
+}
+
+/* 10) Pflichtfelder bei Kunden */
+INVOKE_HOOKS.customer_save = a => {
+  const req = kkActive()?.pflicht || []; if (!req.length || !a?.customer) return a;
+  const miss = KK_PFLICHT.filter(f => req.includes(f.id) && !String(a.customer[f.id] ?? '').trim()).map(f => f.name);
+  if (miss.length) throw new Error(`Pflichtfeld laut Kassen-Konfiguration: ${miss.join(', ')}`);
+  return a;
+};
+const kkBelegzusatzOk = id => { const r = kkActive()?.belegzusatz; return !r?.length || r.includes(id); };
+
+/* 11) Artikel-Info: 0-Bestände */
+{ const _mx = matrixHTML;
+  matrixHTML = function () { const h = _mx.apply(this, arguments); return kkOn('aiNull') ? h : h.replace(/(<td class="r num"[^>]*>)0(<)/g, '$1$2'); };
+}
+
+/* 12) Kassen: Reihenfolge im Menü „Mehr“ und Positionsinfo im Warenkorb */
+{ const _om2 = openMore;
+  openMore = function () {
+    const r = _om2.apply(this, arguments);
+    const rows = kkKasse()?.sub?.icons; if (rows?.length) { const ord = [...rows].sort((a, b) => a.sort - b.sort).map(x => x.id), items = [...document.querySelectorAll('.pop-i[data-m]')]; if (items.length) { const host = items[0].parentElement; ord.forEach(id => { const it = items.find(b => b.dataset.m === id); if (it) host.appendChild(it); }); } }
+    return r;
+  };
+  const _lh = lineHTML;
+  lineHTML = function (l) {
+    const h = _lh.apply(this, arguments), rows = kkKasse()?.sub?.posinfo; if (!rows?.length || l.service) return h;
+    const a = l.art || {}, v = a.variants ? (a.variants.find(x => x.c === l.c && x.s === l.s) || {}) : {};
+    const val = {'Artikelnr.': a.id || l.sku || '', 'Farbe': COLORS[l.c]?.[0] || '', 'EAN': v.ean || '', 'Warengruppe': CATS.find(c => c.id === a.cat)?.name || '', 'Marke': a.brand || '', 'Seriennummer': Object.entries(l.vals || {}).find(([k]) => /serie/i.test(k))?.[1] || '', 'Verkäufer': l.seller || ''};
+    const lines = {}; rows.forEach(r => { const t = val[r.name]; if (t) (lines[+r.zeile || 1] ||= []).push([+r.sort || 0, t]); });
+    const html = Object.keys(lines).sort((x, y) => x - y).map(z => `<div class="line-info" style="font-size:11.5px;color:var(--text-3)">${lines[z].sort((x, y) => x[0] - y[0]).map(x => esc(x[1])).join(' · ')}</div>`).join('');
+    return html ? h.replace(/(<div class="line-var">.*?<\/div>)/, '$1' + html) : h;
+  };
+}

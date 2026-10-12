@@ -426,7 +426,7 @@ settingsLink('einst-allgemein', 'Allgemein', 'allgemein'); settingsLink('einst-k
 
 /* ── Kasse: Beleg-Zusatzinformationen, Scanner-Regeln, Artikelservice, Preisgruppen ── */
 { const _op = openPayment; openPayment = function (...args) {
-  const fields = stActive('belegzusatz');
+  const fields = stActive('belegzusatz').filter(r => typeof kkBelegzusatzOk !== 'function' || kkBelegzusatzOk(r.id));
   if (!fields.length || !POS.cart.length || POS.zusatz) return _op.apply(this, args);
   const el = openLayer(`<div class="modal" style="width:min(460px,100%)" role="dialog" aria-modal="true"><div class="m-head"><div class="m-ic">${ic('receipt')}</div><div><h2>Zusatzinformationen zum Beleg</h2><p>Erscheinen auf dem Beleg und in Auswertungen</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
     <div class="m-body" style="display:grid;gap:12px">${fields.map(f => `<label class="field"><span>${esc(f.name)}${f.pflicht ? ' *' : ''}</span>${(f.werte || []).length || /hotel/i.test(f.name) ? `<select class="input select" data-bz="${esc(f.name)}"><option value="">–</option>${((f.werte || []).length ? f.werte : stActive('hotel').map(h => h.name)).map(w => `<option>${esc(w)}</option>`).join('')}</select>` : `<input class="input" data-bz="${esc(f.name)}">`}</label>`).join('')}</div>

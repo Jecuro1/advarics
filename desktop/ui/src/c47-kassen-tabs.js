@@ -7,6 +7,7 @@ function fxField(S, [k, l, t = 'text', o, hint]) {
   if (t === 'check') return `<div class="ea-sw2"><label class="ea-sw"><button type="button" class="switch" role="switch" data-fx-sw="${k}" aria-checked="${!!v}"></button><span>${esc(l)}</span></label>${h}</div>`;
   if (t === 'dis') return `<label class="ea-sw dis"><button type="button" class="switch" disabled role="switch" aria-checked="${!!v}"></button><span>${esc(l)}</span></label>`;
   if (t === 'ro') return `<label class="field"><span>${esc(l)}</span><input class="input ea-ro" readonly value="${esc(typeof o === 'function' ? o() : v ?? '')}">${h}</label>`;
+  if (t === 'pw') return `<label class="field"><span>${esc(l)}</span><input class="input" type="password" autocomplete="new-password" data-fx="${k}" value="" placeholder="${esc(o || '')}">${h}</label>`;
   if (t === 'area') return `<label class="field"><span>${esc(l)}</span><textarea class="input" rows="4" data-fx="${k}" style="height:auto">${esc(v ?? '')}</textarea>${h}</label>`;
   if (t === 'select') { const op = o(); return `<label class="field"><span>${esc(l)}</span><select class="input select" data-fx="${k}">${!op.some(x => String(x[0]) === String(v)) ? `<option value="${esc(v ?? '')}" selected>${esc(v ?? '')}</option>` : ''}${op.map(([x, y]) => `<option value="${esc(x)}" ${String(v) === String(x) ? 'selected' : ''}>${esc(y)}</option>`).join('')}</select>${h}</label>`; }
   return `<label class="field"><span>${esc(l)}</span><input class="input ${t === 'num' ? 'num' : ''}" ${t === 'num' ? 'type="number"' : ''} data-fx="${k}" value="${esc(v ?? '')}">${h}</label>`;
@@ -29,9 +30,10 @@ const fxAccFields = () => FX_ACC.map(([k, l, t]) => ({k, l, t: t === 'check' ? '
 const FX_Z = ['Visa Debit', 'Mastercard Debit', 'Maestro', 'Bank', 'Mobiles Terminal', 'Bankomat', 'Alipay', 'PayPal', 'Gutschrift', 'Gutschein', 'V Pay', 'Visa Electron', 'CUP', 'JCB', 'AMEX', 'Diners', 'Visa', 'MasterCard', 'CHF', 'Bar'];
 const FX_SUMMEN = ['Bar-Entnahme', 'Externe Gutscheine Verkauf', 'Externe Gutscheine Einlösung', 'Bezahlte Fremdrechnung', 'Bezahlte Rechnung', 'Kredit-Verkauf / Rechnung', 'Gutschrift-Verkauf', 'Gutschein-Verkauf', 'Bar-Entnahme (Kassenbuch)', 'Abschöpfung', 'Einlage', 'Wechselgeld'];
 const FX_BELEGE = ['Geschenkbeleg', 'Rechnung', 'Auswahl', 'Gutschein-Verkauf', 'Tageseröffnung', 'Kunden-Bestellung', 'Verkaufsbeleg', 'Datenschutzrichtlinien', 'EFT-Händlerbeleg', 'Umlagerungs-Annahme', 'Bestandskorrektur', 'Reklamation', 'Tagesabschluss', 'Umlagerung', 'Nullbon', 'Standardbeleg'];
+const FX_MEHR = [['gs', 'Gutschein verkaufen'], ['ret', 'Retoure / Umtausch'], ['rcpts', 'Belege'], ['copy', 'Belegkopie drucken'], ['drawer', 'Lade öffnen'], ['book', 'Kassenbuch'], ['x', 'X-Bericht (Zwischenstand)'], ['z', 'Tagesabschluss'], ['flow', 'Kassenablauf bearbeiten']];
 const FX_ICONS = ['Kunden-Bearbeitung', 'Sperren', 'Journal', 'Parken', 'Löschen', 'Artikel-Info', 'Umtausch', 'Gutsch.-Verk.', 'Umlagerung', 'Bst.korrektur', 'Auswahl', 'Rechnung', 'Reklamation', 'Kd.-Bestellung', '<Ausfolgeschein>', 'ERent Kunden s.', 'Set', 'Loyalty', 'Coupon-Scan', 'Fremdrechng.', 'Nachdruck', 'Nachricht', 'Kass.wechsel', 'Steuerfrei', 'Zusatz-Info', 'RFID', 'Kd.-Filter', 'Hilfe-Menü'];
 const FX_LAYOUTS = ['Rechnung', 'Kunden-Verkauf', 'Reservierung', 'Retoure', 'Artikel-Info', 'Journal', 'Kassenlayout'];
-const FX_POSINFO = ['Artikelname', 'Artikelnr.', 'Farb-Nr.', 'EAN', 'Warengruppe', 'Marke', 'Seriennummer', 'Verkäufer'];
+const FX_POSINFO = ['Artikelnr.', 'Farbe', 'EAN', 'Warengruppe', 'Marke', 'Seriennummer', 'Verkäufer'];
 const fxId = () => 'r' + Math.random().toString(36).slice(2, 8);
 const fxAcc0 = () => ({...Object.fromEntries(FX_ACC.map(([k, , t]) => [k, t === 'text' ? '' : t === 'check' ? false : 0])), ...Object.fromEntries(FX_EXTRA.map(x => [x.split(':')[0], 0]))});
 const FX_SUB = {
@@ -56,7 +58,7 @@ const FX_SUB = {
     newRow: o => ({...o}), validate: (o, rows, id) => rows.some(r => r.id !== id && r.name === o.name) ? 'Der Belegtyp ist für diese Kasse schon angelegt.' : (+o.anz >= 1 && +o.anz <= 5 ? '' : 'Anzahl Ausdrucke: 1 bis 5'),
     fields: () => [{k: 'name', l: 'Belegtyp', t: 'select', o: () => [['Verkaufsbeleg', 'Verkaufsbeleg (Kassenbon)'], ['Standardbeleg', 'Standardbeleg (Retoure, Storno)']], req: true}, {k: 'anz', l: 'Anzahl Ausdrucke (1–5)', t: 'num', req: true}]},
   layout: {cols: () => [{k: 'name', l: 'Kassen-Layout', w: 260}, {k: 'xml', l: 'Layout', w: 320}], template: () => FX_LAYOUTS.map(n => ({id: fxId(), name: n, xml: 'Kontor-Standard'})), fields: () => [{k: 'name', l: 'Kassen-Layout', ro: true}, {k: 'xml', l: 'Layout'}]},
-  icons: {cols: () => [{k: 'name', l: 'Icon-Name', w: 260}, {k: 'sort', l: 'Sortierungsnr.', t: 'num', w: 140}], template: () => FX_ICONS.map((n, i) => ({id: fxId(), name: n, sort: i + 1})), order: true, fields: () => [{k: 'name', l: 'Icon-Name', ro: true}, {k: 'sort', l: 'Sortierungsnr.', t: 'num'}]},
+  icons: {cols: () => [{k: 'name', l: 'Eintrag im Menü „Mehr“', w: 280}, {k: 'sort', l: 'Sortierungsnr.', t: 'num', w: 140}], template: () => FX_MEHR.map(([id, n], i) => ({id, name: n, sort: i + 1})), order: true, fields: () => [{k: 'name', l: 'Eintrag im Menü „Mehr“', ro: true}, {k: 'sort', l: 'Sortierungsnr.', t: 'num'}]},
   posinfo: {cols: () => [{k: 'name', l: 'Positionsinformation', w: 240}, {k: 'zeile', l: 'Zeilen-Nr.', t: 'num', w: 120}, {k: 'sort', l: 'Sortierungsnr.', t: 'num', w: 140}], template: () => [], neu: true, del: true, newRow: o => ({...o}),
     fields: () => [{k: 'name', l: 'Positionsinformation', t: 'select', o: () => FX_POSINFO.map(x => [x, x]), req: true}, {k: 'zeile', l: 'Zeilen-Nr.', t: 'num'}, {k: 'sort', l: 'Sortierungsnr.', t: 'num'}]}
 };

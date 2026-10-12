@@ -1968,7 +1968,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.31.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.32.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -13050,7 +13050,7 @@ settingsLink('einst-allgemein', 'Allgemein', 'allgemein'); settingsLink('einst-k
 
 /* ── Kasse: Beleg-Zusatzinformationen, Scanner-Regeln, Artikelservice, Preisgruppen ── */
 { const _op = openPayment; openPayment = function (...args) {
-  const fields = stActive('belegzusatz');
+  const fields = stActive('belegzusatz').filter(r => typeof kkBelegzusatzOk !== 'function' || kkBelegzusatzOk(r.id));
   if (!fields.length || !POS.cart.length || POS.zusatz) return _op.apply(this, args);
   const el = openLayer(`<div class="modal" style="width:min(460px,100%)" role="dialog" aria-modal="true"><div class="m-head"><div class="m-ic">${ic('receipt')}</div><div><h2>Zusatzinformationen zum Beleg</h2><p>Erscheinen auf dem Beleg und in Auswertungen</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
     <div class="m-body" style="display:grid;gap:12px">${fields.map(f => `<label class="field"><span>${esc(f.name)}${f.pflicht ? ' *' : ''}</span>${(f.werte || []).length || /hotel/i.test(f.name) ? `<select class="input select" data-bz="${esc(f.name)}"><option value="">–</option>${((f.werte || []).length ? f.werte : stActive('hotel').map(h => h.name)).map(w => `<option>${esc(w)}</option>`).join('')}</select>` : `<input class="input" data-bz="${esc(f.name)}">`}</label>`).join('')}</div>
@@ -14578,7 +14578,7 @@ registerPage('st-bonussystem-edit', {title: 'Bonus Systeme', sub: () => BS.draft
 /* ═════════════════════════════════════════════════════════════════
    46 · KASSEN BEARBEITEN (Advarics: Reiter Allgemein … Positionsinfo Sortieren)
    ═════════════════════════════════════════════════════════════════ */
-const KAE_TABS_ALL = [['allg', 'Allgemein'], ['fisk', 'Fiskalisierung'], ['sig', 'Signatureinheit'], ['eft', 'Kartenterminal'], ['beleg', 'Beleg-Konfiguration']];
+const KAE_TABS_ALL = [['allg', 'Allgemein'], ['fisk', 'Fiskalisierung'], ['sig', 'Signatureinheit'], ['eft', 'Kartenterminal'], ['beleg', 'Beleg-Konfiguration'], ['icons', 'Menü „Mehr“ sortieren'], ['posinfo', 'Positionsinfo Sortieren']];
 const kaeTabs = () => KAE_TABS_ALL.filter(t => t[0] !== 'eft' || KAE.draft?.lokal);
 const KAE_NEU = () => { const all = stRows('kasse'); return {filnr: '1', filname: STORES[0].name, filgrp: '', land: 'Österreich', nr: Math.max(0, ...all.map(x => +x.nr || 0)) + 1, bez: '', konfig: 'Standard', sync: false, core: false, inaktiv: false, kdStart: 1, kdEnde: 99999, reStart: 1, reEnde: 99999, letzteSync: '', mac: '', syncname: '', paket: '', langsam: false, region: 'de-AT', design: 'Kontor', ws: '', timer: 20, core: false, pw1: '', pw2: '', vfCode: '', extNr: '', sub: {}, rabatte: [], rfidUser: '', rfidPort: '', kostenstelle: 0, eftAktiv: false, eftConnector: 'PepperV2', eftTerminalTyp: 0, eftCom: 0, eftIp: '', eftSprache: 'German', eftOperator: '', eftCbEvent: 0, eftCbOption: 0, eftDevice: '', eftTimeout: 120, eftTid: '', eftMerchant: '', eftPass: '', eftConfigByte: 0, eftBaud: 0, eftTimeoutMs: 0, eftTrack: 0, eftKey: '', eftVorher: false}; };
 const KAE = {id: null, ids: [], draft: null, tab: 'allg', dirty: false};
@@ -14690,6 +14690,7 @@ function fxField(S, [k, l, t = 'text', o, hint]) {
   if (t === 'check') return `<div class="ea-sw2"><label class="ea-sw"><button type="button" class="switch" role="switch" data-fx-sw="${k}" aria-checked="${!!v}"></button><span>${esc(l)}</span></label>${h}</div>`;
   if (t === 'dis') return `<label class="ea-sw dis"><button type="button" class="switch" disabled role="switch" aria-checked="${!!v}"></button><span>${esc(l)}</span></label>`;
   if (t === 'ro') return `<label class="field"><span>${esc(l)}</span><input class="input ea-ro" readonly value="${esc(typeof o === 'function' ? o() : v ?? '')}">${h}</label>`;
+  if (t === 'pw') return `<label class="field"><span>${esc(l)}</span><input class="input" type="password" autocomplete="new-password" data-fx="${k}" value="" placeholder="${esc(o || '')}">${h}</label>`;
   if (t === 'area') return `<label class="field"><span>${esc(l)}</span><textarea class="input" rows="4" data-fx="${k}" style="height:auto">${esc(v ?? '')}</textarea>${h}</label>`;
   if (t === 'select') { const op = o(); return `<label class="field"><span>${esc(l)}</span><select class="input select" data-fx="${k}">${!op.some(x => String(x[0]) === String(v)) ? `<option value="${esc(v ?? '')}" selected>${esc(v ?? '')}</option>` : ''}${op.map(([x, y]) => `<option value="${esc(x)}" ${String(v) === String(x) ? 'selected' : ''}>${esc(y)}</option>`).join('')}</select>${h}</label>`; }
   return `<label class="field"><span>${esc(l)}</span><input class="input ${t === 'num' ? 'num' : ''}" ${t === 'num' ? 'type="number"' : ''} data-fx="${k}" value="${esc(v ?? '')}">${h}</label>`;
@@ -14712,9 +14713,10 @@ const fxAccFields = () => FX_ACC.map(([k, l, t]) => ({k, l, t: t === 'check' ? '
 const FX_Z = ['Visa Debit', 'Mastercard Debit', 'Maestro', 'Bank', 'Mobiles Terminal', 'Bankomat', 'Alipay', 'PayPal', 'Gutschrift', 'Gutschein', 'V Pay', 'Visa Electron', 'CUP', 'JCB', 'AMEX', 'Diners', 'Visa', 'MasterCard', 'CHF', 'Bar'];
 const FX_SUMMEN = ['Bar-Entnahme', 'Externe Gutscheine Verkauf', 'Externe Gutscheine Einlösung', 'Bezahlte Fremdrechnung', 'Bezahlte Rechnung', 'Kredit-Verkauf / Rechnung', 'Gutschrift-Verkauf', 'Gutschein-Verkauf', 'Bar-Entnahme (Kassenbuch)', 'Abschöpfung', 'Einlage', 'Wechselgeld'];
 const FX_BELEGE = ['Geschenkbeleg', 'Rechnung', 'Auswahl', 'Gutschein-Verkauf', 'Tageseröffnung', 'Kunden-Bestellung', 'Verkaufsbeleg', 'Datenschutzrichtlinien', 'EFT-Händlerbeleg', 'Umlagerungs-Annahme', 'Bestandskorrektur', 'Reklamation', 'Tagesabschluss', 'Umlagerung', 'Nullbon', 'Standardbeleg'];
+const FX_MEHR = [['gs', 'Gutschein verkaufen'], ['ret', 'Retoure / Umtausch'], ['rcpts', 'Belege'], ['copy', 'Belegkopie drucken'], ['drawer', 'Lade öffnen'], ['book', 'Kassenbuch'], ['x', 'X-Bericht (Zwischenstand)'], ['z', 'Tagesabschluss'], ['flow', 'Kassenablauf bearbeiten']];
 const FX_ICONS = ['Kunden-Bearbeitung', 'Sperren', 'Journal', 'Parken', 'Löschen', 'Artikel-Info', 'Umtausch', 'Gutsch.-Verk.', 'Umlagerung', 'Bst.korrektur', 'Auswahl', 'Rechnung', 'Reklamation', 'Kd.-Bestellung', '<Ausfolgeschein>', 'ERent Kunden s.', 'Set', 'Loyalty', 'Coupon-Scan', 'Fremdrechng.', 'Nachdruck', 'Nachricht', 'Kass.wechsel', 'Steuerfrei', 'Zusatz-Info', 'RFID', 'Kd.-Filter', 'Hilfe-Menü'];
 const FX_LAYOUTS = ['Rechnung', 'Kunden-Verkauf', 'Reservierung', 'Retoure', 'Artikel-Info', 'Journal', 'Kassenlayout'];
-const FX_POSINFO = ['Artikelname', 'Artikelnr.', 'Farb-Nr.', 'EAN', 'Warengruppe', 'Marke', 'Seriennummer', 'Verkäufer'];
+const FX_POSINFO = ['Artikelnr.', 'Farbe', 'EAN', 'Warengruppe', 'Marke', 'Seriennummer', 'Verkäufer'];
 const fxId = () => 'r' + Math.random().toString(36).slice(2, 8);
 const fxAcc0 = () => ({...Object.fromEntries(FX_ACC.map(([k, , t]) => [k, t === 'text' ? '' : t === 'check' ? false : 0])), ...Object.fromEntries(FX_EXTRA.map(x => [x.split(':')[0], 0]))});
 const FX_SUB = {
@@ -14739,7 +14741,7 @@ const FX_SUB = {
     newRow: o => ({...o}), validate: (o, rows, id) => rows.some(r => r.id !== id && r.name === o.name) ? 'Der Belegtyp ist für diese Kasse schon angelegt.' : (+o.anz >= 1 && +o.anz <= 5 ? '' : 'Anzahl Ausdrucke: 1 bis 5'),
     fields: () => [{k: 'name', l: 'Belegtyp', t: 'select', o: () => [['Verkaufsbeleg', 'Verkaufsbeleg (Kassenbon)'], ['Standardbeleg', 'Standardbeleg (Retoure, Storno)']], req: true}, {k: 'anz', l: 'Anzahl Ausdrucke (1–5)', t: 'num', req: true}]},
   layout: {cols: () => [{k: 'name', l: 'Kassen-Layout', w: 260}, {k: 'xml', l: 'Layout', w: 320}], template: () => FX_LAYOUTS.map(n => ({id: fxId(), name: n, xml: 'Kontor-Standard'})), fields: () => [{k: 'name', l: 'Kassen-Layout', ro: true}, {k: 'xml', l: 'Layout'}]},
-  icons: {cols: () => [{k: 'name', l: 'Icon-Name', w: 260}, {k: 'sort', l: 'Sortierungsnr.', t: 'num', w: 140}], template: () => FX_ICONS.map((n, i) => ({id: fxId(), name: n, sort: i + 1})), order: true, fields: () => [{k: 'name', l: 'Icon-Name', ro: true}, {k: 'sort', l: 'Sortierungsnr.', t: 'num'}]},
+  icons: {cols: () => [{k: 'name', l: 'Eintrag im Menü „Mehr“', w: 280}, {k: 'sort', l: 'Sortierungsnr.', t: 'num', w: 140}], template: () => FX_MEHR.map(([id, n], i) => ({id, name: n, sort: i + 1})), order: true, fields: () => [{k: 'name', l: 'Eintrag im Menü „Mehr“', ro: true}, {k: 'sort', l: 'Sortierungsnr.', t: 'num'}]},
   posinfo: {cols: () => [{k: 'name', l: 'Positionsinformation', w: 240}, {k: 'zeile', l: 'Zeilen-Nr.', t: 'num', w: 120}, {k: 'sort', l: 'Sortierungsnr.', t: 'num', w: 140}], template: () => [], neu: true, del: true, newRow: o => ({...o}),
     fields: () => [{k: 'name', l: 'Positionsinformation', t: 'select', o: () => FX_POSINFO.map(x => [x, x]), req: true}, {k: 'zeile', l: 'Zeilen-Nr.', t: 'num'}, {k: 'sort', l: 'Sortierungsnr.', t: 'num'}]}
 };
@@ -14798,7 +14800,11 @@ const KK_DEFAULTS = {name: '',
   // Beleg
   bKopf: '', bSumm: 'Bonrabatt', bPosRabatt: 'Rabatt', rueckgeldText: 'Rückgeld', wechselgeldNicht: false, gesamtTeile: false, vkBelegende: false, alleRabatte: false, agb: '',
   // Zuordnungen
-  rabatte: [], zahlungsarten: [], stdZahlart: 'bar'};
+  rabatte: [], zahlungsarten: [], stdZahlart: 'bar',
+  // Passwörter (Hash), welches Passwort welche Aktion schützt
+  pw1h: '', pw2h: '', pwTagesabschluss: '', pwStorno: '', pwLade: '', pwKassenbuch: '',
+  // Listen
+  scanRegeln: [], hotcats: [], belegzusatz: [], pflicht: [], aiNull: true};
 /* Zahlungsarten der Kasse = die Zahlungsarten, die der Bezahl-Dialog anbietet */
 const KK_TYP = {cash: 'Bar', card: 'Karte', wallet: 'Wallet', qr: 'QR / Online', voucher: 'Gutschein'};
 STAMM_DEF.kassenzahlart = {t: 'Zahlungsarten (Kasse)', ic: 'card', sub: 'Zahlungsarten der Kasse', cols: [{k: 'name', l: 'Bezeichnung'}],
@@ -14807,7 +14813,7 @@ const zaRows = () => stRows('kassenzahlart').map(r => ({id: r.id, name: r.name, 
 const KK_ZA_COLS = [{k: 'name', l: 'Bezeichnung', w: 200}, {k: 'typ', l: 'Typ', w: 150}, {k: 'lade', l: 'Kassenlade öffnen', t: 'check', w: 170}];
 STAMM_DEF.kassenkonfig = {t: 'Kassen-Konfiguration', ic: 'register', sub: 'Konfigurationen der Kassen', cols: [{k: 'name', l: 'Name'}], seed: [{id: 'KK1', ...JSON.parse(JSON.stringify({...KK_DEFAULTS, name: 'Standard'}))}]};
 const KK = {id: null, ids: [], draft: null, tab: 'prozess', dirty: false};
-const KK_TABS = [['prozess', 'Prozesse Nutzen'], ['allg', 'Allgemein'], ['druck', 'Beleg-Druck'], ['rabatt', 'Feste Rabatte'], ['zahl', 'Zahlungsarten']];
+const KK_TABS = [['prozess', 'Prozesse Nutzen'], ['allg', 'Allgemein'], ['druck', 'Beleg-Druck'], ['beleginfo', 'Beleg Zusatzinformationen'], ['rabatt', 'Feste Rabatte'], ['zahl', 'Zahlungsarten'], ['scan', 'Scan-Regeln'], ['hot', 'Hot Items'], ['pw', 'Passwort-Verwaltung'], ['pflicht', 'Pflichteingaben'], ['artinfo', 'Artikel-Info']];
 const kkLoad = id => {
   const r = id ? stRows('kassenkonfig').find(x => x.id === id) : null;
   const d = JSON.parse(JSON.stringify({...KK_DEFAULTS, ...(r || {})}));
@@ -14827,10 +14833,14 @@ const KK_CARDS = {
     ['Funktionen an der Kasse', [SW('verkaufParken', 'Verkauf parken', 'Taste F8 und Knöpfe im Warenkorb'), SW('umtausch', 'Umtausch / Retoure', 'Eintrag „Mehr“ an der Kasse'), SW('gutscheinVerkauf', 'Gutschein verkaufen', 'Eintrag „Mehr“ an der Kasse'), SW('letzterBeleg', 'Belegkopie drucken', 'Eintrag „Mehr“ an der Kasse'), SW('barEinlage', 'Bar-Einlage', 'Kassenbuch'), SW('abschoepfung', 'Abschöpfung', 'Kassenbuch'), SW('hotItems', 'Hot Items einblenden', 'Warengruppen-Schnellwahl über dem Artikelraster')]]],
   allg: () => [['Kasse', [['inaktivMin', 'Automatisch sperren nach (Minuten ohne Eingabe)', 'num', null, '0 = nie. Danach ist die PIN erforderlich'], ['abfrageMenge', 'Rückfrage ab Artikelmenge', 'num', null, '0 = nie. Verhindert Tippfehler bei der Stückzahl'], ['rabLimit', 'Rabattgrenze ohne Freigabe (%)', 'num', null, 'Rabatte darüber erfordern die Filialleitung (gilt für diese Konfiguration)']]],
     ['Kassenlade', [SW('ladeBareinlage', 'Bei Bar-Einlage öffnen'), SW('ladeAbschoepfung', 'Bei Abschöpfung öffnen'), SW('ladeZusatz', 'Bei Wechselgeld zu Tagesbeginn öffnen')]]],
+  pw: () => [['Passwörter', [['pw1in', 'Passwort 1 ' + (KK.draft.pw1h ? '(gesetzt) – neu eingeben zum Ändern' : '(nicht gesetzt)'), 'pw', 'Neues Passwort', 'Wird nur als Prüfsumme gespeichert'], ['pw2in', 'Passwort 2 ' + (KK.draft.pw2h ? '(gesetzt) – neu eingeben zum Ändern' : '(nicht gesetzt)'), 'pw', 'Neues Passwort']]],
+    ['Welche Aktion ist geschützt?', [['pwTagesabschluss', 'Tagesabschluss', 'select', () => KK_PWOPT, 'Vor dem Abschluss wird das Passwort abgefragt'], ['pwStorno', 'Retoure und Bon-Storno', 'select', () => KK_PWOPT], ['pwLade', 'Kassenlade manuell öffnen', 'select', () => KK_PWOPT], ['pwKassenbuch', 'Kassenbuch (Einlage, Entnahme)', 'select', () => KK_PWOPT]]]],
+  artinfo: () => [['Artikel-Info', [SW('aiNull', '0-Bestände in der Bestandsmatrix anzeigen', 'Aus: leere Felder statt „0“ in Artikelinfo und Artikelinfo Kompakt')]]],
   druck: () => [['Bezeichnungen auf dem Bon', [['bKopf', 'Bon-Überschrift', 'text', null, 'z. B. „Verkaufs-Beleg“ – leer = keine Überschrift'], ['bSumm', 'Bezeichnung Bonrabatt', 'text'], ['bPosRabatt', 'Bezeichnung Positionsrabatt', 'text'], ['rueckgeldText', 'Bezeichnung Rückgeld', 'text']]],
     ['Inhalt', [SW('gesamtTeile', 'Gesamtzahl der Teile andrucken'), SW('vkBelegende', 'Verkäufer am Belegende drucken'), SW('alleRabatte', 'Alle Rabatte zusammenfassen', 'Eine Summenzeile statt Rabatt unter jeder Position'), SW('wechselgeldNicht', 'Rückgeld nicht andrucken')]],
     ['AGB', [['agb', 'Text am Ende des Bons', 'area', null, 'z. B. Umtausch- und Garantiebedingungen']]]]
 };
+const KK_PWOPT = [['', 'Kein Passwort'], ['1', 'Passwort 1'], ['2', 'Passwort 2']];
 const kkHost = '<div data-kk style="flex:1;min-height:420px;display:flex;flex-direction:column"></div>';
 const KK_RABATT_COLS = [{k: 'name', l: 'Bezeichnung', w: 220}, {k: 'pct', l: 'Rabatt %', t: 'num', w: 110, fmt: v => num(v) + ' %'}, {k: 'freigabe', l: 'Freigabe nötig', t: 'check', w: 150}];
 function kkRender() {
@@ -14844,6 +14854,18 @@ function kkRender() {
   else if (KK.tab === 'rabatt') {
     body = `<p class="ea-hint" style="margin:0 0 8px">An der Kasse stehen nur die zugeordneten festen Rabatte zur Schnellwahl. Ist nichts zugeordnet, stehen alle zur Verfügung.</p>${kkHost}`;
     mount = () => fxPair($('[data-kk]', el), D, 'rabatte', () => stActive('festerrabatt').map(r => ({id: r.id, name: r.name || r.id, pct: +r.pct || 0, freigabe: !!r.freigabe})), KK_RABATT_COLS, dirty, kkRender);
+  } else if (KK.tab === 'beleginfo') {
+    body = `<p class="ea-hint" style="margin:0 0 8px">Diese Zusatzinformationen werden beim Bezahlen abgefragt. Ist nichts zugeordnet, werden alle abgefragt.</p>${kkHost}`;
+    mount = () => fxPair($('[data-kk]', el), D, 'belegzusatz', () => stActive('belegzusatz').map(r => ({id: r.id, name: r.name || r.id, typ: r.typ || '', pflicht: !!r.pflicht})), [{k: 'name', l: 'Zusatzinformation', w: 240}, {k: 'typ', l: 'Art', w: 120}, {k: 'pflicht', l: 'Pflicht', t: 'check', w: 100}], dirty, kkRender);
+  } else if (KK.tab === 'hot') {
+    body = `<p class="ea-hint" style="margin:0 0 8px">Zugeordnete Warengruppen erscheinen an der Kasse zuerst in der Warengruppen-Leiste (in der Reihenfolge der Zuordnung).</p>${kkHost}`;
+    mount = () => fxPair($('[data-kk]', el), D, 'hotcats', () => CATS.filter(c => c.id !== 'alle' && ART.some(a => a.cat === c.id)).map(c => ({id: c.id, name: c.name, n: ART.filter(a => a.cat === c.id).length})), [{k: 'name', l: 'Warengruppe', w: 240}, {k: 'n', l: 'Artikel', t: 'num', w: 100}], dirty, kkRender);
+  } else if (KK.tab === 'pflicht') {
+    body = `<p class="ea-hint" style="margin:0 0 8px">Zugeordnete Felder sind beim Anlegen und Ändern eines Kunden Pflicht (Verkauf › Kunden).</p>${kkHost}`;
+    mount = () => fxPair($('[data-kk]', el), D, 'pflicht', () => KK_PFLICHT, [{k: 'name', l: 'Kundenfeld', w: 240}], dirty, kkRender);
+  } else if (KK.tab === 'scan') {
+    body = `<p class="ea-hint" style="margin:0 0 8px">Regeln, wie gescannte Codes gelesen werden: Passt die Code-Länge, wird ab „Start Position“ die „Gelesene Länge“ als Artikelcode (EAN) verwendet. Bei höherer Sortierung zuerst.</p>${kkHost}`;
+    mount = () => kkSub($('[data-kk]', el), 'scan', dirty);
   } else if (KK.tab === 'zahl') {
     body = `<div class="ea-cols"><div class="ae-card ea-card"><h4>Standard-Zahlungsart</h4><div class="ea-fields"><label class="field"><span>Vorgewählte Zahlungsart *</span><select class="input select" data-fx="stdZahlart">${stRows('kassenzahlart').map(z => `<option value="${esc(z.id)}" ${z.id === D.stdZahlart ? 'selected' : ''}>${esc(z.name)}</option>`).join('')}</select><small class="ea-hint">Wird beim Bezahlen zuerst gewählt</small></label></div></div></div><p class="ea-hint" style="margin:8px 0">Im Bezahl-Dialog erscheinen nur die zugeordneten Zahlungsarten. „Kassenlade öffnen“ steuert, bei welchen Zahlungsarten die Lade aufspringt (Doppelklick auf eine Zeile).</p>${kkHost}`;
     mount = () => fxPair($('[data-kk]', el), D, 'zahlungsarten', zaRows, KK_ZA_COLS, dirty, kkRender);
@@ -14870,6 +14892,8 @@ function kkRender() {
         if (!String(D.name).trim()) { KK.tab = 'prozess'; kkRender(); return toast('Name angeben', {t2: 'Pflichtfeld', type: 'warn'}); }
         if (!D.zahlungsarten.length) { KK.tab = 'zahl'; kkRender(); return toast('Mindestens eine Zahlungsart zuordnen', {type: 'warn'}); }
         if (!D.zahlungsarten.includes(D.stdZahlart)) { KK.tab = 'zahl'; kkRender(); return toast('Die Standard-Zahlungsart muss zugeordnet sein', {type: 'warn'}); }
+        for (const n of ['1', '2']) { const v = D['pw' + n + 'in']; if (v) D['pw' + n + 'h'] = await kkSha(v); delete D['pw' + n + 'in']; }
+        for (const k of ['pwTagesabschluss', 'pwStorno', 'pwLade', 'pwKassenbuch']) if (D[k] && !D['pw' + D[k] + 'h']) { KK.tab = 'pw'; kkRender(); return toast(`Passwort ${D[k]} ist noch nicht gesetzt`, {type: 'warn'}); }
         D.rabLimit = clamp(+D.rabLimit || 0, 0, 100); D.inaktivMin = Math.max(0, +D.inaktivMin || 0); D.abfrageMenge = Math.max(0, +D.abfrageMenge || 0);
         const row = JSON.parse(JSON.stringify(D)), list = KK.id ? all.map(x => x.id === KK.id ? {...x, ...row} : x) : [...all, {id: 'kk-' + aeUid(), _aktiv: true, ...row}];
         await stammSave('kassenkonfig', list); KK.dirty = false; if (!KK.id) { KK.id = list[list.length - 1].id; KK.ids = [...KK.ids, KK.id]; }
@@ -14895,6 +14919,14 @@ agridPage('einst-kassenkonfig', {
 registerPage('einst-kassenkonfig-edit', {title: 'Kassen-Konfiguration', sub: () => KK.draft ? (KK.draft.name || 'neu') : '', render: async () => { await loadStamm(); if (!KK.draft) KK.draft = kkLoad(KK.id); kkRender(); }});
 VIEW_PERM['einst-kassenkonfig'] = VIEW_PERM['einst-kassenkonfig-edit'] = 'einstellungen';
 /* Zahlungsarten als eigene Liste (Menü Einstellungen › Zahlungsarten) */
+const KK_PFLICHT = [['name', 'Name'], ['email', 'E-Mail'], ['phone', 'Telefon'], ['street', 'Straße'], ['zip', 'PLZ'], ['city', 'Ort'], ['uid', 'UID-Nummer']].map(([id, name]) => ({id, name}));
+const KK_SUBS = {scan: {cols: () => [{k: 'sort', l: 'Sortierung', t: 'num', w: 120}, {k: 'laenge', l: 'Code-Länge', t: 'num', w: 120}, {k: 'start', l: 'Start Position', t: 'num', w: 140}, {k: 'gelesen', l: 'Gelesene Länge', t: 'num', w: 150}], neu: true, del: true, store: 'scanRegeln',
+  validate: o => (+o.laenge > 0 && +o.start >= 1 && +o.gelesen > 0 && +o.start + +o.gelesen - 1 <= +o.laenge) ? '' : 'Code-Länge, Start Position (ab 1) und Gelesene Länge müssen zusammenpassen',
+  fields: () => [{k: 'sort', l: 'Sortierung', t: 'num'}, {k: 'laenge', l: 'Code-Länge', t: 'num', req: true}, {k: 'start', l: 'Start Position (ab 1)', t: 'num', req: true}, {k: 'gelesen', l: 'Gelesene Länge', t: 'num', req: true}]}};
+function kkSub(host, tab, dirty) {
+  const D = {...KK_SUBS[tab]}, S = KK.draft, st = D.store; S[st] ||= []; S.sub ||= {}; S.sub[tab] = S[st];
+  fxSubGrid(host, S, tab, () => { S[st] = S.sub[tab]; dirty(); }, {[tab]: {...D, template: () => []}});
+}
 async function zaEdit(id, done) {
   const all = stRows('kassenzahlart'), r = all.find(x => x.id === id); if (!r) return;
   const o = await aeForm(`Zahlungsart [ ${r.name} ]`, [{k: 'name', l: 'Bezeichnung', ro: true}, {k: 'typ', l: 'Typ', ro: true}, {k: 'lade', l: 'Kassenlade öffnen', t: 'check'}], r); if (!o) return;
@@ -14907,6 +14939,7 @@ agridPage('einst-zahlungsarten', {
   edit: (id, done) => zaEdit(id, done)
 });
 VIEW_PERM['einst-zahlungsarten'] = 'einstellungen';
+const kkSha = async s => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('kontor:' + s)))].map(b => b.toString(16).padStart(2, '0')).join('');
 /* ═════════════════════════════════════════════════════════════════
    49 · KASSEN-FORMULARE (MwSt.-FiBu-Konto, Fiskalisierung) UND „GRÖSSEN SORTIEREN“
    ═════════════════════════════════════════════════════════════════ */
@@ -15081,6 +15114,84 @@ setInterval(() => { const min = +kkVal('inaktivMin', 0); if (min > 0 && S.starte
   applyStamm = function () { const r = _as.apply(this, arguments); try { applyMethods(); kkApplyFlow(); permNav(); } catch (e) { /* noch nicht bereit */ } return r; };
   const _st = applySettings;
   applySettings = function () { const r = _st.apply(this, arguments); try { kkApplyFlow(); } catch (e) { /* */ } return r; };
+}
+
+/* 7) Passwörter für sensible Aktionen */
+const KK_PWKEY = {tagesabschluss: 'pwTagesabschluss', storno: 'pwStorno', lade: 'pwLade', kassenbuch: 'pwKassenbuch'};
+function kkPw(thema, titel) {
+  const c = kkActive(), n = c?.[KK_PWKEY[thema]], hash = n ? c['pw' + n + 'h'] : '';
+  if (!n || !hash) return Promise.resolve(true);
+  return new Promise(res => {
+    const el = openLayer(`<div class="modal" style="width:min(400px,100%)" role="dialog" aria-modal="true"><div class="m-head"><div class="m-ic">${ic('lock')}</div><div><h2>${esc(titel)}</h2><p>Passwort ${esc(n)} erforderlich</p></div></div>
+      <div class="m-body"><input class="input" id="kkpw" type="password" autocomplete="off" placeholder="Passwort" style="height:50px;font-size:18px"></div>
+      <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="kkpwok">${ic('check', 'i-sm')}Bestätigen</button></div></div>`, {onClose: () => res(false)});
+    const inp = $('#kkpw', el); setTimeout(() => inp.focus(), 60);
+    const ok = async () => { if (await kkSha(inp.value) === hash) { res(true); closeLayer(el); } else { toast('Passwort falsch', {type: 'warn', icon: 'lock'}); inp.value = ''; inp.focus(); } };
+    $('#kkpwok', el).onclick = ok; inp.addEventListener('keydown', e => { if (e.key === 'Enter') ok(); });
+  });
+}
+{ const _oc = openClosing; openClosing = async function () { if (!await kkPw('tagesabschluss', 'Tagesabschluss')) return; return _oc.apply(this, arguments); };
+  const _ors = openReturnStart; openReturnStart = async function () { if (!await kkPw('storno', 'Retoure / Storno')) return; return _ors.apply(this, arguments); };
+  const _or = openReturn; openReturn = async function () { if (!await kkPw('storno', 'Retoure / Storno')) return; return _or.apply(this, arguments); };
+  const _od = openDrawer; openDrawer = async function (reason) { if (reason === 'manuell' && !await kkPw('lade', 'Kassenlade öffnen')) return; return _od.apply(this, arguments); };
+  const _cb = openCashBook; openCashBook = async function () { if (!await kkPw('kassenbuch', 'Kassenbuch')) return; return _cb.apply(this, arguments); };
+}
+
+/* 8) Hot Items: Warengruppen-Schnellwahl zuerst */
+{ const _rc = renderCats;
+  renderCats = function () {
+    const r = _rc.apply(this, arguments); const hot = kkOn('hotItems') ? (kkActive()?.hotcats || []) : []; if (!hot.length) return r;
+    const box = $('#cats'); if (!box) return r;
+    const btns = [...box.querySelectorAll('[data-cat]')], first = btns.find(b => b.dataset.cat === 'alle');
+    let ref = first; hot.forEach(id => { const b = btns.find(x => x.dataset.cat === id); if (b) { b.classList.add('hot'); ref ? ref.after(b) : box.prepend(b); ref = b; } });
+    return r;
+  };
+}
+
+/* 9) Scan-Regeln */
+const kkScan = code => {
+  const rules = [...(kkActive()?.scanRegeln || [])].sort((a, b) => (+b.sort || 0) - (+a.sort || 0));
+  for (const r of rules) if (+r.laenge === code.length) return code.substr((+r.start || 1) - 1, +r.gelesen || code.length);
+  return null;
+};
+{ const _he = handleEnter;
+  handleEnter = function () {
+    const input = $('#posSearch'), raw = input?.value.trim() || '';
+    if (raw && !/^\d{13}$/.test(raw)) { const v = kkScan(raw); if (v && v !== raw) { input.value = v; POS.q = ''; } }
+    return _he.apply(this, arguments);
+  };
+}
+
+/* 10) Pflichtfelder bei Kunden */
+INVOKE_HOOKS.customer_save = a => {
+  const req = kkActive()?.pflicht || []; if (!req.length || !a?.customer) return a;
+  const miss = KK_PFLICHT.filter(f => req.includes(f.id) && !String(a.customer[f.id] ?? '').trim()).map(f => f.name);
+  if (miss.length) throw new Error(`Pflichtfeld laut Kassen-Konfiguration: ${miss.join(', ')}`);
+  return a;
+};
+const kkBelegzusatzOk = id => { const r = kkActive()?.belegzusatz; return !r?.length || r.includes(id); };
+
+/* 11) Artikel-Info: 0-Bestände */
+{ const _mx = matrixHTML;
+  matrixHTML = function () { const h = _mx.apply(this, arguments); return kkOn('aiNull') ? h : h.replace(/(<td class="r num"[^>]*>)0(<)/g, '$1$2'); };
+}
+
+/* 12) Kassen: Reihenfolge im Menü „Mehr“ und Positionsinfo im Warenkorb */
+{ const _om2 = openMore;
+  openMore = function () {
+    const r = _om2.apply(this, arguments);
+    const rows = kkKasse()?.sub?.icons; if (rows?.length) { const ord = [...rows].sort((a, b) => a.sort - b.sort).map(x => x.id), items = [...document.querySelectorAll('.pop-i[data-m]')]; if (items.length) { const host = items[0].parentElement; ord.forEach(id => { const it = items.find(b => b.dataset.m === id); if (it) host.appendChild(it); }); } }
+    return r;
+  };
+  const _lh = lineHTML;
+  lineHTML = function (l) {
+    const h = _lh.apply(this, arguments), rows = kkKasse()?.sub?.posinfo; if (!rows?.length || l.service) return h;
+    const a = l.art || {}, v = a.variants ? (a.variants.find(x => x.c === l.c && x.s === l.s) || {}) : {};
+    const val = {'Artikelnr.': a.id || l.sku || '', 'Farbe': COLORS[l.c]?.[0] || '', 'EAN': v.ean || '', 'Warengruppe': CATS.find(c => c.id === a.cat)?.name || '', 'Marke': a.brand || '', 'Seriennummer': Object.entries(l.vals || {}).find(([k]) => /serie/i.test(k))?.[1] || '', 'Verkäufer': l.seller || ''};
+    const lines = {}; rows.forEach(r => { const t = val[r.name]; if (t) (lines[+r.zeile || 1] ||= []).push([+r.sort || 0, t]); });
+    const html = Object.keys(lines).sort((x, y) => x - y).map(z => `<div class="line-info" style="font-size:11.5px;color:var(--text-3)">${lines[z].sort((x, y) => x[0] - y[0]).map(x => esc(x[1])).join(' · ')}</div>`).join('');
+    return html ? h.replace(/(<div class="line-var">.*?<\/div>)/, '$1' + html) : h;
+  };
 }
 
 /* ════════════════════════════════════════════════════════════════════
