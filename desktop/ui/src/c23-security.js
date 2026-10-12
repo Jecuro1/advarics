@@ -109,8 +109,14 @@ async function permToggle(pm) {
 /* ── Rechte an den Einstiegspunkten ── */
 const VIEW_PERM = {berichte: 'berichte', anpassen: 'anpassen', einstellungen: 'einstellungen', einkauf: 'einkauf', aktionen: 'preise.aktionen', inventur: 'bestand.buchen'};
 function permNav() {
-  if (!DESKTOP) return;
-  $$('#nav .nav-item').forEach(n => { const p = VIEW_PERM[n.dataset.view]; n.classList.toggle('nav-locked', !!p && !can(p)); if (p && !can(p)) n.dataset.tip = `${n.querySelector('.nav-label')?.textContent} · Freigabe nötig`; });
+  // Menüpunkte ohne Berechtigung werden ausgeblendet – samt leeren Untermenüs und Bereichen
+  const nav = $('#nav'); if (!nav) return;
+  $$('.nav-item[data-view]', nav).forEach(n => { const p = VIEW_PERM[n.dataset.view]; n.classList.toggle('nav-off', !!p && !can(p)); n.classList.remove('nav-locked'); });
+  $$('.nav-kids', nav).reverse().forEach(k => {
+    const any = [...k.children].some(c => (c.matches('[data-view]') || c.matches('.nav-kids')) && !c.classList.contains('nav-off'));
+    k.classList.toggle('nav-off', !any); k.previousElementSibling?.classList.toggle('nav-off', !any);
+  });
+  $$('.nav-sec', nav).forEach(sec => sec.classList.toggle('nav-off', !sec.querySelector('[data-view]:not(.nav-off)')));
 }
 function installGuards() {
   if (!DESKTOP) return;

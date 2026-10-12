@@ -1264,19 +1264,27 @@ button.nav-group .gl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .sb-collapsed button.nav-group{width:44px;height:38px;padding:0;margin:4px auto;justify-content:center;color:inherit}
 .sb-collapsed button.nav-group .gl{display:none}
 .sb-collapsed button.nav-group::after{display:none}
-/* Ruhiges Menü (v0.16.1): schlichte Bereichstitel statt farbiger Leisten */
-.nav-sec{margin-top:2px}
-button.nav-group.nav-group{height:32px;gap:9px;padding:0 10px;margin:1px 0;border-radius:8px;font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--text-2);background:transparent;border:0}
-button.nav-group:hover{background:var(--surface-2);color:var(--text)}
-button.nav-group .gi{width:20px;height:20px;border-radius:6px;background:hsl(var(--gh) 60% 50% / .14);color:hsl(var(--gh) 60% 42%)}
-button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
-.nav-sec:not([data-closed]) button.nav-group{background:transparent;border:0;color:var(--text);font-weight:700}
-.nav-sec:not([data-closed]){padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--line)}
-.nav-sec:not([data-closed]) .nav-item{margin-left:6px}
+/* Ruhiges, einfaches Menü (v0.18.0): flache Liste, schlichte Bereichstitel, keine Farben */
+.nav-off{display:none !important}
+.nav-sec{margin-top:0;padding:0;border:0}
+button.nav-group.nav-group{display:flex;align-items:center;gap:0;height:30px;margin:10px 0 2px;padding:0 10px;border:0;border-radius:6px;background:transparent;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-4)}
+button.nav-group:hover{background:transparent;color:var(--text-2)}
+button.nav-group .gi{display:none}
+button.nav-group .gl{flex:1;text-align:left}
+.nav-sec:not([data-closed]) button.nav-group{background:transparent;border:0;color:var(--text-3);font-weight:600}
+.nav-sec:not([data-closed]){padding-bottom:4px;border:0;margin-bottom:0}
+.nav-sec:not([data-closed]) .nav-item{margin-left:0}
+.nav-item{height:32px;font-size:13.5px;font-weight:500;gap:10px;color:var(--text-2)}
 .nav-parent{font-weight:500;color:var(--text-2)}
-.sb-collapsed button.nav-group{width:40px;height:34px;margin:3px auto}
-.sb-collapsed .nav-sec:not([data-closed]){border:0}
-.sb-collapsed .nav-sec:not([data-closed]) .nav-item{margin-left:auto}
+.nav-item[style*="--lvl:1"] .i,.nav-item[style*="--lvl:2"] .i,.nav-item[style*="--lvl:3"] .i{display:none}
+.nav-item[style*="--lvl:1"],.nav-item[style*="--lvl:2"],.nav-item[style*="--lvl:3"]{height:30px;font-size:13px}
+.nav-item[aria-current="page"]{background:var(--accent-soft);box-shadow:none;color:var(--accent);font-weight:600}
+.nav-item[aria-current="page"]::before{display:none}
+.nav-kids::before{display:none}
+.sb-collapsed button.nav-group{height:10px;width:30px;margin:8px auto 4px;padding:0;position:relative}
+.sb-collapsed button.nav-group .gl,.sb-collapsed button.nav-group .chev{display:none}
+.sb-collapsed button.nav-group::after{display:block;content:"";position:absolute;left:0;right:0;top:4px;height:1px;background:var(--line-2)}
+.sb-collapsed .nav-item[style*="--lvl:1"] .i,.sb-collapsed .nav-item[style*="--lvl:2"] .i{display:block}
 </style>
 </head>
 <body>
@@ -1647,7 +1655,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.17.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.18.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1780,13 +1788,6 @@ const NAV = [
   {label: 'Preisänderungen', icon: 'tag', kids: [{id: 'preisaenderung', label: 'Preisänderung', icon: 'edit'}, {id: 'preis-uebersicht', label: 'Übersicht Preisänderungen', icon: 'list'}, {id: 'preis-geplant', label: 'Geplante Preisänderungen', icon: 'clock'}]},
   {label: 'Nachsortierung', icon: 'sync', kids: [{id: 'nachsortierung', label: 'Nachsortierung', icon: 'sync'}, {id: 'nachsort-nos', label: 'Nachsortierung aus NOS und Verkauf', icon: 'star'}, {id: 'nachsort-liste', label: 'Nachsortier-Lagerliste', icon: 'printer'}, {id: 'nachsort-param', label: 'Parameter für Nachsortierung', icon: 'sliders'}]},
   {label: 'Artikelpflege', icon: 'sliders', kids: [{id: 'advarics-import', label: 'Advarics-Import (XLSX)', icon: 'download'}, {id: 'artikel-import', label: 'Artikel-Import', icon: 'download'}, {id: 'import-protokoll', label: 'Protokoll Artikel-Importe', icon: 'history'}, {id: 'ean-zuordnung', label: 'Artikel-EAN/GTIN-Zuordnung', icon: 'barcode'}, {id: 'artikelsortierung', label: 'Manuelle Artikelsortierung', icon: 'list'}, {id: 'master-artikel', label: 'Master-Artikel', icon: 'copy'}, {id: 'etiketten', label: 'Etiketten', icon: 'printer'}]},
-  {g: 'FEDAS'},
-  {id: 'fedas-sync', label: 'FEDAS-Sync', icon: 'sync'},
-  {id: 'fedas-verbindung', label: 'Verbindung & Automatik', icon: 'link'},
-  {id: 'fedas-import', label: 'Datei-Import (CSV/JSON)', icon: 'download'},
-  {id: 'st-fedasklasse', label: 'FEDAS-Klassifikation', icon: 'list'},
-  {id: 'fedas-protokoll', label: 'Sync-Protokoll', icon: 'history'},
-  {id: 'demo-marken', label: 'Marken-Demosortiment', icon: 'star'},
   {g: 'Einkauf'},
   {label: 'Order', icon: 'truck', kids: [{id: 'einkauf', label: 'Order', icon: 'truck'}, {id: 'order-import', label: 'Order Import', icon: 'download'}, {id: 'order-typen', label: 'Order Typen', icon: 'list'}, {id: 'order-vorschlag', label: 'Order Vorschläge', icon: 'sparkle'}, {id: 'order-konfig', label: 'Order Vorschlags-Konfiguration', icon: 'sliders'}]},
   {label: 'Wareneingang', icon: 'download', kids: [{id: 'avis', label: 'Wareneingang Avis', icon: 'swap'}, {id: 'wareneingang', label: 'Wareneingang', icon: 'list'}, {id: 'we-scanner', label: 'Scanner Wareneingang', icon: 'barcode'}, {id: 'etiketten', label: 'Etikettendruck', icon: 'printer'}, {id: 'we-protokoll', label: 'Wareneingang Änderungsprotokoll', icon: 'history'}]},
@@ -1841,7 +1842,8 @@ const NAV = [
   {label: 'Benutzer', icon: 'users', kids: [{id: 'benutzer', label: 'Benutzer & Rechte', icon: 'shield'}, {id: 'st-benutzergruppe', label: 'Benutzergruppen', icon: 'users'}, {id: 'st-zugangsprofil', label: 'Zugangsprofil', icon: 'lock'}, {id: 'zeiterfassung', label: 'Zeiterfassung', icon: 'clock'}, {id: 'st-meldung', label: 'Zuordnung Meldungen', icon: 'bell'}]},
   {label: 'Filialen', icon: 'store', kids: [{id: 'filialen', label: 'Filialen', icon: 'store'}, {id: 'st-filialgruppe', label: 'Filialengruppe', icon: 'layers'}, {id: 'st-formular', label: 'Formulareinstellungen', icon: 'receipt'}, {id: 'st-verkaufsabteilung', label: 'Verkaufsabteilung', icon: 'grid'}]},
   {id: 'st-marke', label: 'Marken', icon: 'star'},
-  {label: 'Warengruppen', icon: 'tag', kids: [{id: 'st-warengruppe', label: 'Warengruppen', icon: 'tag'}, {id: 'st-abteilung', label: 'Abteilungen', icon: 'layers'}, {id: 'st-hauptabteilung', label: 'Hauptabteilungen', icon: 'layers'}, {id: 'st-bereich', label: 'Bereiche', icon: 'layers'}, {id: 'st-hauptbereich', label: 'Hauptbereiche', icon: 'layers'}, {id: 'st-preislage', label: 'Preislagen', icon: 'tag'}]},
+  {id: 'demo-marken', label: 'Marken-Demosortiment', icon: 'star'},
+  {label: 'Warengruppen', icon: 'tag', kids: [{id: 'st-warengruppe', label: 'Warengruppen', icon: 'tag'}, {id: 'st-abteilung', label: 'Abteilungen', icon: 'layers'}, {id: 'st-hauptabteilung', label: 'Hauptabteilungen', icon: 'layers'}, {id: 'st-bereich', label: 'Bereiche', icon: 'layers'}, {id: 'st-hauptbereich', label: 'Hauptbereiche', icon: 'layers'}, {id: 'st-preislage', label: 'Preislagen', icon: 'tag'}, {label: 'FEDAS', icon: 'sync', kids: [{id: 'fedas-sync', label: 'FEDAS-Sync', icon: 'sync'}, {id: 'fedas-verbindung', label: 'Verbindung & Automatik', icon: 'link'}, {id: 'fedas-import', label: 'Datei-Import (CSV/JSON)', icon: 'download'}, {id: 'st-fedasklasse', label: 'FEDAS-Klassifikation', icon: 'list'}, {id: 'fedas-protokoll', label: 'Sync-Protokoll', icon: 'history'}]}]},
   {label: 'Größen', icon: 'grid', kids: [{id: 'st-groessenschluessel', label: 'Größenschlüssel', icon: 'grid'}, {id: 'st-groessenfolge', label: 'Größen sortieren', icon: 'list'}]},
   {id: 'st-flaeche', label: 'Flächen', icon: 'grid'},
   {label: 'Farben', icon: 'palette', kids: [{id: 'st-hausfarbe', label: 'Hausfarben', icon: 'palette'}, {id: 'st-farbuebersetzung', label: 'Übersetzung', icon: 'globe'}]},
@@ -7031,8 +7033,14 @@ async function permToggle(pm) {
 /* ── Rechte an den Einstiegspunkten ── */
 const VIEW_PERM = {berichte: 'berichte', anpassen: 'anpassen', einstellungen: 'einstellungen', einkauf: 'einkauf', aktionen: 'preise.aktionen', inventur: 'bestand.buchen'};
 function permNav() {
-  if (!DESKTOP) return;
-  $$('#nav .nav-item').forEach(n => { const p = VIEW_PERM[n.dataset.view]; n.classList.toggle('nav-locked', !!p && !can(p)); if (p && !can(p)) n.dataset.tip = `${n.querySelector('.nav-label')?.textContent} · Freigabe nötig`; });
+  // Menüpunkte ohne Berechtigung werden ausgeblendet – samt leeren Untermenüs und Bereichen
+  const nav = $('#nav'); if (!nav) return;
+  $$('.nav-item[data-view]', nav).forEach(n => { const p = VIEW_PERM[n.dataset.view]; n.classList.toggle('nav-off', !!p && !can(p)); n.classList.remove('nav-locked'); });
+  $$('.nav-kids', nav).reverse().forEach(k => {
+    const any = [...k.children].some(c => (c.matches('[data-view]') || c.matches('.nav-kids')) && !c.classList.contains('nav-off'));
+    k.classList.toggle('nav-off', !any); k.previousElementSibling?.classList.toggle('nav-off', !any);
+  });
+  $$('.nav-sec', nav).forEach(sec => sec.classList.toggle('nav-off', !sec.querySelector('[data-view]:not(.nav-off)')));
 }
 function installGuards() {
   if (!DESKTOP) return;

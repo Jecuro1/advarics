@@ -193,7 +193,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.17.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.18.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -326,13 +326,6 @@ const NAV = [
   {label: 'Preisänderungen', icon: 'tag', kids: [{id: 'preisaenderung', label: 'Preisänderung', icon: 'edit'}, {id: 'preis-uebersicht', label: 'Übersicht Preisänderungen', icon: 'list'}, {id: 'preis-geplant', label: 'Geplante Preisänderungen', icon: 'clock'}]},
   {label: 'Nachsortierung', icon: 'sync', kids: [{id: 'nachsortierung', label: 'Nachsortierung', icon: 'sync'}, {id: 'nachsort-nos', label: 'Nachsortierung aus NOS und Verkauf', icon: 'star'}, {id: 'nachsort-liste', label: 'Nachsortier-Lagerliste', icon: 'printer'}, {id: 'nachsort-param', label: 'Parameter für Nachsortierung', icon: 'sliders'}]},
   {label: 'Artikelpflege', icon: 'sliders', kids: [{id: 'advarics-import', label: 'Advarics-Import (XLSX)', icon: 'download'}, {id: 'artikel-import', label: 'Artikel-Import', icon: 'download'}, {id: 'import-protokoll', label: 'Protokoll Artikel-Importe', icon: 'history'}, {id: 'ean-zuordnung', label: 'Artikel-EAN/GTIN-Zuordnung', icon: 'barcode'}, {id: 'artikelsortierung', label: 'Manuelle Artikelsortierung', icon: 'list'}, {id: 'master-artikel', label: 'Master-Artikel', icon: 'copy'}, {id: 'etiketten', label: 'Etiketten', icon: 'printer'}]},
-  {g: 'FEDAS'},
-  {id: 'fedas-sync', label: 'FEDAS-Sync', icon: 'sync'},
-  {id: 'fedas-verbindung', label: 'Verbindung & Automatik', icon: 'link'},
-  {id: 'fedas-import', label: 'Datei-Import (CSV/JSON)', icon: 'download'},
-  {id: 'st-fedasklasse', label: 'FEDAS-Klassifikation', icon: 'list'},
-  {id: 'fedas-protokoll', label: 'Sync-Protokoll', icon: 'history'},
-  {id: 'demo-marken', label: 'Marken-Demosortiment', icon: 'star'},
   {g: 'Einkauf'},
   {label: 'Order', icon: 'truck', kids: [{id: 'einkauf', label: 'Order', icon: 'truck'}, {id: 'order-import', label: 'Order Import', icon: 'download'}, {id: 'order-typen', label: 'Order Typen', icon: 'list'}, {id: 'order-vorschlag', label: 'Order Vorschläge', icon: 'sparkle'}, {id: 'order-konfig', label: 'Order Vorschlags-Konfiguration', icon: 'sliders'}]},
   {label: 'Wareneingang', icon: 'download', kids: [{id: 'avis', label: 'Wareneingang Avis', icon: 'swap'}, {id: 'wareneingang', label: 'Wareneingang', icon: 'list'}, {id: 'we-scanner', label: 'Scanner Wareneingang', icon: 'barcode'}, {id: 'etiketten', label: 'Etikettendruck', icon: 'printer'}, {id: 'we-protokoll', label: 'Wareneingang Änderungsprotokoll', icon: 'history'}]},
@@ -387,7 +380,8 @@ const NAV = [
   {label: 'Benutzer', icon: 'users', kids: [{id: 'benutzer', label: 'Benutzer & Rechte', icon: 'shield'}, {id: 'st-benutzergruppe', label: 'Benutzergruppen', icon: 'users'}, {id: 'st-zugangsprofil', label: 'Zugangsprofil', icon: 'lock'}, {id: 'zeiterfassung', label: 'Zeiterfassung', icon: 'clock'}, {id: 'st-meldung', label: 'Zuordnung Meldungen', icon: 'bell'}]},
   {label: 'Filialen', icon: 'store', kids: [{id: 'filialen', label: 'Filialen', icon: 'store'}, {id: 'st-filialgruppe', label: 'Filialengruppe', icon: 'layers'}, {id: 'st-formular', label: 'Formulareinstellungen', icon: 'receipt'}, {id: 'st-verkaufsabteilung', label: 'Verkaufsabteilung', icon: 'grid'}]},
   {id: 'st-marke', label: 'Marken', icon: 'star'},
-  {label: 'Warengruppen', icon: 'tag', kids: [{id: 'st-warengruppe', label: 'Warengruppen', icon: 'tag'}, {id: 'st-abteilung', label: 'Abteilungen', icon: 'layers'}, {id: 'st-hauptabteilung', label: 'Hauptabteilungen', icon: 'layers'}, {id: 'st-bereich', label: 'Bereiche', icon: 'layers'}, {id: 'st-hauptbereich', label: 'Hauptbereiche', icon: 'layers'}, {id: 'st-preislage', label: 'Preislagen', icon: 'tag'}]},
+  {id: 'demo-marken', label: 'Marken-Demosortiment', icon: 'star'},
+  {label: 'Warengruppen', icon: 'tag', kids: [{id: 'st-warengruppe', label: 'Warengruppen', icon: 'tag'}, {id: 'st-abteilung', label: 'Abteilungen', icon: 'layers'}, {id: 'st-hauptabteilung', label: 'Hauptabteilungen', icon: 'layers'}, {id: 'st-bereich', label: 'Bereiche', icon: 'layers'}, {id: 'st-hauptbereich', label: 'Hauptbereiche', icon: 'layers'}, {id: 'st-preislage', label: 'Preislagen', icon: 'tag'}, {label: 'FEDAS', icon: 'sync', kids: [{id: 'fedas-sync', label: 'FEDAS-Sync', icon: 'sync'}, {id: 'fedas-verbindung', label: 'Verbindung & Automatik', icon: 'link'}, {id: 'fedas-import', label: 'Datei-Import (CSV/JSON)', icon: 'download'}, {id: 'st-fedasklasse', label: 'FEDAS-Klassifikation', icon: 'list'}, {id: 'fedas-protokoll', label: 'Sync-Protokoll', icon: 'history'}]}]},
   {label: 'Größen', icon: 'grid', kids: [{id: 'st-groessenschluessel', label: 'Größenschlüssel', icon: 'grid'}, {id: 'st-groessenfolge', label: 'Größen sortieren', icon: 'list'}]},
   {id: 'st-flaeche', label: 'Flächen', icon: 'grid'},
   {label: 'Farben', icon: 'palette', kids: [{id: 'st-hausfarbe', label: 'Hausfarben', icon: 'palette'}, {id: 'st-farbuebersetzung', label: 'Übersetzung', icon: 'globe'}]},

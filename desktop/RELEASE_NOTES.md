@@ -1,3 +1,9 @@
+## Neu in 0.18.0
+
+- Menü komplett neu gestaltet: ruhige, flache Liste ohne Farben und Symbolleisten, schlichte Bereichstitel, nur der aktive Punkt ist hervorgehoben.
+- Menüpunkte ohne Berechtigung werden ausgeblendet (samt leerer Untermenüs und Bereiche) statt nur ausgegraut.
+- FEDAS ist kein eigener Bereich mehr, sondern liegt unter Stammdaten › Warengruppen › FEDAS. Das Marken-Demosortiment steht unter Stammdaten neben Marken.
+
 ## Neu in 0.17.0
 
 - Warengruppen-Import aus Advarics (XLSX): Im Advarics-Import wird die Datei automatisch als Warengruppenliste erkannt. Importiert Warengruppen samt Hierarchie (Bereich › Hauptabteilung › Abteilung), MwSt.-Typ, Etikettentyp, Inventur, Altersbewertung und Spanne. Wiederholbar, löscht nichts.
