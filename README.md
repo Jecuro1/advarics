@@ -28,7 +28,7 @@ cd desktop
 npm install
 npm run dev      # startet Kontor als Programm-Fenster
 npm run build    # baut den Installer lokal (unter Windows)
-cd src-tauri && cargo test   # Tests: Retoure, Storno, Punkte, Gutscheine, RKSV, PIN/2FA, Abschluss, Einkauf, Drucker, API, Webhooks, ZVT, Migration
+cd src-tauri && cargo test   # Tests: Retoure, Storno, Punkte, Gutscheine, RKSV, PIN/2FA, Abschluss, Einkauf, Drucker, API, Webshop, Webhooks, ZVT, Stammdaten, Flexanalyse, EDI-Ordner, Migration
 ```
 
 Voraussetzungen zum Selberbauen: Node.js 22, Rust (stable), unter Windows zusätzlich die
@@ -76,6 +76,10 @@ Stand 0.10.0 – alles mit lokaler Datenbank, ohne Server:
   Filial-Rechnung …); Bestandskorrektur, NOS-Sortimente, Picklisten; geplante Preisänderungen; Nachsortierung; EAN/GTIN-Zuordnung,
   Artikelsortierung, Master-Artikel; Gutscheine mit PIN, Löschen, Protokolle, Fremdgutscheine; Kunden-Bestellungen,
   Fremdrechnungen, Mahnwesen.
+- **0.14:** Menübereiche Kunden, Versand, Analyse, EDI, Webshop, Inventur, Stammdaten, Einstellungen, Service; über 60
+  Stammdaten-Tabellen (CSV); Kundenerfassung, Bonus-Staffel, Hotels; WhatsApp/SMS; Versand-Etiketten; Verleih; Flexanalyse
+  mit Vorlagen und Zeitsteuerung; EDIFACT (PRICAT, DESADV, INVOIC, ORDRSP ein – ORDERS, SLSRPT, INVRPT aus); Webshop-
+  Bestellungen per REST-API; Inventur-Erfassungspool; Zeiterfassung; Prozesskonfiguration, Nummernkreise, EK-Verschlüsselung.
 - **Digitales Schaufenster** unter `/shop` am eingebauten Server (Click & Reserve).
 - **Noch offen:** echte RKSV-Signaturkarte bzw. A-Trust, TSE (Deutschland), App-Store-App, FIDO2-Schlüssel,
   Active-Directory/SAML-Anmeldung.

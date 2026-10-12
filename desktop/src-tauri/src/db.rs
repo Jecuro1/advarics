@@ -493,6 +493,48 @@ const MIGRATIONS: &[&str] = &[
     ALTER TABLE vouchers ADD COLUMN pin_hash TEXT;
     ALTER TABLE vouchers ADD COLUMN note TEXT;
     "#,
+    // 10 · Stammdaten-Tabellen, Zeiterfassung, API-Protokoll
+    r#"
+    CREATE TABLE stamm (
+        kind       TEXT NOT NULL,
+        id         TEXT NOT NULL,
+        data       TEXT NOT NULL DEFAULT '{}',
+        pos        INTEGER NOT NULL DEFAULT 0,
+        active     INTEGER NOT NULL DEFAULT 1,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (kind, id)
+    );
+    CREATE TABLE zeiten (
+        id       INTEGER PRIMARY KEY AUTOINCREMENT,
+        user     TEXT NOT NULL,
+        start    TEXT NOT NULL,
+        ende     TEXT,
+        pause    INTEGER NOT NULL DEFAULT 0,
+        notiz    TEXT NOT NULL DEFAULT '',
+        geaendert TEXT
+    );
+    CREATE INDEX zeiten_user ON zeiten(user, start);
+    CREATE TABLE api_log (
+        id     INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts     TEXT NOT NULL,
+        method TEXT NOT NULL,
+        path   TEXT NOT NULL,
+        status INTEGER NOT NULL,
+        ip     TEXT,
+        key    TEXT
+    );
+    CREATE TABLE nachrichten (
+        id      INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts      TEXT NOT NULL,
+        kanal   TEXT NOT NULL,
+        an      TEXT NOT NULL,
+        kunde   INTEGER,
+        text    TEXT NOT NULL,
+        status  TEXT NOT NULL,
+        info    TEXT NOT NULL DEFAULT '',
+        user    TEXT
+    );
+    "#,
 
 ];
 

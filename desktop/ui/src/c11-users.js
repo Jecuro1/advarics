@@ -57,6 +57,7 @@ function lock() {
   };
   const dots = () => $$('#lockDots i', el).forEach((d, i) => d.classList.toggle('on', i < pin.length));
   const unlock = method => {
+    if (typeof accessAllowed === 'function' && !accessAllowed(user.name, user.roleKey)) { Hooks.emit('auth.denied', {benutzer: user.name, grund: 'Zugangsprofil'}); pin = ''; renderCard('Anmeldung zu dieser Zeit nicht erlaubt (Zugangsprofil)'); return; }
     busy = true; S.user = user; S.locked = false; S.started = true;
     Hooks.emit('auth.login', {benutzer: user.name, rolle: user.role, methode: method, kasse: CFG['kasse.id']});
     el.classList.add('closing'); setTimeout(() => el.remove(), 320);

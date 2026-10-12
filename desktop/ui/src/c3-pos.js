@@ -332,6 +332,8 @@ function detachCustomer() {
 }
 
 /* ── Rabatt mit Step-up-Freigabe ── */
+/** Feste Rabatte aus den Stammdaten (Einstellungen › Feste Rabatte) */
+const fixDisc = () => typeof stActive === 'function' ? stActive('festerrabatt') : [];
 function openDiscount() {
   if (!POS.cart.length) return toast('Warenkorb ist leer', {type: 'warn', icon: 'percent'});
   const line = POS.cart.find(l => l.key === POS.sel);
@@ -345,12 +347,12 @@ function openDiscount() {
     const t = totals(); if (line) line.disc = saveL; POS.billDisc = saveB; return t;
   };
   const render = () => {
-    const t = preview(), cur = totals(), needs = st.pct > limit;
+    const t = preview(), cur = totals(), needs = st.pct > limit || st.force;
     box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('percent')}</div><div><h2>Rabatt gewähren</h2><p>${st.target === 'line' ? `Position: ${esc(line.name)}` : `Ganzer Bon · ${cartCount()} Artikel`}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
       <div class="m-body" style="display:grid;gap:18px">
         ${line ? `<div class="seg" id="dTarget" style="justify-self:start"><button data-t="line" aria-pressed="${st.target === 'line'}">Position</button><button data-t="bill" aria-pressed="${st.target === 'bill'}">Ganzer Bon</button></div>` : ''}
         <div><div class="field"><span>Prozent</span></div><div class="opt-grid" style="margin-top:6px">${[5, 10, 15, 20, 25, 30].map(p => `<button class="opt ${p > limit ? 'lock' : ''}" data-pct="${p}" aria-pressed="${p === st.pct}">${p} %</button>`).join('')}</div></div>
-        <div><div class="field"><span>Grund · wird im Beleg und Audit-Log gespeichert</span></div><div class="reasons" style="margin-top:6px">${['Kulanz', 'Mitarbeiterrabatt', 'Mangelware', 'Aktion', 'Stammkunde'].map(r => `<button class="chip" data-r="${r}" aria-pressed="${r === st.reason}">${r}</button>`).join('')}</div></div>
+        <div><div class="field"><span>Grund · wird im Beleg und Audit-Log gespeichert</span></div><div class="reasons" style="margin-top:6px">${[...fixDisc().map(x => [x.name, x.pct]), ...['Kulanz', 'Mitarbeiterrabatt', 'Mangelware', 'Aktion', 'Stammkunde'].filter(r => !fixDisc().some(x => x.name === r)).map(r => [r])].map(([r, p]) => `<button class="chip" data-r="${esc(r)}" aria-pressed="${r === st.reason}">${esc(r)}${p != null ? ` · ${num(+p)} %` : ''}</button>`).join('')}</div></div>
         <div class="preview-box"><span>Neuer Betrag<br><span class="muted" style="font-size:12px">statt ${eur(cur.total)}</span></span><b>${eur(t.total)}</b></div>
         ${needs ? `<div class="rule-box">${ic('shield')}<div>Rabatte über ${limit} % erfordern eine Freigabe durch die Filialleitung.<br><span class="muted">Regel <code>rabatt.freigabe &gt; ${limit} %</code> · Workflow-Designer › Kasse</span></div></div>` : ''}
       </div>
@@ -365,7 +367,7 @@ function openDiscount() {
     Hooks.emit('pos.discount.applied', {beleg: belegNo(), ziel: st.target === 'line' ? line.art?.id || line.name : 'bon', prozent: st.pct, grund: st.reason, freigabe: by || null});
   };
   const go2 = () => {
-    if (st.pct > limit) {
+    if (st.pct > limit || st.force) {
       Hooks.emit('pos.discount.requested', {beleg: belegNo(), prozent: st.pct, grenze: limit, regel: 'rabatt.freigabe'});
       stepUp({title: 'Freigabe erforderlich', text: `Rabatt ${st.pct} % (${st.reason}) – über der Grenze von ${limit} %.`, rule: `Regel „rabatt.freigabe > ${limit} %“ · im Workflow-Designer änderbar`}).then(r => apply(r.by.name)).catch(() => {});
     } else apply();
@@ -373,7 +375,7 @@ function openDiscount() {
   box.addEventListener('click', e => {
     const p = e.target.closest('[data-pct]'), r = e.target.closest('[data-r]');
     if (p) { st.pct = +p.dataset.pct; render(); $(`[data-pct="${st.pct}"]`, box)?.focus(); }
-    else if (r) { st.reason = r.dataset.r; render(); }
+    else if (r) { st.reason = r.dataset.r; const fr = fixDisc().find(x => x.name === st.reason); st.force = !!fr?.freigabe; if (fr) st.pct = +fr.pct || st.pct; render(); }
     else if (e.target.closest('#dApply')) go2();
     else if (e.target.closest('#dRemove')) { if (st.target === 'line') line.disc = null; else POS.billDisc = null; closeLayer(el); renderCart(); toast('Rabatt entfernt', {icon: 'percent'}); }
   });

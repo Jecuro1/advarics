@@ -298,7 +298,7 @@ pub fn commit_sale(tx: &Transaction, lines: &[SaleLine], total: i64, cashier: &s
         if exists {
             let zero = (data["t"]["zero"].as_f64().unwrap_or(0.0) * 100.0).round() as i64;
             let base = total - zero;
-            let earned = if base > 0 { base / crate::customers::CENTS_PER_POINT } else { 0 };
+            let earned = crate::customers::earn_points(tx, cid, base, &no);
             let (delta, balance) = crate::customers::book_points(tx, cid, earned, "Einkauf", Some(&no), Some(cashier))?;
             points = json!({ "earned": delta, "balance": balance });
         }

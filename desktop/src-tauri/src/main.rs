@@ -31,6 +31,8 @@ mod users;
 mod vouchers;
 mod vorgang;
 mod shop;
+mod stamm;
+mod msg;
 
 use base64::Engine as _;
 use serde::Serialize;
@@ -1595,6 +1597,117 @@ fn ext_remove(db: State<db::Db>, id: String) -> Res<Vec<Value>> {
     extensions::list(&c).map_err(err)
 }
 
+
+/* ── Paket 11: Stammdaten, Zeiterfassung, Flexanalyse, Nachrichten, EDI-Dateien, API-Protokoll ── */
+
+#[tauri::command]
+fn stamm_list(db: State<db::Db>, kind: String) -> Res<Vec<Value>> {
+    stamm::list(&db.conn.lock().unwrap(), &kind)
+}
+#[tauri::command]
+fn stamm_all(db: State<db::Db>) -> Res<Value> {
+    stamm::all(&db.conn.lock().unwrap())
+}
+#[tauri::command]
+fn stamm_save(db: State<db::Db>, kind: String, rows: Vec<Value>, user: String) -> Res<usize> {
+    let c = db.conn.lock().unwrap();
+    let n = stamm::save(&c, &kind, &rows)?;
+    let _ = db::audit_append(&c, "stamm.saved", &json!({ "tabelle": kind, "zeilen": n, "benutzer": user }));
+    Ok(n)
+}
+#[tauri::command]
+fn zeit_stempel(db: State<db::Db>, user: String) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    let r = stamm::zeit_stempel(&c, &user)?;
+    let _ = db::audit_append(&c, "zeit.stempel", &json!({ "benutzer": user, "status": r["status"] }));
+    Ok(r)
+}
+#[tauri::command]
+fn zeit_list(db: State<db::Db>, von: String, bis: String) -> Res<Vec<Value>> {
+    stamm::zeit_list(&db.conn.lock().unwrap(), &von, &bis)
+}
+#[tauri::command]
+fn zeit_save(db: State<db::Db>, entry: Value, user: String) -> Res<()> {
+    let c = db.conn.lock().unwrap();
+    stamm::zeit_save(&c, &entry, &user)?;
+    let _ = db::audit_append(&c, "zeit.korrigiert", &json!({ "eintrag": entry, "benutzer": user }));
+    Ok(())
+}
+#[tauri::command]
+fn analyse(db: State<db::Db>, params: Value) -> Res<Value> {
+    stamm::analyse(&db.conn.lock().unwrap(), &params)
+}
+#[tauri::command]
+fn api_log_list(db: State<db::Db>, limit: Option<i64>) -> Res<Vec<Value>> {
+    let c = db.conn.lock().unwrap();
+    let mut st = c.prepare("SELECT id, ts, method, path, status, ip, key FROM api_log ORDER BY id DESC LIMIT ?1").map_err(err)?;
+    let rows = st
+        .query_map([limit.unwrap_or(2000)], |r| {
+            Ok(json!({ "id": r.get::<_, i64>(0)?, "ts": r.get::<_, String>(1)?, "method": r.get::<_, String>(2)?, "path": r.get::<_, String>(3)?,
+                "status": r.get::<_, i64>(4)?, "ip": r.get::<_, Option<String>>(5)?, "key": r.get::<_, Option<String>>(6)? }))
+        })
+        .map_err(err)?;
+    rows.collect::<rusqlite::Result<Vec<_>>>().map_err(err)
+}
+#[tauri::command]
+async fn msg_send(app: AppHandle, kanal: String, to: Vec<Value>, text: String, template: Option<Value>, user: String) -> Res<Value> {
+    let p = app.state::<db::Db>().path.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let cfg = msg::cfg(&app.state::<db::Db>().conn.lock().unwrap(), &kanal);
+        let c = db::open(&p).map_err(err)?;
+        let (mut ok, mut prep, mut bad, mut links) = (0, 0, 0, vec![]);
+        for t in to.iter().take(5000) {
+            let nr = t["tel"].as_str().unwrap_or("");
+            let name = t["name"].as_str().unwrap_or("");
+            let vorname = name.split_whitespace().next().unwrap_or("");
+            let body = text.replace("{name}", name).replace("{vorname}", vorname).replace("{punkte}", &t["punkte"].to_string().trim_matches('"').replace("null", "0"));
+            let mut tpl = template.clone();
+            if let Some(x) = tpl.as_mut() {
+                if let Some(a) = x["parameter"].as_array() {
+                    x["parameter"] = json!(a.iter().map(|v| v.as_str().unwrap_or("").replace("{name}", name).replace("{vorname}", vorname)).collect::<Vec<_>>());
+                }
+            }
+            let (st, info) = msg::send(&cfg, nr, &body, tpl.as_ref());
+            match st.as_str() {
+                "gesendet" => ok += 1,
+                "vorbereitet" => {
+                    prep += 1;
+                    links.push(json!({ "name": name, "link": info }));
+                }
+                _ => bad += 1,
+            }
+            msg::log(&c, &kanal, nr, t["kunde"].as_i64(), &body, &st, &info, Some(&user))?;
+        }
+        let _ = db::audit_append(&c, &format!("{kanal}.versand"), &json!({ "gesendet": ok, "vorbereitet": prep, "fehler": bad, "benutzer": user }));
+        Ok(json!({ "gesendet": ok, "vorbereitet": prep, "fehler": bad, "links": links }))
+    })
+    .await
+    .map_err(err)?
+}
+#[tauri::command]
+fn msg_list(db: State<db::Db>, kanal: Option<String>, limit: Option<i64>) -> Res<Vec<Value>> {
+    msg::list(&db.conn.lock().unwrap(), kanal.as_deref(), limit.unwrap_or(2000))
+}
+#[tauri::command]
+fn edi_files(db: State<db::Db>, which: String) -> Res<Vec<Value>> {
+    msg::edi_files(&db.conn.lock().unwrap(), &which)
+}
+#[tauri::command]
+fn edi_read(db: State<db::Db>, which: String, name: String) -> Res<String> {
+    msg::edi_read(&db.conn.lock().unwrap(), &which, &name)
+}
+#[tauri::command]
+fn edi_write(db: State<db::Db>, which: String, name: String, content: String, user: String) -> Res<String> {
+    let c = db.conn.lock().unwrap();
+    let p = msg::edi_write(&c, &which, &name, &content)?;
+    let _ = db::audit_append(&c, "edi.export", &json!({ "datei": p, "benutzer": user }));
+    Ok(p)
+}
+#[tauri::command]
+fn edi_done(db: State<db::Db>, name: String) -> Res<()> {
+    msg::edi_done(&db.conn.lock().unwrap(), &name)
+}
+
 /* ── Vorgänge (Einkauf, Faktura, Reklamation, Reservierung, Auswahl, Kampagnen …) ── */
 
 #[tauri::command]
@@ -1776,6 +1889,20 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            stamm_list,
+            stamm_all,
+            stamm_save,
+            zeit_stempel,
+            zeit_list,
+            zeit_save,
+            analyse,
+            api_log_list,
+            msg_send,
+            msg_list,
+            edi_files,
+            edi_read,
+            edi_write,
+            edi_done,
             verbund_info,
             verbund_setup,
             verbund_test,

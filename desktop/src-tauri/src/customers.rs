@@ -7,6 +7,38 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 pub const CENTS_PER_POINT: i64 = 1000;
+/// Cent Umsatz je Bonuspunkt (Einstellung „bonus.cent_pro_punkt“, Standard 1000 = 1 Punkt je 10 €)
+pub fn cents_per_point(c: &rusqlite::Connection) -> i64 {
+    crate::db::setting_get(c, "bonus.cent_pro_punkt").and_then(|v| v.as_i64()).filter(|n| *n >= 1).unwrap_or(CENTS_PER_POINT)
+}
+
+/// Bonuspunkte für einen Einkauf: Grundsatz (Cent je Punkt) × Faktor der Umsatzstaffel
+/// (Stammdaten „Bonus Prozentkalkulation“, Jahresumsatz der letzten 365 Tage ohne den aktuellen Beleg).
+pub fn earn_points(c: &rusqlite::Connection, customer: &str, base: i64, exclude_no: &str) -> i64 {
+    if base <= 0 {
+        return 0;
+    }
+    let pts = base / cents_per_point(c);
+    let umsatz: i64 = c
+        .query_row("SELECT COALESCE(SUM(total),0) FROM sales WHERE customer_id = ?1 AND ts >= ?2 AND beleg_no <> ?3", rusqlite::params![customer, (chrono::Local::now() - chrono::Duration::days(365)).format("%Y-%m-%d").to_string(), exclude_no], |r| r.get(0))
+        .unwrap_or(0);
+    let mut faktor = 1.0f64;
+    let mut best = -1.0f64;
+    if let Ok(mut st) = c.prepare("SELECT data FROM stamm WHERE kind = 'bonusprozent' AND active = 1") {
+        if let Ok(rows) = st.query_map([], |r| r.get::<_, String>(0)) {
+            for d in rows.flatten() {
+                let v: serde_json::Value = serde_json::from_str(&d).unwrap_or_default();
+                let ab = v["ab"].as_f64().unwrap_or(0.0);
+                let f = v["faktor"].as_f64().unwrap_or(1.0);
+                if (umsatz as f64) / 100.0 >= ab && ab > best && f > 0.0 {
+                    best = ab;
+                    faktor = f;
+                }
+            }
+        }
+    }
+    (pts as f64 * faktor).floor() as i64
+}
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct Customer {

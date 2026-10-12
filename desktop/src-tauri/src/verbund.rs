@@ -330,7 +330,8 @@ pub fn handle(c: &Connection, method: &str, path: &str, key: &str, body: &Value,
             Ok(json!({ "now": db::now(), "articles": arts, "inactive": gone, "customers": custs, "promotions": promos, "suppliers": suppliers,
                 "stores": stores_list, "stock": stock_matrix(c).map_err(e5)?, "transfers": transfers(c, Some(&store)).map_err(|e| e5(e.to_string()))?,
                 "firma": { "name": s(c, "firma.name") }, "umsatz": umsatz,
-                "einstellungen": SHARED.iter().filter_map(|k| db::setting_get(c, k).map(|v| (k.to_string(), v))).collect::<serde_json::Map<String, Value>>() }))
+                "einstellungen": SHARED.iter().filter_map(|k| db::setting_get(c, k).map(|v| (k.to_string(), v))).collect::<serde_json::Map<String, Value>>(),
+                "stammdaten": crate::stamm::all(c).map_err(e5)? }))
         }
         ("POST", "/sync/v1/umlagerung") => {
             let t = transfer_create(c, body["from"].as_str().unwrap_or(""), body["to"].as_str().unwrap_or(&store), &body["lines"], body["note"].as_str().unwrap_or(""), body["user"].as_str().unwrap_or(&store)).map_err(|e| (400, e))?;
@@ -468,6 +469,12 @@ pub fn sync_once(c: &Connection) -> Result<Value, String> {
     if let Some(m) = p["einstellungen"].as_object() {
         for (k, v) in m.iter().filter(|(k, _)| SHARED.contains(&k.as_str())) {
             db::setting_set(&tx, k, v).map_err(|e| e.to_string())?;
+        }
+    }
+    // Stammdaten-Tabellen der Zentrale (Marken, Saisons, Hausfarben, Vorlagen …) – lokale Tabellen bleiben
+    if let Some(m) = p["stammdaten"].as_object() {
+        for (k, rows) in m.iter().filter(|(k, _)| !crate::stamm::LOCAL.contains(&k.as_str())) {
+            crate::stamm::write_rows(&tx, k, rows.as_array().map(|a| a.as_slice()).unwrap_or(&[]))?;
         }
     }
     if let Some(sp) = p["suppliers"].as_array() {

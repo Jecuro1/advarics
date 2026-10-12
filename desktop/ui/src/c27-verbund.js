@@ -98,9 +98,9 @@ async function afterSync(r) {
 
 /* ── Seiten: Filialen, Umlagerungen ── */
 function renderNavVerbund() {
-  for (let i = NAV.length - 1; i >= 0; i--) if (NAV[i].vb) NAV.splice(i, 1);
-  const at = NAV.findIndex(n => n.g === 'Auswertung');
-  NAV.splice(at, 0, {g: 'Filialen', vb: true}, {id: 'filialen', label: vbRole() === 'filiale' ? 'Filialverbund' : 'Filialen', icon: 'building', vb: true}, {id: 'umlagerungen', label: 'Umlagerungen', icon: 'swap', vb: true});
+  // Filialen stehen unter Stammdaten › Filialen, Umlagerungen unter Artikel › Umlagerungen
+  const walk = l => l.forEach(n => { if (n.id === 'filialen') n.label = vbRole() === 'filiale' ? 'Filialverbund' : 'Filialen'; if (n.kids) walk(n.kids); });
+  walk(NAV);
   if ($('#nav')) { renderNav(); permNav(); $$('.nav-item').forEach(n => n.dataset.view === S.view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current')); loadVerbund(); }
 }
 registerPage('filialen', {title: 'Filialen', sub: () => vbRole() === 'einzel' ? 'Einzelplatz' : vbRole() === 'zentrale' ? 'Zentrale' : `Filiale ${vbOwn()}`, render: renderFilialen});

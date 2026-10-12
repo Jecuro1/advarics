@@ -1,3 +1,19 @@
+## Neu in 0.14.0
+- **Neue Menübereiche:** Kunden, Versand, Analyse, EDI, Webshop, Inventur, Stammdaten, Einstellungen und Service – alle als Akkordeon mit Unterpunkten
+- **Stammdaten:** über 60 pflegbare Tabellen mit CSV-Import/-Export, Sortierung und Aktiv-Schalter – Benutzergruppen, Zugangsprofil (Anmeldung nur zu erlaubten Zeiten), Zuordnung Meldungen, Filialengruppen, Formulareinstellungen, Verkaufsabteilungen, Marken, Warengruppen mit Hierarchie (Abteilungen bis Hauptbereiche), Preislagen, Größenschlüssel und Größenreihenfolge, Flächen, Orderkategorien, Hausfarben (sofort an Artikeln wählbar), Farbübersetzungen, Lieferantenfarben, Saisons, Zahlungsbedingungen, Verkäuferprämien, Preisrundung, Preisgruppen, Artikelmerkmale, Webshop-Infos, Retourentypen, Gründe Bestandsänderung, Statistikfilter, Länder
+- **Kundenmanagement:** Kundenerfassung mit Anrede, Titel, Sprache, Merkmalen, Hotel und Preisgruppe; Bonus-Kalkulation (Punkte je Euro und Umsatzstaffel – wird bei jedem Einkauf angewendet); Hotels mit Provisionsabrechnung; Ansprechpartner; Protokoll Kundenumbuchung
+- **WhatsApp & SMS:** Chat je Kunde, eigene und globale Vorlagen, Massennachrichten an Kundengruppen, Kampagnen-Übersicht, Protokoll. Versand über WhatsApp Business (Cloud API) bzw. ein SMS-Gateway – ohne Zugang wird die Nachricht in WhatsApp geöffnet
+- **Versand:** Versand-Etiketten (A6-Druck), Paket-Typen, Spediteure mit Sendungsverfolgung
+- **Verleih (Rental Service):** Leihgeräte ausgeben (bucht aus) und zurücknehmen (bucht ein), Tarife je Tag/Woche mit Kaution
+- **Analyse:** Flexanalyse-Designer mit bis zu drei Dimensionen (Warengruppe, Marke, Artikel, Farbe, Größe, Preislage, Lieferant, Saison, Verkäufer:in, Kunde, Filiale, Zeit), Drill-down, eigenen Formelspalten, Ampeln, Statistikfiltern, Vorlagen und Kategorien; Report-Zeitsteuerung per E-Mail; Artikel-Filialmanagement, NOS-Filialliste, Artikel-Info-Bericht, Intrastat, Größen- und Preislagen-Auswertung, Artikelliste, Rabatt-Auswertung, Prämienabrechnung, Flächenproduktivität, Altersbewertung, Power-BI-Anbindung
+- **EDI:** EDIFACT lesen (PRICAT, DESADV, INVOIC, ORDRSP) und schreiben (ORDERS, SLSRPT, INVRPT) über Ein-/Ausgangsordner; Preiskatalog → Artikel-Import mit Zuordnung von Warengruppen, Farben und Größen; DESADV → Wareneingang-Avis, INVOIC → Eingangsrechnung; Fehler, Konflikte, Hintergrundjobs, Protokoll
+- **Webshop:** Bestellungen über die REST-API (POST /api/v1/webshop/bestellungen, Status abrufbar), Versand bucht den Bestand aus; Service-Suche, Kategorien, Artikel-Filter (blendet Artikel im Schaufenster aus), Versandarten, Abfragelog und Order-Import-Fehler
+- **Inventur:** Erfassungspool (vorab je Inventurort scannen, gesammelt übernehmen), Inventurorte, Protokoll, Blindzählung, Altersbewertung
+- **Zeiterfassung:** Kommen/Gehen per Klick, Korrekturen durch die Leitung (gekennzeichnet), Summen und CSV-Export
+- **Kasse:** feste Rabatte als Schnellwahl (mit Freigabe), Beleg-Zusatzinformationen (z. B. Hotel), Scanner-Regeln (Kundenkarte, Gutschein, Beleg), Artikelservices, Preisgruppen-Rabatt
+- **Einstellungen:** Prozesskonfiguration, Nummernkreise, Buchungsabschluss, Etikettentypen und -drucker, elektronische Etiketten (Preis-Export), MwSt.-Typen und -Sets, Styling der Listen, EK-Verschlüsselung, Übersetzungen, Gutscheintypen, Preis-Änderungsgründe, Zusatz-Buchungstypen, Protokoll externer API-Zugriffe
+- **Service:** Anleitungen, Release Notes, Schulungen, Über Kontor, Fiskalisierte Kassen, Ansprechpartner
+
 ## Neu in 0.13.0
 - **Aufgeräumtes Menü (Akkordeon):** Nur der Bereich der aktuellen Seite ist aufgeklappt, Unterpunkte sind gruppiert – über 100 Funktionen, trotzdem übersichtlich (abschaltbar unter Einstellungen → Kasse)
 - **Artikel:** Artikelinfo, Artikel-Info Plus (Abverkauf, Reichweite, Marge, Lagerwert, Umschlag), Artikelinfo Kompakt zum Scannen, Bestandsinfo mit Lagerwert je Warengruppe, Artikel-Umbuchungs-Log mit CSV-Export

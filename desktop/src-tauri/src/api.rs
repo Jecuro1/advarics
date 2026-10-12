@@ -344,9 +344,38 @@ fn handle(c: &Connection, db_path: &Path, mut req: Request) {
                     .ok_or((404, "Eigener Endpunkt nicht gefunden".into()))?;
                 run_query(db_path, &sql, &args).map_err(e400)
             }
+            (Method::Post, ["webshop", "bestellungen"]) => {
+                // Bestellung aus einem externen Webshop (Shopware, WooCommerce, Shopify …) übernehmen
+                let k = &bj["kunde"];
+                let lines: Vec<Value> = bj["positionen"].as_array().cloned().unwrap_or_default().iter().map(|p| {
+                    let ean = p["ean"].as_str().unwrap_or("").to_string();
+                    let name = c.query_row("SELECT a.name || ' · ' || v.color || ' · ' || v.size, a.id FROM variants v JOIN articles a ON a.id = v.article_id WHERE v.ean = ?1", [&ean], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))).ok();
+                    json!({ "ean": ean, "sku": name.as_ref().map(|n| n.1.clone()), "name": name.map(|n| n.0).or(p["name"].as_str().map(str::to_string)).unwrap_or_default(), "qty": p["menge"].as_i64().unwrap_or(1), "price": (p["preis"].as_f64().unwrap_or(0.0) * 100.0).round() as i64, "vat": p["ust"].as_i64().unwrap_or(20) })
+                }).collect();
+                if let Some(u) = lines.iter().find(|l| l["sku"].is_null()) {
+                    return Err((400, format!("Unbekannte EAN {}", u["ean"].as_str().unwrap_or(""))));
+                }
+                if lines.is_empty() {
+                    return Err((400, "Keine Positionen".into()));
+                }
+                let tx = c.unchecked_transaction().map_err(|e| e500(e.to_string()))?;
+                let d = crate::vorgang::save(&tx, &json!({ "kind": "webbestellung", "partner_name": k["name"].as_str().unwrap_or("Webshop-Kunde"), "ref": bj["nr"].as_str().unwrap_or(""),
+                    "data": { "lines": lines, "kunde": k, "versandart": bj["versand"], "zahlung": bj["zahlung"], "shop": bj["shop"], "quelle": "API" } }), "Webshop").map_err(e400)?;
+                tx.commit().map_err(|e| e500(e.to_string()))?;
+                Ok(json!({ "nr": d["no"], "status": d["status"] }))
+            }
+            (Method::Get, ["webshop", "bestellungen"]) => {
+                let l = crate::vorgang::list(c, &["webbestellung".to_string()], arg("status").as_deref(), 200).map_err(e500)?;
+                Ok(json!(l.iter().map(|d| json!({ "nr": d["no"], "ref": d["ref"], "status": d["status"], "betrag": d["total"].as_i64().unwrap_or(0) as f64 / 100.0, "tracking": d["data"]["versand"]["tracking"] })).collect::<Vec<_>>()))
+            }
             _ => Err((404, format!("Unbekannter Pfad {path}"))),
         }
     })();
+    let ip = req.remote_addr().map(|a| a.ip().to_string());
+    let status = res.as_ref().map(|_| 200).unwrap_or_else(|e| e.0);
+    let key = hdr.as_deref().and_then(|h| h.strip_prefix("Bearer ")).map(|k| k.trim().chars().take(8).collect::<String>());
+    let _ = c.execute("INSERT INTO api_log(ts, method, path, status, ip, key) VALUES (?1,?2,?3,?4,?5,?6)", params![db::now(), method.to_string(), path, status, ip, key]);
+    let _ = c.execute("DELETE FROM api_log WHERE id < (SELECT MAX(id) - 20000 FROM api_log)", []);
     match res {
         Ok(v) => reply(req, 200, v),
         Err((code, msg)) => reply(req, code, json!({ "fehler": msg })),
@@ -441,6 +470,16 @@ mod tests {
         let (_, v) = get(port, "/api/v1/eigene/bestand-nach-ean?ean=2000000000015", Some(&read));
         assert_eq!(v, json!([{ "ean": "2000000000015", "stock": 5 }]));
         assert_eq!(get(port, "/api/v1/openapi.json", None).0, 200);
+        // Webshop-Bestellung: unbekannte EAN abgelehnt, gültige angelegt, Status abrufbar, Zugriffe protokolliert
+        let url = format!("http://127.0.0.1:{port}/api/v1/webshop/bestellungen");
+        let r = ureq::post(&url).set("Authorization", &format!("Bearer {rw}")).send_json(json!({ "nr": "S-1", "positionen": [{ "ean": "999", "menge": 1, "preis": 10.0 }] }));
+        assert!(matches!(r, Err(ureq::Error::Status(400, _))));
+        let r: Value = ureq::post(&url).set("Authorization", &format!("Bearer {rw}")).send_json(json!({ "nr": "S-2", "shop": "Test", "kunde": { "name": "Anna" }, "positionen": [{ "ean": "2000000000015", "menge": 2, "preis": 100.0, "ust": 20 }] })).unwrap().into_json().unwrap();
+        assert_eq!(r["status"], json!("neu"));
+        let (_, v) = get(port, "/api/v1/webshop/bestellungen?status=neu", Some(&read));
+        assert_eq!((v[0]["ref"].clone(), v[0]["betrag"].clone()), (json!("S-2"), json!(200.0)));
+        let n: i64 = c.query_row("SELECT COUNT(*) FROM api_log WHERE path LIKE '%webshop%' AND status = 400", [], |r| r.get(0)).unwrap();
+        assert_eq!(n, 1);
         stop(&st);
         let _ = std::fs::remove_file(&p);
     }

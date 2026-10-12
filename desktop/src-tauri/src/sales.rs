@@ -265,8 +265,8 @@ pub fn commit_return(tx: &Transaction, orig_no: &str, lines: &[ReturnLine], stor
         let want = if storno || all_back {
             left
         } else {
-            let before = (o.total - refunded).max(0) / customers::CENTS_PER_POINT;
-            let after = (o.total - refunded - refund).max(0) / customers::CENTS_PER_POINT;
+            let before = (o.total - refunded).max(0) / customers::cents_per_point(tx);
+            let after = (o.total - refunded - refund).max(0) / customers::cents_per_point(tx);
             (before - after).min(left)
         };
         if want > 0 {

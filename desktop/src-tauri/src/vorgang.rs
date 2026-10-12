@@ -58,6 +58,14 @@ pub const KINDS: &[Kind] = &[
         actions: &[("bestellt", &["offen"], "bestellt"), ("eingetroffen", &["offen", "bestellt"], "eingetroffen"), ("abholen", &["eingetroffen"], "abgeholt"), ("stornieren", &["offen", "bestellt"], "storniert")] },
     Kind { id: "fremdrechnung", prefix: "FR", name: "Fremdrechnung", initial: "offen", edit: &["offen"],
         actions: &[("zahlung", &["offen", "teilbezahlt"], "*"), ("mahnen", &["offen", "teilbezahlt"], "*"), ("stornieren", &["offen"], "storniert")] },
+    Kind { id: "sendung", prefix: "VS", name: "Sendung", initial: "erstellt", edit: &["erstellt"],
+        actions: &[("versendet", &["erstellt"], "versendet"), ("zugestellt", &["versendet"], "zugestellt"), ("stornieren", &["erstellt"], "storniert")] },
+    Kind { id: "verleih", prefix: "VL", name: "Verleih", initial: "entwurf", edit: &["entwurf"],
+        actions: &[("ausgeben", &["entwurf"], "ausgegeben"), ("zurueck", &["ausgegeben"], "zurueckgegeben"), ("stornieren", &["entwurf"], "storniert")] },
+    Kind { id: "webbestellung", prefix: "WB", name: "Webshop-Bestellung", initial: "neu", edit: &["neu", "in_bearbeitung"],
+        actions: &[("bearbeiten", &["neu"], "in_bearbeitung"), ("versenden", &["neu", "in_bearbeitung"], "versendet"), ("abschliessen", &["versendet"], "abgeschlossen"), ("stornieren", &["neu", "in_bearbeitung"], "storniert")] },
+    Kind { id: "edi", prefix: "ED", name: "EDI-Nachricht", initial: "neu", edit: &["neu", "fehler"],
+        actions: &[("verarbeitet", &["neu", "fehler"], "verarbeitet"), ("fehler", &["neu"], "fehler"), ("ignorieren", &["neu", "fehler"], "ignoriert")] },
     Kind { id: "bonus", prefix: "LB", name: "Lieferantenbonus", initial: "aktiv", edit: &["aktiv"],
         actions: &[("umlegen", &["aktiv"], "umgelegt"), ("reaktivieren", &["umgelegt"], "aktiv")] },
 ];
@@ -156,11 +164,11 @@ fn validate(k: &Kind, d: &Value) -> Result<(), String> {
             return Err(format!("Position {}: Bezeichnung oder EAN fehlt", i + 1));
         }
     }
-    let needs_lines = ["avis", "lretoure", "warenkorb", "angebot", "auftrag", "lieferschein", "rechnung", "reservierung", "auswahl", "pickliste", "preis", "kundenbestellung"];
+    let needs_lines = ["avis", "lretoure", "warenkorb", "angebot", "auftrag", "lieferschein", "rechnung", "reservierung", "auswahl", "pickliste", "preis", "kundenbestellung", "verleih", "webbestellung"];
     if needs_lines.contains(&k.id) && !lines.iter().any(|l| l["qty"].as_f64().unwrap_or(0.0) > 0.0) {
         return Err("Mindestens eine Position mit Menge".into());
     }
-    let needs_partner = ["avis", "er", "zahlung", "lretoure", "angebot", "auftrag", "lieferschein", "rechnung", "auswahl", "bonus", "kundenbestellung", "fremdrechnung"];
+    let needs_partner = ["avis", "er", "zahlung", "lretoure", "angebot", "auftrag", "lieferschein", "rechnung", "auswahl", "bonus", "kundenbestellung", "fremdrechnung", "sendung", "verleih", "webbestellung"];
     if needs_partner.contains(&k.id) && d["partner_name"].as_str().unwrap_or("").trim().is_empty() {
         return Err(if ["avis", "er", "zahlung", "lretoure", "bonus"].contains(&k.id) { "Lieferant fehlt".into() } else { "Kunde fehlt".into() });
     }
@@ -379,6 +387,23 @@ pub fn action(tx: &Transaction, id: i64, act: &str, payload: &Value, user: &str)
             }
             open = 0;
         }
+        ("verleih", "ausgeben") => stocks = book_lines(tx, &lines, -1, "Verleih ausgegeben", &no, user)?,
+        ("verleih", "zurueck") => {
+            stocks = book_lines(tx, &lines, 1, "Verleih zurück", &no, user)?;
+            data["rueckgabe"] = json!({ "zeit": db::now(), "von": user, "zustand": payload["zustand"], "nachzahlung": payload["nachzahlung"] });
+        }
+        ("webbestellung", "versenden") => {
+            stocks = book_lines(tx, &lines, -1, "Webshop-Versand", &no, user)?;
+            data["versand"] = json!({ "zeit": db::now(), "tracking": payload["tracking"], "spediteur": payload["spediteur"] });
+        }
+        ("edi", "fehler") => data["fehler"] = payload["grund"].clone(),
+        ("edi", "verarbeitet") => {
+            data["ergebnis"] = payload["ergebnis"].clone();
+            data["fehler"] = Value::Null;
+        }
+        ("sendung", "versendet") => {
+            data["tracking"] = payload["tracking"].clone();
+        }
         ("preis", "durchfuehren") => {
             // neue Preise übernehmen (VK; optional Aktionspreis) und vorher/nachher festhalten
             let mut n = 0;
@@ -509,7 +534,7 @@ pub fn sale_assign(tx: &Transaction, no: &str, seller: Option<&str>, customer: O
         tx.execute("UPDATE sales SET customer_id = ?2 WHERE beleg_no = ?1", params![no, id]).map_err(|e| e.to_string())?;
         let zero = (d["t"]["zero"].as_f64().unwrap_or(0.0) * 100.0).round() as i64;
         let base = total - zero;
-        let earned = if base > 0 { base / crate::customers::CENTS_PER_POINT } else { 0 };
+        let earned = crate::customers::earn_points(tx, id, base, no);
         let (delta, balance) = crate::customers::book_points(tx, id, earned, "Einkauf (nachträglich zugeordnet)", Some(no), Some(user))?;
         out["punkte"] = json!({ "gutgeschrieben": delta, "stand": balance });
         out["kunde"] = json!(id);
