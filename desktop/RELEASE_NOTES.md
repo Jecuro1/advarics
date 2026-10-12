@@ -1,3 +1,7 @@
+## Neu in 0.26.1
+
+- Menüpunkt „Verleih (Rental Service)“ und „Stammdaten › Rental Service“ entfernt – wird nicht gebraucht.
+
 ## Neu in 0.26.0
 
 - Artikelbilder direkt anklicken: In der Artikelliste sind die Bilder jetzt groß (Zeilen höher), ein Klick öffnet die große Bildansicht mit Blättern (Pfeile, Pfeiltasten, Vorschaustreifen, Esc). Auch in der Artikelmaske (Reiter Bilder-Zuordnung) öffnet ein Klick auf ein Bild die große Ansicht.

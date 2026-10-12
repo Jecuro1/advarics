@@ -1912,7 +1912,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.26.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.26.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2029,7 +2029,6 @@ const NAV = [
   {label: 'Auswahlverwaltung', icon: 'layers', kids: [{id: 'auswahl-neu', label: 'Neue Auswahl', icon: 'plus'}, {id: 'auswahl', label: 'Auswahlen', icon: 'layers'}, {id: 'auswahl-summen', label: 'Auswahl-Summen pro Kunde', icon: 'users'}]},
   {label: 'Gutscheine', icon: 'gift', kids: [{id: 'gutscheine', label: 'Übersicht Gutscheine', icon: 'list'}, {id: 'gutscheine-pin', label: 'Übersicht Gutscheine mit PIN', icon: 'lock'}, {id: 'gutschein-buchungen', label: 'Buchungen Gutscheine', icon: 'receipt'}, {id: 'gutscheine-loeschen', label: 'Gutscheine Löschen', icon: 'trash'}, {id: 'gutscheine-geloescht', label: 'Protokoll gelöschter Gutscheine', icon: 'history'}, {id: 'gutschein-protokoll', label: 'Protokoll Gutscheine', icon: 'history'}, {id: 'gutscheine-extern', label: 'Buchungen externe Gutscheine', icon: 'gift'}]},
   {label: 'Faktura', icon: 'idcard', kids: [{id: 'rechnungen', label: 'Kundenrechnungen', icon: 'receipt'}, {id: 'angebote-auftraege', label: 'Angebote/Aufträge', icon: 'edit'}, {id: 'lieferscheine', label: 'Lieferscheine', icon: 'truck'}, {id: 'kundenbestellungen', label: 'Kunden-Bestellungen', icon: 'list'}, {id: 'fremdrechnungen', label: 'Fremdrechnungen', icon: 'idcard'}, {id: 'offene-posten', label: 'Offene Posten', icon: 'alert'}, {id: 'mahnwesen', label: 'Mahnwesen', icon: 'mail'}]},
-  {label: 'Verleih', icon: 'clock', kids: [{id: 'verleih', label: 'Verleih (Rental Service)', icon: 'clock'}]},
   {label: 'Kasse & Abschluss', icon: 'cash', kids: [{id: 'kassenbuch', label: 'Kassenbuch', icon: 'cash'}, {id: 'tagesabschluesse', label: 'Tagesabschlüsse', icon: 'lock'}, {id: 'filialumsatz', label: 'Filialumsatz kompakt', icon: 'chart'}]},
   {g: 'Marketing'},
   {id: 'aktionen', label: 'Preisaktionen', icon: 'percent'},
@@ -2128,7 +2127,6 @@ const NAV = [
   {id: 'st-scannerregel', label: 'Scanner-Regeln', icon: 'barcode'},
   {label: 'MwSt.', icon: 'percent', kids: [{id: 'st-mwsttyp', label: 'MwSt.-Typen', icon: 'percent'}, {id: 'st-mwstset', label: 'MwSt.-Set', icon: 'percent'}]},
   {id: 'st-artikelservice', label: 'Artikelservice', icon: 'wrench'},
-  {id: 'st-verleihtarif', label: 'Rental Service', icon: 'clock'},
   {id: 'styling', label: 'Styling', icon: 'palette'},
   {id: 'st-smsvorlage', label: 'SMS Vorlagen', icon: 'chat'},
   {label: 'FiBu', icon: 'receipt', kids: [{id: 'st-fibukonto', label: 'FiBu Einstellungen', icon: 'sliders'}]},
