@@ -34,7 +34,9 @@ const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
 const MOD = IS_MAC ? '⌘' : 'Strg';
 const parseAmt = s => { const v = parseFloat(String(s).trim().replace(/\s|€/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')); return isFinite(v) ? v : NaN; };
 const DESKTOP = !!(window.__TAURI__ && window.__TAURI__.core);
-const invoke = (cmd, args) => DESKTOP ? window.__TAURI__.core.invoke(cmd, args) : Promise.reject(new Error('Nur in der Desktop-App'));
+/** Prüfungen/Ergänzungen vor Befehlen (z. B. Buchungsabschluss, E-Mail-Fußzeile) – werden in späteren Modulen eingetragen */
+const INVOKE_HOOKS = {};
+const invoke = (cmd, args) => { if (!DESKTOP) return Promise.reject(new Error('Nur in der Desktop-App')); try { args = INVOKE_HOOKS[cmd]?.(args) ?? args; } catch (e) { return Promise.reject(e); } return window.__TAURI__.core.invoke(cmd, args); };
 const isTyping = el => el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
 
 const NOW = new Date();
@@ -196,7 +198,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.29.3', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.30.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -402,8 +404,7 @@ const NAV = [
   {g: 'Einstellungen'},
   {id: 'einst-allgemein', label: 'Einstellungen Allgemein', icon: 'sliders'},
   {id: 'buchungsabschluss', label: 'Buchungsabschluss', icon: 'lock'},
-  {id: 'st-bonussystem', label: 'Bonus Systeme', icon: 'gift'},
-  {label: 'Kassen', icon: 'register', kids: [{id: 'einst-kassen', label: 'Kassen', icon: 'register'}, {id: 'einst-kassenkonfig', label: 'Kassen-Konfiguration', icon: 'sliders'}]},
+    {label: 'Kassen', icon: 'register', kids: [{id: 'einst-kassen', label: 'Kassen', icon: 'register'}, {id: 'einst-kassenkonfig', label: 'Kassen-Konfiguration', icon: 'sliders'}]},
   {id: 'st-edijob', label: 'Hintergrundjobs', icon: 'sync'},
   {id: 'st-etikettentyp', label: 'Etikettentypen', icon: 'tag'},
   {id: 'einst-benutzer', label: 'Benutzer-Einstellungen', icon: 'user'},

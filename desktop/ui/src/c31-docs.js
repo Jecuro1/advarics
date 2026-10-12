@@ -166,6 +166,7 @@ async function openDoc(kind, id, preset = {}) {
   if (id) { try { d = await invoke('doc_get', {id}); } catch (e) { return toast('Nicht verfügbar', {t2: String(e), type: 'warn'}); } kind = d.kind; }
   if (K.partner === 'lieferant') await loadSuppliers();
   const st = d ? JSON.parse(JSON.stringify(d)) : {kind, status: null, partner: preset.partner || null, partner_name: preset.partner_name || '', ref: preset.ref || '', date: preset.date || today(), due: preset.due || null, data: {lines: [], ...(preset.data || {})}};
+  if (!d && kind === 'sendung' && CFG['allg.spediteur']) { const sp = stRows('spediteur').find(x => x.id === CFG['allg.spediteur']); if (sp && !st.data.spediteur) st.data.spediteur = sp.name; }
   if (!d && kind === 'reservierung') { st.due ||= plusDays(3); st.data.quelle ||= 'Geschäft'; }
   if (!d && kind === 'warenkorb') st.due ||= plusDays(7);
   if (!d && kind === 'angebot') st.due ||= plusDays(30);

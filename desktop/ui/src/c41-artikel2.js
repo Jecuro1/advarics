@@ -89,6 +89,7 @@ function artEditorMount(host, a, tab0) {
   const sale0 = a ? ('baseSale' in a ? a.baseSale : a.sale) : null;
   const st = a ? {id: a.id, name: a.name, brand: a.brand, cat: a.cat, g: a.g, price: num(a.price, 2), sale: sale0 ? num(sale0, 2) : '', vat: a.vat ?? 20, tag: a.tag || '', colors: [...a.colors], sizes: a.sizes.join(', '), fields: cfSplit('artikel', a.fields).free, cf: cfSplit('artikel', a.fields).typed, ski: !!a.prompts, pop: a.pop || 50, cost: a.cost != null ? num(a.cost, 2) : '', supplierId: a.supplierId || '', minStock: String(a.minStock ?? 2), d: JSON.parse(JSON.stringify(a.details || {}))}
     : {id: nextArtId(), name: '', brand: '', cat: AV.cat !== 'alle' ? AV.cat : 'jacken', g: 'jacket', price: '', sale: '', vat: 20, tag: '', colors: [], sizes: 'S, M, L, XL', fields: [], cf: {}, ski: false, pop: 50, cost: '', supplierId: '', minStock: '2', d: {}};
+  if (isNew && typeof eaNeuArtikel === 'function') eaNeuArtikel(st);
   st.pending = [];     // Bildadressen, die nach dem ersten Speichern geladen werden
   let tab = tab0 || edTabMem.last || 'stamm';
   const ids = AE.ids || [], pos = a ? ids.indexOf(a.id) : -1;

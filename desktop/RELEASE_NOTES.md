@@ -1,3 +1,12 @@
+## Neu in 0.30.0
+
+- Nur noch Funktionen, die wirklich etwas bewirken. Entfernt: Bonus Systeme, Kassen-Konfiguration mit 100 Schaltern, Zahlungsarten-/MwSt.-/FiBu-Tabellen je Kasse, Beleg-Konfiguration, Icon-Sortierung, Positionsinfo, FinanzOnline-Zugangsdaten, Währung/Land/Sprache.
+- Einstellungen Allgemein: GLN (EDI), Gutschein-Gültigkeit, Standard-Spediteur (Vorbelegung bei neuen Sendungen), Standardwerte für neue Artikel (Warengruppe, Marke, MwSt., Größenreihe aus dem Größenschlüssel) und E-Mail-Fußzeile (wird an jede ausgehende Mail angehängt).
+- Buchungsabschluss sperrt jetzt wirklich: Belege mit Datum bis zum Abschlusstag können nicht mehr angelegt oder geändert werden.
+- Kassen: Name der eigenen Kasse (Kopfzeile), Fiskalisierung und Signatureinheit (echte RKSV-Daten), Kartenterminal (ZVT) – alles mit Wirkung.
+- Kassen-Konfiguration: bündelt die Kassen-Einstellungen (Rabattfreigabe, Retourengrenze, Vereinsrabatt, Pflichtfelder, Bon, Drucker/Lade) an einem Ort.
+- Größen sortieren bleibt (Rauf/Runter/Automatisch).
+
 ## Neu in 0.29.3
 
 - Aufgeräumt: Nur noch, was für ein On-Premise-System Sinn ergibt. Entfernt wurden die Advarics-Cloud-Teile: Buchungslogik (interner Bewertungs-Dienst), Filial-Code und Geräte-Registrierung, Globaler Domänen-Name/Belegservice, WebApp-Einstellungen, Kassen-Synchronisierung (Sync-Name, MAC, Update-Paket, Zeitstempel), RFID, Kassen-Layouts (XML), Self-Checkout, EasyRent, Loyalty, Unterschriften-Pad, Externe Zahlungsart, Kd.-Filter sowie der EFT-Treiber-Block.
