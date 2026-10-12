@@ -1,3 +1,7 @@
+## Neu in 0.23.7
+
+- Größenschlüssel 10 Helme Kids (4), 11 Helme Erw. (12), 12 Protektoren Kids (7), 13 Protektoren Erw. (7) und 14 Handschuhe Kids / Junior (13) mit ihren Advarics-Größen.
+
 ## Neu in 0.23.6
 
 - Größenschlüssel „9 Schuhe Kids Ski MP“ mit seinen 24 Größen (18/18.5 bis 27/27.5 und 150 bis 215 in 5er-Schritten).
