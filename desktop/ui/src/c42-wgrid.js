@@ -13,7 +13,8 @@ function agNew(cfg) {
 function agMount(key, v) {
   const st = AG[key], cfg = st.cfg;
   st.rows = cfg.rows();
-  v.innerHTML = `<div class="dgrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
+  st.cols.forEach(c => { delete c.aw; });
+  v.innerHTML = `<div class="datagrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
       ${cfg.toolbar?.length ? `<div class="ag-bar">${cfg.toolbar.map(b => `<button class="ag-btn" data-ag="${b.k}">${ic(b.icon, 'i-sm')}<span>${esc(b.l)}</span></button>`).join('')}<button class="ag-btn ag-del" data-ag="del" hidden>${ic('trash', 'i-sm')}<span>Löschen</span></button></div>` : ''}
       <div class="ag-tools"><div class="ag-drop" data-agdrop><span class="ag-ph">Zu gruppierende Spalten hierhin ziehen…</span></div>
         ${(cfg.extra || []).map(b => `<button class="ag-xbtn" data-ag="${b.k}">${ic(b.icon || 'plus', 'i-sm')}${esc(b.l)}</button>`).join('')}
@@ -23,7 +24,7 @@ function agMount(key, v) {
         <button class="ag-tbtn" data-ag="fit" title="Automatische Spaltenbreite">${ic('swap', 'i-sm')}Spaltenbreite</button>
         <button class="ag-tbtn" data-ag="export" title="Exportieren (CSV)">${ic('upload', 'i-sm')}Export</button>
         <button class="ag-tbtn" data-ag="filter" title="Filterzeile ein-/ausblenden">${ic('filter', 'i-sm')}Filter</button></div>
-      <div class="ag-scroll" data-agscroll><div class="ag-inner" data-aginner><div class="ag-head" data-aghead></div><div class="ag-filt" data-agfilt></div><div class="ag-rows" data-agrows></div></div></div>
+      <div class="ag-scroll" data-agscroll><div class="ag-inner" data-aginner><div class="ag-sticky"><div class="ag-head" data-aghead></div><div class="ag-filt" data-agfilt></div></div><div class="ag-rows" data-agrows></div></div></div>
       <div class="ag-foot"><b data-agcount></b><span class="ag-sel" data-agselinfo></span><span class="ag-sel" data-agsums></span><button class="ag-tbtn ag-fbtn" data-ag="filter">${ic('filter', 'i-sm')}Filter erstellen</button></div></div>`;
   agBind(key, v);
   agApply(key, true);
@@ -37,7 +38,35 @@ function agridPage(page, cfg) {
 
 const agVal = (r, c) => c.get ? c.get(r) : r[c.k];
 const agText = (r, c) => { const v = agVal(r, c); return c.fmt ? c.fmt(v, r) : v == null ? '' : String(v); };
-const agWidth = c => Math.round((c.w || 120) * 1.15);
+const agWidth = c => c.uw || c.aw || Math.round((c.w || 120) * 1.15);
+const agFlex = c => !c.uw && !c.html && c.t !== 'num' && c.t !== 'check';
+let agCtx = null;
+/** Spaltenbreite aus Spaltenkopf und Inhalt messen – kein Kopf wird abgeschnitten, der Rest der Breite wird verteilt */
+function agMeasure(page, v, vis) {
+  const st = AG[page], todo = vis.filter(c => c.aw == null && !c.uw);
+  if (!todo.length) return;
+  agCtx ||= document.createElement('canvas').getContext('2d');
+  const hl = $('.ag-h .ag-hl', v), host = $('[data-agrows]', v);
+  const font = (el, d) => { if (!el) return d; const k = getComputedStyle(el); return `${k.fontStyle} ${k.fontWeight} ${k.fontSize} ${k.fontFamily}`; };   // die Kurzform „font“ liefert nicht jede WebView
+  const fh = font(hl, '600 13px sans-serif'), fc = font(host, '400 13.5px sans-serif');
+  const cs = getComputedStyle($('.ag-c', v) || host || document.body), pad = (parseFloat(cs.paddingLeft) || 8) + (parseFloat(cs.paddingRight) || 8);
+  const sample = st.rows.length > 600 ? st.rows.filter((_, i) => i % Math.ceil(st.rows.length / 600) === 0) : st.rows;
+  const mw = t => agCtx.measureText(t).width;
+  for (const c of todo) {
+    // Inhalt
+    let cw = 0;
+    if (c.html) cw = Math.round((c.w || 60) * 1.15) - pad;
+    else if (c.t === 'check') cw = 40;
+    else { agCtx.font = fc; for (const r of sample) { const t = agText(r, c); if (t) { const x = mw(t); if (x > cw) cw = x; } } cw = Math.min(cw, c.t === 'num' ? 200 : 300) + 10; }   // längere Texte: Rest per Tooltip, freie Breite bekommen die Textspalten
+    // Kopf: lange Überschriften dürfen zweizeilig werden, wenn der Inhalt schmaler ist
+    agCtx.font = fh;
+    const words = (c.l || '').split(/\s+/).filter(Boolean);
+    let hw = mw(c.l || '');
+    if (words.length > 1 && hw > cw) for (let i = 1; i < words.length; i++) hw = Math.min(hw, Math.max(mw(words.slice(0, i).join(' ')), mw(words.slice(i).join(' '))));
+    const w = Math.max(Math.ceil(hw) + 2 + pad + (c.l ? 40 : 0), cw + pad, c.t === 'num' || c.t === 'check' ? 64 : 90);   // + Filter-Symbol und Sortierpfeil
+    c.aw = Math.ceil(w);
+  }
+}
 
 function agApply(page, resetScroll) {
   const st = AG[page], v = $('#ag-' + page); if (!v) return;
@@ -82,12 +111,13 @@ function agApply(page, resetScroll) {
 
 function agHead(page, v, vis) {
   const st = AG[page];
-  const cols = `44px ${vis.map(c => `minmax(${agWidth(c)}px, ${agWidth(c)}fr)`).join(' ')}`;
-  const inner = $('[data-aginner]', v);
-  inner.style.setProperty('--cols', cols);
-  inner.style.minWidth = (44 + vis.reduce((s, c) => s + agWidth(c), 0)) + 'px';
   const all = st.filtered && st.filtered.length && st.filtered.every(r => st.sel.has(r.id));
   $('[data-aghead]', v).innerHTML = `<div class="ag-c ag-ck"><i class="agchk ${all ? 'on' : ''}" data-agall></i></div>${vis.map(c => `<div class="ag-c ag-h ${c.t === 'num' ? 'r' : ''}" draggable="true" data-agcol="${c.k}"><span class="ag-hl" data-agsort="${c.k}">${esc(c.l)}</span>${c.l ? `<span class="ag-fi" data-agfi="${c.k}">${ic('filter', 'i-xs')}</span>` : ''}${st.sort?.k === c.k ? `<span class="ag-sort">${st.sort.dir > 0 ? '▲' : '▼'}</span>` : ''}<span class="ag-rs" data-agrs="${c.k}"></span></div>`).join('')}`;
+  agMeasure(page, v, vis);
+  const flex = vis.some(agFlex) ? agFlex : (c => c === vis[vis.length - 1]);
+  const inner = $('[data-aginner]', v);
+  inner.style.setProperty('--cols', `44px ${vis.map(c => flex(c) ? `minmax(${agWidth(c)}px, ${agWidth(c)}fr)` : `${agWidth(c)}px`).join(' ')}`);
+  inner.style.minWidth = (44 + vis.reduce((s, c) => s + agWidth(c), 0)) + 'px';
   const f = $('[data-agfilt]', v);
   f.hidden = !st.filterRow;
   f.innerHTML = `<div class="ag-c ag-ck"></div>${vis.map(c => c.t === 'check'
@@ -159,15 +189,14 @@ function agBind(page, v) {
     const rs = e.target.closest('[data-agrs]'); if (!rs) return;
     e.preventDefault(); e.stopPropagation();
     const c = st.cols.find(x => x.k === rs.dataset.agrs), x0 = e.clientX, w0 = agWidth(c);
-    const mv = ev => { c.w = Math.max(40, w0 + ev.clientX - x0); agHead(page, v, st.cols.filter(z => z.show)); agRows(page, v); };
+    const mv = ev => { c.uw = Math.max(40, w0 + ev.clientX - x0); agHead(page, v, st.cols.filter(z => z.show)); agRows(page, v); };
     const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   };
 }
 
 function agFit(page) {
-  const st = AG[page], sample = st.rows.length > 2000 ? st.rows.filter((_, i) => i % Math.ceil(st.rows.length / 2000) === 0) : st.rows;
-  st.cols.forEach(c => { if (!c.show) return; let m = c.l.length + 4; sample.forEach(r => { const l = agText(r, c).length; if (l > m) m = l; }); c.w = Math.min(380, Math.max(60, Math.round(m * 6.6 + 22))); });
+  AG[page].cols.forEach(c => { delete c.uw; delete c.aw; });
 }
 
 function agColsMenu(page, anchor, v) {

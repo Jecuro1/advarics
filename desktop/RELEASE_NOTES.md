@@ -1,3 +1,15 @@
+## Neu in 0.34.2
+
+- Fehler behoben: Seit 0.34.1 stand das Dashboard in einer einzigen Spalte (die Tabellen-Stile haben das Kachelraster überschrieben). Die Kacheln stehen wieder nebeneinander und nutzen breite Bildschirme bis 2400 px.
+- Tabellen messen ihre Spalten jetzt nach Überschrift und Inhalt: keine abgeschnittenen Spaltenköpfe mehr, lange Überschriften (z. B. „Hierarchie Ebene1-Nr.“) brechen zweizeilig um, die freie Breite bekommen die Textspalten. „Spaltenbreite“ setzt eigene Breiten zurück.
+- Einstellungs-Masken (Einstellungen Allgemein, Kassen, Kassen-Konfiguration, Bonus Systeme): Karten teilen sich die Breite, Felder stehen auf breiten Bildschirmen nebeneinander. Filter- und Staffel-Kacheln füllen die Zeile.
+- Darstellung › Anzeigegröße: neue Wahl „Automatisch“ (passend zum Bildschirm, z. B. 150 % bei 3440 px). Die automatische Größe wird einmal beim Start bestimmt und springt nicht mehr.
+- Manuelle Artikelsortierung: nur Warengruppen mit Artikeln (mit Anzahl) statt aller importierten Gruppen; Pfeile rauf/runter statt schräger Symbole.
+- Order Vorschlags-Konfiguration und Digitales Schaufenster: Warengruppen-Auswahl zeigt nur Gruppen mit Artikeln (bereits gewählte bleiben sichtbar).
+- Protokoll Gutscheine: lange Details brechen um statt die Seite zu verbreitern; Einstellungs-Änderungen erscheinen dort nicht mehr.
+- Bonus Systeme › Filter: Hinweis, dass ohne Filter alle Artikel zählen.
+- Breitere Seiten für Einstellungen und Listen auf großen Bildschirmen.
+
 ## Neu in 0.34.1
 
 - Layout: Das Artikelraster der Kasse wurde auf breiten Bildschirmen (z. B. 3440 × 1440) von den Tabellen-Stilen überlagert – behoben.

@@ -331,7 +331,7 @@ button.sbi:hover{background:var(--surface-2);color:var(--text-2)}
 /* ════════════════════════════════════════════════════════════════════
    6 · DASHBOARD
    ════════════════════════════════════════════════════════════════════ */
-.dash{padding:26px 28px 40px;max-width:1680px;margin:0 auto}
+.dash{padding:26px 28px 40px;max-width:2400px;margin:0 auto}
 .dash-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:18px}
 .dash-greet .h-title{margin-bottom:6px}
 .dash-meta{display:flex;align-items:center;gap:8px;color:var(--text-3);font-size:13px;flex-wrap:wrap}
@@ -1040,7 +1040,7 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
 .check input{margin-top:3px;accent-color:hsl(var(--ah) var(--as) var(--al))}
 
 /* Designsystem-Seite */
-.ds{padding:30px 32px 60px;max-width:1240px;margin:0 auto}
+.ds{padding:30px 32px 60px;max-width:1760px;margin:0 auto}
 .ds-sec{margin-top:40px}
 .ds-sec>h2{font-size:17px;font-weight:620;letter-spacing:-.015em;display:flex;align-items:center;gap:10px}
 .ds-sec>p{font-size:13.5px;color:var(--text-3);margin-top:4px;max-width:72ch;line-height:1.55}
@@ -1083,7 +1083,7 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
 .motion-demo .k{font:11.5px var(--font-mono);color:var(--text-3)}
 
 /* Einstellungen */
-.set{display:grid;grid-template-columns:220px minmax(0,1fr);gap:32px;padding:28px 32px 80px;max-width:1240px;margin:0 auto}
+.set{display:grid;grid-template-columns:220px minmax(0,1fr);gap:32px;padding:28px 32px 80px;max-width:1760px;margin:0 auto}
 .set-nav{position:sticky;top:0;align-self:start;display:flex;flex-direction:column;gap:2px;padding-top:4px}
 .set-nav button{display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;border-radius:var(--r-sm);color:var(--text-2);font-size:13.5px;font-weight:500;text-align:left;transition:background var(--d-1),color var(--d-1)}
 .set-nav button:hover{background:var(--surface-2);color:var(--text)}
@@ -1102,7 +1102,7 @@ body.has-layer .toasts{top:16px;bottom:auto;left:50%;right:auto;transform:transl
 @media (max-width:900px){.set{grid-template-columns:1fr;padding:18px 16px 60px}.set-nav{position:static;flex-direction:row;overflow-x:auto}.set-row{grid-template-columns:1fr}.set-c{justify-content:flex-start;min-width:0}}
 
 /* Artikel & Bestand */
-.cv{padding:24px 28px 60px;max-width:1500px;margin:0 auto}
+.cv{padding:24px 28px 60px;max-width:2400px;margin:0 auto}
 .cv-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
 .cv-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
 .cv-tools .search-field{height:42px;flex:0 1 380px}
@@ -1291,7 +1291,7 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .nav-hit{height:auto;min-height:36px}
 .nav-none{padding:14px 12px;color:var(--text-3);font-size:13px}
 /* Datentabelle im Advarics-Stil */
-.dgrid{display:flex;flex-direction:column;height:calc(100vh - 165px);min-height:420px;font-size:12px;color:var(--text)}
+.datagrid{display:flex;flex-direction:column;height:calc(100vh - 165px);min-height:420px;font-size:12px;color:var(--text)}
 .ag-bar{display:flex;gap:2px;align-items:center;background:#22384d;border-radius:8px;padding:0 6px;height:34px;flex:none}
 .ag-btn{display:flex;align-items:center;gap:7px;height:28px;padding:0 12px;border-radius:5px;color:#fff;font-size:12px;font-weight:600}
 .ag-btn[hidden]{display:none}
@@ -1343,7 +1343,7 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .ag-menu{display:grid;gap:2px;padding:6px;max-height:340px;overflow:auto}
 .ag-menu label{display:flex;gap:8px;align-items:center;padding:5px 8px;border-radius:5px;font-size:13px;cursor:pointer}
 .ag-menu label:hover{background:var(--surface-2)}
-.dgrid.ag-embed{height:auto;min-height:380px;flex:1}
+.datagrid.ag-embed{height:auto;min-height:380px;flex:1}
 .ag-xbtn{display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);white-space:nowrap}
 .ag-xbtn:hover{background:var(--surface-2)}
 .ae{display:flex;flex-direction:column;gap:8px;min-height:calc(100vh - 150px)}
@@ -1405,8 +1405,8 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .ae-two .ag-tools .ag-tbtn{font-size:0;gap:0;padding:0 8px}
 .ae-two .ag-tools .ag-search input{width:90px}
 /* Aufgeräumte, großzügige Datentabellen (v0.24) */
-.dgrid{font-size:13.5px;gap:14px;height:calc(100vh - 150px)}
-.dgrid.ag-embed{gap:12px}
+.datagrid{font-size:13.5px;gap:14px;height:calc(100vh - 150px)}
+.datagrid.ag-embed{gap:12px}
 .ag-bar{height:52px;padding:0 10px;border-radius:14px;gap:6px}
 .ag-btn{height:36px;padding:0 14px;border-radius:10px;font-size:13.5px;font-weight:600;gap:8px}
 .ag-tools{padding:0;gap:10px;flex-wrap:wrap}
@@ -1538,10 +1538,10 @@ button.nav-group .gi .i{width:13px;height:13px;stroke:hsl(var(--gh) 60% 42%)}
 .imgv-cap{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;color:var(--text-2)}
 .zoom-b{font-weight:700;font-size:13px}
 /* Tabellen füllen die ganze Arbeitsfläche */
-.view.active:has(>.dgrid:not(.ag-embed)){overflow:hidden}
-.view>.dgrid:not(.ag-embed){height:100%;min-height:0;box-sizing:border-box;padding:12px 14px}
+.view.active:has(>.datagrid:not(.ag-embed)){overflow:hidden}
+.view>.datagrid:not(.ag-embed){height:100%;min-height:0;box-sizing:border-box;padding:12px 14px}
 /* kompakter Tabellenkopf: eine Zeile, mehr Platz für Daten */
-.view>.dgrid:not(.ag-embed){gap:10px;padding:10px 14px 12px}
+.view>.datagrid:not(.ag-embed){gap:10px;padding:10px 14px 12px}
 .ag-bar{height:44px;border-radius:12px}
 .ag-btn{height:32px}
 .ag-tools{flex-wrap:nowrap;gap:8px}
@@ -1587,12 +1587,22 @@ input.ea-ro{width:100%}
 .ae>.ae-card.ea-card{flex:none}
 .ea-hint{display:block;font-size:12.5px;color:var(--text-3);margin-top:3px;line-height:1.4}
 .ea-sw2{display:grid;gap:2px}
-.ea-cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,540px));gap:16px;align-items:start}
+.ea-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:16px;align-items:start}
 .ea-cols>.ea-card{max-width:none;flex:none}
-.ea-pick .ph{color:var(--text-3)}
+.ea-pick .ea-ph{color:var(--text-3)}
 .ea-pick{align-items:center}
 .ag-inner{width:100%;box-sizing:border-box}
-.ea-cols{grid-template-columns:repeat(auto-fill,minmax(380px,640px))}
+.ea-cols.ea-tiles{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+/* Felder einer Karte nebeneinander, sobald die Karte breit genug ist */
+.ea-card .ea-fields{grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));column-gap:24px;row-gap:14px;align-items:start}
+.ea-card .ea-fields>.field:has(textarea),.ea-card .ea-fields>.ea-wide{grid-column:1/-1}
+.ae-body p.ea-hint{padding:0 18px}
+.ae-body .ae-card p.ea-hint{padding:0}
+/* Spaltenköpfe dürfen zweizeilig sein – Kopf und Filterzeile kleben gemeinsam oben */
+.ag-sticky{position:sticky;top:0;z-index:3}
+.ag-sticky>.ag-head,.ag-sticky>.ag-filt{position:static}
+.ag-h{height:auto;min-height:46px;line-height:1.25;padding-top:5px;padding-bottom:5px;white-space:normal}
+.ag-hl{white-space:normal;overflow-wrap:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 </style>
 </head>
 <body>
@@ -1909,6 +1919,8 @@ const CATS = [
   {id: 'alle', name: 'Alle'}, {id: 'jacken', name: 'Jacken & Westen'}, {id: 'hosen', name: 'Hosen'}, {id: 'schuhe', name: 'Schuhe'},
   {id: 'ski', name: 'Ski & Touren'}, {id: 'shirts', name: 'Shirts & Layer'}, {id: 'rucksaecke', name: 'Rucksäcke'}, {id: 'acc', name: 'Accessoires'},
 ];
+/** Warengruppen mit Artikeln (plus bereits gewählte) – importierte Gruppen ohne Artikel blähen Auswahlen sonst auf */
+const catsInUse = (sel = []) => CATS.filter(c => c.id !== 'alle' && (sel.includes(c.id) || ART.some(a => a.cat === c.id)));
 const SKI_PROMPTS = [
   {key: 'z', label: 'Z-Wert Bindung', type: 'number', req: true, ph: 'z. B. 6,5'},
   {key: 'sn', label: 'Seriennummer', type: 'text', req: false, ph: 'scannen oder eingeben'},
@@ -1970,7 +1982,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.34.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.34.2', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -3963,7 +3975,8 @@ function applySettings() {
   if (S.view) renderTopbar();
 }
 /** Größe passend zum Bildschirm, solange sie nicht von Hand eingestellt wurde (A−/A+) */
-const autoZoom = () => { const w = Math.max(window.screen?.width || 0, window.innerWidth || 0); return w >= 3000 ? 1.5 : w >= 2500 ? 1.4 : w >= 1900 ? 1.25 : 1.1; };
+let AUTO_ZOOM = 0;   // einmal beim Start messen – nach dem Zoomen meldet die WebView kleinere Breiten
+const autoZoom = () => AUTO_ZOOM ||= (w => w >= 3000 ? 1.5 : w >= 2500 ? 1.4 : w >= 1900 ? 1.25 : 1.1)(Math.max(window.screen?.width || 0, window.innerWidth || 0));
 function applyZoom(f) {
   f = clamp(Math.round(f * 100) / 100, .7, 2);
   if (DESKTOP) invoke('set_zoom', {factor: f}).catch(() => {});
@@ -3974,7 +3987,7 @@ function stepZoom(dir) {
   const cur = +CFG['anzeige.zoom'] || 1, i = steps.findIndex(s => s >= cur - .001);
   const next = dir === 0 ? 1 : steps[clamp((i < 0 ? 2 : i) + dir, 0, steps.length - 1)];
   saveSettings({'anzeige.zoom': next, 'anzeige.zoom.auto': false}, true); toast(`Anzeigegröße ${Math.round(next * 100)} %`, {icon: 'eye', dur: 1400});
-  if (S.view === 'einstellungen') $$('#zoomSeg button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.v === next));
+  if (S.view === 'einstellungen') $$('#zoomSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v !== 'auto' && +b.dataset.v === next));
 }
 
 /* ── Systeminfo & Datensicherung ── */
@@ -4018,6 +4031,7 @@ function field(key, label, help, type = 'text', extra = '') {
 function renderSettings() {
   const v = $('#view-einstellungen');
   const zoom = +CFG['anzeige.zoom'] || 1;
+  const zoomAuto = CFG['anzeige.zoom.auto'] !== false;
   const segRow = (lbl, help, key, opts) => `<div class="set-row"><div><div class="set-l">${lbl}</div><div class="set-h">${help}</div></div><div class="set-c"><div class="seg" data-pref="${key}">${opts.map(([val, l]) => `<button data-v="${val}" aria-pressed="${prefs[key] === val}">${l}</button>`).join('')}</div></div></div>`;
   v.innerHTML = `<div class="set">
     <nav class="set-nav" aria-label="Bereiche">${SET_SECTIONS.map(([id, l, i]) => `<button data-sec="${id}">${ic(i, 'i-sm')}${l}</button>`).join('')}
@@ -4045,7 +4059,7 @@ function renderSettings() {
       </div></section>
       ${usersSectionHTML()}${bonSectionHTML()}${printerSectionHTML()}${labelSectionHTML()}${mailSectionHTML()}${rksvSectionHTML()}
       <section class="set-sec" id="sec-anzeige"><h2>Darstellung</h2><p>Gilt für den angemeldeten Benutzer. Anzeigegröße auch mit <span class="kbd">Strg</span> <span class="kbd">+</span> / <span class="kbd">−</span> / <span class="kbd">0</span>.</p><div class="card">
-        <div class="set-row"><div><div class="set-l">Anzeigegröße</div><div class="set-h">Für große Bildschirme oder Touch-Kassen</div></div><div class="set-c"><div class="seg" id="zoomSeg">${[.8, .9, 1, 1.1, 1.25, 1.5].map(z => `<button data-v="${z}" aria-pressed="${Math.abs(z - zoom) < .001}">${Math.round(z * 100)} %</button>`).join('')}</div></div></div>
+        <div class="set-row"><div><div class="set-l">Anzeigegröße</div><div class="set-h">Für große Bildschirme oder Touch-Kassen</div></div><div class="set-c"><div class="seg" id="zoomSeg"><button data-v="auto" aria-pressed="${zoomAuto}" title="passend zum Bildschirm: ${Math.round(autoZoom() * 100)} %">Automatisch</button>${[.8, .9, 1, 1.1, 1.25, 1.5].map(z => `<button data-v="${z}" aria-pressed="${!zoomAuto && Math.abs(z - zoom) < .001}">${Math.round(z * 100)} %</button>`).join('')}</div></div></div>
         ${segRow('Modus', 'Hell, Dunkel oder wie Windows', 'theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['system', 'System']])}
         <div class="set-row"><div><div class="set-l">Akzentfarbe</div><div class="set-h">Oder eigene Markenfarbe</div></div><div class="set-c"><div class="swatch-row">${Object.entries(ACCENTS).map(([k, a]) => `<button class="swb" data-acc="${k}" aria-pressed="${prefs.accent === k}" style="--sw:hsl(${a.h} ${a.s}% 55%)" title="${a.name}" aria-label="${a.name}"></button>`).join('')}<label class="swb custom" title="Eigene Farbe" aria-pressed="${prefs.accent === 'custom'}"><input type="color" id="setAccCustom" value="#c98a5a" aria-label="Eigene Akzentfarbe"></label></div></div></div>
         ${segRow('Dichte', 'Touch vergrößert alle Bedienflächen', 'density', [['compact', 'Kompakt'], ['comfort', 'Komfort'], ['touch', 'Touch']])}
@@ -4060,7 +4074,7 @@ function renderSettings() {
       </section>
     </div></div>`;
   $$('.seg', v).forEach(s => initSeg(s, b => {
-    if (s.id === 'zoomSeg') return saveSettings({'anzeige.zoom': +b.dataset.v, 'anzeige.zoom.auto': false}, true);
+    if (s.id === 'zoomSeg') return saveSettings(b.dataset.v === 'auto' ? {'anzeige.zoom.auto': true} : {'anzeige.zoom': +b.dataset.v, 'anzeige.zoom.auto': false}, true);
     if (s.id === 'chanSeg') return saveSettings({'update.kanal': b.dataset.v});
     if (s.dataset.pref) { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }
   }));
@@ -7968,7 +7982,7 @@ async function prLoad() {
   else l = Hooks.log.filter(e => (!PR.cat || e.evt.startsWith(PR.cat)) && (!PR.q || norm(e.evt + JSON.stringify(e.payload)).includes(norm(PR.q)))).map((e, i) => ({id: i, ts: e.t.toISOString(), event: e.evt, payload: e.payload}));
   PR.rows.push(...l); PR.more = DESKTOP && l.length === 200;
   const box = $('#prList'); if (!box) return;
-  box.innerHTML = PR.rows.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:170px">Zeit</th><th style="width:230px">Ereignis</th><th>Details</th></tr></thead><tbody>${PR.rows.map(r => `<tr><td style="padding-left:16px" class="muted num">${esc(fmtTs(r.ts))}</td><td><span class="mono n ${evClass(r.event)}" style="font-size:12px">${esc(r.event)}</span></td><td style="font-size:12.5px;color:var(--text-2)">${esc(prText(r.payload)).slice(0, 400)}</td></tr>`).join('')}</tbody></table>${PR.more ? `<div style="padding:12px;text-align:center"><button class="btn btn-secondary btn-sm" data-pr="more">Weitere laden</button></div>` : ''}`
+  box.innerHTML = PR.rows.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:170px">Zeit</th><th style="width:230px">Ereignis</th><th>Details</th></tr></thead><tbody>${PR.rows.map(r => `<tr><td style="padding-left:16px" class="muted num">${esc(fmtTs(r.ts))}</td><td><span class="mono n ${evClass(r.event)}" style="font-size:12px">${esc(r.event)}</span></td><td style="font-size:12.5px;color:var(--text-2);overflow-wrap:anywhere">${esc(prText(r.payload)).slice(0, 400)}</td></tr>`).join('')}</tbody></table>${PR.more ? `<div style="padding:12px;text-align:center"><button class="btn btn-secondary btn-sm" data-pr="more">Weitere laden</button></div>` : ''}`
     : '<div class="empty" style="padding:40px"><p>Keine Einträge.</p></div>';
 }
 
@@ -9641,7 +9655,7 @@ function renderOrderKonfig() {
       ${row('Sicherheitsfaktor', 'Bedarf × Faktor (z. B. 1,2 = 20 % Puffer)', `<input class="input num" id="okFaktor" value="${num(c.faktor, 2)}" style="width:90px;text-align:right">`)}
       ${row('Packeinheit', 'Mengen auf Vielfache runden (1 = keine Rundung)', `<input class="input num" id="okRund" value="${c.runden}" style="width:90px;text-align:right"> Stück`)}
       ${row('Nur Artikel mit Lieferant', 'Artikel ohne hinterlegten Lieferanten nicht vorschlagen', `<button class="switch" role="switch" id="okLief" aria-checked="${!!c.nur_lieferant}"></button>`)}
-      <div class="set-row" style="border-bottom:0"><div><div class="set-l">Warengruppen ausschließen</div><div class="set-h">z. B. Auslaufware oder Saisonartikel ohne Nachbestellung</div></div><div class="set-c" style="flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:520px">${CATS.filter(x => x.id !== 'alle').map(x => `<button class="chip" data-okc="${esc(x.id)}" aria-pressed="${c.ohne.includes(x.id)}">${esc(x.name)}</button>`).join('')}</div></div></div></div>`;
+      <div class="set-row" style="border-bottom:0"><div><div class="set-l">Warengruppen ausschließen</div><div class="set-h">z. B. Auslaufware oder Saisonartikel ohne Nachbestellung</div></div><div class="set-c" style="flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:520px">${catsInUse(c.ohne).map(x => `<button class="chip" data-okc="${esc(x.id)}" aria-pressed="${c.ohne.includes(x.id)}">${esc(x.name)}</button>`).join('')}</div></div></div></div>`;
   v.onclick = async e => {
     const ch = e.target.closest('[data-okc]'); if (ch) { ch.setAttribute('aria-pressed', ch.getAttribute('aria-pressed') !== 'true'); return; }
     const sw = e.target.closest('#okLief'); if (sw) { sw.setAttribute('aria-checked', sw.getAttribute('aria-checked') !== 'true'); return; }
@@ -9901,7 +9915,7 @@ async function renderRetProtokoll() {
   v.innerHTML = `<div class="cv">${pageHead('Protokoll Retourenmanagement', 'Lückenloser Verlauf: Reklamationen, Lieferantenretouren sowie Retouren und Stornos an der Kasse')}
     ${kpiCards([[num(log.filter(l => l.kind === 'reklamation' && l.action === 'angelegt').length), 'Reklamationen'], [num(log.filter(l => l.kind === 'lretoure' && l.action === 'versenden').length), 'an Lieferanten versendet'], [num(ret.length), 'Kassenretouren & Stornos'], [esc(Object.entries(grund).sort((a, b) => b[1] - a[1])[0]?.[0] || '–'), 'häufigster Rückgabegrund']])}
     <div class="filters"><input class="input" id="rpQ" placeholder="Nummer, Aktion, Benutzer …" value="${esc(RPQ.q)}" style="flex:1;max-width:380px"></div>
-    <div class="card">${all.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Zeit</th><th>Vorgang</th><th>Art</th><th>Aktion</th><th>Benutzer</th><th>Details</th></tr></thead><tbody>${all.slice(0, 800).map(x => `<tr ${x.doc_id ? `data-rpo="${x.doc_id}" data-rpk="${x.kind}" style="cursor:pointer"` : ''}><td style="padding-left:16px" class="muted num">${esc(fmtTs(x.ts))}</td><td class="mono"><b>${esc(x.no)}</b></td><td>${esc(DK[x.kind]?.one || (x.kind === 'storno' ? 'Storno' : 'Kassenretoure'))}</td><td>${esc(x.action)}</td><td>${esc(x.user || '')}</td><td class="muted" style="font-size:12.5px">${esc(prText(x.detail))}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Noch keine Einträge.</p></div>'}</div></div>`;
+    <div class="card">${all.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Zeit</th><th>Vorgang</th><th>Art</th><th>Aktion</th><th>Benutzer</th><th>Details</th></tr></thead><tbody>${all.slice(0, 800).map(x => `<tr ${x.doc_id ? `data-rpo="${x.doc_id}" data-rpk="${x.kind}" style="cursor:pointer"` : ''}><td style="padding-left:16px" class="muted num">${esc(fmtTs(x.ts))}</td><td class="mono"><b>${esc(x.no)}</b></td><td>${esc(DK[x.kind]?.one || (x.kind === 'storno' ? 'Storno' : 'Kassenretoure'))}</td><td>${esc(x.action)}</td><td>${esc(x.user || '')}</td><td class="muted" style="font-size:12.5px;overflow-wrap:anywhere">${esc(prText(x.detail))}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Noch keine Einträge.</p></div>'}</div></div>`;
   $('#rpQ', v).onchange = e => { RPQ.q = e.target.value; renderRetProtokoll(); };
 }
 
@@ -10696,7 +10710,7 @@ async function renderSchaufenster() {
           ${tf('shop.oeffnung', 'Öffnungszeiten', 'erscheinen in der Fußzeile', true)}
           ${tf('shop.kontakt', 'Kontakt', 'Telefon, E-Mail, Social Media', true)}
           ${tf('shop.hinweis', 'Hinweis', 'z. B. Parkplätze, Anfahrt', true)}
-          <div class="set-row" style="border-bottom:0;display:block"><div class="set-l">Warengruppen im Schaufenster</div><div class="set-h" style="margin-bottom:8px">keine Auswahl = alle</div><div style="display:flex;flex-wrap:wrap;gap:6px">${CATS.filter(c => c.id !== 'alle').map(c => `<button class="chip" data-shc="${esc(c.id)}" aria-pressed="${cats.has(c.id)}">${esc(c.name)}</button>`).join('')}</div></div></div>
+          <div class="set-row" style="border-bottom:0;display:block"><div class="set-l">Warengruppen im Schaufenster</div><div class="set-h" style="margin-bottom:8px">keine Auswahl = alle</div><div style="display:flex;flex-wrap:wrap;gap:6px">${catsInUse([...cats]).map(c => `<button class="chip" data-shc="${esc(c.id)}" aria-pressed="${cats.has(c.id)}">${esc(c.name)}</button>`).join('')}</div></div></div>
         <div class="card"><div class="set-row"><div><div class="set-l">Artikel ausblenden</div><div class="set-h">${hidden.size} ausgeblendet · Klick wechselt</div></div><div class="set-c"><input class="input" id="shQ" placeholder="Suchen …" style="width:200px"></div></div><div id="shArts" style="max-height:340px;overflow:auto"></div></div>
         <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" data-sh="save">${ic('check', 'i-sm')}Speichern</button></div>
       </div>
@@ -11083,11 +11097,13 @@ registerPage('ean-zuordnung', {title: 'Artikel-EAN/GTIN-Zuordnung', sub: () => '
 }});
 const AS = {cat: ''};
 registerPage('artikelsortierung', {title: 'Manuelle Artikelsortierung', sub: () => 'Reihenfolge an der Kasse', render: () => {
-  const v = $('#view-artikelsortierung'); AS.cat ||= CATS[1]?.id || 'alle';
+  // nur Warengruppen mit Artikeln – importierte Advarics-Gruppen ohne Artikel würden die Leiste sprengen
+  const v = $('#view-artikelsortierung'), cats = CATS.filter(c => c.id === 'alle' || ART.some(a => a.cat === c.id));
+  if (!cats.some(c => c.id === AS.cat)) AS.cat = cats.find(c => c.id !== 'alle')?.id || 'alle';
   const l = ART.filter(a => AS.cat === 'alle' || a.cat === AS.cat).sort((a, b) => b.pop - a.pop);
   v.innerHTML = `<div class="cv">${pageHead('Manuelle Artikelsortierung', 'Reihenfolge der Kacheln an der Kasse festlegen (je Warengruppe) – oben = zuerst', `<button class="btn btn-primary" data-as="save">${ic('check', 'i-sm')}Reihenfolge speichern</button>`)}
-    <div class="filters"><div class="seg" id="asSeg">${CATS.map(c => `<button data-v="${c.id}" aria-pressed="${AS.cat === c.id}">${esc(c.name)}</button>`).join('')}</div></div>
-    <div class="card"><div id="asList">${l.map((a, i) => `<div class="set-row" data-asi="${esc(a.id)}" draggable="true" style="cursor:grab"><div style="display:flex;gap:12px;align-items:center"><span class="muted num" style="width:26px">${i + 1}</span><div style="width:40px;height:40px;border-radius:10px;overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${artVisual(a, COLORS[a.colors[0]]?.[1] || '#888')}</div><div><b>${esc(a.name)}</b><div class="muted" style="font-size:12px">${esc(a.brand)} · ${eur(a.sale || a.price)}</div></div></div><div class="set-c" style="gap:4px"><button class="btn btn-ghost btn-icon btn-sm" data-asu="${esc(a.id)}" aria-label="nach oben">${ic('up', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-asd="${esc(a.id)}" aria-label="nach unten">${ic('down', 'i-sm')}</button></div></div>`).join('')}</div></div></div>`;
+    <div class="filters"><div class="seg" id="asSeg" style="flex-wrap:wrap;height:auto">${cats.map(c => `<button data-v="${c.id}" aria-pressed="${AS.cat === c.id}">${esc(c.name)} <span class="muted">${c.id === 'alle' ? ART.length : ART.filter(a => a.cat === c.id).length}</span></button>`).join('')}</div></div>
+    <div class="card"><div id="asList">${l.map((a, i) => `<div class="set-row" data-asi="${esc(a.id)}" draggable="true" style="cursor:grab"><div style="display:flex;gap:12px;align-items:center"><span class="muted num" style="width:26px">${i + 1}</span><div style="width:40px;height:40px;border-radius:10px;overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${artVisual(a, COLORS[a.colors[0]]?.[1] || '#888')}</div><div><b>${esc(a.name)}</b><div class="muted" style="font-size:12px">${esc(a.brand)} · ${eur(a.sale || a.price)}</div></div></div><div class="set-c" style="gap:4px"><button class="btn btn-ghost btn-icon btn-sm" data-asu="${esc(a.id)}" aria-label="nach oben">${ic('chevron-up', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-asd="${esc(a.id)}" aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button></div></div>`).join('')}</div></div></div>`;
   initSeg($('#asSeg', v), b => { AS.cat = b.dataset.v; PAGES.artikelsortierung.render(); });
 }});
 registerPage('master-artikel', {title: 'Master-Artikel', sub: () => 'Vorlagen für neue Artikel', render: () => {
@@ -11296,8 +11312,8 @@ registerPage('gutscheine-geloescht', {title: 'Protokoll gelöschter Gutscheine',
 }});
 registerPage('gutschein-protokoll', {title: 'Protokoll Gutscheine', sub: () => 'alle Gutschein-Ereignisse', render: async () => {
   const v = $('#view-gutschein-protokoll'); if (!DESKTOP) { v.innerHTML = desktopEmpty('history', 'Protokoll'); return; }
-  const l = await invoke('audit_query', {q: 'gutschein', prefix: null, before: null, limit: 600});
-  v.innerHTML = `<div class="cv">${pageHead('Protokoll Gutscheine', 'Lückenloses Protokoll: Verkauf, Einlösung, PIN-Änderung, Löschung, Kampagnen-Gutscheine')}<div class="card">${l.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Zeit</th><th>Ereignis</th><th>Details</th></tr></thead><tbody>${l.map(x => `<tr><td style="padding-left:16px" class="muted num">${esc(fmtTs(x.ts))}</td><td class="mono">${esc(x.event)}</td><td class="muted" style="font-size:12.5px">${esc(prText(x.payload))}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Noch keine Einträge.</p></div>'}</div></div>`;
+  const l = (await invoke('audit_query', {q: 'gutschein', prefix: null, before: null, limit: 600})).filter(x => !x.event.startsWith('config.'));   // Einstellungs-Änderungen gehören nicht ins Gutschein-Protokoll
+  v.innerHTML = `<div class="cv">${pageHead('Protokoll Gutscheine', 'Lückenloses Protokoll: Verkauf, Einlösung, PIN-Änderung, Löschung, Kampagnen-Gutscheine')}<div class="card">${l.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Zeit</th><th>Ereignis</th><th>Details</th></tr></thead><tbody>${l.map(x => `<tr><td style="padding-left:16px" class="muted num">${esc(fmtTs(x.ts))}</td><td class="mono">${esc(x.event)}</td><td class="muted" style="font-size:12.5px;overflow-wrap:anywhere">${esc(prText(x.payload))}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:44px"><p>Noch keine Einträge.</p></div>'}</div></div>`;
 }});
 registerPage('gutscheine-extern', {title: 'Buchungen externe Gutscheine', sub: () => 'Fremdgutscheine abrechnen', render: async () => {
   const v = $('#view-gutscheine-extern'); if (!DESKTOP) { v.innerHTML = desktopEmpty('gift', 'Fremdgutscheine'); return; }
@@ -13625,7 +13641,8 @@ function agNew(cfg) {
 function agMount(key, v) {
   const st = AG[key], cfg = st.cfg;
   st.rows = cfg.rows();
-  v.innerHTML = `<div class="dgrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
+  st.cols.forEach(c => { delete c.aw; });
+  v.innerHTML = `<div class="datagrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
       ${cfg.toolbar?.length ? `<div class="ag-bar">${cfg.toolbar.map(b => `<button class="ag-btn" data-ag="${b.k}">${ic(b.icon, 'i-sm')}<span>${esc(b.l)}</span></button>`).join('')}<button class="ag-btn ag-del" data-ag="del" hidden>${ic('trash', 'i-sm')}<span>Löschen</span></button></div>` : ''}
       <div class="ag-tools"><div class="ag-drop" data-agdrop><span class="ag-ph">Zu gruppierende Spalten hierhin ziehen…</span></div>
         ${(cfg.extra || []).map(b => `<button class="ag-xbtn" data-ag="${b.k}">${ic(b.icon || 'plus', 'i-sm')}${esc(b.l)}</button>`).join('')}
@@ -13635,7 +13652,7 @@ function agMount(key, v) {
         <button class="ag-tbtn" data-ag="fit" title="Automatische Spaltenbreite">${ic('swap', 'i-sm')}Spaltenbreite</button>
         <button class="ag-tbtn" data-ag="export" title="Exportieren (CSV)">${ic('upload', 'i-sm')}Export</button>
         <button class="ag-tbtn" data-ag="filter" title="Filterzeile ein-/ausblenden">${ic('filter', 'i-sm')}Filter</button></div>
-      <div class="ag-scroll" data-agscroll><div class="ag-inner" data-aginner><div class="ag-head" data-aghead></div><div class="ag-filt" data-agfilt></div><div class="ag-rows" data-agrows></div></div></div>
+      <div class="ag-scroll" data-agscroll><div class="ag-inner" data-aginner><div class="ag-sticky"><div class="ag-head" data-aghead></div><div class="ag-filt" data-agfilt></div></div><div class="ag-rows" data-agrows></div></div></div>
       <div class="ag-foot"><b data-agcount></b><span class="ag-sel" data-agselinfo></span><span class="ag-sel" data-agsums></span><button class="ag-tbtn ag-fbtn" data-ag="filter">${ic('filter', 'i-sm')}Filter erstellen</button></div></div>`;
   agBind(key, v);
   agApply(key, true);
@@ -13649,7 +13666,35 @@ function agridPage(page, cfg) {
 
 const agVal = (r, c) => c.get ? c.get(r) : r[c.k];
 const agText = (r, c) => { const v = agVal(r, c); return c.fmt ? c.fmt(v, r) : v == null ? '' : String(v); };
-const agWidth = c => Math.round((c.w || 120) * 1.15);
+const agWidth = c => c.uw || c.aw || Math.round((c.w || 120) * 1.15);
+const agFlex = c => !c.uw && !c.html && c.t !== 'num' && c.t !== 'check';
+let agCtx = null;
+/** Spaltenbreite aus Spaltenkopf und Inhalt messen – kein Kopf wird abgeschnitten, der Rest der Breite wird verteilt */
+function agMeasure(page, v, vis) {
+  const st = AG[page], todo = vis.filter(c => c.aw == null && !c.uw);
+  if (!todo.length) return;
+  agCtx ||= document.createElement('canvas').getContext('2d');
+  const hl = $('.ag-h .ag-hl', v), host = $('[data-agrows]', v);
+  const font = (el, d) => { if (!el) return d; const k = getComputedStyle(el); return `${k.fontStyle} ${k.fontWeight} ${k.fontSize} ${k.fontFamily}`; };   // die Kurzform „font“ liefert nicht jede WebView
+  const fh = font(hl, '600 13px sans-serif'), fc = font(host, '400 13.5px sans-serif');
+  const cs = getComputedStyle($('.ag-c', v) || host || document.body), pad = (parseFloat(cs.paddingLeft) || 8) + (parseFloat(cs.paddingRight) || 8);
+  const sample = st.rows.length > 600 ? st.rows.filter((_, i) => i % Math.ceil(st.rows.length / 600) === 0) : st.rows;
+  const mw = t => agCtx.measureText(t).width;
+  for (const c of todo) {
+    // Inhalt
+    let cw = 0;
+    if (c.html) cw = Math.round((c.w || 60) * 1.15) - pad;
+    else if (c.t === 'check') cw = 40;
+    else { agCtx.font = fc; for (const r of sample) { const t = agText(r, c); if (t) { const x = mw(t); if (x > cw) cw = x; } } cw = Math.min(cw, c.t === 'num' ? 200 : 300) + 10; }   // längere Texte: Rest per Tooltip, freie Breite bekommen die Textspalten
+    // Kopf: lange Überschriften dürfen zweizeilig werden, wenn der Inhalt schmaler ist
+    agCtx.font = fh;
+    const words = (c.l || '').split(/\s+/).filter(Boolean);
+    let hw = mw(c.l || '');
+    if (words.length > 1 && hw > cw) for (let i = 1; i < words.length; i++) hw = Math.min(hw, Math.max(mw(words.slice(0, i).join(' ')), mw(words.slice(i).join(' '))));
+    const w = Math.max(Math.ceil(hw) + 2 + pad + (c.l ? 40 : 0), cw + pad, c.t === 'num' || c.t === 'check' ? 64 : 90);   // + Filter-Symbol und Sortierpfeil
+    c.aw = Math.ceil(w);
+  }
+}
 
 function agApply(page, resetScroll) {
   const st = AG[page], v = $('#ag-' + page); if (!v) return;
@@ -13694,12 +13739,13 @@ function agApply(page, resetScroll) {
 
 function agHead(page, v, vis) {
   const st = AG[page];
-  const cols = `44px ${vis.map(c => `minmax(${agWidth(c)}px, ${agWidth(c)}fr)`).join(' ')}`;
-  const inner = $('[data-aginner]', v);
-  inner.style.setProperty('--cols', cols);
-  inner.style.minWidth = (44 + vis.reduce((s, c) => s + agWidth(c), 0)) + 'px';
   const all = st.filtered && st.filtered.length && st.filtered.every(r => st.sel.has(r.id));
   $('[data-aghead]', v).innerHTML = `<div class="ag-c ag-ck"><i class="agchk ${all ? 'on' : ''}" data-agall></i></div>${vis.map(c => `<div class="ag-c ag-h ${c.t === 'num' ? 'r' : ''}" draggable="true" data-agcol="${c.k}"><span class="ag-hl" data-agsort="${c.k}">${esc(c.l)}</span>${c.l ? `<span class="ag-fi" data-agfi="${c.k}">${ic('filter', 'i-xs')}</span>` : ''}${st.sort?.k === c.k ? `<span class="ag-sort">${st.sort.dir > 0 ? '▲' : '▼'}</span>` : ''}<span class="ag-rs" data-agrs="${c.k}"></span></div>`).join('')}`;
+  agMeasure(page, v, vis);
+  const flex = vis.some(agFlex) ? agFlex : (c => c === vis[vis.length - 1]);
+  const inner = $('[data-aginner]', v);
+  inner.style.setProperty('--cols', `44px ${vis.map(c => flex(c) ? `minmax(${agWidth(c)}px, ${agWidth(c)}fr)` : `${agWidth(c)}px`).join(' ')}`);
+  inner.style.minWidth = (44 + vis.reduce((s, c) => s + agWidth(c), 0)) + 'px';
   const f = $('[data-agfilt]', v);
   f.hidden = !st.filterRow;
   f.innerHTML = `<div class="ag-c ag-ck"></div>${vis.map(c => c.t === 'check'
@@ -13771,15 +13817,14 @@ function agBind(page, v) {
     const rs = e.target.closest('[data-agrs]'); if (!rs) return;
     e.preventDefault(); e.stopPropagation();
     const c = st.cols.find(x => x.k === rs.dataset.agrs), x0 = e.clientX, w0 = agWidth(c);
-    const mv = ev => { c.w = Math.max(40, w0 + ev.clientX - x0); agHead(page, v, st.cols.filter(z => z.show)); agRows(page, v); };
+    const mv = ev => { c.uw = Math.max(40, w0 + ev.clientX - x0); agHead(page, v, st.cols.filter(z => z.show)); agRows(page, v); };
     const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   };
 }
 
 function agFit(page) {
-  const st = AG[page], sample = st.rows.length > 2000 ? st.rows.filter((_, i) => i % Math.ceil(st.rows.length / 2000) === 0) : st.rows;
-  st.cols.forEach(c => { if (!c.show) return; let m = c.l.length + 4; sample.forEach(r => { const l = agText(r, c).length; if (l > m) m = l; }); c.w = Math.min(380, Math.max(60, Math.round(m * 6.6 + 22))); });
+  AG[page].cols.forEach(c => { delete c.uw; delete c.aw; });
 }
 
 function agColsMenu(page, anchor, v) {
@@ -14345,7 +14390,7 @@ function eaField(f) {
   if (f.t === 'num') return `<label class="field"><span>${esc(f.l)}</span><input class="input num" type="number" data-ea="${f.k}" value="${esc(v)}">${hint}</label>`;
   if (f.t === 'combo') {
     const lbl = eaLabel(f, v);
-    return `<div class="field ea-cmb"><span>${esc(f.l)}</span><div class="ea-cmb-row"><div class="input ea-pick" tabindex="0" data-ea-pick="${f.k}"><span class="${lbl ? '' : 'ph'}">${esc(lbl || 'Nicht festgelegt')}</span>${lbl ? `<button type="button" class="ea-x" data-ea-clr="${f.k}" aria-label="Leeren">${ic('x', 'i-xs')}</button>` : ''}${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-ea-go="${f.page}" title="Liste öffnen">${ic('edit', 'i-sm')}</button><button type="button" class="ea-ib" data-ea-pick="${f.k}" title="Suchen">${ic('search', 'i-sm')}</button></div>${hint}</div>`;
+    return `<div class="field ea-cmb"><span>${esc(f.l)}</span><div class="ea-cmb-row"><div class="input ea-pick" tabindex="0" data-ea-pick="${f.k}"><span class="${lbl ? '' : 'ea-ph'}">${esc(lbl || 'Nicht festgelegt')}</span>${lbl ? `<button type="button" class="ea-x" data-ea-clr="${f.k}" aria-label="Leeren">${ic('x', 'i-xs')}</button>` : ''}${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-ea-go="${f.page}" title="Liste öffnen">${ic('edit', 'i-sm')}</button><button type="button" class="ea-ib" data-ea-pick="${f.k}" title="Suchen">${ic('search', 'i-sm')}</button></div>${hint}</div>`;
   }
   return `<label class="field"><span>${esc(f.l)}</span><input class="input" data-ea="${f.k}" value="${esc(v)}">${hint}</label>`;
 }
@@ -14523,13 +14568,13 @@ function bsRender() {
       <label class="field"><span>Name *</span><input class="input" data-bs="name" value="${esc(D.name)}"></label>
       ${bsSw('kundenfilter', 'Kunden Filter verwenden', D.kundenfilter)}${bsNum('von', 'Von Kundennummer *', D.von)}${bsNum('bis', 'Bis Kundennummer *', D.bis)}
       ${bsSw('nurReg', 'Nur für registrierte Kunden', D.nurReg)}
-      <div class="field ea-cmb"><span>Gutscheintyp *</span><div class="ea-cmb-row"><div class="input ea-pick ${D.gutscheintyp ? '' : 'bad'}" tabindex="0" data-bs-pick="gt"><span class="${D.gutscheintyp ? '' : 'ph'}">${esc(stName('gutscheintyp', D.gutscheintyp) || '')}</span>${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-bs-go="st-gutscheintyp" title="Öffnen">${ic('edit', 'i-sm')}</button><button type="button" class="ea-ib" data-bs-go="st-gutscheintyp" title="Neu anlegen">${ic('plus', 'i-sm')}</button><button type="button" class="ea-ib" data-bs-pick="gt" title="Suchen">${ic('search', 'i-sm')}</button></div></div>
+      <div class="field ea-cmb"><span>Gutscheintyp *</span><div class="ea-cmb-row"><div class="input ea-pick ${D.gutscheintyp ? '' : 'bad'}" tabindex="0" data-bs-pick="gt"><span class="${D.gutscheintyp ? '' : 'ea-ph'}">${esc(stName('gutscheintyp', D.gutscheintyp) || '')}</span>${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-bs-go="st-gutscheintyp" title="Öffnen">${ic('edit', 'i-sm')}</button><button type="button" class="ea-ib" data-bs-go="st-gutscheintyp" title="Neu anlegen">${ic('plus', 'i-sm')}</button><button type="button" class="ea-ib" data-bs-pick="gt" title="Suchen">${ic('search', 'i-sm')}</button></div></div>
       ${bsNum('tage', 'Gültigkeit des Bonus-Gutscheins in Tagen', D.tage)}</div></div></div>`;
-  else if (BS.tab === 'filter') body = `<div class="ea-cols">${D.filter.map((x, i) => `<div class="ae-card ea-card" style="max-width:340px;flex:0 1 320px"><h4 style="display:flex;justify-content:space-between;align-items:center">${i + 1}<button type="button" class="ea-ib" data-bs-del="filter.${i}" title="Entfernen">${ic('trash', 'i-sm')}</button></h4><div class="ea-fields">
+  else if (BS.tab === 'filter') body = `${D.filter.length ? '' : '<p class="ea-hint" style="margin:0 0 10px">Kein Filter – der Bonus gilt für alle Artikel. Mit „+“ einen Filter für Marke, Warengruppe, Abteilung oder Bereich hinzufügen.</p>'}<div class="ea-cols ea-tiles">${D.filter.map((x, i) => `<div class="ae-card ea-card"><h4 style="display:flex;justify-content:space-between;align-items:center">${i + 1}<button type="button" class="ea-ib" data-bs-del="filter.${i}" title="Entfernen">${ic('trash', 'i-sm')}</button></h4><div class="ea-fields">
       <label class="field"><span>Filter Typ</span><select class="input select" data-bs-typ="${i}">${BS_TYPEN.map(([k, l]) => `<option value="${k}" ${x.typ === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <div class="field ea-cmb"><span>Filter *</span><div class="ea-cmb-row"><div class="input ea-pick ${x.wert ? '' : 'bad'}" tabindex="0" data-bs-pick="f${i}"><span class="${x.wert ? '' : 'ph'}">${esc(bsLabel(x.typ, x.wert))}</span>${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-bs-pick="f${i}" title="Suchen">${ic('search', 'i-sm')}</button></div></div>
+      <div class="field ea-cmb"><span>Filter *</span><div class="ea-cmb-row"><div class="input ea-pick ${x.wert ? '' : 'bad'}" tabindex="0" data-bs-pick="f${i}"><span class="${x.wert ? '' : 'ea-ph'}">${esc(bsLabel(x.typ, x.wert))}</span>${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-bs-pick="f${i}" title="Suchen">${ic('search', 'i-sm')}</button></div></div>
       ${bsSw(`filter.${i}.einschl`, 'Einschließender Filter', x.einschl)}</div></div>`).join('')}<button type="button" class="ea-ib" data-bs-add="filter" title="Filter hinzufügen" style="width:44px;height:44px">${ic('plus')}</button></div>`;
-  else body = `<div class="ea-cols">${D.staffeln.map((x, i) => `<div class="ae-card ea-card" style="max-width:340px;flex:0 1 320px"><h4 style="display:flex;justify-content:space-between;align-items:center">${esc(x.name) || i + 1}<button type="button" class="ea-ib" data-bs-del="staffeln.${i}" title="Entfernen">${ic('trash', 'i-sm')}</button></h4><div class="ea-fields">
+  else body = `<div class="ea-cols ea-tiles">${D.staffeln.map((x, i) => `<div class="ae-card ea-card"><h4 style="display:flex;justify-content:space-between;align-items:center">${esc(x.name) || i + 1}<button type="button" class="ea-ib" data-bs-del="staffeln.${i}" title="Entfernen">${ic('trash', 'i-sm')}</button></h4><div class="ea-fields">
       <label class="field"><span>Name *</span><input class="input ${x.name ? '' : 'bad'}" data-bs="staffeln.${i}.name" value="${esc(x.name)}"></label>
       ${bsNum(`staffeln.${i}.ab`, 'Ab Betrag *', x.ab, 0.01)}${bsUnit(`staffeln.${i}.pLauf`, 'Prozent Laufkundschaft *', x.pLauf, x.pLaufU, `staffeln.${i}.pLaufU`)}${bsNum(`staffeln.${i}.bLauf`, 'Betrag Laufkundschaft *', x.bLauf, 0.01)}
       ${bsUnit(`staffeln.${i}.pGesp`, 'Prozent gespeicherter Kunde *', x.pGesp, x.pGespU, `staffeln.${i}.pGespU`)}${bsNum(`staffeln.${i}.bGesp`, 'Betrag gespeicherter Kunde', x.bGesp, 0.01)}</div></div>`).join('')}<button type="button" class="ea-ib" data-bs-add="staffeln" title="Staffel hinzufügen" style="width:44px;height:44px">${ic('plus')}</button></div>`;
@@ -14762,8 +14807,8 @@ const KAE_RENDER = {
     const r = S.rksv || {}, d = x => x ? String(x).replace('T', ', ').slice(0, 17) : '';
     const A = {a: 'Kontor RKSV', b: 'Österreich-RKSV', c: !!r.active, d: d(r.started_at), e: d(r.started_at), f: false, g: String(r.turnover ?? 0)};
     const B = {a: 'Kontor GmbH', b: 'Kontor.Kasse', c: r.kassen_id || CFG['kasse.id'] || '', d: r.mode === 'test' ? 'Testbetrieb' : r.active ? 'Produktivbetrieb' : 'nicht in Betrieb', e: false};
-    return {html: `<div class="ea-cols"><div class="ae-card ea-card" style="max-width:620px"><h4>Fiskalisierung</h4><div class="ea-fields">${[['a', 'Fiskalisierung'], ['b', 'Fiskalisierungstyp']].map(([k, l]) => fxField(A, [k, l, 'ro'])).join('')}${fxField(A, ['c', 'Registrierkasse-Fiskalisierung aktiv', 'dis'])}${fxField(A, ['d', 'Registrierungsdatum', 'ro'])}${fxField(A, ['e', 'Registrierung des Signaturgeräts', 'ro'])}${fxField(A, ['f', 'Signaturgerät beschädigt', 'dis'])}${fxField(A, ['g', 'Umsatz-Zähler', 'ro'])}</div></div>
-      <div class="ae-card ea-card" style="max-width:620px"><h4>Fiskalisierung-Kassen Daten</h4><div class="ea-fields">${fxField(B, ['a', 'Hersteller Kasse', 'ro'])}${fxField(B, ['b', 'Modell Kasse', 'ro'])}${fxField(B, ['c', 'Seriennummer Kasse', 'ro'])}${fxField(B, ['d', 'Betriebsart', 'ro'])}${fxField(B, ['e', 'Netto und Mwst. exportieren', 'dis'])}</div></div></div>`};
+    return {html: `<div class="ea-cols"><div class="ae-card ea-card"><h4>Fiskalisierung</h4><div class="ea-fields">${[['a', 'Fiskalisierung'], ['b', 'Fiskalisierungstyp']].map(([k, l]) => fxField(A, [k, l, 'ro'])).join('')}${fxField(A, ['c', 'Registrierkasse-Fiskalisierung aktiv', 'dis'])}${fxField(A, ['d', 'Registrierungsdatum', 'ro'])}${fxField(A, ['e', 'Registrierung des Signaturgeräts', 'ro'])}${fxField(A, ['f', 'Signaturgerät beschädigt', 'dis'])}${fxField(A, ['g', 'Umsatz-Zähler', 'ro'])}</div></div>
+      <div class="ae-card ea-card"><h4>Fiskalisierung-Kassen Daten</h4><div class="ea-fields">${fxField(B, ['a', 'Hersteller Kasse', 'ro'])}${fxField(B, ['b', 'Modell Kasse', 'ro'])}${fxField(B, ['c', 'Seriennummer Kasse', 'ro'])}${fxField(B, ['d', 'Betriebsart', 'ro'])}${fxField(B, ['e', 'Netto und Mwst. exportieren', 'dis'])}</div></div></div>`};
   }
 };
 /* ═════════════════════════════════════════════════════════════════

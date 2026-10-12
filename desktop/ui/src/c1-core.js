@@ -137,6 +137,8 @@ const CATS = [
   {id: 'alle', name: 'Alle'}, {id: 'jacken', name: 'Jacken & Westen'}, {id: 'hosen', name: 'Hosen'}, {id: 'schuhe', name: 'Schuhe'},
   {id: 'ski', name: 'Ski & Touren'}, {id: 'shirts', name: 'Shirts & Layer'}, {id: 'rucksaecke', name: 'Rucksäcke'}, {id: 'acc', name: 'Accessoires'},
 ];
+/** Warengruppen mit Artikeln (plus bereits gewählte) – importierte Gruppen ohne Artikel blähen Auswahlen sonst auf */
+const catsInUse = (sel = []) => CATS.filter(c => c.id !== 'alle' && (sel.includes(c.id) || ART.some(a => a.cat === c.id)));
 const SKI_PROMPTS = [
   {key: 'z', label: 'Z-Wert Bindung', type: 'number', req: true, ph: 'z. B. 6,5'},
   {key: 'sn', label: 'Seriennummer', type: 'text', req: false, ph: 'scannen oder eingeben'},
@@ -198,7 +200,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.34.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.34.2', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════

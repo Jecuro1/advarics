@@ -39,7 +39,8 @@ function applySettings() {
   if (S.view) renderTopbar();
 }
 /** Größe passend zum Bildschirm, solange sie nicht von Hand eingestellt wurde (A−/A+) */
-const autoZoom = () => { const w = Math.max(window.screen?.width || 0, window.innerWidth || 0); return w >= 3000 ? 1.5 : w >= 2500 ? 1.4 : w >= 1900 ? 1.25 : 1.1; };
+let AUTO_ZOOM = 0;   // einmal beim Start messen – nach dem Zoomen meldet die WebView kleinere Breiten
+const autoZoom = () => AUTO_ZOOM ||= (w => w >= 3000 ? 1.5 : w >= 2500 ? 1.4 : w >= 1900 ? 1.25 : 1.1)(Math.max(window.screen?.width || 0, window.innerWidth || 0));
 function applyZoom(f) {
   f = clamp(Math.round(f * 100) / 100, .7, 2);
   if (DESKTOP) invoke('set_zoom', {factor: f}).catch(() => {});
@@ -50,7 +51,7 @@ function stepZoom(dir) {
   const cur = +CFG['anzeige.zoom'] || 1, i = steps.findIndex(s => s >= cur - .001);
   const next = dir === 0 ? 1 : steps[clamp((i < 0 ? 2 : i) + dir, 0, steps.length - 1)];
   saveSettings({'anzeige.zoom': next, 'anzeige.zoom.auto': false}, true); toast(`Anzeigegröße ${Math.round(next * 100)} %`, {icon: 'eye', dur: 1400});
-  if (S.view === 'einstellungen') $$('#zoomSeg button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.v === next));
+  if (S.view === 'einstellungen') $$('#zoomSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v !== 'auto' && +b.dataset.v === next));
 }
 
 /* ── Systeminfo & Datensicherung ── */
@@ -94,6 +95,7 @@ function field(key, label, help, type = 'text', extra = '') {
 function renderSettings() {
   const v = $('#view-einstellungen');
   const zoom = +CFG['anzeige.zoom'] || 1;
+  const zoomAuto = CFG['anzeige.zoom.auto'] !== false;
   const segRow = (lbl, help, key, opts) => `<div class="set-row"><div><div class="set-l">${lbl}</div><div class="set-h">${help}</div></div><div class="set-c"><div class="seg" data-pref="${key}">${opts.map(([val, l]) => `<button data-v="${val}" aria-pressed="${prefs[key] === val}">${l}</button>`).join('')}</div></div></div>`;
   v.innerHTML = `<div class="set">
     <nav class="set-nav" aria-label="Bereiche">${SET_SECTIONS.map(([id, l, i]) => `<button data-sec="${id}">${ic(i, 'i-sm')}${l}</button>`).join('')}
@@ -121,7 +123,7 @@ function renderSettings() {
       </div></section>
       ${usersSectionHTML()}${bonSectionHTML()}${printerSectionHTML()}${labelSectionHTML()}${mailSectionHTML()}${rksvSectionHTML()}
       <section class="set-sec" id="sec-anzeige"><h2>Darstellung</h2><p>Gilt für den angemeldeten Benutzer. Anzeigegröße auch mit <span class="kbd">Strg</span> <span class="kbd">+</span> / <span class="kbd">−</span> / <span class="kbd">0</span>.</p><div class="card">
-        <div class="set-row"><div><div class="set-l">Anzeigegröße</div><div class="set-h">Für große Bildschirme oder Touch-Kassen</div></div><div class="set-c"><div class="seg" id="zoomSeg">${[.8, .9, 1, 1.1, 1.25, 1.5].map(z => `<button data-v="${z}" aria-pressed="${Math.abs(z - zoom) < .001}">${Math.round(z * 100)} %</button>`).join('')}</div></div></div>
+        <div class="set-row"><div><div class="set-l">Anzeigegröße</div><div class="set-h">Für große Bildschirme oder Touch-Kassen</div></div><div class="set-c"><div class="seg" id="zoomSeg"><button data-v="auto" aria-pressed="${zoomAuto}" title="passend zum Bildschirm: ${Math.round(autoZoom() * 100)} %">Automatisch</button>${[.8, .9, 1, 1.1, 1.25, 1.5].map(z => `<button data-v="${z}" aria-pressed="${!zoomAuto && Math.abs(z - zoom) < .001}">${Math.round(z * 100)} %</button>`).join('')}</div></div></div>
         ${segRow('Modus', 'Hell, Dunkel oder wie Windows', 'theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['system', 'System']])}
         <div class="set-row"><div><div class="set-l">Akzentfarbe</div><div class="set-h">Oder eigene Markenfarbe</div></div><div class="set-c"><div class="swatch-row">${Object.entries(ACCENTS).map(([k, a]) => `<button class="swb" data-acc="${k}" aria-pressed="${prefs.accent === k}" style="--sw:hsl(${a.h} ${a.s}% 55%)" title="${a.name}" aria-label="${a.name}"></button>`).join('')}<label class="swb custom" title="Eigene Farbe" aria-pressed="${prefs.accent === 'custom'}"><input type="color" id="setAccCustom" value="#c98a5a" aria-label="Eigene Akzentfarbe"></label></div></div></div>
         ${segRow('Dichte', 'Touch vergrößert alle Bedienflächen', 'density', [['compact', 'Kompakt'], ['comfort', 'Komfort'], ['touch', 'Touch']])}
@@ -136,7 +138,7 @@ function renderSettings() {
       </section>
     </div></div>`;
   $$('.seg', v).forEach(s => initSeg(s, b => {
-    if (s.id === 'zoomSeg') return saveSettings({'anzeige.zoom': +b.dataset.v, 'anzeige.zoom.auto': false}, true);
+    if (s.id === 'zoomSeg') return saveSettings(b.dataset.v === 'auto' ? {'anzeige.zoom.auto': true} : {'anzeige.zoom': +b.dataset.v, 'anzeige.zoom.auto': false}, true);
     if (s.id === 'chanSeg') return saveSettings({'update.kanal': b.dataset.v});
     if (s.dataset.pref) { prefs[s.dataset.pref] = b.dataset.v; applyPrefs(s.dataset.pref === 'theme'); }
   }));

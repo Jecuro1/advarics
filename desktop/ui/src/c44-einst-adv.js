@@ -26,7 +26,7 @@ function eaField(f) {
   if (f.t === 'num') return `<label class="field"><span>${esc(f.l)}</span><input class="input num" type="number" data-ea="${f.k}" value="${esc(v)}">${hint}</label>`;
   if (f.t === 'combo') {
     const lbl = eaLabel(f, v);
-    return `<div class="field ea-cmb"><span>${esc(f.l)}</span><div class="ea-cmb-row"><div class="input ea-pick" tabindex="0" data-ea-pick="${f.k}"><span class="${lbl ? '' : 'ph'}">${esc(lbl || 'Nicht festgelegt')}</span>${lbl ? `<button type="button" class="ea-x" data-ea-clr="${f.k}" aria-label="Leeren">${ic('x', 'i-xs')}</button>` : ''}${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-ea-go="${f.page}" title="Liste öffnen">${ic('edit', 'i-sm')}</button><button type="button" class="ea-ib" data-ea-pick="${f.k}" title="Suchen">${ic('search', 'i-sm')}</button></div>${hint}</div>`;
+    return `<div class="field ea-cmb"><span>${esc(f.l)}</span><div class="ea-cmb-row"><div class="input ea-pick" tabindex="0" data-ea-pick="${f.k}"><span class="${lbl ? '' : 'ea-ph'}">${esc(lbl || 'Nicht festgelegt')}</span>${lbl ? `<button type="button" class="ea-x" data-ea-clr="${f.k}" aria-label="Leeren">${ic('x', 'i-xs')}</button>` : ''}${ic('chevron-down', 'i-xs')}</div><button type="button" class="ea-ib" data-ea-go="${f.page}" title="Liste öffnen">${ic('edit', 'i-sm')}</button><button type="button" class="ea-ib" data-ea-pick="${f.k}" title="Suchen">${ic('search', 'i-sm')}</button></div>${hint}</div>`;
   }
   return `<label class="field"><span>${esc(f.l)}</span><input class="input" data-ea="${f.k}" value="${esc(v)}">${hint}</label>`;
 }

@@ -267,7 +267,7 @@ async function renderSchaufenster() {
           ${tf('shop.oeffnung', 'Öffnungszeiten', 'erscheinen in der Fußzeile', true)}
           ${tf('shop.kontakt', 'Kontakt', 'Telefon, E-Mail, Social Media', true)}
           ${tf('shop.hinweis', 'Hinweis', 'z. B. Parkplätze, Anfahrt', true)}
-          <div class="set-row" style="border-bottom:0;display:block"><div class="set-l">Warengruppen im Schaufenster</div><div class="set-h" style="margin-bottom:8px">keine Auswahl = alle</div><div style="display:flex;flex-wrap:wrap;gap:6px">${CATS.filter(c => c.id !== 'alle').map(c => `<button class="chip" data-shc="${esc(c.id)}" aria-pressed="${cats.has(c.id)}">${esc(c.name)}</button>`).join('')}</div></div></div>
+          <div class="set-row" style="border-bottom:0;display:block"><div class="set-l">Warengruppen im Schaufenster</div><div class="set-h" style="margin-bottom:8px">keine Auswahl = alle</div><div style="display:flex;flex-wrap:wrap;gap:6px">${catsInUse([...cats]).map(c => `<button class="chip" data-shc="${esc(c.id)}" aria-pressed="${cats.has(c.id)}">${esc(c.name)}</button>`).join('')}</div></div></div>
         <div class="card"><div class="set-row"><div><div class="set-l">Artikel ausblenden</div><div class="set-h">${hidden.size} ausgeblendet · Klick wechselt</div></div><div class="set-c"><input class="input" id="shQ" placeholder="Suchen …" style="width:200px"></div></div><div id="shArts" style="max-height:340px;overflow:auto"></div></div>
         <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" data-sh="save">${ic('check', 'i-sm')}Speichern</button></div>
       </div>
