@@ -352,10 +352,10 @@ pub fn groessenschluessel_seed(c: &mut Connection) -> Result<(), String> {
 }
 
 /// Zuordnung der Größen zu Advarics-Größenschlüsseln (Schlüssel-Nr., Größen) – füllt nur Schlüssel, die noch leer sind
-const GS_ZUORDNUNG: [(i64, &[&str]); 1] = [(2, &["XXS", "XXS/XS", "XS", "XS/S", "S", "S-M", "S/M", "M", "M/L", "L", "L-XL", "L/XL", "XL", "XL/XXL", "XXL", "XXXL"])];
+const GS_ZUORDNUNG: [(i64, &[&str]); 4] = [(3, &["32", "33", "34", "35", "36", "37", "38", "40", "42", "44", "46", "48", "50"]), (4, &["39", "40", "41", "42", "43", "44", "45", "46", "48", "50", "52", "54", "56", "58", "60"]), (5, &["16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39"]), (2, &["XXS", "XXS/XS", "XS", "XS/S", "S", "S-M", "S/M", "M", "M/L", "L", "L-XL", "L/XL", "XL", "XL/XXL", "XXL", "XXXL"])];
 
 pub fn groessenschluessel_zuordnung(c: &mut Connection) -> Result<(), String> {
-    if db::setting_get(c, "groessenschluessel.zuordnung.v1").and_then(|v| v.as_bool()).unwrap_or(false) {
+    if db::setting_get(c, "groessenschluessel.zuordnung.v2").and_then(|v| v.as_bool()).unwrap_or(false) {
         return Ok(());
     }
     for (nr, list) in GS_ZUORDNUNG {
@@ -367,7 +367,7 @@ pub fn groessenschluessel_zuordnung(c: &mut Connection) -> Result<(), String> {
             c.execute("UPDATE stamm SET data = ?2, updated_at = ?3 WHERE kind = 'groessenschluessel' AND id = ?1", params![format!("gs-{nr}"), v.to_string(), db::now()]).map_err(|e| e.to_string())?;
         }
     }
-    db::setting_set(c, "groessenschluessel.zuordnung.v1", &json!(true)).map_err(|e| e.to_string())?;
+    db::setting_set(c, "groessenschluessel.zuordnung.v2", &json!(true)).map_err(|e| e.to_string())?;
     Ok(())
 }
 

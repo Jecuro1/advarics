@@ -1,3 +1,7 @@
+## Neu in 0.23.2
+
+- Größenschlüssel Damen (13 Größen 32–50), Herren (15 Größen 39–60) und Schuhe Kids EU (24 Größen 16–39) haben ihre Advarics-Größen; leere Schlüssel werden beim Start befüllt.
+
 ## Neu in 0.23.1
 
 - Größenschlüssel „2 Unisex“ hat jetzt seine 16 Advarics-Größen (XXS … XXXL); leere Schlüssel werden beim Start damit befüllt, bereits bearbeitete bleiben unberührt.
