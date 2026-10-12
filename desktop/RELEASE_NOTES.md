@@ -1,3 +1,7 @@
+## Neu in 0.23.6
+
+- Größenschlüssel „9 Schuhe Kids Ski MP“ mit seinen 24 Größen (18/18.5 bis 27/27.5 und 150 bis 215 in 5er-Schritten).
+
 ## Neu in 0.23.5
 
 - Größenschlüssel „8 Schuhe Erw. Ski MP“ mit seinen 32 Größen (22/22.5 bis 32/32.5 und 220 bis 320 in 5er-Schritten).
