@@ -112,7 +112,7 @@ fn agent() -> ureq::Agent {
 
 /// Browser öffnen (Windows: Standard-Browser; Linux/macOS: xdg-open/open). Für automatisierte Tests kann
 /// KONTOR_TEST_BROWSER=1 gesetzt werden: dann ruft Kontor die Adresse selbst auf (folgt Weiterleitungen).
-fn open_browser(url: &str) -> Result<(), String> {
+pub fn open_browser(url: &str) -> Result<(), String> {
     if std::env::var("KONTOR_TEST_BROWSER").is_ok() {
         let u = url.to_string();
         std::thread::spawn(move || {

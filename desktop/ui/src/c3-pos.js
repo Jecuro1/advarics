@@ -97,7 +97,7 @@ function lineHTML(l) {
   const c = l.c ? COLORS[l.c][1] : 'var(--text-3)';
   const g = r2(l.unit * l.qty), d = l.disc ? r2(g * l.disc.pct / 100) : 0;
   const varTxt = l.service ? esc(l.meta || 'Dienstleistung') : `<i class="sw" style="background:${c}"></i>${COLORS[l.c][0]}${l.s !== 'Einheitsgröße' ? ` · Gr. ${esc(l.s)}` : ''}`;
-  const extra = [l.disc ? `<span class="disc-tag">−${l.disc.pct} %</span>` : '', l.was && !l.disc ? `<span class="disc-tag">Aktion</span>` : '',
+  const extra = [l.disc ? `<span class="disc-tag">−${num(l.disc.pct, Number.isInteger(+l.disc.pct) ? 0 : 1)} %${l.disc.auto ? ` · ${esc(l.disc.reason)}` : ''}</span>` : '', l.was && !l.disc ? `<span class="disc-tag">Aktion</span>` : '',
     l.vals ? Object.entries(l.vals).filter(([, v]) => v).map(([k, v]) => `<span class="pill" style="height:18px;font-size:10.5px;padding:0 6px">${esc((SKI_PROMPTS.find(p => p.key === k) || {label: k}).label.split(' ')[0])} ${esc(v)}</span>`).join('') : '',
     l.seller ? `<span class="pill" style="height:18px;font-size:10.5px;padding:0 6px">${ic('user')}${esc(l.seller.split(' ')[0])}</span>` : ''].join('');
   const cls = ['line', POS.sel === l.key ? 'sel' : '', POS.lastKey === l.key ? (POS.lastNew ? 'new' : 'flash') : ''].join(' ');

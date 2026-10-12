@@ -220,8 +220,12 @@ fn handle(c: &Connection, db_path: &Path, mut req: Request) {
     if path == "/mobil" || path.starts_with("/mobil/") {
         return crate::mobile::handle(c, req, &path);
     }
+    if path == "/shop" || path.starts_with("/shop/") {
+        return crate::shop::handle(c, db_path, req, &path);
+    }
     if path.is_empty() {
-        let _ = req.respond(Response::empty(302).with_header(Header::from_bytes(&b"Location"[..], &b"/mobil"[..]).unwrap()));
+        let to: &[u8] = if db::setting_get(c, "shop.aktiv").and_then(|v| v.as_bool()).unwrap_or(false) { b"/shop" } else { b"/mobil" };
+        let _ = req.respond(Response::empty(302).with_header(Header::from_bytes(&b"Location"[..], to).unwrap()));
         return;
     }
     if path == "/api/v1" || path == "/api/v1/openapi.json" {

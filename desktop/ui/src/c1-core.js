@@ -193,7 +193,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.11.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.12.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -302,21 +302,39 @@ const NAV = [
   {g: 'Verkauf'},
   {id: 'dashboard', label: 'Dashboard', icon: 'dashboard'},
   {id: 'kasse', label: 'Kasse', icon: 'register', cart: true},
-  {id: 'belege', label: 'Belege', icon: 'receipt'},
-  {id: 'kassenbuch', label: 'Kassenbuch & Abschluss', icon: 'cash'},
+  {label: 'Warenkorb', icon: 'bag', kids: [{id: 'warenkorb-neu', label: 'Warenkorb erfassen', icon: 'plus'}, {id: 'warenkoerbe', label: 'Warenkörbe', icon: 'bag'}]},
+  {id: 'belege', label: 'Kassenbelege', icon: 'receipt'},
+  {id: 'manuell', label: 'Manuelle Verkäufe', icon: 'edit'},
+  {id: 'ungebucht', label: 'Ungebuchte Verkäufe', icon: 'alert'},
+  {label: 'Bon-Zuordnung', icon: 'users', kids: [{id: 'bon-verkaeufer', label: 'Verkäufer-Bon-Zuordnung', icon: 'user'}, {id: 'bon-kunden', label: 'Kunden-Bon-Zuordnung', icon: 'user-plus'}]},
+  {id: 'reservierungen', label: 'Reservierungen', icon: 'clock'},
+  {id: 'auswahl', label: 'Auswahlverwaltung', icon: 'layers'},
+  {id: 'gutscheine', label: 'Gutscheine', icon: 'gift'},
+  {label: 'Faktura', icon: 'idcard', kids: [{id: 'angebote', label: 'Angebote', icon: 'edit'}, {id: 'auftraege', label: 'Aufträge', icon: 'list'}, {id: 'lieferscheine', label: 'Lieferscheine', icon: 'truck'}, {id: 'rechnungen', label: 'Rechnungen', icon: 'receipt'}, {id: 'offene-posten', label: 'Offene Posten & Mahnungen', icon: 'clock'}]},
+  {id: 'kassenbuch', label: 'Kassenbuch', icon: 'cash'},
+  {id: 'tagesabschluesse', label: 'Tagesabschlüsse', icon: 'lock'},
+  {id: 'filialumsatz', label: 'Filialumsatz kompakt', icon: 'chart'},
+  {g: 'Marketing'},
+  {id: 'aktionen', label: 'Preisaktionen', icon: 'percent'},
+  {id: 'rabattregeln', label: 'Rabattaktionssteuerung', icon: 'sliders'},
+  {id: 'kampagnen', label: 'Kampagnen', icon: 'mail'},
+  {id: 'salesaktionen', label: 'Sales-Aktionen', icon: 'target'},
+  {id: 'schaufenster', label: 'Digitales Schaufenster', icon: 'store'},
   {g: 'Sortiment'},
   {id: 'artikel', label: 'Artikel', icon: 'tag'},
   {id: 'bestand', label: 'Bestand', icon: 'boxes'},
   {id: 'inventur', label: 'Inventur', icon: 'layers'},
-  {id: 'aktionen', label: 'Preisaktionen', icon: 'percent'},
   {id: 'etiketten', label: 'Etiketten', icon: 'barcode'},
   {g: 'Einkauf'},
-  {id: 'einkauf', label: 'Bestellungen', icon: 'truck'},
-  {id: 'wareneingang', label: 'Wareneingang', icon: 'download'},
+  {label: 'Order', icon: 'truck', kids: [{id: 'einkauf', label: 'Order', icon: 'truck'}, {id: 'order-import', label: 'Order Import', icon: 'download'}, {id: 'order-typen', label: 'Order Typen', icon: 'list'}, {id: 'order-vorschlag', label: 'Order Vorschläge', icon: 'sparkle'}, {id: 'order-konfig', label: 'Order Vorschlags-Konfiguration', icon: 'sliders'}]},
+  {label: 'Wareneingang', icon: 'download', kids: [{id: 'avis', label: 'Wareneingang Avis', icon: 'swap'}, {id: 'wareneingang', label: 'Wareneingang', icon: 'list'}, {id: 'we-scanner', label: 'Scanner Wareneingang', icon: 'barcode'}, {id: 'etiketten', label: 'Etikettendruck', icon: 'printer'}, {id: 'we-protokoll', label: 'Wareneingang Änderungsprotokoll', icon: 'history'}]},
+  {label: 'Rechnungs-Management', icon: 'receipt', kids: [{id: 'er', label: 'Rechnungen', icon: 'receipt'}, {id: 'zahlungen', label: 'Zahlungen', icon: 'cash'}]},
+  {label: 'Retourenmanagement', icon: 'undo', kids: [{label: 'Vorerfassung Reklamation', icon: 'edit', kids: [{id: 'reklamationen', label: 'Vorerfassung Reklamation', icon: 'edit'}, {id: 'reklamation-neu', label: 'Reklamation erfassen (erweitert)', icon: 'plus'}]}, {id: 'lretouren', label: 'Retouren', icon: 'undo'}, {id: 'retouren-protokoll', label: 'Protokoll Retourenmanagement', icon: 'history'}, {id: 'rueckgabegruende', label: 'Rückgabegrund', icon: 'list'}]},
+  {label: 'Wareneingangs-Verteilung', icon: 'swap', kids: [{id: 'verteilung-konfig', label: 'Wareneingangs-Verteilungs-Konfiguration', icon: 'sliders'}, {id: 'disposition', label: 'Wareneingangs-Disposition', icon: 'list'}]},
+  {id: 'lieferantenbonus', label: 'Umlage Lieferantenbonus', icon: 'percent'},
   {id: 'lieferanten', label: 'Lieferanten', icon: 'building'},
   {g: 'Kunden'},
   {id: 'kunden', label: 'Kunden', icon: 'users'},
-  {id: 'gutscheine', label: 'Gutscheine', icon: 'gift'},
   {g: 'Auswertung'},
   {id: 'berichte', label: 'Berichte', icon: 'chart'},
   {id: 'buchhaltung', label: 'Buchhaltung', icon: 'receipt'},
@@ -338,23 +356,56 @@ function registerPage(id, def) {
   if (!document.getElementById('view-' + id)) document.getElementById('views')?.insertAdjacentHTML('beforeend', `<section class="view" id="view-${id}" aria-label="${def.title}"></section>`);
 }
 const navClosed = new Set(persist.get('navClosed', []));
-const navGroupOf = id => { let g = null; for (const n of NAV) { if (n.g) g = n.g; else if (n.id === id) return g; } return null; };
+const navOpen = new Set(persist.get('navOpen', []));
+/** Pfad im Menü: Gruppe und übergeordnete Menüpunkte, z. B. „Einkauf · Rechnungs-Management“ */
+const navPath = id => {
+  let g = null;
+  const walk = (list, path) => { for (const n of list) { if (n.id === id) return path; if (n.kids) { const r = walk(n.kids, [...path, n]); if (r) return r; } } return null; };
+  for (const n of NAV) { if (n.g) { g = n.g; continue; } if (n.id === id) return {g, parents: []}; if (n.kids) { const r = walk(n.kids, [n]); if (r) return {g, parents: r}; } }
+  return null;
+};
+const navKey = n => 'p:' + n.label;
+const navGroupOf = id => { const p = navPath(id); return p ? [p.g, ...p.parents.map(x => x.label)].filter(Boolean).join(' · ') : null; };
+/** Alle Menüpunkte (flach) – für Befehlspalette und Rechte */
+const navFlat = () => { const out = []; const walk = (l, path) => l.forEach(n => { if (n.kids) walk(n.kids, [...path, n.label]); else if (n.id) out.push({...n, path}); }); let g = ''; NAV.forEach(n => { if (n.g) g = n.g; else if (n.kids) walk(n.kids, [g, n.label]); else if (n.id) out.push({...n, path: [g]}); }); return out; };
 
 function renderNav() {
   let html = '', open = false;
+  const item = (n, lvl) => {
+    if (n.kids) {
+      const k = navKey(n), on = navOpen.has(k);
+      return `<button class="nav-item nav-parent" data-par="${esc(k)}" aria-expanded="${on}" style="--lvl:${lvl}" data-tip="${esc(n.label)}" data-tip-pos="right">${ic(n.icon)}<span class="nav-label fade-label">${esc(n.label)}</span>${ic('chevron-down', 'i-xs chev')}</button><div class="nav-kids" data-kids="${esc(k)}" style="--kl:${lvl}" ${on ? '' : 'hidden'}>${n.kids.map(x => item(x, lvl + 1)).join('')}</div>`;
+    }
+    return `<button class="nav-item" data-view="${n.id}" style="--lvl:${lvl}" data-tip="${esc(n.label)}" data-tip-pos="right">${ic(n.icon)}<span class="nav-label fade-label">${esc(n.label)}</span>${n.cart ? '<span class="nav-badge accent" id="navCart" hidden></span>' : ''}${n.count ? `<span class="nav-badge">${n.count}</span>` : ''}<span class="nav-badge" data-nb="${n.id}" hidden></span></button>`;
+  };
   NAV.forEach(n => {
     if (n.g) {
       if (open) html += '</div>';
       html += `<div class="nav-sec" data-sec="${esc(n.g)}" ${navClosed.has(n.g) ? 'data-closed' : ''}><button class="nav-group" data-grp="${esc(n.g)}" aria-expanded="${!navClosed.has(n.g)}">${esc(n.g)}${ic('chevron-down', 'i-xs chev')}</button>`;
       open = true; return;
     }
-    html += `<button class="nav-item" data-view="${n.id}" data-tip="${esc(n.label)}" data-tip-pos="right">${ic(n.icon)}<span class="nav-label fade-label">${esc(n.label)}</span>${n.cart ? '<span class="nav-badge accent" id="navCart" hidden></span>' : ''}${n.count ? `<span class="nav-badge">${n.count}</span>` : ''}<span class="nav-badge" data-nb="${n.id}" hidden></span></button>`;
+    html += item(n, 0);
   });
   if (open) html += '</div>';
   $('#nav').innerHTML = html;
+  if (S.view) navReveal(S.view);
+}
+/** Übergeordnete Menüpunkte der aktuellen Seite aufklappen */
+function navReveal(id) {
+  const p = navPath(id); if (!p) return;
+  p.parents.forEach(n => { const k = navKey(n); navOpen.add(k); $(`[data-par="${CSS.escape(k)}"]`)?.setAttribute('aria-expanded', 'true'); const kd = $(`[data-kids="${CSS.escape(k)}"]`); if (kd) kd.hidden = false; });
+  if (p.g && navClosed.has(p.g)) { navClosed.delete(p.g); const sec = $(`.nav-sec[data-sec="${CSS.escape(p.g)}"]`); sec?.removeAttribute('data-closed'); sec?.querySelector('.nav-group')?.setAttribute('aria-expanded', 'true'); persist.set('navClosed', [...navClosed]); }
+  persist.set('navOpen', [...navOpen]);
+}
+function navToggle(btn) {
+  const k = btn.dataset.par;
+  if ($('#app').classList.contains('sb-collapsed')) { const first = btn.nextElementSibling?.querySelector('[data-view]'); if (first) go(first.dataset.view); return; }
+  const on = !navOpen.has(k); on ? navOpen.add(k) : navOpen.delete(k);
+  btn.setAttribute('aria-expanded', on); const kd = btn.nextElementSibling; if (kd) kd.hidden = !on;
+  persist.set('navOpen', [...navOpen]);
 }
 /** Zähler an Menüpunkten (z. B. offene Bestellungen) */
-function navBadge(id, n) { const b = $(`[data-nb="${id}"]`); if (!b) return; b.hidden = !n; b.textContent = n > 99 ? '99+' : n; }
+function navBadge(id, n) { $$(`[data-nb="${id}"]`).forEach(b => { b.hidden = !n; b.textContent = n > 99 ? '99+' : n; }); }
 function renderMe() {
   $('#meBtn').innerHTML = `<span class="avatar" style="--h:${S.user.hue}">${S.user.initials}</span><span class="meta fade-label" style="min-width:0"><span class="t1" style="display:block">${esc(S.user.name)}</span><span class="t2" style="display:block">${esc(S.user.role)} · Kasse 1</span></span>`;
 }
@@ -396,6 +447,7 @@ function go(view) {
   else renderPlaceholder(view);
   const vEl = PH_VIEWS.includes(view) ? $('#view-ph') : view.startsWith('obj-') ? $('#view-obj') : $('#view-' + view); void vEl.offsetWidth; vEl.classList.add('active');
   $$('.nav-item').forEach(n => n.dataset.view === view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
+  navReveal(view);
   renderTopbar(); applySidebar();
   document.body.classList.forEach(c => c.startsWith('at-') && document.body.classList.remove(c)); document.body.classList.add('at-' + view);
   $('#app').classList.remove('sb-open');

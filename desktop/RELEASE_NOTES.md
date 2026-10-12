@@ -1,3 +1,17 @@
+## Neu in 0.12.0
+- **Neue Menüstruktur mit Unterpunkten** (aufklappbar wie gewohnt aus der Warenwirtschaft): Verkauf, Marketing, Sortiment, Einkauf, Kunden, Auswertung, System – über 60 Menüpunkte, alle auch über die Befehlspalette (Strg K) erreichbar
+- **Order:** Order (Bestellungen mit Order-Typ), Order Import (Datei/Einfügen → Bestellentwurf), Order Typen, Order Vorschläge und Order Vorschlags-Konfiguration (Zeitraum, Reichweite, Sicherheitsfaktor, Packeinheit, Warengruppen)
+- **Wareneingang:** Wareneingang Avis (aus Bestellung oder Avis-Datei, mit einem Klick einbuchen), Scanner Wareneingang mit Soll/Ist-Abgleich, Etikettendruck, Änderungsprotokoll mit Korrekturbuchung
+- **Rechnungs-Management:** Eingangsrechnungen mit Rechnungsprüfung gegen den Wareneingang, Freigabe, Skonto; Zahlungen mit Zahlungsvorschlag und SEPA-Überweisungsdatei (pain.001) für das Online-Banking; IBAN/BIC je Lieferant
+- **Retourenmanagement:** Vorerfassung Reklamation (auch erweitert mit Seriennummer, Kostenvoranschlag, Leihgerät), Lieferantenretouren (bucht beim Versand aus, Gutschrift erfassen), Protokoll, frei einstellbare Rückgabegründe (auch an der Kasse)
+- **Wareneingangs-Verteilung** im Filialverbund: Verteilschlüssel (nach Umsatz, Bedarf oder festen Anteilen) und Disposition – gelieferte Ware mit einem Klick als Umlagerungen an die Filialen
+- **Umlage Lieferantenbonus:** Bonusstaffeln je Lieferant, Bonus aus dem Einkaufsvolumen, Umlage auf Warengruppen mit CSV-Export
+- **Verkauf:** Warenkorb erfassen und an der Kasse übernehmen, Kassenbelege, manuelle Verkäufe (Nacherfassung mit Originaldatum), ungebuchte Verkäufe, Verkäufer- und Kunden-Bon-Zuordnung (Bonuspunkte werden nachgebucht), Reservierungen, Auswahlverwaltung (Ware zur Ansicht), Tagesabschlüsse, Filialumsatz kompakt
+- **Faktura:** Angebot → Auftrag → Lieferschein → Rechnung mit Positionsrabatt, A4-Druck und E-Mail, Zahlungseingang, Mahnungen, offene Posten nach Fälligkeit
+- **Marketing:** Rabattaktionssteuerung (Mengenrabatt, 3 für 2, Bonrabatt ab Einkaufswert, Happy Hour nach Wochentag/Uhrzeit und Kundengruppe – automatisch an der Kasse), Kampagnen per E-Mail mit persönlichem Gutschein und Erfolgsmessung, Sales-Aktionen (Prämien je Verkäufer:in)
+- **Digitales Schaufenster:** Ihr Sortiment als Webseite mit Bildern, Aktionspreisen und Verfügbarkeit – Kund:innen reservieren online und holen im Geschäft ab; Anfragen erscheinen sofort unter Reservierungen
+- Neue Rechte: Eingangsrechnungen, Faktura, Marketing
+
 ## Neu in 0.11.0
 - **Filialverbund:** eine Installation als Zentrale, weitere Kassen als Filialen – Verbindung per Code. Artikel, Preise, Aktionen, Lieferanten und Kunden kommen von der Zentrale; Belege, Bestände und Bonuspunkte der Filialen werden alle 30 Sekunden gemeldet. Jede Kasse verkauft auch ohne Verbindung weiter
 - **Neue Seiten „Filialen“ und „Umlagerungen“:** Umsatz und Status je Filiale, Bestand je Artikel in allen Filialen, Umlagerungen anfordern → versenden (bucht aus) → empfangen (bucht ein), KI-Vorschläge für Umlagerungen

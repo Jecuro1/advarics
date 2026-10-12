@@ -68,6 +68,11 @@ Stand 0.10.0 – alles mit lokaler Datenbank, ohne Server:
   (Entra ID, Google, Keycloak); Rechte je Rolle mit PIN-Freigabe.
 - **Erweiterungen** (`kontor.erweiterung/v1`) mit Galerie, eigene Dashboard-Widgets per Abfrage, einstellbare
   Zahlungsarten inkl. PayPal.me- und SEPA-QR, eigene Design-Vorlagen.
+- **Warenwirtschaft (0.12):** Order inkl. Import, Typen und Vorschlags-Konfiguration; Wareneingang mit Avis, Scanner und
+  Änderungsprotokoll; Eingangsrechnungen mit Rechnungsprüfung, Zahlungen und SEPA-Datei; Retourenmanagement mit
+  Reklamationen und Lieferantenretouren; Wareneingangs-Verteilung; Lieferantenbonus; Faktura (Angebot bis Mahnung);
+  Reservierungen, Auswahlen, Warenkörbe, Bon-Zuordnung; Rabattaktionssteuerung, Kampagnen, Sales-Aktionen.
+- **Digitales Schaufenster** unter `/shop` am eingebauten Server (Click & Reserve).
 - **Noch offen:** echte RKSV-Signaturkarte bzw. A-Trust, TSE (Deutschland), App-Store-App, FIDO2-Schlüssel,
   Active-Directory/SAML-Anmeldung.
 

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Schaufenster</title>
+<style>
+:root{--a:#1f6fd1;--bg:#f5f7fa;--card:#fff;--t:#101828;--t2:#475467;--t3:#98a2b3;--line:#e4e7ec;--pos:#12805c;--warn:#b54708;--r:16px}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--t)}
+button,input,textarea{font:inherit;color:inherit}
+a{color:var(--a)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 18px}
+header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.hd{display:flex;align-items:center;gap:14px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:-.01em;min-width:0}
+.brand img{height:34px;max-width:140px;object-fit:contain}
+.brand span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp{flex:1}
+.bagbtn{position:relative;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-weight:600}
+.bagbtn b{display:inline-grid;place-items:center;min-width:22px;height:22px;border-radius:11px;background:var(--a);color:#fff;font-size:12px;padding:0 6px}
+.hero{padding:42px 0 18px}
+.hero h1{font-size:clamp(28px,5vw,44px);line-height:1.08;letter-spacing:-.03em;margin:0 0 10px;max-width:780px}
+.hero p{margin:0;color:var(--t2);max-width:680px;font-size:16px}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:18px 0 10px;position:sticky;top:64px;z-index:5;background:var(--bg)}
+.search{flex:1;min-width:220px;max-width:420px;height:44px;border:1px solid var(--line);border-radius:12px;padding:0 14px;background:var(--card);outline:none}
+.search:focus{border-color:var(--a);box-shadow:0 0 0 3px color-mix(in srgb,var(--a) 18%,transparent)}
+.chips{display:flex;gap:6px;overflow:auto;scrollbar-width:none;max-width:100%}
+.chip{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);cursor:pointer;white-space:nowrap;color:var(--t2)}
+.chip[aria-pressed=true]{background:var(--t);border-color:var(--t);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;padding:8px 0 40px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer;display:flex;flex-direction:column;transition:transform .18s,box-shadow .18s}
+.card:hover{transform:translateY(-2px);box-shadow:0 12px 30px -12px rgba(16,24,40,.22)}
+.pic{aspect-ratio:1/1;background:linear-gradient(160deg,#f2f4f7,#e9edf3);display:grid;place-items:center;position:relative;overflow:hidden}
+.pic img{width:100%;height:100%;object-fit:cover}
+.pic svg{width:56%;height:56%}
+.badge{position:absolute;left:10px;top:10px;background:var(--a);color:#fff;font-size:12px;font-weight:700;padding:3px 8px;border-radius:8px}
+.badge.neu{background:var(--t)}
+.dots{position:absolute;right:10px;top:10px;display:flex;gap:3px}
+.dots i{width:10px;height:10px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.meta{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px;flex:1}
+.mk{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);font-weight:600}
+.nm{font-weight:600;line-height:1.3}
+.pr{margin-top:auto;display:flex;align-items:baseline;gap:8px;padding-top:6px}
+.pr b{font-size:17px}.pr b.sale{color:var(--a)}.pr s{color:var(--t3);font-size:13px}
+.av{font-size:12.5px;color:var(--pos);display:flex;align-items:center;gap:6px}.av:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.av.w{color:var(--warn)}.av.x{color:var(--t3)}
+.empty{text-align:center;color:var(--t2);padding:60px 0}
+footer{border-top:1px solid var(--line);padding:28px 0 46px;color:var(--t2);font-size:14px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
+footer h4{margin:0 0 6px;color:var(--t);font-size:14px}
+footer p{margin:0;white-space:pre-line}
+.ov{position:fixed;inset:0;background:rgba(16,24,40,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.ov.on{opacity:1;pointer-events:auto}
+.sheet{background:var(--card);width:min(860px,100%);max-height:92dvh;overflow:auto;border-radius:22px 22px 0 0;transform:translateY(30px);transition:transform .25s;padding:0 0 env(safe-area-inset-bottom)}
+.ov.on .sheet{transform:none}
+@media (min-width:760px){.ov{align-items:center}.sheet{border-radius:22px}}
+.pd{display:grid;grid-template-columns:1fr;gap:0}
+@media (min-width:760px){.pd{grid-template-columns:1fr 1fr}}
+.pd .pic{aspect-ratio:auto;min-height:280px}
+.pdb{padding:22px;display:flex;flex-direction:column;gap:12px}
+.pdb h2{margin:0;font-size:24px;letter-spacing:-.02em;line-height:1.15}
+.x{position:sticky;top:10px;float:right;margin:10px 10px 0 0;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:20px;line-height:1;z-index:2}
+.lbl{font-size:12.5px;color:var(--t2);font-weight:600;margin-bottom:6px}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{min-width:44px;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.opt[aria-pressed=true]{border-color:var(--a);box-shadow:0 0 0 2px color-mix(in srgb,var(--a) 22%,transparent);font-weight:600}
+.opt:disabled{opacity:.4;text-decoration:line-through;cursor:not-allowed}
+.opt i{width:14px;height:14px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.1)}
+.btn{height:48px;border-radius:12px;border:0;background:var(--a);color:#fff;font-weight:650;cursor:pointer;padding:0 18px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sec{background:var(--card);color:var(--t);border:1px solid var(--line)}
+.fl{display:grid;gap:4px}.fl input,.fl textarea{height:44px;border:1px solid var(--line);border-radius:10px;padding:0 12px;outline:none;background:#fff}
+.fl textarea{height:80px;padding:10px 12px;resize:vertical}
+.fl input:focus,.fl textarea:focus{border-color:var(--a)}
+.bl{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.bl .pic{width:58px;height:58px;border-radius:10px;flex:none;aspect-ratio:1}
+.bl .q{margin-left:auto;display:flex;align-items:center;gap:6px}
+.bl .q button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer}
+.ok{text-align:center;padding:34px 22px}
+.ok .ring{width:72px;height:72px;border-radius:50%;background:color-mix(in srgb,var(--pos) 14%,transparent);color:var(--pos);display:grid;place-items:center;margin:0 auto 14px;font-size:34px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--t);color:#fff;padding:10px 16px;border-radius:12px;opacity:0;transition:.2s;z-index:60;font-size:14px;max-width:92vw}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.feat{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13.5px;color:var(--t2);margin:0}
+.feat dt{color:var(--t3)}
+.muted{color:var(--t3);font-size:13px}
+</style>
+</head>
+<body>
+<header><div class="wrap hd"><div class="brand" id="brand"></div><span class="sp"></span><button class="bagbtn" id="bagBtn" aria-label="Reservierung">Reservierung <b id="bagN">0</b></button></div></header>
+<main class="wrap">
+  <section class="hero"><h1 id="title">Unser Sortiment</h1><p id="text"></p></section>
+  <div class="tools"><input class="search" id="q" placeholder="Suchen …" autocomplete="off"><div class="chips" id="cats"></div></div>
+  <div class="grid" id="grid"></div>
+</main>
+<footer><div class="wrap fgrid" id="foot"></div></footer>
+<div class="ov" id="ov"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+  const eur = c => (c / 100).toLocaleString('de-AT', {style: 'currency', currency: 'EUR'});
+  const S = {info: {}, arts: [], cat: '', q: '', bag: []};
+  try { S.bag = JSON.parse(localStorage.getItem('kontor.shop.bag') || '[]'); } catch { S.bag = []; }
+  const saveBag = () => { try { localStorage.setItem('kontor.shop.bag', JSON.stringify(S.bag)); } catch { /* */ } $('#bagN').textContent = S.bag.reduce((a, b) => a + b.menge, 0); };
+  const meta = () => S.info.meta || {};
+  const catName = id => meta().kategorien?.[id] || id;
+  const col = k => meta().farben?.[k] || [k, '#98a2b3'];
+  const toast = t => { const e = $('#toast'); e.textContent = t; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('on'), 2600); };
+  const pic = a => a.bild ? `<img src="/shop/bild/${encodeURIComponent(a.id)}" alt="" loading="lazy">` : `<svg viewBox="0 0 64 64" style="color:${col(a.farben?.[0])[1]};fill:currentColor">${meta().glyphs?.[a.glyph] || ''}</svg>`;
+  const avail = a => { const vs = a.varianten; const free = vs.filter(v => v.frei).length; return free === 0 ? ['x', 'derzeit nicht verfügbar'] : vs.some(v => v.bestand === 'wenig') && free <= 2 ? ['w', 'nur noch wenige'] : ['', 'verfügbar']; };
+  const priceHTML = a => a.preis == null ? '' : `<b class="${a.statt ? 'sale' : ''}">${eur(a.preis)}</b>${a.statt ? `<s>${eur(a.statt)}</s>` : ''}`;
+  async function load() {
+    try {
+      const [i, a] = await Promise.all([fetch('/shop/api/info').then(r => r.json()), fetch('/shop/api/artikel').then(r => r.json())]);
+      S.info = i; S.arts = Array.isArray(a) ? a : [];
+    } catch { $('#grid').innerHTML = '<div class="empty">Das Schaufenster ist gerade nicht erreichbar.</div>'; return; }
+    const i = S.info;
+    if (i.farbe) document.documentElement.style.setProperty('--a', i.farbe);
+    document.title = i.titel || i.firma || 'Schaufenster';
+    $('#brand').innerHTML = `${i.logo ? '<img src="/shop/logo" alt="">' : ''}<span>${esc(i.firma || 'Schaufenster')}</span>`;
+    $('#title').textContent = i.titel || 'Unser Sortiment';
+    $('#text').textContent = i.text || (i.reservieren ? 'Online stöbern, reservieren und im Geschäft anprobieren und abholen.' : '');
+    $('#bagBtn').hidden = !i.reservieren;
+    const cats = [...new Set(S.arts.map(a => a.kategorie))];
+    $('#cats').innerHTML = [['', 'Alle'], ...cats.map(c => [c, catName(c)])].map(([k, l]) => `<button class="chip" data-c="${esc(k)}" aria-pressed="${S.cat === k}">${esc(l)}</button>`).join('');
+    $('#foot').innerHTML = [i.adresse && `<div><h4>${esc(i.firma || '')}</h4><p>${esc(i.adresse)}</p></div>`, i.oeffnung && `<div><h4>Öffnungszeiten</h4><p>${esc(i.oeffnung)}</p></div>`, i.kontakt && `<div><h4>Kontakt</h4><p>${esc(i.kontakt)}</p></div>`, i.hinweis && `<div><h4>Hinweis</h4><p>${esc(i.hinweis)}</p></div>`].filter(Boolean).join('');
+    saveBag(); render();
+    const h = location.hash.slice(1); if (h) { const a = S.arts.find(x => x.id === decodeURIComponent(h)); if (a) openArt(a); }
+  }
+  function render() {
+    const n = S.q.toLowerCase().trim();
+    const l = S.arts.filter(a => (!S.cat || a.kategorie === S.cat) && (!n || `${a.name} ${a.marke} ${catName(a.kategorie)}`.toLowerCase().includes(n)));
+    $('#grid').innerHTML = l.length ? l.map(a => { const [cl, t] = avail(a); return `<article class="card" data-a="${esc(a.id)}"><div class="pic">${pic(a)}${a.aktion || a.statt ? `<span class="badge">−${Math.round((1 - a.preis / a.statt) * 100)} %</span>` : a.tag ? `<span class="badge neu">${esc(a.tag)}</span>` : ''}<span class="dots">${(a.farben || []).slice(0, 4).map(c => `<i style="background:${col(c)[1]}"></i>`).join('')}</span></div><div class="meta"><span class="mk">${esc(a.marke)}</span><span class="nm">${esc(a.name)}</span><div class="pr">${priceHTML(a)}</div><span class="av ${cl}">${t}</span></div></article>`; }).join('')
+      : '<div class="empty" style="grid-column:1/-1">Keine Artikel gefunden.</div>';
+  }
+  const open = html => { $('#sheet').innerHTML = `<button class="x" data-close aria-label="Schließen">×</button>` + html; $('#ov').classList.add('on'); document.body.style.overflow = 'hidden'; };
+  const close = () => { $('#ov').classList.remove('on'); document.body.style.overflow = ''; if (location.hash) history.replaceState(null, '', location.pathname); };
+  function openArt(a) {
+    let c = (a.varianten.find(v => v.frei) || a.varianten[0])?.farbe, s = null;
+    history.replaceState(null, '', '#' + encodeURIComponent(a.id));
+    const draw = () => {
+      const vs = a.varianten.filter(v => v.farbe === c);
+      if (s && !vs.some(v => v.groesse === s && v.frei)) s = null;
+      if (!s && vs.filter(v => v.frei).length === 1) s = vs.find(v => v.frei).groesse;
+      const v = vs.find(x => x.groesse === s);
+      const feats = Object.entries(a.felder || {}).filter(([, x]) => x !== '' && x != null && typeof x !== 'object').slice(0, 6);
+      open(`<div class="pd"><div class="pic">${pic({...a, farben: [c]})}</div><div class="pdb"><span class="mk">${esc(a.marke)}</span><h2>${esc(a.name)}</h2><div class="pr" style="padding:0">${priceHTML(a)}</div>
+        ${feats.length ? `<dl class="feat">${feats.map(([k, x]) => `<dt>${esc(k)}</dt><dd style="margin:0">${esc(x)}</dd>`).join('')}</dl>` : ''}
+        <div><div class="lbl">Farbe: ${esc(col(c)[0])}</div><div class="opts">${[...new Set(a.varianten.map(x => x.farbe))].map(f => `<button class="opt" data-col="${esc(f)}" aria-pressed="${f === c}"><i style="background:${col(f)[1]}"></i>${esc(col(f)[0])}</button>`).join('')}</div></div>
+        <div><div class="lbl">Größe</div><div class="opts">${vs.map(x => `<button class="opt" data-size="${esc(x.groesse)}" aria-pressed="${x.groesse === s}" ${x.frei ? '' : 'disabled'}>${esc(x.groesse)}</button>`).join('')}</div></div>
+        <div class="muted">${v ? (v.frei ? (typeof v.bestand === 'number' ? `${v.bestand} Stück verfügbar` : v.bestand === 'wenig' ? 'Nur noch wenige verfügbar' : 'Im Geschäft verfügbar') : 'Derzeit nicht verfügbar') : 'Bitte Größe wählen'}</div>
+        ${S.info.reservieren ? `<button class="btn" id="add" ${v && v.frei ? '' : 'disabled'}>Zur Reservierung hinzufügen</button><div class="muted">Kostenlos reservieren – wir legen die Ware ${S.info.abholtage || 3} Tage für Sie zurück. Bezahlt wird bei Abholung.</div>` : ''}</div></div>`);
+      $('#sheet').onclick = e => {
+        const cc = e.target.closest('[data-col]'); if (cc) { c = cc.dataset.col; return draw(); }
+        const ss = e.target.closest('[data-size]'); if (ss && !ss.disabled) { s = ss.dataset.size; return draw(); }
+        if (e.target.closest('#add') && v) {
+          const ex = S.bag.find(b => b.ean === v.ean);
+          if (S.bag.length >= 10 && !ex) return toast('Höchstens 10 Artikel je Reservierung');
+          if (ex) ex.menge = Math.min(5, ex.menge + 1); else S.bag.push({ean: v.ean, id: a.id, name: a.name, farbe: col(c)[0], groesse: v.groesse, preis: a.preis, menge: 1});
+          saveBag(); close(); toast(`${a.name} vorgemerkt`);
+        }
+        if (e.target.closest('[data-close]')) close();
+      };
+    };
+    draw();
+  }
+  function openBag(msg) {
+    const sum = S.bag.reduce((a, b) => a + (b.preis || 0) * b.menge, 0);
+    open(`<div style="padding:22px"><h2 style="margin:0 0 4px;font-size:22px">Reservierung</h2><div class="muted">Zur Abholung im Geschäft – Bezahlung vor Ort</div>
+      ${S.bag.length ? `<div style="margin:10px 0">${S.bag.map((b, i) => { const a = S.arts.find(x => x.id === b.id) || {farben: []}; return `<div class="bl"><div class="pic">${pic(a)}</div><div style="min-width:0"><b>${esc(b.name)}</b><div class="muted">${esc(b.farbe)} · ${esc(b.groesse)}${b.preis != null ? ' · ' + eur(b.preis) : ''}</div></div><div class="q"><button data-m="${i}">−</button><b>${b.menge}</b><button data-p="${i}">+</button></div></div>`; }).join('')}</div>
+        ${sum ? `<div style="display:flex;justify-content:space-between;font-weight:650;margin-bottom:14px"><span>Summe</span><span>${eur(sum)}</span></div>` : ''}
+        <form id="rf" style="display:grid;gap:10px"><label class="fl"><span class="lbl" style="margin:0">Name *</span><input name="name" required autocomplete="name"></label>
+          <label class="fl"><span class="lbl" style="margin:0">E-Mail</span><input name="email" type="email" autocomplete="email"></label>
+          <label class="fl"><span class="lbl" style="margin:0">Telefon</span><input name="telefon" type="tel" autocomplete="tel"></label>
+          <label class="fl"><span class="lbl" style="margin:0">Nachricht (optional)</span><textarea name="nachricht" placeholder="z. B. Abholung am Samstag"></textarea></label>
+          ${msg ? `<div style="color:#b42318;font-size:14px">${esc(msg)}</div>` : ''}
+          <button class="btn" id="send">Verbindlich reservieren</button><div class="muted">Mit dem Absenden willigen Sie ein, dass wir Ihre Angaben zur Bearbeitung der Reservierung speichern.</div></form>`
+        : '<div class="empty" style="padding:30px 0">Noch nichts vorgemerkt.</div>'}</div>`);
+    $('#sheet').onclick = e => {
+      const m = e.target.closest('[data-m]'), p = e.target.closest('[data-p]');
+      if (m) { const b = S.bag[+m.dataset.m]; b.menge--; if (b.menge <= 0) S.bag.splice(+m.dataset.m, 1); saveBag(); return openBag(); }
+      if (p) { const b = S.bag[+p.dataset.p]; b.menge = Math.min(5, b.menge + 1); saveBag(); return openBag(); }
+      if (e.target.closest('[data-close]')) close();
+    };
+    const f = $('#rf'); if (!f) return;
+    f.onsubmit = async e => {
+      e.preventDefault();
+      const fd = Object.fromEntries(new FormData(f));
+      $('#send').disabled = true;
+      try {
+        const r = await fetch('/shop/api/reservieren', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...fd, artikel: S.bag.map(b => ({ean: b.ean, menge: b.menge}))})});
+        const j = await r.json();
+        if (!r.ok) return openBag(j.fehler || 'Reservierung nicht möglich');
+        S.bag = []; saveBag();
+        open(`<div class="ok"><div class="ring">✓</div><h2 style="margin:0 0 6px">Danke, ${esc(fd.name)}!</h2><p style="margin:0 0 4px">Ihre Reservierung <b>${esc(j.nr)}</b> ist eingegangen.</p><p class="muted" style="margin:0 0 18px">Wir legen die Ware bis ${new Date(j.abholen_bis).toLocaleDateString('de-AT')} für Sie zurück und melden uns, sobald alles bereitliegt.</p><button class="btn sec" data-close>Weiter stöbern</button></div>`);
+        $('#sheet').onclick = ev => { if (ev.target.closest('[data-close]')) close(); };
+        load();
+      } catch { openBag('Keine Verbindung – bitte erneut versuchen'); }
+    };
+  }
+  $('#q').addEventListener('input', e => { S.q = e.target.value; render(); });
+  $('#cats').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (!b) return; S.cat = b.dataset.c; document.querySelectorAll('#cats .chip').forEach(x => x.setAttribute('aria-pressed', x === b)); render(); });
+  $('#grid').addEventListener('click', e => { const c = e.target.closest('[data-a]'); if (c) openArt(S.arts.find(a => a.id === c.dataset.a)); });
+  $('#bagBtn').addEventListener('click', () => openBag());
+  $('#ov').addEventListener('click', e => { if (e.target.id === 'ov') close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  load();
+})();
+</script>
+</body>
+</html>

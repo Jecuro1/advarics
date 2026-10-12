@@ -29,6 +29,8 @@ mod sales;
 mod updates;
 mod users;
 mod vouchers;
+mod vorgang;
+mod shop;
 
 use base64::Engine as _;
 use serde::Serialize;
@@ -1319,6 +1321,7 @@ fn verbund_info(db: State<db::Db>) -> Value {
     let g = |k: &str| db::setting_get(&c, k).unwrap_or(Value::Null);
     let rolle = verbund::rolle(&c);
     json!({ "rolle": rolle, "filiale": verbund::own_store(&c), "name": g("verbund.name"), "url": g("verbund.url"), "verbunden": !g("verbund.schluessel").is_null() && g("verbund.schluessel") != json!(""),
+        "ungemeldet": if rolle == "filiale" { c.query_row("SELECT COUNT(*) FROM sales WHERE id > ?1", [g("verbund.c_sale").as_i64().unwrap_or(0)], |r| r.get::<_, i64>(0)).unwrap_or(0) } else { 0 },
         "status": g("verbund.status"), "stores": if rolle == "zentrale" { verbund::overview(&c).map(|o| o["stores"].clone()).unwrap_or(json!([])) } else { g("verbund.umsatz") } })
 }
 #[tauri::command]
@@ -1569,6 +1572,120 @@ fn ext_remove(db: State<db::Db>, id: String) -> Res<Vec<Value>> {
     extensions::list(&c).map_err(err)
 }
 
+/* ── Vorgänge (Einkauf, Faktura, Reklamation, Reservierung, Auswahl, Kampagnen …) ── */
+
+#[tauri::command]
+fn doc_list(db: State<db::Db>, kinds: Vec<String>, status: Option<String>, limit: Option<i64>) -> Res<Vec<Value>> {
+    vorgang::list(&db.conn.lock().unwrap(), &kinds, status.as_deref(), limit.unwrap_or(1000))
+}
+#[tauri::command]
+fn doc_get(db: State<db::Db>, id: i64) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    let mut d = vorgang::get(&c, id)?;
+    d["log"] = json!(vorgang::log_list(&c, &[d["kind"].as_str().unwrap_or("").to_string()], 2000)?.into_iter().filter(|l| l["doc_id"] == d["id"]).collect::<Vec<_>>());
+    Ok(d)
+}
+#[tauri::command]
+fn doc_save(db: State<db::Db>, doc: Value, user: String) -> Res<Value> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let d = vorgang::save(&tx, &doc, &user)?;
+    tx.commit().map_err(err)?;
+    Ok(d)
+}
+#[tauri::command]
+fn doc_action(db: State<db::Db>, id: i64, action: String, payload: Option<Value>, user: String) -> Res<Value> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let d = vorgang::action(&tx, id, &action, &payload.unwrap_or(json!({})), &user)?;
+    tx.commit().map_err(err)?;
+    Ok(d)
+}
+#[tauri::command]
+fn doc_log(db: State<db::Db>, kinds: Vec<String>, limit: Option<i64>) -> Res<Vec<Value>> {
+    vorgang::log_list(&db.conn.lock().unwrap(), &kinds, limit.unwrap_or(500))
+}
+#[tauri::command]
+fn doc_reserved(db: State<db::Db>) -> Res<std::collections::HashMap<String, i64>> {
+    vorgang::reserved(&db.conn.lock().unwrap())
+}
+#[tauri::command]
+fn sale_assign(db: State<db::Db>, no: String, seller: Option<String>, customer: Option<Value>, user: String) -> Res<Value> {
+    let mut c = db.conn.lock().unwrap();
+    let tx = c.transaction().map_err(err)?;
+    let r = vorgang::sale_assign(&tx, no.trim(), seller.as_deref(), customer.as_ref(), &user)?;
+    tx.commit().map_err(err)?;
+    Ok(r)
+}
+#[tauri::command]
+fn po_set_type(db: State<db::Db>, id: i64, order_type: String) -> Res<()> {
+    purchasing::po_set_type(&db.conn.lock().unwrap(), id, &order_type)
+}
+#[tauri::command]
+fn purchase_volume(db: State<db::Db>, year: i32) -> Res<Vec<Value>> {
+    vorgang::purchase_volume(&db.conn.lock().unwrap(), year)
+}
+#[tauri::command]
+fn campaign_preview(db: State<db::Db>, segment: Value) -> Res<Value> {
+    let l = vorgang::segment(&db.conn.lock().unwrap(), &segment)?;
+    Ok(json!({ "anzahl": l.len(), "beispiele": l.iter().take(8).map(|k| json!({ "name": k.name, "email": k.email, "stufe": k.tier })).collect::<Vec<_>>() }))
+}
+#[tauri::command]
+async fn campaign_send(app: AppHandle, id: i64, user: String) -> Res<Value> {
+    let p = app.state::<db::Db>().path.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let c = db::open(&p).map_err(err)?;
+        let _ = c.busy_timeout(std::time::Duration::from_secs(10));
+        let cfg = mail_config(&c);
+        vorgang::campaign_send(&c, id, &cfg, &user)
+    })
+    .await
+    .map_err(err)?
+}
+#[tauri::command]
+fn campaign_stats(db: State<db::Db>, id: i64) -> Res<Value> {
+    vorgang::campaign_stats(&db.conn.lock().unwrap(), id)
+}
+/// Umsatz je Tag und Filiale (eigene Belege + gemeldete Belege der Filialen)
+#[tauri::command]
+fn store_revenue(db: State<db::Db>, days: i64) -> Res<Vec<Value>> {
+    let c = db.conn.lock().unwrap();
+    let since = (chrono::Local::now() - chrono::Duration::days(days.clamp(1, 400))).format("%Y-%m-%d").to_string();
+    let own = db::setting_get(&c, "verbund.filiale").and_then(|v| v.as_str().map(str::to_string)).filter(|s| !s.is_empty()).unwrap_or_else(|| "HIER".into());
+    let mut out = vec![];
+    let q = |sql: &str, store: Option<&str>| -> Res<Vec<Value>> {
+        let mut st = c.prepare(sql).map_err(err)?;
+        let rows = st
+            .query_map(rusqlite::params![since], |r| {
+                Ok(json!({ "store": store.map(str::to_string).unwrap_or(r.get::<_, String>(4)?), "date": r.get::<_, String>(0)?, "bons": r.get::<_, i64>(1)?, "umsatz": r.get::<_, i64>(2)?, "retouren": r.get::<_, i64>(3)? }))
+            })
+            .map_err(err)?;
+        rows.collect::<rusqlite::Result<Vec<_>>>().map_err(err)
+    };
+    out.extend(q("SELECT substr(ts,1,10), SUM(CASE WHEN COALESCE(json_extract(data,'$.kind'),'verkauf') = 'verkauf' THEN 1 ELSE 0 END), SUM(total), SUM(CASE WHEN total < 0 THEN -total ELSE 0 END), '' FROM sales WHERE substr(ts,1,10) >= ?1 GROUP BY 1", Some(&own))?);
+    out.extend(q("SELECT substr(ts,1,10), SUM(CASE WHEN kind = 'verkauf' THEN 1 ELSE 0 END), SUM(total), SUM(CASE WHEN total < 0 THEN -total ELSE 0 END), store FROM store_sales WHERE substr(ts,1,10) >= ?1 AND store <> (SELECT COALESCE(json_extract(value,'$'),'') FROM settings WHERE key = 'verbund.filiale') GROUP BY store, 1", None)?);
+    Ok(out)
+}
+/// Adresse im Standardbrowser öffnen (nur http/https)
+#[tauri::command]
+fn open_url(url: String) -> Res<()> {
+    if !(url.starts_with("http://") || url.starts_with("https://")) {
+        return Err("Nur http(s)-Adressen".into());
+    }
+    auth::open_browser(&url)
+}
+#[tauri::command]
+fn shop_status(app: AppHandle) -> Value {
+    let running = api::running(&app.state::<api::ApiState>());
+    let port = running.as_deref().and_then(|a| a.rsplit(':').next()).unwrap_or("8787").to_string();
+    let lan = running.as_deref().is_some_and(|a| a.starts_with("0.0.0.0"));
+    let mut urls = vec![format!("http://127.0.0.1:{port}/shop")];
+    if lan {
+        urls = mobile::local_ips().into_iter().map(|ip| format!("http://{ip}:{port}/shop")).chain(urls).collect();
+    }
+    json!({ "laeuft": running.is_some(), "netzwerk": lan, "urls": urls })
+}
+
 /// Vollbild / Kassen-Kiosk ein- oder ausschalten.
 #[tauri::command]
 fn set_fullscreen(window: tauri::WebviewWindow, on: bool) -> Res<bool> {
@@ -1660,6 +1777,21 @@ fn main() {
             ext_install,
             ext_enable,
             ext_remove,
+            doc_list,
+            doc_get,
+            doc_save,
+            doc_action,
+            doc_log,
+            doc_reserved,
+            sale_assign,
+            po_set_type,
+            purchase_volume,
+            campaign_preview,
+            campaign_send,
+            campaign_stats,
+            store_revenue,
+            shop_status,
+            open_url,
             audit_query,
             articles_import,
             customers_import,

@@ -36,7 +36,7 @@ function receiptOps(rec) {
     const v = l.service ? (l.meta || '') : `${COLORS[l.c]?.[0] || l.c || ''}${l.s && l.s !== 'Einheitsgröße' ? ' · ' + l.s : ''}`;
     if (v) ops.push({t: 'text', s: '  ' + v});
     if (CFG['bon.artikelnr'] && l.sku) ops.push({t: 'text', s: '  Art.-Nr. ' + l.sku});
-    if (!neg && l.disc) ops.push({t: 'lr', l: `  Rabatt ${l.disc.pct} %`, r: '-' + m2(r2(r2(l.unit * l.qty) * l.disc.pct / 100))});
+    if (!neg && l.disc) ops.push({t: 'lr', l: `  Rabatt ${num(l.disc.pct, Number.isInteger(+l.disc.pct) ? 0 : 1)} %${l.disc.reason ? ' ' + l.disc.reason : ''}`, r: '-' + m2(r2(r2(l.unit * l.qty) * l.disc.pct / 100))});
   });
   if (!neg && rec.billDisc) ops.push({t: 'lr', l: `Bonrabatt ${rec.billDisc.pct} %`, r: '-' + m2(r2(rec.t.disc - (rec.lines || []).reduce((s, l) => s + (l.disc ? r2(r2(l.unit * l.qty) * l.disc.pct / 100) : 0), 0)))});
   ops.push({t: 'line'}, {t: 'lr', l: neg ? 'ERSTATTUNG EUR' : 'SUMME EUR', r: m2(rec.t.total), b: true}, {t: 'line'});

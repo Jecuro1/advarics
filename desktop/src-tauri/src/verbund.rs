@@ -15,6 +15,8 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 pub const ROLLEN: [&str; 3] = ["einzel", "zentrale", "filiale"];
+/// Einstellungen, die die Zentrale an alle Filialen verteilt
+pub const SHARED: [&str; 6] = ["rabatt.regeln", "retoure.gruende", "order.typen", "order.vorschlag", "praemien.regeln", "verteilung.schluessel"];
 
 fn s(c: &Connection, k: &str) -> String {
     db::setting_get(c, k).map(|v| v.as_str().map(str::to_string).unwrap_or_else(|| v.to_string())).unwrap_or_default()
@@ -327,7 +329,8 @@ pub fn handle(c: &Connection, method: &str, path: &str, key: &str, body: &Value,
             }
             Ok(json!({ "now": db::now(), "articles": arts, "inactive": gone, "customers": custs, "promotions": promos, "suppliers": suppliers,
                 "stores": stores_list, "stock": stock_matrix(c).map_err(e5)?, "transfers": transfers(c, Some(&store)).map_err(|e| e5(e.to_string()))?,
-                "firma": { "name": s(c, "firma.name") }, "umsatz": umsatz }))
+                "firma": { "name": s(c, "firma.name") }, "umsatz": umsatz,
+                "einstellungen": SHARED.iter().filter_map(|k| db::setting_get(c, k).map(|v| (k.to_string(), v))).collect::<serde_json::Map<String, Value>>() }))
         }
         ("POST", "/sync/v1/umlagerung") => {
             let t = transfer_create(c, body["from"].as_str().unwrap_or(""), body["to"].as_str().unwrap_or(&store), &body["lines"], body["note"].as_str().unwrap_or(""), body["user"].as_str().unwrap_or(&store)).map_err(|e| (400, e))?;
@@ -459,6 +462,12 @@ pub fn sync_once(c: &Connection) -> Result<Value, String> {
                 params![x["id"].as_i64(), x["name"].as_str(), x["pct"].as_i64(), x["scope"].as_str(), x["scope_values"].as_str(), x["from_date"].as_str(), x["to_date"].as_str(), x["active"].as_i64(), db::now()],
             )
             .map_err(|e| e.to_string())?;
+        }
+    }
+    // gemeinsame Einstellungen der Zentrale (Rabattregeln, Rückgabegründe, Order-Typen …)
+    if let Some(m) = p["einstellungen"].as_object() {
+        for (k, v) in m.iter().filter(|(k, _)| SHARED.contains(&k.as_str())) {
+            db::setting_set(&tx, k, v).map_err(|e| e.to_string())?;
         }
     }
     if let Some(sp) = p["suppliers"].as_array() {

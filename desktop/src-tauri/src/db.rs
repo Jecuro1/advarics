@@ -453,6 +453,41 @@ const MIGRATIONS: &[&str] = &[
     ALTER TABLE users ADD COLUMN hello INTEGER NOT NULL DEFAULT 0;
     INSERT INTO counters(name, value) VALUES ('umlagerung', 0);
     "#,
+    // 8 · Vorgänge (Einkauf, Faktura, Reklamation, Reservierung …), Order-Typen, Lieferanten-Bankdaten
+    r#"
+    CREATE TABLE docs (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        kind         TEXT NOT NULL,
+        no           TEXT NOT NULL UNIQUE,
+        status       TEXT NOT NULL,
+        partner      TEXT,
+        partner_name TEXT NOT NULL DEFAULT '',
+        ref          TEXT NOT NULL DEFAULT '',
+        date         TEXT NOT NULL,
+        due          TEXT,
+        total        INTEGER NOT NULL DEFAULT 0,
+        open         INTEGER NOT NULL DEFAULT 0,
+        data         TEXT NOT NULL DEFAULT '{}',
+        created_at   TEXT NOT NULL,
+        updated_at   TEXT NOT NULL,
+        user         TEXT
+    );
+    CREATE INDEX docs_kind ON docs(kind, status);
+    CREATE TABLE doc_log (
+        id     INTEGER PRIMARY KEY AUTOINCREMENT,
+        doc_id INTEGER NOT NULL,
+        kind   TEXT NOT NULL,
+        no     TEXT NOT NULL,
+        ts     TEXT NOT NULL,
+        user   TEXT,
+        action TEXT NOT NULL,
+        detail TEXT NOT NULL DEFAULT '{}'
+    );
+    CREATE INDEX doc_log_kind ON doc_log(kind, id);
+    ALTER TABLE purchase_orders ADD COLUMN order_type TEXT NOT NULL DEFAULT '';
+    ALTER TABLE suppliers ADD COLUMN iban TEXT NOT NULL DEFAULT '';
+    ALTER TABLE suppliers ADD COLUMN bic TEXT NOT NULL DEFAULT '';
+    "#,
 
 ];
 

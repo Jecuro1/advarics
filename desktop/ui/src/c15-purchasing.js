@@ -37,7 +37,7 @@ async function renderEinkauf() {
 function renderEkBody() {
   const b = $('#ekBody'); if (!b) return;
   if (EK.tab === 'bestellungen') {
-    b.innerHTML = `<div class="card">${EK.pos.length ? `<table class="tbl art-tbl"><thead><tr><th style="padding-left:16px">Bestellung</th><th>Lieferant</th><th>Status</th><th class="r">Positionen</th><th class="r">Geliefert</th><th class="r">Wert (EK)</th><th>Datum</th><th></th></tr></thead><tbody>${EK.pos.map(p => `<tr data-po="${p.id}"><td style="padding-left:16px"><b>${esc(p.no)}</b>${p.note ? `<div class="muted" style="font-size:12px">${esc(p.note)}</div>` : ''}</td><td>${esc(p.supplier)}</td><td><span class="pill ${PO_ST[p.status]?.[1] || ''}" style="height:20px">${PO_ST[p.status]?.[0] || p.status}</span></td><td class="r num">${p.lines}</td><td class="r num">${num(p.received)} / ${num(p.qty)}</td><td class="r"><b>${eur(p.value / 100)}</b></td><td class="muted">${esc(fmtTs(p.ordered_at || p.created_at))}</td><td class="r" style="padding-right:14px;color:var(--text-3)">${ic('chevron-right', 'i-sm')}</td></tr>`).join('')}</tbody></table>`
+    b.innerHTML = `<div class="card">${EK.pos.length ? `<table class="tbl art-tbl"><thead><tr><th style="padding-left:16px">Bestellung</th><th>Typ</th><th>Lieferant</th><th>Status</th><th class="r">Positionen</th><th class="r">Geliefert</th><th class="r">Wert (EK)</th><th>Datum</th><th></th></tr></thead><tbody>${EK.pos.map(p => `<tr data-po="${p.id}"><td style="padding-left:16px"><b>${esc(p.no)}</b>${p.note ? `<div class="muted" style="font-size:12px">${esc(p.note)}</div>` : ''}</td><td>${p.order_type ? `<span class="pill" style="height:20px">${esc(p.order_type)}</span>` : '<span class="muted">–</span>'}</td><td>${esc(p.supplier)}</td><td><span class="pill ${PO_ST[p.status]?.[1] || ''}" style="height:20px">${PO_ST[p.status]?.[0] || p.status}</span></td><td class="r num">${p.lines}</td><td class="r num">${num(p.received)} / ${num(p.qty)}</td><td class="r"><b>${eur(p.value / 100)}</b></td><td class="muted">${esc(fmtTs(p.ordered_at || p.created_at))}</td><td class="r" style="padding-right:14px;color:var(--text-3)">${ic('chevron-right', 'i-sm')}</td></tr>`).join('')}</tbody></table>`
       : `<div class="empty" style="padding:56px 20px"><div class="empty-icon">${ic('truck')}</div><h3>Noch keine Bestellungen</h3><p>Neue Bestellung anlegen oder aus dem Bestellvorschlag übernehmen.</p></div>`}</div>`;
   } else if (EK.tab === 'vorschlag') {
     const groups = {}; EK.sug.forEach(s => (groups[s.supplier_id || ''] ||= []).push(s));
@@ -85,7 +85,7 @@ async function openPO(id, preset) {
   if (id) { try { lines = await invoke('po_lines', {id}); } catch (e) { return toast('Bestellung nicht verfügbar', {t2: String(e), type: 'warn'}); } }
   else if (preset) lines = preset.lines;
   const draft = !head || head.status === 'entwurf';
-  const st = {supplier: head?.supplier_id || preset?.supplier || SUPPLIERS[0]?.id || '', note: head?.note || '', lines: lines.map(l => ({...l, costE: l.cost != null ? num(l.cost / 100, 2) : ''})), q: ''};
+  const st = {supplier: head?.supplier_id || preset?.supplier || SUPPLIERS[0]?.id || '', note: head?.note || '', type: head?.order_type ?? preset?.type ?? (orderTypes()[0]?.name || ''), lines: lines.map(l => ({...l, costE: l.cost != null ? num(l.cost / 100, 2) : ''})), q: ''};
   const el = openLayer(`<div class="drawer-panel" style="width:min(760px,100%)" role="dialog" aria-modal="true" aria-label="Bestellung"><div id="poBody" style="display:flex;flex-direction:column;min-height:0;flex:1"></div></div>`, {cls: 'drawer'});
   const box = $('#poBody', el);
   const total = () => st.lines.reduce((s, l) => s + (parseAmt(l.costE) || 0) * (parseInt(l.qty, 10) || 0), 0);
@@ -94,7 +94,8 @@ async function openPO(id, preset) {
     box.innerHTML = `<div class="m-head" style="padding-bottom:12px"><div class="m-ic">${ic('truck')}</div><div><h2>${head ? esc(head.no) : 'Neue Bestellung'}</h2><p>${head ? `${PO_ST[head.status][0]} · angelegt ${esc(fmtTs(head.created_at))}${head.user ? ' von ' + esc(head.user) : ''}` : 'Entwurf – wird erst mit „Bestellen“ verbindlich'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
       <div class="drawer-body" style="display:grid;gap:14px;align-content:start">
         <div class="ed-grid"><label class="field"><span>Lieferant</span><select class="input select" id="poSup" ${draft ? '' : 'disabled'}>${SUPPLIERS.map(s => `<option value="${esc(s.id)}" ${s.id === st.supplier ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>
-          <label class="field"><span>Notiz</span><input class="input" id="poNote" value="${esc(st.note)}" ${draft ? '' : 'readonly'} placeholder="z. B. Saisonvororder"></label></div>
+          <label class="field"><span>Order-Typ</span><select class="input select" id="poType" ${draft ? '' : 'disabled'}><option value="">–</option>${orderTypes().map(t => `<option ${t.name === st.type ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
+          <label class="field full"><span>Notiz</span><input class="input" id="poNote" value="${esc(st.note)}" ${draft ? '' : 'readonly'} placeholder="z. B. Saisonvororder"></label></div>
         ${draft ? `<div style="position:relative"><label class="search-field" style="height:42px">${ic('search')}<input id="poQ" placeholder="Artikel, Farbe, Größe oder EAN hinzufügen …" value="${esc(st.q)}" autocomplete="off"></label>
           ${st.q ? `<div class="card" style="position:absolute;left:0;right:0;top:46px;z-index:5;overflow:hidden;box-shadow:var(--shadow-3)">${hits().map(({a, v}) => `<button class="pal-i" style="height:46px;border-radius:0" data-addv="${v.vid}"><span style="flex:1;text-align:left"><b>${esc(a.name)}</b> <span class="muted">· ${esc(colorName(v.c))} · ${esc(v.s)} · Bestand ${v.q}</span></span><span class="muted">${a.cost != null ? eur(a.cost) : ''}</span></button>`).join('') || '<div class="muted" style="padding:12px">Kein Treffer</div>'}</div>` : ''}</div>` : ''}
         <div class="card" style="overflow:hidden">${st.lines.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:14px">Artikel</th><th class="r">Bestand</th><th class="r">${draft ? 'Menge' : 'geliefert / bestellt'}</th><th class="r">EK netto</th><th class="r" style="padding-right:14px">Summe</th>${draft ? '<th></th>' : ''}</tr></thead><tbody>${st.lines.map((l, i) => { const x = varById(l.variant_id); return `<tr><td style="padding-left:14px"><b>${esc(l.name || x?.a.name || '')}</b><div class="muted" style="font-size:12px">${esc(colorName(l.color || x?.v.c))} · ${esc(l.size || x?.v.s)}</div></td><td class="r num">${x ? x.v.q : l.stock ?? '–'}</td>
@@ -111,13 +112,13 @@ async function openPO(id, preset) {
           : ['bestellt', 'teilgeliefert'].includes(head.status) ? `<button class="btn btn-primary" id="poRecv">${ic('boxes', 'i-sm')}Wareneingang buchen</button>` : '<button class="btn btn-secondary" data-close>Schließen</button>'}</div>`;
     if (st.q) { const q = $('#poQ', box); q.focus(); q.setSelectionRange(st.q.length, st.q.length); }
   };
-  const sync = () => { const s = $('#poSup', box), n = $('#poNote', box); if (s) st.supplier = s.value; if (n) st.note = n.value; };
+  const sync = () => { const s = $('#poSup', box), n = $('#poNote', box), t = $('#poType', box); if (s) st.supplier = s.value; if (n) st.note = n.value; if (t) st.type = t.value; };
   const save = async () => {
     sync();
     if (!st.supplier) { toast('Lieferant wählen', {type: 'warn'}); return null; }
     const ls = st.lines.map(l => ({variant_id: l.variant_id, qty: parseInt(l.qty, 10) || 0, cost: l.costE !== '' && isFinite(parseAmt(l.costE)) ? Math.round(parseAmt(l.costE) * 100) : null})).filter(l => l.qty > 0);
     if (!ls.length) { toast('Mindestens eine Position mit Menge', {type: 'warn'}); return null; }
-    try { const nid = await invoke('po_save', {id: head?.id ?? null, supplier: st.supplier, note: st.note, lines: ls, user: S.user.name}); await loadPurchasing(); head = EK.pos.find(p => p.id === nid); return nid; }
+    try { const nid = await invoke('po_save', {id: head?.id ?? null, supplier: st.supplier, note: st.note, lines: ls, user: S.user.name}); await invoke('po_set_type', {id: nid, orderType: st.type || ''}); await loadPurchasing(); head = EK.pos.find(p => p.id === nid); return nid; }
     catch (e) { toast('Speichern fehlgeschlagen', {t2: String(e), type: 'warn'}); return null; }
   };
   box.addEventListener('input', e => {
