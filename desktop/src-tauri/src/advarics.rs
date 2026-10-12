@@ -351,6 +351,26 @@ pub fn groessenschluessel_seed(c: &mut Connection) -> Result<(), String> {
     Ok(())
 }
 
+/// Zuordnung der Größen zu Advarics-Größenschlüsseln (Schlüssel-Nr., Größen) – füllt nur Schlüssel, die noch leer sind
+const GS_ZUORDNUNG: [(i64, &[&str]); 1] = [(2, &["XXS", "XXS/XS", "XS", "XS/S", "S", "S-M", "S/M", "M", "M/L", "L", "L-XL", "L/XL", "XL", "XL/XXL", "XXL", "XXXL"])];
+
+pub fn groessenschluessel_zuordnung(c: &mut Connection) -> Result<(), String> {
+    if db::setting_get(c, "groessenschluessel.zuordnung.v1").and_then(|v| v.as_bool()).unwrap_or(false) {
+        return Ok(());
+    }
+    for (nr, list) in GS_ZUORDNUNG {
+        let cur: Option<String> = c.query_row("SELECT data FROM stamm WHERE kind = 'groessenschluessel' AND id = ?1", [format!("gs-{nr}")], |r| r.get(0)).optional().map_err(|e| e.to_string())?;
+        let Some(cur) = cur else { continue };
+        let mut v: Value = serde_json::from_str(&cur).unwrap_or(json!({}));
+        if v["groessen"].as_array().map(|a| a.is_empty()).unwrap_or(true) {
+            v["groessen"] = json!(list);
+            c.execute("UPDATE stamm SET data = ?2, updated_at = ?3 WHERE kind = 'groessenschluessel' AND id = ?1", params![format!("gs-{nr}"), v.to_string(), db::now()]).map_err(|e| e.to_string())?;
+        }
+    }
+    db::setting_set(c, "groessenschluessel.zuordnung.v1", &json!(true)).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 /// Artikel mit alten Standard-Warengruppen (Demo) den Advarics-Gruppen zuordnen
 pub fn wg_remap(c: &Connection) -> usize {
     let now = db::now();

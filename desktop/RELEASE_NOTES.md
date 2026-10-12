@@ -1,3 +1,7 @@
+## Neu in 0.23.1
+
+- Größenschlüssel „2 Unisex“ hat jetzt seine 16 Advarics-Größen (XXS … XXXL); leere Schlüssel werden beim Start damit befüllt, bereits bearbeitete bleiben unberührt.
+
 ## Neu in 0.23.0
 
 - Größenschlüssel bearbeiten wie in Advarics: eigene Seite mit Werkzeugleiste (Übersicht, Aktualisieren, Sichern, Neu, Änderungen zurücknehmen, Löschen), Navigation durch alle Schlüssel und den Reitern Allgemein (Nr., Bezeichnung, Zugeordnet / Nicht zugeordnet mit Größe, Sortierungsnr., Größe 1/2 – Doppelklick ordnet zu oder entfernt) und Statistikgrößen (Statistik-Größe je Größe).
