@@ -1,3 +1,7 @@
+## Neu in 0.23.9
+
+- Größenschlüssel 20 Snowboard Länge Erw. (9), 21 Ski Alpin Länge Kids (16), 22 Ski Alpin Länge Erw. (19) und 23 Socken Kids (11) mit ihren Advarics-Größen.
+
 ## Neu in 0.23.8
 
 - Größenschlüssel 15 Handschuhe Erw. (14), 16 Skistöcke Kids (8), 17 Skistöcke Erw. (10), 18 Snowboardbindungen (4) und 19 Snowboard Länge Kids (10) mit ihren Advarics-Größen.

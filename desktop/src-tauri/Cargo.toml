@@ -1,6 +1,6 @@
 [package]
 name = "kontor"
-version = "0.23.8"
+version = "0.23.9"
 description = "Kontor – Warenwirtschaft & Kasse (On-Premise)"
 authors = ["Kontor"]
 edition = "2021"
