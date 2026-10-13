@@ -1708,6 +1708,21 @@ button.ge-caret:hover{background:var(--surface-3);color:var(--text)}
 .ge-seg button.ja[aria-pressed="true"]{background:color-mix(in srgb,var(--pos) 16%,var(--surface));color:var(--pos)}
 .ge-seg button.nein[aria-pressed="true"]{background:color-mix(in srgb,var(--neg) 14%,var(--surface));color:var(--neg)}
 @media (max-width:720px){.ge-row{padding-left:calc(8px + var(--d,0)*14px)}.ge-perm{grid-template-columns:minmax(0,1fr)}.ge-seg{width:100%}.ge-seg button{flex:1}.ge-th,.ge-row{grid-template-columns:minmax(0,1fr) 64px 56px}}
+.zp-cols{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),560px))}
+.zp-grp{display:grid;gap:10px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.zp-grp>b{font-size:13.5px;font-weight:650}.zp-grp>b small{font-weight:500;color:var(--text-3);margin-left:6px;font-size:12.5px}
+.zp-grp .ue-sw .ea-sw{min-height:30px}
+.zp-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.zp-bad .input{border-color:var(--neg);box-shadow:0 0 0 3px color-mix(in srgb,var(--neg) 14%,transparent)}
+.zp-bad>span{color:var(--neg)}
+.zp-err{display:block;margin-top:3px;font-size:12.5px;color:var(--neg);line-height:1.4}
+.zp-test{display:grid;gap:12px}
+.zp-test-row{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1.3fr);gap:12px}
+.zp-res{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;font-size:13.5px;font-weight:550;background:var(--surface-2);border:1px solid var(--line);color:var(--text-2)}
+.zp-res.ok{background:var(--pos-soft);border-color:color-mix(in srgb,var(--pos) 30%,transparent);color:var(--pos)}
+.zp-res.no{background:var(--neg-soft);border-color:color-mix(in srgb,var(--neg) 30%,transparent);color:var(--neg)}
+@media (max-width:720px){.zp-pair,.zp-test-row{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){.ae-two{flex-direction:column}.ae-two [data-aeg]{min-height:320px}}   /* Zuordnungslisten (Zugeordnet / Nicht zugeordnet) auf schmalen Bildschirmen untereinander */
 /* Dialoge: Titel oben und Schaltflächen unten bleiben sichtbar – gescrollt wird nur der Inhalt (z. B. Hinweise beim Update) */
 .modal .m-head{position:sticky;top:0;z-index:4;background:var(--surface)}
 .modal .m-foot{position:sticky;bottom:0;z-index:4;background:var(--surface);border-top:1px solid var(--line);margin-top:2px;padding-top:12px}

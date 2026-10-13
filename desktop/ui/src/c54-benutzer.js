@@ -150,7 +150,7 @@ function usrAllg() {
       ${ueSw('verkaeufer', 'Verkäufer:in', {hint: 'Kann an der Kasse je Position und bei der Bon-Zuordnung als Verkäufer:in gewählt werden.'})}
       ${ueSw('mobil', 'Kontor mobil', {hint: 'Darf sich am Handy/Tablet anmelden (Einstellungen › Handy & Tablet).'})}</div>`, 'ue-one')}
     ${ueCard('Profil', `${ueSel('gruppe', 'Benutzergruppe', gr.map(x => [x.id, x.name || x.id]), {leer: '– keine –', go: 'st-benutzergruppe', hint: 'Beim Zuordnen wird die Rolle der Gruppe vorgeschlagen.'})}
-      ${ueSel('zugang', 'Zugangsprofil', zp.map(x => [x.id, x.name || x.id]), {leer: '– jederzeit –', go: 'st-zugangsprofil', hint: 'Legt fest, an welchen Wochentagen und zu welchen Uhrzeiten die Anmeldung möglich ist (Administratoren ausgenommen).'})}`, 'ue-one')}
+      ${ueSel('zugang', 'Zugangsprofil', zp.map(x => [x.id, x.name || x.id]), {leer: '– jederzeit –', go: 'st-zugangsprofil', hint: 'Legt fest, zu welchen Zeiten (Arbeitstag, Wochenende) und von welchen IP-Adressen die Anmeldung möglich ist (Administratoren ausgenommen).'})}`, 'ue-one')}
     </div>
     ${ueCard('Kontaktdaten', `<div class="ue-pair">${kontakt(ueIn('tel', 'Telefon Firma'), ueIn('handy', 'Mobil Firma'), ueIn('email', 'E-Mail Firma', {type: 'email', hint: 'Empfängt E-Mail-Meldungen (Reiter „Benachrichtigungen“).'}))}${kontakt(ueIn('telPriv', 'Telefon privat'), ueIn('handyPriv', 'Mobil privat'), ueIn('emailPriv', 'E-Mail privat', {type: 'email'}))}</div>`, 'ue-kontakt ue-one')}
   </div>`};

@@ -2,6 +2,7 @@
 // Ohne Konsolenfenster im Release-Build.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod access;
 mod accounting;
 mod ai;
 mod api;
@@ -1379,6 +1380,12 @@ fn mobile_info(app: AppHandle) -> Value {
         "lan": g("api.lan").and_then(|v| v.as_bool()).unwrap_or(false), "port": g("api.port").and_then(|v| v.as_u64()).unwrap_or(8787) })
 }
 
+/// Netzwerk-Adressen dieses Arbeitsplatzes (für die Prüfung von Zugangsprofilen)
+#[tauri::command]
+fn access_ips() -> Vec<String> {
+    mobile::local_ips()
+}
+
 /* ── Paket 8: Filialverbund ── */
 
 #[tauri::command]
@@ -2131,6 +2138,7 @@ fn main() {
             fedas_sync,
             fedas_import_file,
             stamm_list,
+            access_ips,
             stamm_all,
             stamm_save,
             zeit_stempel,

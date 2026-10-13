@@ -69,6 +69,7 @@ function lock() {
     <div class="lock-card" id="lockCard"></div>
     <div class="lock-foot" id="lockFoot">${DESKTOP ? `<span style="display:inline-flex;gap:6px;align-items:center">${ic('shield', 'i-xs')}PIN-Anmeldung · lokal geprüft</span>` : `<span>Vorschau: jede PIN außer 0000</span>`}</div></div>`;
   document.body.appendChild(el);
+  if (typeof zpNetLoad === 'function') zpNetLoad();   // Adresse dieses Arbeitsplatzes für das Zugangsprofil
   if (DESKTOP) invoke('users_default_pins').then(l => { if (l.length && $('#lockFoot', el)) $('#lockFoot', el).insertAdjacentHTML('beforeend', `<span>·</span><span style="color:var(--warn)">Erst-PIN noch aktiv: ${esc(l.join(' · '))} – bitte unter Stammdaten → Benutzer ändern</span>`); }).catch(() => {});
   const card = $('#lockCard', el);
   const renderCard = msg => {
@@ -81,8 +82,9 @@ function lock() {
   };
   const dots = () => $$('#lockDots i', el).forEach((d, i) => d.classList.toggle('on', i < pin.length));
   const unlock = method => {
-    if (typeof accessAllowed === 'function' && !accessAllowed(user.name, user.roleKey)) { Hooks.emit('auth.denied', {benutzer: user.name, grund: 'Zugangsprofil'}); pin = ''; renderCard('Anmeldung zu dieser Zeit nicht erlaubt (Zugangsprofil)'); return; }
-    if (!userAtThisFiliale(user)) { Hooks.emit('auth.denied', {benutzer: user.name, grund: 'Filiale'}); pin = ''; renderCard('Keine Anmeldung an dieser Filiale (Zuordnung unter Benutzer › Zugeordnete Filialen)'); return; }
+    const zg = typeof accessCheck === 'function' ? accessCheck(user.name, user.roleKey) : {ok: true};
+    if (!zg.ok) { busy = false; Hooks.emit('auth.denied', {benutzer: user.name, grund: 'Zugangsprofil'}); pin = ''; renderCard(zg.grund || 'Anmeldung nicht erlaubt (Zugangsprofil)'); return; }
+    if (!userAtThisFiliale(user)) { busy = false; Hooks.emit('auth.denied', {benutzer: user.name, grund: 'Filiale'}); pin = ''; renderCard('Keine Anmeldung an dieser Filiale (Zuordnung unter Benutzer › Zugeordnete Filialen)'); return; }
     busy = true; S.user = user; S.locked = false; S.started = true;
     Hooks.emit('auth.login', {benutzer: user.name, rolle: user.role, methode: method, kasse: CFG['kasse.id']});
     el.classList.add('closing'); setTimeout(() => el.remove(), 320);

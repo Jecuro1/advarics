@@ -111,6 +111,7 @@ fn search(c: &Connection, q: &str) -> Result<Vec<Value>, String> {
 
 pub fn handle(c: &Connection, mut req: Request, path: &str) {
     let method = req.method().clone();
+    let peer = crate::access::peer_ip(req.remote_addr().map(|a| a.ip()));
     if path == "/mobil" || path == "/mobil/index.html" {
         let r = Response::from_string(PAGE).with_header(Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..]).unwrap());
         let _ = req.respond(r);
@@ -140,6 +141,11 @@ pub fn handle(c: &Connection, mut req: Request, path: &str) {
                     json_reply(req, 403, json!({ "fehler": "Für „Kontor mobil“ nicht freigegeben – bitte an die Administration wenden" }))
                 }
                 Ok(u) => {
+                    // Zugangsprofil: Anmeldung nur aus dem erlaubten IP-Bereich und zu den erlaubten Zeiten
+                    if let Err(grund) = crate::access::check(c, &u.name, &u.role, &peer, chrono::Local::now().naive_local()) {
+                        let _ = db::audit_append(c, "auth.login.failed", &json!({ "benutzer": u.name, "methode": "PIN · Handy", "grund": grund }));
+                        return json_reply(req, 403, json!({ "fehler": grund }));
+                    }
                     let mut b = [0u8; 24];
                     OsRng.fill_bytes(&mut b);
                     let tok: String = b.iter().map(|x| format!("{x:02x}")).collect();

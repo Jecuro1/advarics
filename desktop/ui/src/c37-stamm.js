@@ -22,7 +22,8 @@ const STAMM_DEF = {
   // ── Benutzer
   benutzergruppe: {t: 'Benutzergruppen', ic: 'users', sub: 'Gruppen von Personen (Mitglieder werden unter Benutzer zugeordnet) – die Rolle wird beim Zuordnen vorgeschlagen', cols: [{k: 'name', l: 'Gruppe'}, {k: 'beschreibung', l: 'Beschreibung'}, {k: 'rolle', l: 'Rolle', t: 'select', o: () => Object.entries(ROLE_NAMES).map(([k, v]) => [k, v])}, {k: 'mitglieder', l: 'Mitglieder', t: 'list', w: 260}, {k: 'filialen', l: 'Filialen', t: 'list'}],
     seed: [{id: 'KASSE', name: 'Kassenpersonal', rolle: 'verkauf', mitglieder: [], filialen: []}, {id: 'LEITUNG', name: 'Filialleitung', rolle: 'leitung', mitglieder: [], filialen: []}]},
-  zugangsprofil: {t: 'Zugangsprofil', ic: 'lock', sub: 'Wann sich wer anmelden darf – Wochentage und Uhrzeiten; außerhalb wird die Anmeldung abgelehnt (Administratoren ausgenommen)', cols: [{k: 'name', l: 'Profil'}, {k: 'benutzer', l: 'Benutzer', t: 'list', w: 220}, {k: 'tage', l: 'Wochentage', t: 'list', ph: 'Mo,Di,Mi,Do,Fr,Sa'}, {k: 'von', l: 'von', t: 'time'}, {k: 'bis', l: 'bis', t: 'time'}]},
+  zugangsprofil: {t: 'Zugangsprofil', ic: 'lock', sub: 'Wann und von wo sich wer anmelden darf – IP-Bereich, Arbeitstag und Wochenende; außerhalb wird die Anmeldung abgelehnt (Administratoren ausgenommen)', cols: [{k: 'name', l: 'Name'}, {k: 'ip_von', l: 'IP Bereich von'}, {k: 'ip_bis', l: 'IP Bereich bis'}, {k: 'wt_von', l: 'Arbeitstag von', t: 'time'}, {k: 'wt_bis', l: 'Arbeitstag bis', t: 'time'}, {k: 'we_von', l: 'Wochenende von', t: 'time'}, {k: 'we_bis', l: 'Wochenende bis', t: 'time'}, {k: 'benutzer', l: 'Benutzer', t: 'list', w: 220}],
+    seed: [{id: 'STANDARD', name: 'Standard', ip_von: '0.0.0.0', ip_bis: '255.255.255.255', wt_ok: true, wt_von: '00:00', wt_bis: '00:00', we_ok: true, we_von: '00:00', we_bis: '00:00', benutzer: []}]},
   meldung: {t: 'Zuordnung Meldungen', ic: 'bell', sub: 'Wer bei welchem Ereignis benachrichtigt wird – Hinweis in Kontor oder E-Mail', cols: [{k: 'ereignis', l: 'Ereignis', t: 'select', o: () => MELD_EVT}, {k: 'empfaenger', l: 'Empfänger (Benutzer)', t: 'select', o: userOpts}, {k: 'email', l: 'E-Mail (leer = E-Mail Firma der Person)'}, {k: 'kanal', l: 'Kanal', t: 'select', o: [['hinweis', 'Hinweis'], ['mail', 'E-Mail'], ['beides', 'Hinweis + E-Mail']]}]},
   // ── Filialen
   filialgruppe: {t: 'Filialengruppe', ic: 'store', sub: 'Filialen gruppieren (Region, Format) – für Auswertungen und Umlagerungen', cols: [{k: 'name', l: 'Gruppe'}, {k: 'filialen', l: 'Filialen (Kürzel)', t: 'list', w: 280}, {k: 'leitung', l: 'Verantwortlich'}]},
@@ -291,14 +292,7 @@ function roundPrice(p) {
   return Math.max(e, Math.floor(p / base) * base + e);
 }
 
-/* ── Zugangsprofil: Anmeldung nur in erlaubten Zeiten ── */
-function accessAllowed(name, roleKey) {
-  if (roleKey === 'admin') return true;
-  const ps = stActive('zugangsprofil').filter(p => (p.benutzer || []).some(b => norm(b) === norm(name)));
-  if (!ps.length) return true;
-  const d = new Date(), tag = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][d.getDay()], hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  return ps.some(p => (!(p.tage || []).length || p.tage.some(t => norm(t).startsWith(norm(tag)))) && (!p.von || hm >= p.von) && (!p.bis || hm <= p.bis));
-}
+/* Zugangsprofil: Prüfung der Anmeldung (accessCheck) steht in c55a-zugangsprofil.js */
 
 /* ── Zuordnung Meldungen: Ereignisse an Personen melden ── */
 function bindMeldungen() {

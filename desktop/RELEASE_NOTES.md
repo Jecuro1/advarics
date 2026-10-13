@@ -1,3 +1,13 @@
+## Neu in 0.39.0
+
+- **Stammdaten › Benutzer › Zugangsprofil – Liste und Maske nach dem Advarics-Vorbild.** Die Liste hat Zurück, Aktualisieren, Neu, Gruppierleiste, Suche, Spalten-Auswahl, automatische Spaltenbreite, Export und Filter. Die Maske „Zugangsprofil“ hat die Leisten Übersicht, Aktualisieren, Sichern, Neu, Änderungen zurücknehmen und Löschen und die Reiter **Allgemein** und **Zugeordnete User**.
+  - **Allgemein:** Name, IP Bereich von/bis, Arbeitstag-Start/-End-Zeit, Wochenend-Start/-End-Zeit (Pflichtangaben mit Fehlermeldung am Feld und Zähler am Reiter). Zusätzlich je Tagesart ein Schalter „Anmeldung erlaubt“. Rechts steht, was das Profil bewirkt, mit dem Ergebnis für „jetzt“, und eine Prüfbox: Wochentag, Uhrzeit und Adresse eingeben und sehen, ob die Anmeldung erlaubt wäre.
+  - **Zugeordnete User:** Spalten Nr., Name, Vorname, Aktiv, Benutzergruppe; zwei Listen „Zugeordnet / Nicht zugeordnet“, Zeilen ziehen oder doppelklicken. Eine Person gehört zu höchstens einem Profil.
+  - **Wirkung:** Wer einem Profil zugeordnet ist, kann sich nur aus dem IP-Bereich und in den Zeitfenstern anmelden – am Sperrbildschirm (Adresse dieses Arbeitsplatzes) und am Handy (Adresse des Geräts). 00:00–00:00 heißt ganztägig, ein Ende vor dem Start läuft über Mitternacht. Administratoren sind ausgenommen. Ohne Netzwerk-Adresse am Arbeitsplatz gilt nur die Zeit, damit ein Netzausfall niemanden aussperrt. Die Ablehnung nennt den Grund und steht im Protokoll.
+  - Bisherige Profile (Wochentage und von/bis) werden übernommen. Änderungen verlangen die Freigabe eines Administrators.
+- **Sperrbildschirm:** Nach einer abgelehnten Anmeldung (Zugangsprofil oder Filiale) ließ sich keine andere Person mehr anmelden, der Bildschirm reagierte nicht mehr. Behoben.
+- **Zuordnungslisten auf schmalen Bildschirmen:** „Zugeordnet“ und „Nicht zugeordnet“ stehen unter 760 Pixel Breite untereinander statt winzig nebeneinander (gilt für alle Masken mit Zuordnungslisten).
+
 ## Neu in 0.38.5
 
 - **Auch außerhalb des Menüs nur, was ohne PIN-Freigabe geht.** Weitere Einstiege, die bisher erst nach einer Freigabe etwas geöffnet hätten, erscheinen nur noch mit dem passenden Recht (Rolle und Benutzergruppe zählen, Administratoren sehen alles):
