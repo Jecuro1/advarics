@@ -491,7 +491,7 @@ fn user_verify(db: State<db::Db>, id: String, pin: String, purpose: Option<Strin
     }
     // Freigabe über ein bestimmtes Recht (Rechte-Matrix): die freigebende Person muss es selbst haben
     if let Some(perm) = purpose.as_deref().and_then(|p| p.strip_prefix("recht:")) {
-        if !security::allowed(&c, &u.role, perm) {
+        if !security::allowed_for(&c, &u.id, &u.role, perm) {
             return Err(format!("{} hat dieses Recht nicht", u.name));
         }
     }

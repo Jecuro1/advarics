@@ -343,6 +343,7 @@ async function init() {
   await loadCatalog();
   await loadCustomers();
   await loadUsers();
+  await loadStamm();   // Benutzergruppen (Rechte, Sperren, Filialen) gelten schon ab der Anmeldung
   if (DESKTOP) { await refreshRksv(); await loadSuppliers(); await loadPromos(); setInterval(applyPromos, 30 * 6e4); }
   if (DESKTOP) { await Promise.all([loadCustom(), loadAutomation(), loadSecurity(), loadAuth(), loadExtensions(), loadVerbund()]); installGuards(); }
   extendPresets(); registerAiPins(); renderNavVerbund();

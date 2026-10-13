@@ -31,7 +31,8 @@ const sellers = () => STAFF.filter(s => s.verkaeufer !== false);
 /** Anmeldung nur an zugeordneten Filialen (Administratoren immer; unbekannte/gelöschte Filialen zählen nicht) */
 function userAtThisFiliale(u) {
   if (!u || u.roleKey === 'admin') return true;
-  const f = (u.filialen || []).filter(id => STORES.some(s => s.id === id));
+  const valid = l => (l || []).filter(id => STORES.some(s => s.id === id));
+  const f = valid(u.filialen).length ? valid(u.filialen) : valid(groupOfUser(u)?.filialen);   // eigene Zuordnung vor der Gruppe
   return !f.length || f.includes(S.store);
 }
 /** Anmeldeliste dieser Kasse (sperrt sich nie ganz aus) */
@@ -118,10 +119,10 @@ function lock() {
 }
 
 /* ── Freigabe (Step-up) ── */
-function stepUp({title, text, rule, admin = false, roles = null, purpose = 'freigabe'}) {
+function stepUp({title, text, rule, admin = false, roles = null, perm = null, purpose = 'freigabe'}) {
   return new Promise((resolve, reject) => {
-    const approvers = STAFF.filter(u => roles ? roles.includes(u.roleKey) : admin ? u.roleKey === 'admin' : canApprove(u));
-    if (!approvers.length) { toast('Keine berechtigte Person', {t2: roles ? 'Keine Person mit diesem Recht angelegt' : admin ? 'Es ist kein Administrator angelegt' : 'Es ist keine Filialleitung angelegt', type: 'warn'}); return reject(new Error('keine Berechtigten')); }
+    const approvers = STAFF.filter(u => perm ? can(perm, u) : roles ? roles.includes(u.roleKey) : admin ? u.roleKey === 'admin' : canApprove(u));
+    if (!approvers.length) { toast('Keine berechtigte Person', {t2: roles || perm ? 'Keine Person mit diesem Recht angelegt' : admin ? 'Es ist kein Administrator angelegt' : 'Es ist keine Filialleitung angelegt', type: 'warn'}); return reject(new Error('keine Berechtigten')); }
     let done = false, pin = '', busy = false, ap = approvers.find(u => u.id === S.user.id) || approvers[0];
     const el = openLayer(`<div class="modal" style="width:min(440px,100%)" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div id="suBox"></div></div>`, {onClose: () => { if (!done) reject(new Error('abgebrochen')); }});
     const box = $('#suBox', el);

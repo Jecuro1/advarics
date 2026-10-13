@@ -10,8 +10,25 @@ async function loadSecurity() {
   if (!DESKTOP) return;
   try { const m = await invoke('permissions_get'); SEC.roles = m.roles; SEC.perms = m.perms; SEC.totp = new Set(await invoke('totp_users')); } catch (e) { console.error(e); }
 }
+/** Benutzergruppe einer Person (Zuordnung über den Namen; nur aktive Gruppen) */
+function groupOfUser(u) {
+  const n = norm(u?.name || ''); if (!n) return null;
+  return stActive('benutzergruppe').find(g => (g.mitglieder || []).some(m => norm(m) === n)) || null;
+}
+/** Menüpunkt für die Person gesperrt (in der Benutzergruppe nicht zugeordnet)? Administratoren nie. */
+function viewBlocked(id, u = S.user) {
+  if (!id || !u || u.roleKey === 'admin') return false;
+  const g = groupOfUser(u); return !!g && (g.gesperrt || []).includes(NAV_CHILD[id] || id);
+}
+/** Erster erlaubter Menüpunkt (wenn Start- oder Zielseite gesperrt ist) */
+function firstAllowedView() {
+  const ok = id => !viewBlocked(id) && (!VIEW_PERM[id] || can(VIEW_PERM[id]));
+  return ['dashboard', 'kasse'].find(ok) || navFlat().find(x => ok(x.id))?.id || 'dashboard';
+}
+/** Recht der Person: Rolle, abgewandelt durch die Benutzergruppe („ja“ erlaubt zusätzlich, „nein“ sperrt; Administratoren immer nach Rolle) */
 function can(perm, u = S.user) {
   const role = u?.roleKey; if (!role) return false;
+  if (role !== 'admin') { const v = groupOfUser(u)?.rechte?.[perm]; if (v === 'ja') return true; if (v === 'nein') return false; }
   if (!SEC.roles) return role === 'admin' || role === 'leitung' || (PERM_DEFAULT[role] || []).includes(perm);
   return !!SEC.roles[role]?.[perm];
 }
@@ -21,7 +38,7 @@ const rolesWith = perm => Object.keys(ROLE_NAMES).filter(r => SEC.roles ? SEC.ro
 async function needPerm(perm, title, text) {
   if (can(perm)) return {by: S.user};
   const g = SEC.grant?.[perm]; if (g && g.user === S.user.id && Date.now() - g.t < 90e3) return {by: g.by};   // eben freigegeben: nicht doppelt fragen
-  try { const r = await stepUp({title: title || 'Freigabe erforderlich', text: text || `${S.user.name} (${S.user.role}) fehlt das Recht „${permLabel(perm)}“.`, rule: `Recht „${permLabel(perm)}“ · festgelegt unter Stammdaten › Benutzer › Rollen & Rechte`, roles: rolesWith(perm), purpose: DESKTOP ? 'recht:' + perm : 'freigabe'}); (SEC.grant ||= {})[perm] = {user: S.user.id, by: r.by, t: Date.now()}; return r; }
+  try { const r = await stepUp({title: title || 'Freigabe erforderlich', text: text || `${S.user.name} (${S.user.role}) fehlt das Recht „${permLabel(perm)}“.`, rule: `Recht „${permLabel(perm)}“ · festgelegt unter Stammdaten › Benutzer › Rollen & Rechte und Benutzergruppen`, perm, purpose: DESKTOP ? 'recht:' + perm : 'freigabe'}); (SEC.grant ||= {})[perm] = {user: S.user.id, by: r.by, t: Date.now()}; return r; }
   catch (e) { throw new Error('abgebrochen'); }
 }
 function guard(perm, fn, title) {
@@ -90,7 +107,7 @@ const VIEW_PERM = {berichte: 'berichte', anpassen: 'anpassen', einstellungen: 'e
 function permNav() {
   // Menüpunkte ohne Berechtigung werden ausgeblendet – samt leeren Untermenüs und Bereichen
   const nav = $('#nav'); if (!nav) return;
-  $$('.nav-item[data-view]', nav).forEach(n => { const p = VIEW_PERM[n.dataset.view]; n.classList.toggle('nav-off', !!p && !can(p)); n.classList.remove('nav-locked'); });
+  $$('.nav-item[data-view]', nav).forEach(n => { const p = VIEW_PERM[n.dataset.view]; n.classList.toggle('nav-off', (!!p && !can(p)) || viewBlocked(n.dataset.view)); n.classList.remove('nav-locked'); });
   $$('.nav-kids', nav).reverse().forEach(k => {
     const any = [...k.children].some(c => (c.matches('[data-view]') || c.matches('.nav-kids')) && !c.classList.contains('nav-off'));
     k.classList.toggle('nav-off', !any); k.previousElementSibling?.classList.toggle('nav-off', !any);
@@ -101,6 +118,12 @@ function installGuards() {
   if (!DESKTOP) return;
   const _go = go;
   go = function (view) {
+    if (viewBlocked(view)) {
+      toast('Kein Zugriff', {t2: `„${TITLES[view] || view}“ ist für Ihre Benutzergruppe gesperrt`, type: 'warn', icon: 'lock'});
+      if (!S.view || viewBlocked(S.view)) return _go(firstAllowedView());
+      if (location.hash.slice(1) !== S.view) history.replaceState(null, '', '#' + S.view);
+      return;
+    }
     const p = VIEW_PERM[view === 'erweiterungen' ? 'anpassen' : view];
     if (p && !can(p) && S.view !== view) {
       if (!S.started) return _go('dashboard');
@@ -121,6 +144,6 @@ function installGuards() {
   openPayment = guard('kasse.verkaufen', openPayment, 'Verkaufen');
   Hooks.on('auth.login', () => {
     SEC.grant = {}; permNav();
-    const p = VIEW_PERM[S.view]; if (p && !can(p)) { S.view = null; go('dashboard'); }
+    const p = VIEW_PERM[S.view]; if ((p && !can(p)) || viewBlocked(S.view)) { S.view = null; go(firstAllowedView()); }
   });
 }

@@ -1,3 +1,17 @@
+## Neu in 0.37.0
+
+- **Stammdaten › Benutzer › Benutzergruppen – neu nach dem Vorbild von Advarics.** Die Liste zeigt Name, Beschreibung, Rolle, Personen, Mitglieder, Filialen, Rechte und Menüpunkte (mit Suche, Filter, Sortierung, Gruppierung und CSV-Export). Doppelklick oder „Neu“ öffnet die Maske mit den Reitern **Allgemein · Rechte-Verwaltung · Sonderberechtigungen · Kassenberechtigungen · Benutzer · Filialen**. Oben: Übersicht · Aktualisieren · Sichern · Neu · Änderungen zurücknehmen · Löschen und Blättern zwischen den Gruppen.
+- **Die Gruppe wirkt wirklich auf ihre Mitglieder:**
+  - **Rolle:** Grundrechte der Gruppe (siehe Rollen & Rechte). Wer der Gruppe zugeordnet wird, bekommt diese Rolle (Administratoren behalten ihre).
+  - **Rechte-Verwaltung:** Menü-Baum mit Häkchen „Zugeordnet“ – einzelne Menüpunkte oder ganze Bereiche abwählen. Abgewählte Punkte sind für die Mitglieder ausgeblendet und gesperrt: im Menü, in der Suche, unter „Zuletzt benutzt“ und beim direkten Aufruf („Kein Zugriff“).
+  - **Sonderberechtigungen und Kassenberechtigungen:** je Recht „Wie Rolle“, „Erlaubt“ oder „Gesperrt“ (Artikel bearbeiten, Preisaktionen, Bestand buchen, Einkauf, Rechnungen, Faktura, Marketing, Kunden, Berichte, Anpassen, Einstellungen, System; An der Kasse verkaufen, Retouren, Kassenbuch und Tagesabschluss). Das gilt auch für Freigaben per PIN (nur wer das Recht hat, darf freigeben) und am Handy („Bestand buchen“).
+  - **Benutzer:** Mitglieder zuordnen und entfernen (eine Person gehört zu höchstens einer Gruppe), „Neu“ legt eine Person direkt in der Gruppe an, „Rolle setzen“ gleicht bestehende Mitglieder an die Rolle der Gruppe an.
+  - **Filialen:** Mitglieder können sich nur an diesen Filialen anmelden (eine eigene Zuordnung der Person geht vor).
+  - Administratoren sind von Abweichungen und Sperren ausgenommen – so kann sich niemand über eine Gruppe selbst aussperren.
+- **Sicherheit:** Änderungen an Rolle, Rechten, Sperren, Mitgliedern und Filialen sowie das Löschen einer Gruppe verlangen die Freigabe eines Administrators. Ungesicherte Änderungen werden beim Verlassen der Maske abgefragt.
+- Der Hinweis bei fehlenden Rechten nennt jetzt auch die Benutzergruppen. In den Stammdaten-Tabellen gibt es eine Spalte „Beschreibung“ für Benutzergruppen.
+- Nicht übernommen (im lokalen Kassensystem ohne Gegenstück): „Rolle für Benannte Einstellungen“, „Layout von“, „Endkunden-Ansicht“, „Kann alle WhatsApp Chats sehen“ und die mobilen Menüpunkte des Advarics-Handys. Offen zur Entscheidung: „EK anzeigen“ (Einkaufspreise ausblenden), „WE-Avis Berechtigung“ und einzelne Kassen-Vorgänge (Tagesabschluss, Stornierung, Kasseneinlage, Abschöpfung) getrennt sperren.
+
 ## Neu in 0.36.1
 
 - Einstellungen › Benutzer & Anmeldung verweist jetzt auf die neuen Seiten **Stammdaten › Benutzer › Benutzer** und **Rollen & Rechte** (zwei Schaltflächen „Öffnen“); der Hinweis bei einer fehlenden Berechtigung nennt den neuen Ort der Rechte-Matrix.

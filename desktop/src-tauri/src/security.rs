@@ -56,6 +56,35 @@ pub fn allowed(c: &Connection, role: &str, perm: &str) -> bool {
     matrix(c)["roles"][role][perm].as_bool().unwrap_or(false)
 }
 
+/// Rechte einer Person: die ihrer Rolle, abgewandelt durch ihre Benutzergruppe (Abweichung „ja“ oder „nein“ je Recht,
+/// festgelegt unter Stammdaten › Benutzer › Benutzergruppen). Administratoren behalten immer die Rechte ihrer Rolle –
+/// so kann sich niemand über eine Gruppe selbst aussperren.
+pub fn allowed_for(c: &Connection, user_id: &str, role: &str, perm: &str) -> bool {
+    if role != "admin" {
+        if let Some(v) = group_override(c, user_id, perm) {
+            return v;
+        }
+    }
+    allowed(c, role, perm)
+}
+
+/// Abweichung der Benutzergruppe einer Person für ein Recht (None = „wie Rolle“)
+fn group_override(c: &Connection, user_id: &str, perm: &str) -> Option<bool> {
+    let name: String = c.query_row("SELECT name FROM users WHERE id = ?1", [user_id], |r| r.get(0)).ok()?;
+    let want = name.trim().to_lowercase();
+    let is_me = |m: &Value| m.as_str().map(|x| x.trim().to_lowercase() == want).unwrap_or(false);
+    let group = crate::stamm::list(c, "benutzergruppe")
+        .ok()?
+        .into_iter()
+        .filter(|g| g["_aktiv"].as_bool().unwrap_or(true))
+        .find(|g| g["mitglieder"].as_array().map(|m| m.iter().any(is_me)).unwrap_or(false))?;
+    match group["rechte"][perm].as_str() {
+        Some("ja") => Some(true),
+        Some("nein") => Some(false),
+        _ => None,
+    }
+}
+
 /* ── TOTP ── */
 
 const B32: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -161,5 +190,42 @@ mod tests {
         set(&c, "kasse", "berichte", true).unwrap();
         assert!(allowed(&c, "kasse", "berichte"));
         assert!(set(&c, "admin", "system", false).is_err());
+    }
+
+    #[test]
+    fn gruppenrechte_wandeln_die_rolle_ab() {
+        let c = Connection::open_in_memory().unwrap();
+        db::migrate(&c).unwrap();
+        crate::users::seed(&c).unwrap();   // lm = Verkauf, dh = Administrator, ms = Kasse
+        // ohne Gruppe gilt die Rolle
+        assert!(allowed_for(&c, "lm", "verkauf", "artikel.bearbeiten"));
+        assert!(!allowed_for(&c, "lm", "verkauf", "rechnungen"));
+        let gruppe = json!({ "id": "bg-einkauf", "name": "Einkauf", "rolle": "verkauf", "mitglieder": ["Lena Moser", "David Huber"], "filialen": [],
+            "rechte": { "rechnungen": "ja", "artikel.bearbeiten": "nein", "einkauf": "wie" } });
+        crate::stamm::save(&c, "benutzergruppe", &[gruppe.clone()]).unwrap();
+        // Abweichungen: ja erlaubt zusätzlich, nein sperrt; alles andere (auch unbekannte Werte) bleibt wie die Rolle
+        assert!(allowed_for(&c, "lm", "verkauf", "rechnungen"));
+        assert!(!allowed_for(&c, "lm", "verkauf", "artikel.bearbeiten"));
+        assert!(allowed_for(&c, "lm", "verkauf", "einkauf"));
+        assert!(allowed_for(&c, "lm", "verkauf", "kasse.verkaufen"));
+        // Administratoren behalten ihre Rolle, auch als Mitglied mit „nein“
+        let mut g2 = gruppe.clone();
+        g2["rechte"] = json!({ "system": "nein" });
+        crate::stamm::save(&c, "benutzergruppe", &[g2]).unwrap();
+        assert!(allowed_for(&c, "dh", "admin", "system"));
+        // Nicht-Mitglieder sind nicht betroffen; Namen werden ohne Groß-/Kleinschreibung verglichen
+        assert!(!allowed_for(&c, "ms", "kasse", "rechnungen"));
+        let mut g3 = gruppe;
+        g3["mitglieder"] = json!(["  miriam steiner "]);
+        crate::stamm::save(&c, "benutzergruppe", &[g3]).unwrap();
+        assert!(allowed_for(&c, "ms", "kasse", "rechnungen"));
+        assert!(allowed_for(&c, "lm", "verkauf", "artikel.bearbeiten"));
+        // eine deaktivierte Gruppe wirkt nicht
+        let mut g4 = json!({ "id": "bg-aus", "name": "Aus", "rolle": "kasse", "mitglieder": ["Miriam Steiner"], "rechte": { "berichte": "ja" }, "_aktiv": false });
+        crate::stamm::save(&c, "benutzergruppe", &[g4.clone()]).unwrap();
+        assert!(!allowed_for(&c, "ms", "kasse", "berichte"));
+        g4["_aktiv"] = json!(true);
+        crate::stamm::save(&c, "benutzergruppe", &[g4]).unwrap();
+        assert!(allowed_for(&c, "ms", "kasse", "berichte"));
     }
 }

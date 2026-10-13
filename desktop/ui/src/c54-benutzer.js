@@ -99,8 +99,8 @@ async function usrRemove(ids) {
 }
 
 /* ── Maske ── */
-function usrOpen(id, ids) {
-  UE.id = id; UE.ids = ids?.length ? ids : UE.ids; UE.d = usrDraft(id); UE.orig = JSON.parse(JSON.stringify(UE.d)); UE.tab = 'allg'; UE.dirty = false; UE.pin = UE.pin2 = '';
+function usrOpen(id, ids, preset) {
+  UE.id = id; UE.ids = ids?.length ? ids : UE.ids; UE.d = Object.assign(usrDraft(id), preset || {}); UE.orig = JSON.parse(JSON.stringify(UE.d)); UE.tab = 'allg'; UE.dirty = false; UE.pin = UE.pin2 = '';
   if (S.view === 'benutzer-edit') usrRender(); else go('benutzer-edit');
 }
 registerPage('benutzer-edit', {title: 'Benutzer', sub: () => UE.d ? `${UE.d.nr || 'neu'} · ${usrName(UE.d) || 'Neue Person'}` : '', render: async () => {
@@ -110,18 +110,20 @@ registerPage('benutzer-edit', {title: 'Benutzer', sub: () => UE.d ? `${UE.d.nr |
 }});
 VIEW_PERM['benutzer-edit'] = 'system';
 /** Maske verlassen (Menü, Suche, Zurück-Taste) mit ungesicherten Änderungen: erst nachfragen */
-{ const _go = go;
-  go = function (view) {
-    if (S.view === 'benutzer-edit' && view !== 'benutzer-edit' && UE.dirty) {
+function leaveGuard(view, isDirty, clear) {
+  const _go = go;
+  go = function (v) {
+    if (S.view === view && v !== view && isDirty()) {
       confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen').then(ok => {
-        if (ok) { UE.dirty = false; go(view); }
+        if (ok) { clear(); go(v); }
         else if (location.hash.slice(1) !== S.view) history.replaceState(null, '', '#' + S.view);
       });
       return;
     }
-    return _go(view);
+    return _go(v);
   };
 }
+leaveGuard('benutzer-edit', () => UE.dirty, () => { UE.dirty = false; UE.d = usrDraft(UE.id); UE.orig = JSON.parse(JSON.stringify(UE.d)); UE.pin = UE.pin2 = ''; });
 
 const ueIn = (k, l, o = {}) => `<label class="field"><span>${esc(l)}</span><input class="input ${o.num ? 'num' : ''}" ${o.type ? `type="${o.type}"` : ''} data-ue="${k}" value="${esc(UE.d[k] ?? '')}" ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.attr || ''} autocomplete="off">${o.hint ? `<small class="ea-hint">${esc(o.hint)}</small>` : ''}</label>`;
 const ueSw = (k, l, o = {}) => `<div class="ue-sw ${o.dis ? 'dis' : ''}"><label class="ea-sw ${o.dis ? 'dis' : ''}"><button type="button" class="switch" role="switch" ${o.dis ? 'disabled' : `data-ue-sw="${k}"`} aria-checked="${!!UE.d[k]}"></button><span>${esc(l)}</span></label>${o.hint ? `<small class="ea-hint">${esc(o.hint)}</small>` : ''}</div>`;

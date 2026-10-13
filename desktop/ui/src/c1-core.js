@@ -202,7 +202,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.36.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.37.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -518,7 +518,7 @@ function navRecentAdd(view) {
 function navSearch(q) {
   const nav = $('#nav'); q = norm(q || '').trim();
   if (!q) { renderNav(); permNav(); $$('.nav-item').forEach(n => n.dataset.view === (NAV_CHILD[S.view] || S.view) && n.setAttribute('aria-current', 'page')); return; }
-  const hits = navFlat().filter(x => (!VIEW_PERM[x.id] || can(VIEW_PERM[x.id])) && norm(x.label + ' ' + (x.path || []).join(' ')).includes(q)).slice(0, 40);
+  const hits = navFlat().filter(x => (!VIEW_PERM[x.id] || can(VIEW_PERM[x.id])) && !viewBlocked(x.id) && norm(x.label + ' ' + (x.path || []).join(' ')).includes(q)).slice(0, 40);
   nav.innerHTML = hits.length ? hits.map(x => `<button class="nav-item nav-hit" data-view="${x.id}" style="--lvl:0">${ic(x.icon)}<span class="nav-label"><span>${esc(x.label)}</span><small>${esc((x.path || []).join(' › '))}</small></span></button>`).join('') : '<div class="nav-none">Nichts gefunden</div>';
 }
 /** Übergeordnete Menüpunkte der aktuellen Seite aufklappen */

@@ -148,7 +148,7 @@ pub fn handle(c: &Connection, mut req: Request, path: &str) {
                     m.insert(tok.clone(), Sess { user: u.id.clone(), name: u.name.clone(), role: u.role.clone(), at: Instant::now() });
                     let _ = db::audit_append(c, "auth.login", &json!({ "benutzer": u.name, "methode": "PIN · Handy" }));
                     json_reply(req, 200, json!({ "token": tok, "name": u.name, "rolle": u.role,
-                        "rechte": { "buchen": security::allowed(c, &u.role, "bestand.buchen") } }))
+                        "rechte": { "buchen": security::allowed_for(c, &u.id, &u.role, "bestand.buchen") } }))
                 }
                 Err(e) if e == "TOTP" => json_reply(req, 401, json!({ "fehler": "Code aus der Authenticator-App eingeben", "totp": true })),
                 Err(e) => {
@@ -181,7 +181,7 @@ pub fn handle(c: &Connection, mut req: Request, path: &str) {
             Ok(json!({ "code": ean, "treffer": search(c, &ean).map_err(|e| (500, e))? }))
         }
         (Method::Post, "/mobil/api/buchung") => {
-            if !security::allowed(c, &role, "bestand.buchen") {
+            if !security::allowed_for(c, &uid, &role, "bestand.buchen") {
                 return Err((403, "Keine Berechtigung zum Buchen".into()));
             }
             let ean = s("ean");

@@ -48,7 +48,7 @@ Voraussetzungen zum Selberbauen: Node.js 22, Rust (stable), unter Windows zusät
 „Microsoft C++ Build Tools“, unter macOS die „Xcode Command Line Tools“ (`xcode-select --install`). Nur zum Benutzen ist nichts davon nötig – nur der Installer.
 
 Stand 0.10.0 – alles mit lokaler Datenbank, ohne Server:
-- **Benutzer (Stammdaten › Benutzer):** Liste und Maske mit Reitern (Allgemein, Haupt-Adresse, Zugeordnete Filialen, Benachrichtigungen, Rechte, Anmeldung) mit Bild, Name auf dem Bon, Verkäufer:in, Kontor mobil, Benutzergruppe, Zugangsprofil und Filial-Zuordnung; Personen werden deaktiviert statt gelöscht.
+- **Benutzer (Stammdaten › Benutzer):** Liste und Maske mit Reitern (Allgemein, Haupt-Adresse, Zugeordnete Filialen, Benachrichtigungen, Rechte, Anmeldung) mit Bild, Name auf dem Bon, Verkäufer:in, Kontor mobil, Benutzergruppe, Zugangsprofil und Filial-Zuordnung; Personen werden deaktiviert statt gelöscht. **Benutzergruppen** (Stammdaten › Benutzer › Benutzergruppen) bündeln Rolle, abgewandelte Rechte je Recht, gesperrte Menüpunkte, Mitglieder und Filialen.
 - **Anmeldung & Rechte:** persönliche PIN (Erst-PINs Lena 1111 · David 2222 (Admin) · Miriam 3333 – sofort ändern),
   optional Zwei-Faktor mit Authenticator-App (TOTP), Rollen Kasse/Verkauf/Filialleitung/Administrator mit anpassbarer
   Rechte-Matrix, Freigaben per PIN durch berechtigte Personen, Sperre nach Fehlversuchen.
