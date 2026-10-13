@@ -11,6 +11,8 @@ Object.assign(DEFAULTS, {'ki.url': 'http://127.0.0.1:11434', 'ki.modell': '', 't
   'fibu.kasse': '2700', 'fibu.transit': '2880', 'fibu.bank': '2800', 'fibu.gutschein': '3630', 'fibu.erloes20': '4000', 'fibu.erloes13': '4030', 'fibu.erloes10': '4010', 'fibu.erloes0': '4090', 'fibu.datev.berater': '', 'fibu.datev.mandant': ''});
 Object.keys(DEFAULTS).forEach(k => { if (!(k in CFG)) CFG[k] = DEFAULTS[k]; });
 const AI = {ins: null, t: 0, busy: false, reorder: null};
+/** Recht, das die Aktion eines KI-Hinweises verlangt (Artikel bearbeiten, Inventur, Bestellung, Preisaktion) – ohne das Recht erscheint die Schaltfläche nicht */
+const INSIGHT_PERM = {artikel: 'artikel.bearbeiten', inventur: 'bestand.buchen', einkauf: 'einkauf', aktion: 'preise.aktionen'};
 const llmReady = () => DESKTOP && CFG['ki.url'] && CFG['ki.modell'];
 
 /* ── KI-Hinweise im Dashboard (echt, lokal berechnet) ── */
@@ -21,7 +23,7 @@ async function loadInsights(force) {
     const l = await invoke('ai_insights');
     AI.ins = l; AI.t = Date.now();
     INSIGHTS.length = 0;
-    l.forEach(x => INSIGHTS.push({id: x.id, icon: x.icon, tone: x.tone, t: x.title, conf: Math.round(x.confidence), p: x.text, a: x.action?.label || 'Ansehen', act: x.action}));
+    l.forEach(x => INSIGHTS.push({id: x.id, icon: x.icon, tone: x.tone, t: x.title, conf: Math.round(x.confidence), p: x.text, a: x.action?.label || 'Ansehen', act: x.action, perm: INSIGHT_PERM[x.action?.kind]}));
   } catch (e) { console.error(e); AI.ins = AI.ins || []; }
   AI.busy = false;
   (Dash.layout || []).filter(it => it.t === 'ai.insights').forEach(it => rerenderWidget(it.id));
@@ -64,7 +66,7 @@ async function realAnswer(q) {
     const l = await invoke('ai_reorder');
     return {title: 'Nachbestellvorschlag · Prognose aus den letzten 12 Wochen', sql: 'ai.reorder: Holt-Prognose je Artikel × Variantenanteil, Lieferzeit des Lieferanten, offene Bestellungen',
       text: l.length ? `${l.length === 1 ? 'Eine Variante reicht' : `${l.length} Varianten reichen`} nicht bis zur nächsten Lieferung plus eine Woche Puffer.${l.length > 10 ? ' Die dringendsten 10:' : ''}` : 'Keine Variante unterschreitet die Reichweite bis zur nächsten Lieferung – kein Nachschub nötig.',
-      cols: ['Artikel', 'Variante', 'Bestand', 'Reichweite', 'Vorschlag', 'Begründung'], num: [2, 3, 4], rows: l.slice(0, 10).map(r => [r.name, `${COLORS[r.color]?.[0] || r.color} · ${r.size}`, num(r.stock), `${num(r.cover_days)} T`, `${num(r.qty)} Stk.`, r.reason]), act: l.length ? {label: 'Im Einkauf öffnen', run: () => { EK.tab = 'ki'; go('einkauf'); }} : null};
+      cols: ['Artikel', 'Variante', 'Bestand', 'Reichweite', 'Vorschlag', 'Begründung'], num: [2, 3, 4], rows: l.slice(0, 10).map(r => [r.name, `${COLORS[r.color]?.[0] || r.color} · ${r.size}`, num(r.stock), `${num(r.cover_days)} T`, `${num(r.qty)} Stk.`, r.reason]), act: l.length ? {label: 'Im Einkauf öffnen', perm: 'einkauf', run: () => { EK.tab = 'ki'; go('einkauf'); }} : null};
   }
   if (/prognos|vorhers|erwart|naechste|kommende/.test(n)) {
     const l = await invoke('ai_forecast');
@@ -116,7 +118,7 @@ if (DESKTOP) askAI = async function (q) {
   if (a.rows?.length) {
     $('#ansTbl', slot).innerHTML = `<table class="tbl"><thead><tr>${a.cols.map((c, i) => `<th class="${a.num?.includes(i) ? 'r' : ''}">${esc(c)}</th>`).join('')}</tr></thead><tbody>${a.rows.map(r => `<tr>${r.map((c, i) => `<td class="${a.num?.includes(i) ? 'r num' : ''}" style="${i === 0 ? 'font-weight:550' : ''}${i === r.length - 1 && String(c).length > 60 ? ';font-size:12px;color:var(--text-2);white-space:normal' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   }
-  $('.answer-foot', slot).innerHTML = `${ic('server', 'i-xs')}<span>${esc(a.model ? `${a.model} · lokal` : 'Kontor-Statistik · lokal')} · ${num((performance.now() - t0) / 1000, 1)} s · keine Daten verlassen Ihr Netzwerk</span><span style="margin-left:auto;display:flex;gap:6px">${a.sql ? `<button class="btn btn-ghost btn-sm" data-ans2="sql">${ic('code', 'i-sm')}Herleitung</button>` : ''}${a.act ? `<button class="btn btn-secondary btn-sm" data-ans2="act">${esc(a.act.label)}</button>` : ''}</span>`;
+  $('.answer-foot', slot).innerHTML = `${ic('server', 'i-xs')}<span>${esc(a.model ? `${a.model} · lokal` : 'Kontor-Statistik · lokal')} · ${num((performance.now() - t0) / 1000, 1)} s · keine Daten verlassen Ihr Netzwerk</span><span style="margin-left:auto;display:flex;gap:6px">${a.sql ? `<button class="btn btn-ghost btn-sm" data-ans2="sql">${ic('code', 'i-sm')}Herleitung</button>` : ''}${a.act ? `<button class="btn btn-secondary btn-sm" data-ans2="act"${a.act.perm ? ` data-perm="${a.act.perm}"` : ''}>${esc(a.act.label)}</button>` : ''}</span>`;
   $('.answer-foot', slot).onclick = e => { const b = e.target.closest('[data-ans2]'); if (!b) return; if (b.dataset.ans2 === 'act') a.act.run(); else toast('So wurde gerechnet', {t2: a.sql, icon: 'code', dur: 7000}); };
 };
 

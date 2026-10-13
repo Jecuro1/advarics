@@ -53,8 +53,10 @@ const IMP_DEF = {
   bestand: {title: 'Bestände', icon: 'boxes', fields: [['ean', 'EAN / Barcode', true, 'ean barcode gtin'], ['stock', 'Bestand (neu)', true, 'bestand menge stock anzahl']],
     template: 'EAN;Bestand\r\n'},
 };
+const IMP_PERM = {artikel: 'artikel.bearbeiten', kunde: 'kunden.bearbeiten', bestand: 'bestand.buchen'};   // Recht je Importart – das Übernehmen verlangt es
 function openImport(kind = 'artikel') {
   if (!DESKTOP) return toast('Import nur in der Desktop-App', {type: 'warn'});
+  if (!can(IMP_PERM[kind])) kind = Object.keys(IMP_DEF).find(k => can(IMP_PERM[k])) || kind;   // nur Importarten anbieten, die ohne Freigabe möglich sind
   const st = {kind, csv: null, map: {}, extra: {}, check: null};
   const el = openLayer(`<div class="modal" style="width:min(900px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="Import"><div id="imBox" style="display:flex;flex-direction:column;min-height:0"></div></div>`);
   const box = $('#imBox', el);
@@ -129,7 +131,7 @@ function openImport(kind = 'artikel') {
     const d = IMP_DEF[st.kind];
     if (!st.csv) {
       box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('download')}</div><div><h2>Daten importieren</h2><p>CSV-Datei aus Excel, der bisherigen Warenwirtschaft oder vom Lieferanten</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
-        <div class="m-body" style="display:grid;gap:16px"><div class="opt-grid" style="grid-template-columns:repeat(3,1fr)">${Object.entries(IMP_DEF).map(([k, x]) => `<button class="opt" data-ik="${k}" aria-pressed="${st.kind === k}" style="height:auto;padding:16px;display:grid;gap:6px;justify-items:start">${ic(x.icon)}<b>${x.title}</b><span class="muted" style="font-size:12px;text-align:left">${k === 'artikel' ? 'eine Zeile je Variante (Farbe/Größe)' : k === 'kunde' ? 'gleiche E-Mail = bestehende Kundin aktualisieren' : 'Bestand je EAN setzen (z. B. Zählliste)'}</span></button>`).join('')}</div>
+        <div class="m-body" style="display:grid;gap:16px"><div class="opt-grid" style="grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)">${Object.entries(IMP_DEF).map(([k, x]) => `<button class="opt" data-ik="${k}" data-perm="${IMP_PERM[k]}" aria-pressed="${st.kind === k}" style="height:auto;padding:16px;display:grid;gap:6px;justify-items:start">${ic(x.icon)}<b>${x.title}</b><span class="muted" style="font-size:12px;text-align:left">${k === 'artikel' ? 'eine Zeile je Variante (Farbe/Größe)' : k === 'kunde' ? 'gleiche E-Mail = bestehende Kundin aktualisieren' : 'Bestand je EAN setzen (z. B. Zählliste)'}</span></button>`).join('')}</div>
           <div class="rule-box" style="background:var(--info-soft);border-color:transparent">${ic('info')}<div>In Excel: <b style="color:var(--text)">Datei → Speichern unter → „CSV (Trennzeichen-getrennt)“</b>. Spalten ordnen Sie im nächsten Schritt zu – Reihenfolge und Überschriften sind egal. Vor dem Import wird alles geprüft; es wird erst gespeichert, wenn Sie bestätigen.</div></div></div>
         <div class="m-foot"><button class="btn btn-ghost" id="imTpl">${ic('download', 'i-sm')}Vorlage speichern</button><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="imFile">${ic('boxes', 'i-sm')}CSV-Datei wählen …</button></div>`;
       return;

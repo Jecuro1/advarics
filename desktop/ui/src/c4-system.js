@@ -92,8 +92,8 @@ function openNotifications(anchor) {
     ['wifi-off', 'warn', 'Kasse 2 seit 12 Minuten offline', '3 Belege lokal signiert · Sync folgt automatisch', null],
     ['database', 'pos', 'Nächtliches Backup erfolgreich', `02:00 · NAS-01 · 2,4 GB · verifiziert`, null],
     ['swap', 'info', 'Umlagerung eingetroffen', '6 Positionen aus Kufstein · bitte einbuchen', null],
-  ];
-  const el = openPopover(anchor, `<div class="pop-h" style="display:flex;justify-content:space-between">Mitteilungen<span>4 neu</span></div>${items.map(([i, t, a, b, act]) => `<div class="notif" ${act ? `data-n="${act}" style="cursor:pointer"` : ''}><span class="reg-ic" style="color:var(--${t})">${ic(i, 'i-sm')}</span><div><div class="t1">${a}</div><div class="t2">${b}</div></div></div>`).join('')}`, {width: 340});
+  ].filter(x => x[4] !== 'update' || can('system'));   // die Update-Freigabe sieht nur, wer sie erteilen darf
+  const el = openPopover(anchor, `<div class="pop-h" style="display:flex;justify-content:space-between">Mitteilungen<span>${items.length} neu</span></div>${items.map(([i, t, a, b, act]) => `<div class="notif" ${act ? `data-n="${act}" style="cursor:pointer"` : ''}><span class="reg-ic" style="color:var(--${t})">${ic(i, 'i-sm')}</span><div><div class="t1">${a}</div><div class="t2">${b}</div></div></div>`).join('')}`, {width: 340});
   if (!el) return;
   anchor.classList.remove('has-dot');
   el.addEventListener('click', e => { if (e.target.closest('[data-n="update"]')) { closePopover(); openUpdate(); } });

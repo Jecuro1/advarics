@@ -2133,7 +2133,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.38.4', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.38.5', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2552,17 +2552,18 @@ function renderTopbar() {
 
 function renderStatus() {
   const off = !S.online;
+  const sys = can('system');   // Verbund und Datensicherung öffnen Seiten, die nur mit dem Recht „System“ (sonst per PIN-Freigabe) zugänglich sind: ohne das Recht nur als Anzeige
   $('#statusbar').innerHTML = `
-    ${DESKTOP ? `${(() => { const v = typeof vbStatus === 'function' ? vbStatus() : null; return v ? `<button class="sbi ${v.ok ? 'ok' : 'off'}" id="sbVerbund" data-tip="${esc(v.tip)}"><span class="dot ${v.ok ? 'live' : ''}"></span>${esc(v.text)}</button>` : '<span class="sbi ok"><span class="dot live"></span>Einzelplatz · lokale Datenbank</span>'; })()}
+    ${DESKTOP ? `${(() => { const v = typeof vbStatus === 'function' ? vbStatus() : null; return v ? `<${sys ? 'button' : 'span'} class="sbi ${v.ok ? 'ok' : 'off'}" ${sys ? 'id="sbVerbund" ' : ''}data-tip="${esc(sys || !/^Klicken/.test(v.tip) ? v.tip : 'Filialverbund')}"><span class="dot ${v.ok ? 'live' : ''}"></span>${esc(v.text)}</${sys ? 'button' : 'span'}>` : '<span class="sbi ok"><span class="dot live"></span>Einzelplatz · lokale Datenbank</span>'; })()}
     <span class="sb-sep"></span>
     <span class="sbi hide-sm ${S.rksv?.active ? '' : 'off'}">${ic('shield')}${S.rksv?.active ? `RKSV-Testmodus · ${esc(S.rksv.kassen_id)}` : 'RKSV nicht in Betrieb'}</span>` : `<button class="sbi ${off ? 'off' : 'ok'}" id="sbConn" data-tip="${off ? 'Klicken: Verbindung wiederherstellen' : 'Klicken: Offline-Modus simulieren'}"><span class="dot ${off ? '' : 'live'}"></span>${off ? 'Server nicht erreichbar · lokaler Betrieb' : 'KONTOR-SRV01 · lokal · 4 ms'}</button>
     <span class="sb-sep"></span>
     <span class="sbi ${S.queue ? 'accent' : ''}">${ic('sync')}${S.queue ? `${S.queue} Beleg${S.queue > 1 ? 'e' : ''} in Warteschlange` : 'Synchron'}</span>
     <span class="sbi hide-sm">${ic('shield')}RKSV · Signatureinheit aktiv</span>`}
-    <button class="sbi hide-sm ${S.backupH === Infinity || S.backupH >= 48 ? 'off' : ''}" id="sbBackup" data-tip="${DESKTOP ? 'Klicken: Datensicherung öffnen' : 'Backup-Werkzeuge'}">${ic('database')}${backupLabel()}${DESKTOP ? '' : ' · NAS-01'}</button>
+    <${DESKTOP && !sys ? 'span' : 'button'} class="sbi hide-sm ${S.backupH === Infinity || S.backupH >= 48 ? 'off' : ''}" ${DESKTOP && !sys ? '' : 'id="sbBackup" '}data-tip="${DESKTOP ? (sys ? 'Klicken: Datensicherung öffnen' : 'Letzte Datensicherung') : 'Backup-Werkzeuge'}">${ic('database')}${backupLabel()}${DESKTOP ? '' : ' · NAS-01'}</${DESKTOP && !sys ? 'span' : 'button'}>
     <button class="sbi ${!DESKTOP || UPD.state === 'available' ? 'accent' : ''} hide-sm" id="sbUpdate" data-perm="system">${ic('download')}${esc(updLabel())}</button>
     <span class="sb-spacer"></span>
-    <button class="sbi" id="sbHooks" data-tip="Ereignis-Inspektor · Hooks & Webhooks" data-tip-pos="up-left">${ic('braces')}Ereignisse <b class="num" id="sbHookCount" style="font-weight:600;color:var(--text-2)">${Hooks.count}</b></button>
+    <button class="sbi" id="sbHooks" data-perm="system" data-tip="Ereignis-Inspektor · Hooks & Webhooks" data-tip-pos="up-left">${ic('braces')}Ereignisse <b class="num" id="sbHookCount" style="font-weight:600;color:var(--text-2)">${Hooks.count}</b></button>
     ${DESKTOP ? '' : `<span class="sbi hide-md">${ic('sparkle')}KI lokal · bereit</span>`}
     <span class="sbi hide-md">${DESKTOP ? `Desktop-App v${S.appVersion}` : 'Vorschau im Browser'}</span>
     <span class="sbi num" id="sbClock">${clock()}</span>`;
@@ -3273,7 +3274,7 @@ const W = {
     body: () => {
       const rows = INSIGHTS.filter(x => !Dash.dismissed.has(x.id));
       if (!rows.length) return `<div class="empty" style="flex:1"><div class="empty-icon">${ic('sparkle')}</div><h3>Keine offenen Hinweise</h3><p>Neue Hinweise erscheinen, sobald das Modell etwas Relevantes erkennt.</p></div>`;
-      return `<div class="ins">${rows.map(x => `<div class="in" data-in="${x.id}"><div class="in-h"><span style="color:var(--${x.tone})">${ic(x.icon)}</span>${esc(x.t)}<span class="conf">${x.conf} % sicher</span></div><p>${esc(x.p)}</p><div class="in-a"><button class="btn btn-secondary btn-sm" data-act="ins" data-id="${x.id}">${esc(x.a)}</button><button class="btn btn-ghost btn-sm" data-act="ins-x" data-id="${x.id}">Verwerfen</button></div></div>`).join('')}</div>`;
+      return `<div class="ins">${rows.map(x => `<div class="in" data-in="${x.id}"><div class="in-h"><span style="color:var(--${x.tone})">${ic(x.icon)}</span>${esc(x.t)}<span class="conf">${x.conf} % sicher</span></div><p>${esc(x.p)}</p><div class="in-a"><button class="btn btn-secondary btn-sm" data-act="ins" data-id="${x.id}"${x.perm ? ` data-perm="${x.perm}"` : ''}>${esc(x.a)}</button><button class="btn btn-ghost btn-sm" data-act="ins-x" data-id="${x.id}">Verwerfen</button></div></div>`).join('')}</div>`;
     }},
   'ops.registers': {title: 'Kassen & RKSV', cat: 'Betrieb', icon: 'register', desc: 'Kassenstatus, Offline-Warteschlangen und RKSV-Fristen.', sizes: ['tall', 'wide'],
     sub: () => DESKTOP ? 'diese Kasse' : '3 Kassen · Filiale',
@@ -4945,9 +4946,9 @@ function updLabel() {
   return {available: `Update ${UPD.info?.version} verfügbar`, checking: 'Suche nach Updates …', current: `Aktuell · v${S.appVersion}`, error: 'Update-Suche fehlgeschlagen', idle: `v${S.appVersion}`}[UPD.state];
 }
 function updWidgetRow() {
-  if (!DESKTOP) return `<div class="ops-row">${ic('download', 'i-sm')}<div class="k"><b>${S.update === 'pending' ? 'Update 1.8.0 wartet' : 'Update 1.8.0 geplant'}</b>${S.update === 'pending' ? 'Stable · signiert · Freigabe nötig' : 'Installation heute 20:00'}</div><button class="btn ${S.update === 'pending' ? 'btn-primary' : 'btn-secondary'} btn-sm" data-act="update">${S.update === 'pending' ? 'Prüfen' : 'Details'}</button></div>`;
+  if (!DESKTOP) return `<div class="ops-row" data-perm="system">${ic('download', 'i-sm')}<div class="k"><b>${S.update === 'pending' ? 'Update 1.8.0 wartet' : 'Update 1.8.0 geplant'}</b>${S.update === 'pending' ? 'Stable · signiert · Freigabe nötig' : 'Installation heute 20:00'}</div><button class="btn ${S.update === 'pending' ? 'btn-primary' : 'btn-secondary'} btn-sm" data-act="update">${S.update === 'pending' ? 'Prüfen' : 'Details'}</button></div>`;
   const av = UPD.state === 'available';
-  return `<div class="ops-row">${ic('download', 'i-sm')}<div class="k"><b>${esc(updLabel())}</b>${av ? 'Signiert · wartet auf Freigabe' : `Installiert: ${esc(S.appVersion)}${UPD.last ? ' · geprüft ' + esc(fmtTs(UPD.last.toISOString()).split(', ').pop()) : ''}`}</div><button class="btn ${av ? 'btn-primary' : 'btn-secondary'} btn-sm" data-act="update">${av ? 'Ansehen' : 'Suchen'}</button></div>`;
+  return `<div class="ops-row" data-perm="system">${ic('download', 'i-sm')}<div class="k"><b>${esc(updLabel())}</b>${av ? 'Signiert · wartet auf Freigabe' : `Installiert: ${esc(S.appVersion)}${UPD.last ? ' · geprüft ' + esc(fmtTs(UPD.last.toISOString()).split(', ').pop()) : ''}`}</div><button class="btn ${av ? 'btn-primary' : 'btn-secondary'} btn-sm" data-act="update">${av ? 'Ansehen' : 'Suchen'}</button></div>`;
 }
 function renderUpdBits() { renderStatus(); renderUpdSection(); refreshDashboard(['ops.system']); }
 async function checkUpdates(manual) {
@@ -7797,9 +7798,10 @@ function viewBlocked(id, u = S.user) {
 }
 /** Erster erlaubter Menüpunkt (wenn Start- oder Zielseite gesperrt ist) */
 function firstAllowedView() {
-  const ok = id => !viewBlocked(id) && (!VIEW_PERM[id] || can(VIEW_PERM[id]));
-  return ['dashboard', 'kasse'].find(ok) || navFlat().find(x => ok(x.id))?.id || 'dashboard';
+  return ['dashboard', 'kasse'].find(viewFree) || navFlat().find(x => viewFree(x.id))?.id || 'dashboard';
 }
+/** Seite ohne PIN-Freigabe erreichbar? (Recht der Seite über Rolle oder Benutzergruppe, nicht für die Gruppe gesperrt) – ohne Seite: ja */
+function viewFree(id) { return !id || (!viewBlocked(id) && (!VIEW_PERM[id] || can(VIEW_PERM[id]))); }
 /** Recht der Person: Rolle, abgewandelt durch die Benutzergruppe („ja“ erlaubt zusätzlich, „nein“ sperrt; Administratoren immer nach Rolle) */
 function can(perm, u = S.user) {
   const role = u?.roleKey; if (!role) return false;
@@ -7945,6 +7947,8 @@ Object.assign(DEFAULTS, {'ki.url': 'http://127.0.0.1:11434', 'ki.modell': '', 't
   'fibu.kasse': '2700', 'fibu.transit': '2880', 'fibu.bank': '2800', 'fibu.gutschein': '3630', 'fibu.erloes20': '4000', 'fibu.erloes13': '4030', 'fibu.erloes10': '4010', 'fibu.erloes0': '4090', 'fibu.datev.berater': '', 'fibu.datev.mandant': ''});
 Object.keys(DEFAULTS).forEach(k => { if (!(k in CFG)) CFG[k] = DEFAULTS[k]; });
 const AI = {ins: null, t: 0, busy: false, reorder: null};
+/** Recht, das die Aktion eines KI-Hinweises verlangt (Artikel bearbeiten, Inventur, Bestellung, Preisaktion) – ohne das Recht erscheint die Schaltfläche nicht */
+const INSIGHT_PERM = {artikel: 'artikel.bearbeiten', inventur: 'bestand.buchen', einkauf: 'einkauf', aktion: 'preise.aktionen'};
 const llmReady = () => DESKTOP && CFG['ki.url'] && CFG['ki.modell'];
 
 /* ── KI-Hinweise im Dashboard (echt, lokal berechnet) ── */
@@ -7955,7 +7959,7 @@ async function loadInsights(force) {
     const l = await invoke('ai_insights');
     AI.ins = l; AI.t = Date.now();
     INSIGHTS.length = 0;
-    l.forEach(x => INSIGHTS.push({id: x.id, icon: x.icon, tone: x.tone, t: x.title, conf: Math.round(x.confidence), p: x.text, a: x.action?.label || 'Ansehen', act: x.action}));
+    l.forEach(x => INSIGHTS.push({id: x.id, icon: x.icon, tone: x.tone, t: x.title, conf: Math.round(x.confidence), p: x.text, a: x.action?.label || 'Ansehen', act: x.action, perm: INSIGHT_PERM[x.action?.kind]}));
   } catch (e) { console.error(e); AI.ins = AI.ins || []; }
   AI.busy = false;
   (Dash.layout || []).filter(it => it.t === 'ai.insights').forEach(it => rerenderWidget(it.id));
@@ -7998,7 +8002,7 @@ async function realAnswer(q) {
     const l = await invoke('ai_reorder');
     return {title: 'Nachbestellvorschlag · Prognose aus den letzten 12 Wochen', sql: 'ai.reorder: Holt-Prognose je Artikel × Variantenanteil, Lieferzeit des Lieferanten, offene Bestellungen',
       text: l.length ? `${l.length === 1 ? 'Eine Variante reicht' : `${l.length} Varianten reichen`} nicht bis zur nächsten Lieferung plus eine Woche Puffer.${l.length > 10 ? ' Die dringendsten 10:' : ''}` : 'Keine Variante unterschreitet die Reichweite bis zur nächsten Lieferung – kein Nachschub nötig.',
-      cols: ['Artikel', 'Variante', 'Bestand', 'Reichweite', 'Vorschlag', 'Begründung'], num: [2, 3, 4], rows: l.slice(0, 10).map(r => [r.name, `${COLORS[r.color]?.[0] || r.color} · ${r.size}`, num(r.stock), `${num(r.cover_days)} T`, `${num(r.qty)} Stk.`, r.reason]), act: l.length ? {label: 'Im Einkauf öffnen', run: () => { EK.tab = 'ki'; go('einkauf'); }} : null};
+      cols: ['Artikel', 'Variante', 'Bestand', 'Reichweite', 'Vorschlag', 'Begründung'], num: [2, 3, 4], rows: l.slice(0, 10).map(r => [r.name, `${COLORS[r.color]?.[0] || r.color} · ${r.size}`, num(r.stock), `${num(r.cover_days)} T`, `${num(r.qty)} Stk.`, r.reason]), act: l.length ? {label: 'Im Einkauf öffnen', perm: 'einkauf', run: () => { EK.tab = 'ki'; go('einkauf'); }} : null};
   }
   if (/prognos|vorhers|erwart|naechste|kommende/.test(n)) {
     const l = await invoke('ai_forecast');
@@ -8050,7 +8054,7 @@ if (DESKTOP) askAI = async function (q) {
   if (a.rows?.length) {
     $('#ansTbl', slot).innerHTML = `<table class="tbl"><thead><tr>${a.cols.map((c, i) => `<th class="${a.num?.includes(i) ? 'r' : ''}">${esc(c)}</th>`).join('')}</tr></thead><tbody>${a.rows.map(r => `<tr>${r.map((c, i) => `<td class="${a.num?.includes(i) ? 'r num' : ''}" style="${i === 0 ? 'font-weight:550' : ''}${i === r.length - 1 && String(c).length > 60 ? ';font-size:12px;color:var(--text-2);white-space:normal' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   }
-  $('.answer-foot', slot).innerHTML = `${ic('server', 'i-xs')}<span>${esc(a.model ? `${a.model} · lokal` : 'Kontor-Statistik · lokal')} · ${num((performance.now() - t0) / 1000, 1)} s · keine Daten verlassen Ihr Netzwerk</span><span style="margin-left:auto;display:flex;gap:6px">${a.sql ? `<button class="btn btn-ghost btn-sm" data-ans2="sql">${ic('code', 'i-sm')}Herleitung</button>` : ''}${a.act ? `<button class="btn btn-secondary btn-sm" data-ans2="act">${esc(a.act.label)}</button>` : ''}</span>`;
+  $('.answer-foot', slot).innerHTML = `${ic('server', 'i-xs')}<span>${esc(a.model ? `${a.model} · lokal` : 'Kontor-Statistik · lokal')} · ${num((performance.now() - t0) / 1000, 1)} s · keine Daten verlassen Ihr Netzwerk</span><span style="margin-left:auto;display:flex;gap:6px">${a.sql ? `<button class="btn btn-ghost btn-sm" data-ans2="sql">${ic('code', 'i-sm')}Herleitung</button>` : ''}${a.act ? `<button class="btn btn-secondary btn-sm" data-ans2="act"${a.act.perm ? ` data-perm="${a.act.perm}"` : ''}>${esc(a.act.label)}</button>` : ''}</span>`;
   $('.answer-foot', slot).onclick = e => { const b = e.target.closest('[data-ans2]'); if (!b) return; if (b.dataset.ans2 === 'act') a.act.run(); else toast('So wurde gerechnet', {t2: a.sql, icon: 'code', dur: 7000}); };
 };
 
@@ -8437,7 +8441,7 @@ const sparkSVG = (xs, w = 120, h = 28) => { const m = Math.max(1, ...xs); const 
 async function renderKi() {
   const v = $('#view-ki');
   if (!DESKTOP) { v.innerHTML = desktopEmpty('sparkle', 'KI-Analyse'); return; }
-  v.innerHTML = `<div class="cv">${pageHead('KI-Analyse', 'Prognosen, Nachbestellung und Auffälligkeiten – ohne Internet, aus Ihren eigenen Belegen', `<button class="btn btn-secondary" data-ki="ek">${ic('truck', 'i-sm')}Nachbestellvorschlag</button>`)}
+  v.innerHTML = `<div class="cv">${pageHead('KI-Analyse', 'Prognosen, Nachbestellung und Auffälligkeiten – ohne Internet, aus Ihren eigenen Belegen', `<button class="btn btn-secondary" data-ki="ek" data-perm="einkauf">${ic('truck', 'i-sm')}Nachbestellvorschlag</button>`)}
     <div class="hero-card" style="margin-bottom:16px"><span class="reg-ic" style="color:var(--accent)">${ic('sparkle')}</span><form id="kiForm" style="flex:1;display:flex;gap:8px"><input class="input" id="kiQ" placeholder="Frage stellen, z. B. „Top-Artikel letzten Monat“" style="flex:1"><button class="btn btn-primary">Fragen</button></form></div>
     <div class="reasons" style="margin:-6px 0 14px">${['Was muss ich nachbestellen?', 'Umsatz diese Woche', 'Top-Artikel diesen Monat', 'Prognose nächste Wochen', 'Auffälligkeiten', 'Beste Kunden'].map(q => `<button class="chip" data-kiq="${esc(q)}">${esc(q)}</button>`).join('')}</div>
     <div id="kiAns"></div>
@@ -8448,7 +8452,7 @@ async function renderKi() {
   if (!$('#kiFc')) return;
   $('#kiFc').innerHTML = fc.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Artikel</th><th>12 Wochen</th><th class="r">Erwartet</th><th class="r">Trend</th><th class="r">Bestand</th><th class="r" style="padding-right:16px">Reichweite</th></tr></thead><tbody>${fc.slice(0, 15).map(r => `<tr><td style="padding-left:16px"><b>${esc(r.name)}</b></td><td>${sparkSVG(r.weeks || [])}</td><td class="r num">${num(r.next4, 1)}</td><td class="r num" style="color:var(--${r.trend > 5 ? 'pos' : r.trend < -5 ? 'neg' : 'text-3'})">${pct(r.trend, 0)}</td><td class="r num">${num(r.stock)}</td><td class="r num" style="padding-right:16px;${r.cover_days < 14 ? 'color:var(--warn);font-weight:600' : ''}">${r.cover_days >= 9999 ? '–' : num(r.cover_days) + ' T'}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:30px"><p>Für eine Prognose fehlen noch Verkäufe.</p></div>';
   const ins = (AI.ins || []);
-  $('#kiIns').innerHTML = ins.length ? ins.map(x => `<div style="padding:12px 16px;border-top:1px solid var(--line)"><div style="display:flex;gap:8px;align-items:center;font-weight:600"><span style="color:var(--${x.tone})">${ic(x.icon, 'i-sm')}</span>${esc(x.title)}<span class="muted" style="margin-left:auto;font-weight:500;font-size:12px">${Math.round(x.confidence)} %</span></div><p style="margin:6px 0 8px;font-size:13px;color:var(--text-2)">${esc(x.text)}</p>${x.action ? `<button class="btn btn-secondary btn-sm" data-kiins="${esc(x.id)}">${esc(x.action.label)}</button>` : ''}</div>`).join('') : `<div class="empty" style="padding:30px"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><p>Keine Auffälligkeiten.</p></div>`;
+  $('#kiIns').innerHTML = ins.length ? ins.map(x => `<div style="padding:12px 16px;border-top:1px solid var(--line)"><div style="display:flex;gap:8px;align-items:center;font-weight:600"><span style="color:var(--${x.tone})">${ic(x.icon, 'i-sm')}</span>${esc(x.title)}<span class="muted" style="margin-left:auto;font-weight:500;font-size:12px">${Math.round(x.confidence)} %</span></div><p style="margin:6px 0 8px;font-size:13px;color:var(--text-2)">${esc(x.text)}</p>${x.action ? `<button class="btn btn-secondary btn-sm" data-kiins="${esc(x.id)}"${INSIGHT_PERM[x.action.kind] ? ` data-perm="${INSIGHT_PERM[x.action.kind]}"` : ''}>${esc(x.action.label)}</button>` : ''}</div>`).join('') : `<div class="empty" style="padding:30px"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><p>Keine Auffälligkeiten.</p></div>`;
 }
 async function kiAsk(q) {
   const box = $('#kiAns'); if (!box || !q.trim()) return;
@@ -8456,7 +8460,7 @@ async function kiAsk(q) {
   box.innerHTML = `<div class="card" style="margin-bottom:16px">${loadingCard('Werte aus')}</div>`;
   let a; try { a = await realAnswer(q); } catch (e) { a = {title: 'Keine Antwort', text: String(e.message || e)}; }
   Hooks.emit('ai.query', {frage: q, modell: a.model || 'Kontor-Statistik (lokal)'});
-  box.innerHTML = `<div class="card" style="margin-bottom:16px"><div class="set-row"><div><div class="set-l">${ic('sparkle', 'i-xs')} ${esc(a.title)}</div><div class="set-h" style="white-space:pre-wrap">${esc(a.text)}</div></div>${a.act ? `<div class="set-c"><button class="btn btn-secondary btn-sm" id="kiAct">${esc(a.act.label)}</button></div>` : ''}</div>
+  box.innerHTML = `<div class="card" style="margin-bottom:16px"><div class="set-row"><div><div class="set-l">${ic('sparkle', 'i-xs')} ${esc(a.title)}</div><div class="set-h" style="white-space:pre-wrap">${esc(a.text)}</div></div>${a.act ? `<div class="set-c"><button class="btn btn-secondary btn-sm" id="kiAct"${a.act.perm ? ` data-perm="${a.act.perm}"` : ''}>${esc(a.act.label)}</button></div>` : ''}</div>
     ${a.rows?.length ? `<table class="tbl" style="margin:0"><thead><tr>${a.cols.map((c, i) => `<th class="${a.num?.includes(i) ? 'r' : ''}" style="${i ? '' : 'padding-left:16px'}">${esc(c)}</th>`).join('')}</tr></thead><tbody>${a.rows.map(r => `<tr>${r.map((c, i) => `<td class="${a.num?.includes(i) ? 'r num' : ''}" style="${i ? '' : 'padding-left:16px;font-weight:550'}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>` : ''}
     ${a.sql ? `<div class="prompt-hint blk" style="padding:0 16px 12px">${ic('code', 'i-xs')}${esc(a.sql)}</div>` : ''}</div>`;
   const b = $('#kiAct'); if (b) b.onclick = () => a.act.run();
@@ -8490,14 +8494,14 @@ async function setupChecks() {
   let pins = [], pw = false;
   if (DESKTOP) { try { pins = await invoke('users_default_pins'); pw = await invoke('backup_password_status'); } catch { /* */ } }
   return [
-    {id: 'firma', t: 'Firmendaten eintragen', d: 'Name, Adresse und UID erscheinen auf jedem Beleg', ok: CFG['firma.uid'] !== DEFAULTS['firma.uid'] || CFG['firma.name'] !== DEFAULTS['firma.name'], go: () => setGo('allgemein')},
-    {id: 'pins', t: 'Erst-PINs ändern', d: pins.length ? `Noch aktiv: ${pins.join(', ')}` : 'Alle Personen haben eigene PINs', ok: !pins.length, go: () => go('benutzer')},
-    {id: '2fa', t: 'Zwei-Faktor für Administratoren', d: 'Authenticator-App als zweiter Schutz', ok: STAFF.some(u => u.roleKey === 'admin' && SEC.totp.has(u.id)), go: () => go('benutzer')},
-    {id: 'sortiment', t: 'Eigenes Sortiment', d: 'Artikel anlegen oder per CSV importieren', ok: ART.some(a => !RAW.some(r => r.id === a.id)), go: () => openImport('artikel')},
-    {id: 'drucker', t: 'Bondrucker einrichten', d: `Netzwerk- oder ${SYS_PRN}, Kassenlade`, ok: CFG['drucker.art'] !== 'aus', go: () => setGo('drucker')},
-    {id: 'sicherung', t: 'Datensicherung verschlüsseln', d: 'Tägliche Sicherung mit Passwort, möglichst auf NAS', ok: !!CFG['backup.auto'] && pw, go: () => setGo('sicherung')},
-    {id: 'rksv', t: 'RKSV in Betrieb nehmen', d: 'Startbeleg erstellen (derzeit Testmodus)', ok: !!S.rksv?.active, go: () => setGo('rksv')},
-    {id: 'mail', t: 'E-Mail-Versand', d: 'Belege und Bestellungen per E-Mail', ok: !!mailReady(), go: () => setGo('mail')},
+    {id: 'firma', t: 'Firmendaten eintragen', d: 'Name, Adresse und UID erscheinen auf jedem Beleg', ok: CFG['firma.uid'] !== DEFAULTS['firma.uid'] || CFG['firma.name'] !== DEFAULTS['firma.name'], view: 'set-allgemein', go: () => setGo('allgemein')},
+    {id: 'pins', t: 'Erst-PINs ändern', d: pins.length ? `Noch aktiv: ${pins.join(', ')}` : 'Alle Personen haben eigene PINs', ok: !pins.length, view: 'benutzer', go: () => go('benutzer')},
+    {id: '2fa', t: 'Zwei-Faktor für Administratoren', d: 'Authenticator-App als zweiter Schutz', ok: STAFF.some(u => u.roleKey === 'admin' && SEC.totp.has(u.id)), view: 'benutzer', go: () => go('benutzer')},
+    {id: 'sortiment', t: 'Eigenes Sortiment', d: 'Artikel anlegen oder per CSV importieren', ok: ART.some(a => !RAW.some(r => r.id === a.id)), perm: 'artikel.bearbeiten', go: () => openImport('artikel')},
+    {id: 'drucker', t: 'Bondrucker einrichten', d: `Netzwerk- oder ${SYS_PRN}, Kassenlade`, ok: CFG['drucker.art'] !== 'aus', view: 'set-drucker', go: () => setGo('drucker')},
+    {id: 'sicherung', t: 'Datensicherung verschlüsseln', d: 'Tägliche Sicherung mit Passwort, möglichst auf NAS', ok: !!CFG['backup.auto'] && pw, view: 'set-sicherung', go: () => setGo('sicherung')},
+    {id: 'rksv', t: 'RKSV in Betrieb nehmen', d: 'Startbeleg erstellen (derzeit Testmodus)', ok: !!S.rksv?.active, view: 'set-rksv', go: () => setGo('rksv')},
+    {id: 'mail', t: 'E-Mail-Versand', d: 'Belege und Bestellungen per E-Mail', ok: !!mailReady(), view: 'set-mail', go: () => setGo('mail')},
   ];
 }
 /** Einstellungen › Bereich öffnen (jeder Bereich ist eine eigene Seite, z. B. setGo('drucker') → set-drucker) */
@@ -8507,10 +8511,10 @@ async function renderHilfe() {
   v.innerHTML = `<div class="cv">${pageHead('Hilfe & Info', `Kontor ${esc(S.appVersion)} · ${DESKTOP ? 'Desktop-App' : 'Vorschau im Browser'} · Daten bleiben auf Ihrem Rechner`)}
     <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start">
       <div class="card"><div class="set-row"><div><div class="set-l">Einrichtung · ${done} von ${checks.length} erledigt</div><div class="set-h">Schritt für Schritt zum Echtbetrieb</div></div><div class="set-c" style="min-width:140px"><div class="meter" style="width:140px"><i style="width:${done / checks.length * 100}%"></i></div></div></div>
-        <div class="check-list">${checks.map((c, i) => `<div class="check-row ${c.ok ? 'done' : ''}"><span class="ck">${ic(c.ok ? 'check' : 'clock', 'i-xs')}</span><div class="m"><div class="t1">${esc(c.t)}</div><div class="t2">${esc(c.d)}</div></div>${c.ok ? '' : `<button class="btn btn-secondary btn-sm" data-hc="${i}">Erledigen</button>`}</div>`).join('')}</div></div>
+        <div class="check-list">${checks.map((c, i) => `<div class="check-row ${c.ok ? 'done' : ''}"><span class="ck">${ic(c.ok ? 'check' : 'clock', 'i-xs')}</span><div class="m"><div class="t1">${esc(c.t)}</div><div class="t2">${esc(c.d)}</div></div>${c.ok || !viewFree(c.view) || (c.perm && !can(c.perm)) ? '' : `<button class="btn btn-secondary btn-sm" data-hc="${i}">Erledigen</button>`}</div>`).join('')}</div></div>
       <div style="display:grid;gap:16px">
         <div class="card"><div class="set-row"><div><div class="set-l">Schnellzugriff</div></div></div>
-          ${[['import', 'upload', 'Artikel, Kunden oder Bestand importieren (CSV/Excel)'], ['handy', 'phone-pay', 'Handy als Scanner & Lager-App'], ['display', 'layout', 'Kundendisplay öffnen'], ['keys', 'keyboard', 'Tastenkürzel'], ['palette', 'command', 'Befehlspalette (Strg K)'], ['design', 'palette', 'Designsystem'], ['update', 'download', 'Nach Updates suchen']].map(([k, i, l]) => `<button class="pop-i" data-hq="${k}" style="width:100%;padding:10px 16px;border-top:1px solid var(--line);border-radius:0">${ic(i === 'upload' ? 'download' : i)}${esc(l)}</button>`).join('')}</div>
+          ${[['import', 'upload', 'Artikel, Kunden oder Bestand importieren (CSV/Excel)', can('artikel.bearbeiten') || can('kunden.bearbeiten') || can('bestand.buchen')], ['handy', 'phone-pay', 'Handy als Scanner & Lager-App', viewFree('set-handy')], ['display', 'layout', 'Kundendisplay öffnen'], ['keys', 'keyboard', 'Tastenkürzel'], ['palette', 'command', 'Befehlspalette (Strg K)'], ['design', 'palette', 'Designsystem', viewFree('designsystem')], ['update', 'download', 'Nach Updates suchen', can('system')]].filter(x => x[3] !== false).map(([k, i, l]) => `<button class="pop-i" data-hq="${k}" style="width:100%;padding:10px 16px;border-top:1px solid var(--line);border-radius:0">${ic(i === 'upload' ? 'download' : i)}${esc(l)}</button>`).join('')}</div>
         <div class="card"><div class="set-row"><div><div class="set-l">Neu in ${esc(S.appVersion)}</div></div></div><ul style="margin:0;padding:10px 16px 14px 34px;font-size:13px;color:var(--text-2);line-height:1.7"><li>Helles, aufgeräumtes Design und neue Menüstruktur mit aufklappbaren Bereichen</li><li>Eigene Seiten: Belege, Kassenbuch, Gutscheine, Lieferanten, Wareneingang, Etiketten, Buchhaltung, KI-Analyse, Benutzer & Rechte, Protokoll</li><li>Import von Artikeln, Kunden und Beständen aus CSV/Excel</li><li>Kundendisplay auf zweitem Bildschirm</li><li>Handy-App für Lager und Inventur (im Browser, ohne App-Store)</li></ul></div>
         <div class="card"><div class="set-row" style="border-bottom:0"><div><div class="set-l">Ihre Daten</div><div class="set-h">Alles liegt lokal: Datenbank, Bilder, Sicherungen. Kein Cloud-Zwang, keine Weitergabe.${S.info ? `<br><span class="mono" style="font-size:11.5px">${esc(S.info.db_path)}</span>` : ''}</div></div>${S.info ? `<div class="set-c"><button class="btn btn-secondary btn-sm" data-hq="folder">${ic('boxes', 'i-sm')}Ordner</button></div>` : ''}</div></div>
       </div></div></div>`;
@@ -8523,8 +8527,9 @@ async function renderHilfe() {
   renderDashboard = function (...a) {
     const r = _rd.apply(this, a);
     if (DESKTOP && !persist.get('setupHidden', false) && canApprove(S.user)) setupChecks().then(cs => {
-      const open = cs.filter(c => !c.ok); const anchor = $('#askChips'); if (!open.length || !anchor || $('#setupBanner')) return;
-      anchor.insertAdjacentHTML('afterend', `<div class="hero-card" id="setupBanner" style="margin:14px 0 4px"><span class="reg-ic" style="color:var(--accent)">${ic('check')}</span><div style="flex:1"><b>Einrichtung: ${cs.length - open.length} von ${cs.length} erledigt</b><div class="muted" style="font-size:12.5px">Als Nächstes: ${esc(open[0].t)} – ${esc(open[0].d)}</div></div><button class="btn btn-primary btn-sm" data-sb="go">Weiter</button><button class="btn btn-ghost btn-sm btn-icon" data-sb="x" aria-label="Ausblenden">${ic('x', 'i-sm')}</button></div>`);
+      const open = cs.filter(c => !c.ok && viewFree(c.view) && (!c.perm || can(c.perm)));   // nur Schritte nennen, die die Person ohne Freigabe selbst erledigen darf
+      const anchor = $('#askChips'); if (!open.length || !anchor || $('#setupBanner')) return;
+      anchor.insertAdjacentHTML('afterend', `<div class="hero-card" id="setupBanner" style="margin:14px 0 4px"><span class="reg-ic" style="color:var(--accent)">${ic('check')}</span><div style="flex:1"><b>Einrichtung: ${cs.filter(c => c.ok).length} von ${cs.length} erledigt</b><div class="muted" style="font-size:12.5px">Als Nächstes: ${esc(open[0].t)} – ${esc(open[0].d)}</div></div><button class="btn btn-primary btn-sm" data-sb="go">Weiter</button><button class="btn btn-ghost btn-sm btn-icon" data-sb="x" aria-label="Ausblenden">${ic('x', 'i-sm')}</button></div>`);
       $('#setupBanner').onclick = e => { const b = e.target.closest('[data-sb]'); if (!b) return; if (b.dataset.sb === 'x') { persist.set('setupHidden', true); $('#setupBanner').remove(); } else go('hilfe'); };
     });
     return r;
@@ -8635,8 +8640,10 @@ const IMP_DEF = {
   bestand: {title: 'Bestände', icon: 'boxes', fields: [['ean', 'EAN / Barcode', true, 'ean barcode gtin'], ['stock', 'Bestand (neu)', true, 'bestand menge stock anzahl']],
     template: 'EAN;Bestand\r\n'},
 };
+const IMP_PERM = {artikel: 'artikel.bearbeiten', kunde: 'kunden.bearbeiten', bestand: 'bestand.buchen'};   // Recht je Importart – das Übernehmen verlangt es
 function openImport(kind = 'artikel') {
   if (!DESKTOP) return toast('Import nur in der Desktop-App', {type: 'warn'});
+  if (!can(IMP_PERM[kind])) kind = Object.keys(IMP_DEF).find(k => can(IMP_PERM[k])) || kind;   // nur Importarten anbieten, die ohne Freigabe möglich sind
   const st = {kind, csv: null, map: {}, extra: {}, check: null};
   const el = openLayer(`<div class="modal" style="width:min(900px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="Import"><div id="imBox" style="display:flex;flex-direction:column;min-height:0"></div></div>`);
   const box = $('#imBox', el);
@@ -8711,7 +8718,7 @@ function openImport(kind = 'artikel') {
     const d = IMP_DEF[st.kind];
     if (!st.csv) {
       box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('download')}</div><div><h2>Daten importieren</h2><p>CSV-Datei aus Excel, der bisherigen Warenwirtschaft oder vom Lieferanten</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
-        <div class="m-body" style="display:grid;gap:16px"><div class="opt-grid" style="grid-template-columns:repeat(3,1fr)">${Object.entries(IMP_DEF).map(([k, x]) => `<button class="opt" data-ik="${k}" aria-pressed="${st.kind === k}" style="height:auto;padding:16px;display:grid;gap:6px;justify-items:start">${ic(x.icon)}<b>${x.title}</b><span class="muted" style="font-size:12px;text-align:left">${k === 'artikel' ? 'eine Zeile je Variante (Farbe/Größe)' : k === 'kunde' ? 'gleiche E-Mail = bestehende Kundin aktualisieren' : 'Bestand je EAN setzen (z. B. Zählliste)'}</span></button>`).join('')}</div>
+        <div class="m-body" style="display:grid;gap:16px"><div class="opt-grid" style="grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)">${Object.entries(IMP_DEF).map(([k, x]) => `<button class="opt" data-ik="${k}" data-perm="${IMP_PERM[k]}" aria-pressed="${st.kind === k}" style="height:auto;padding:16px;display:grid;gap:6px;justify-items:start">${ic(x.icon)}<b>${x.title}</b><span class="muted" style="font-size:12px;text-align:left">${k === 'artikel' ? 'eine Zeile je Variante (Farbe/Größe)' : k === 'kunde' ? 'gleiche E-Mail = bestehende Kundin aktualisieren' : 'Bestand je EAN setzen (z. B. Zählliste)'}</span></button>`).join('')}</div>
           <div class="rule-box" style="background:var(--info-soft);border-color:transparent">${ic('info')}<div>In Excel: <b style="color:var(--text)">Datei → Speichern unter → „CSV (Trennzeichen-getrennt)“</b>. Spalten ordnen Sie im nächsten Schritt zu – Reihenfolge und Überschriften sind egal. Vor dem Import wird alles geprüft; es wird erst gespeichert, wenn Sie bestätigen.</div></div></div>
         <div class="m-foot"><button class="btn btn-ghost" id="imTpl">${ic('download', 'i-sm')}Vorlage speichern</button><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="imFile">${ic('boxes', 'i-sm')}CSV-Datei wählen …</button></div>`;
       return;
@@ -16501,6 +16508,8 @@ async function geRemove(ids, fromMask) {
    56 · MENÜPUNKTE UND RECHTE
    Wer ein Recht nicht hat – weder über seine Rolle noch über seine Benutzergruppe – sieht die zugehörigen Menüpunkte nicht
    (auch nicht in der Menüsuche, unter „Zuletzt benutzt“ und in der Befehlspalette). Direkt aufgerufen verlangt die Seite eine Freigabe per PIN.
+   Dasselbe gilt für Einstiege außerhalb des Menüs: Verweise in Seiten (data-goto), Schaltflächen mit data-perm="recht", die Statusleiste
+   (Verbund und Datensicherung sind ohne das Recht „System“ nur eine Anzeige), „Hilfe & Info“, Mitteilungen und die Aktionen der KI-Hinweise.
    Die Zuordnung steht je Seite in VIEW_PERM; hier werden die Lücken geschlossen (nur wo noch nichts festgelegt ist)
    und die System-Seiten dem Recht „system“ zugeordnet. Seiten ohne Eintrag sind für alle da (Dashboard, Artikelsuche, Zeiterfassung, Hilfe …).
    ═════════════════════════════════════════════════════════════════ */
@@ -16542,7 +16551,7 @@ async function geRemove(ids, fromMask) {
   st.textContent = Object.entries(VIEW_PERM).filter(([id, p]) => /^[\w.-]+$/.test(id) && /^[\w.]+$/.test(p)).map(([id, p]) => `body:not([data-can~="${p}"]) [data-goto="${id}"]{display:none!important}`).join('\n');
   document.head.append(st);
 }
-Hooks.on('auth.login', () => permNav());   // auch in der Browser-Vorschau: nach dem Wechsel der Person Menü und Schaltflächen neu bewerten
+Hooks.on('auth.login', () => { permNav(); renderStatus(); });   // auch in der Browser-Vorschau: nach dem Wechsel der Person Menü, Schaltflächen und Statusleiste neu bewerten
 if (window.KONTOR_UI) window.KONTOR_UI.viewPerm = () => ({...VIEW_PERM});   // nur lesend – für Prüfungen: welches Recht eine Seite verlangt
 
 /* Befehlspalette (Strg+K): Befehle, für die das Recht fehlt oder deren Seite gesperrt ist, erscheinen nicht */
@@ -16659,8 +16668,8 @@ function openNotifications(anchor) {
     ['wifi-off', 'warn', 'Kasse 2 seit 12 Minuten offline', '3 Belege lokal signiert · Sync folgt automatisch', null],
     ['database', 'pos', 'Nächtliches Backup erfolgreich', `02:00 · NAS-01 · 2,4 GB · verifiziert`, null],
     ['swap', 'info', 'Umlagerung eingetroffen', '6 Positionen aus Kufstein · bitte einbuchen', null],
-  ];
-  const el = openPopover(anchor, `<div class="pop-h" style="display:flex;justify-content:space-between">Mitteilungen<span>4 neu</span></div>${items.map(([i, t, a, b, act]) => `<div class="notif" ${act ? `data-n="${act}" style="cursor:pointer"` : ''}><span class="reg-ic" style="color:var(--${t})">${ic(i, 'i-sm')}</span><div><div class="t1">${a}</div><div class="t2">${b}</div></div></div>`).join('')}`, {width: 340});
+  ].filter(x => x[4] !== 'update' || can('system'));   // die Update-Freigabe sieht nur, wer sie erteilen darf
+  const el = openPopover(anchor, `<div class="pop-h" style="display:flex;justify-content:space-between">Mitteilungen<span>${items.length} neu</span></div>${items.map(([i, t, a, b, act]) => `<div class="notif" ${act ? `data-n="${act}" style="cursor:pointer"` : ''}><span class="reg-ic" style="color:var(--${t})">${ic(i, 'i-sm')}</span><div><div class="t1">${a}</div><div class="t2">${b}</div></div></div>`).join('')}`, {width: 340});
   if (!el) return;
   anchor.classList.remove('has-dot');
   el.addEventListener('click', e => { if (e.target.closest('[data-n="update"]')) { closePopover(); openUpdate(); } });

@@ -2,6 +2,8 @@
    56 · MENÜPUNKTE UND RECHTE
    Wer ein Recht nicht hat – weder über seine Rolle noch über seine Benutzergruppe – sieht die zugehörigen Menüpunkte nicht
    (auch nicht in der Menüsuche, unter „Zuletzt benutzt“ und in der Befehlspalette). Direkt aufgerufen verlangt die Seite eine Freigabe per PIN.
+   Dasselbe gilt für Einstiege außerhalb des Menüs: Verweise in Seiten (data-goto), Schaltflächen mit data-perm="recht", die Statusleiste
+   (Verbund und Datensicherung sind ohne das Recht „System“ nur eine Anzeige), „Hilfe & Info“, Mitteilungen und die Aktionen der KI-Hinweise.
    Die Zuordnung steht je Seite in VIEW_PERM; hier werden die Lücken geschlossen (nur wo noch nichts festgelegt ist)
    und die System-Seiten dem Recht „system“ zugeordnet. Seiten ohne Eintrag sind für alle da (Dashboard, Artikelsuche, Zeiterfassung, Hilfe …).
    ═════════════════════════════════════════════════════════════════ */
@@ -43,7 +45,7 @@
   st.textContent = Object.entries(VIEW_PERM).filter(([id, p]) => /^[\w.-]+$/.test(id) && /^[\w.]+$/.test(p)).map(([id, p]) => `body:not([data-can~="${p}"]) [data-goto="${id}"]{display:none!important}`).join('\n');
   document.head.append(st);
 }
-Hooks.on('auth.login', () => permNav());   // auch in der Browser-Vorschau: nach dem Wechsel der Person Menü und Schaltflächen neu bewerten
+Hooks.on('auth.login', () => { permNav(); renderStatus(); });   // auch in der Browser-Vorschau: nach dem Wechsel der Person Menü, Schaltflächen und Statusleiste neu bewerten
 if (window.KONTOR_UI) window.KONTOR_UI.viewPerm = () => ({...VIEW_PERM});   // nur lesend – für Prüfungen: welches Recht eine Seite verlangt
 
 /* Befehlspalette (Strg+K): Befehle, für die das Recht fehlt oder deren Seite gesperrt ist, erscheinen nicht */

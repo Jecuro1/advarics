@@ -202,7 +202,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.38.4', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.38.5', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -621,17 +621,18 @@ function renderTopbar() {
 
 function renderStatus() {
   const off = !S.online;
+  const sys = can('system');   // Verbund und Datensicherung öffnen Seiten, die nur mit dem Recht „System“ (sonst per PIN-Freigabe) zugänglich sind: ohne das Recht nur als Anzeige
   $('#statusbar').innerHTML = `
-    ${DESKTOP ? `${(() => { const v = typeof vbStatus === 'function' ? vbStatus() : null; return v ? `<button class="sbi ${v.ok ? 'ok' : 'off'}" id="sbVerbund" data-tip="${esc(v.tip)}"><span class="dot ${v.ok ? 'live' : ''}"></span>${esc(v.text)}</button>` : '<span class="sbi ok"><span class="dot live"></span>Einzelplatz · lokale Datenbank</span>'; })()}
+    ${DESKTOP ? `${(() => { const v = typeof vbStatus === 'function' ? vbStatus() : null; return v ? `<${sys ? 'button' : 'span'} class="sbi ${v.ok ? 'ok' : 'off'}" ${sys ? 'id="sbVerbund" ' : ''}data-tip="${esc(sys || !/^Klicken/.test(v.tip) ? v.tip : 'Filialverbund')}"><span class="dot ${v.ok ? 'live' : ''}"></span>${esc(v.text)}</${sys ? 'button' : 'span'}>` : '<span class="sbi ok"><span class="dot live"></span>Einzelplatz · lokale Datenbank</span>'; })()}
     <span class="sb-sep"></span>
     <span class="sbi hide-sm ${S.rksv?.active ? '' : 'off'}">${ic('shield')}${S.rksv?.active ? `RKSV-Testmodus · ${esc(S.rksv.kassen_id)}` : 'RKSV nicht in Betrieb'}</span>` : `<button class="sbi ${off ? 'off' : 'ok'}" id="sbConn" data-tip="${off ? 'Klicken: Verbindung wiederherstellen' : 'Klicken: Offline-Modus simulieren'}"><span class="dot ${off ? '' : 'live'}"></span>${off ? 'Server nicht erreichbar · lokaler Betrieb' : 'KONTOR-SRV01 · lokal · 4 ms'}</button>
     <span class="sb-sep"></span>
     <span class="sbi ${S.queue ? 'accent' : ''}">${ic('sync')}${S.queue ? `${S.queue} Beleg${S.queue > 1 ? 'e' : ''} in Warteschlange` : 'Synchron'}</span>
     <span class="sbi hide-sm">${ic('shield')}RKSV · Signatureinheit aktiv</span>`}
-    <button class="sbi hide-sm ${S.backupH === Infinity || S.backupH >= 48 ? 'off' : ''}" id="sbBackup" data-tip="${DESKTOP ? 'Klicken: Datensicherung öffnen' : 'Backup-Werkzeuge'}">${ic('database')}${backupLabel()}${DESKTOP ? '' : ' · NAS-01'}</button>
+    <${DESKTOP && !sys ? 'span' : 'button'} class="sbi hide-sm ${S.backupH === Infinity || S.backupH >= 48 ? 'off' : ''}" ${DESKTOP && !sys ? '' : 'id="sbBackup" '}data-tip="${DESKTOP ? (sys ? 'Klicken: Datensicherung öffnen' : 'Letzte Datensicherung') : 'Backup-Werkzeuge'}">${ic('database')}${backupLabel()}${DESKTOP ? '' : ' · NAS-01'}</${DESKTOP && !sys ? 'span' : 'button'}>
     <button class="sbi ${!DESKTOP || UPD.state === 'available' ? 'accent' : ''} hide-sm" id="sbUpdate" data-perm="system">${ic('download')}${esc(updLabel())}</button>
     <span class="sb-spacer"></span>
-    <button class="sbi" id="sbHooks" data-tip="Ereignis-Inspektor · Hooks & Webhooks" data-tip-pos="up-left">${ic('braces')}Ereignisse <b class="num" id="sbHookCount" style="font-weight:600;color:var(--text-2)">${Hooks.count}</b></button>
+    <button class="sbi" id="sbHooks" data-perm="system" data-tip="Ereignis-Inspektor · Hooks & Webhooks" data-tip-pos="up-left">${ic('braces')}Ereignisse <b class="num" id="sbHookCount" style="font-weight:600;color:var(--text-2)">${Hooks.count}</b></button>
     ${DESKTOP ? '' : `<span class="sbi hide-md">${ic('sparkle')}KI lokal · bereit</span>`}
     <span class="sbi hide-md">${DESKTOP ? `Desktop-App v${S.appVersion}` : 'Vorschau im Browser'}</span>
     <span class="sbi num" id="sbClock">${clock()}</span>`;

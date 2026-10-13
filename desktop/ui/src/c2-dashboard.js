@@ -291,7 +291,7 @@ const W = {
     body: () => {
       const rows = INSIGHTS.filter(x => !Dash.dismissed.has(x.id));
       if (!rows.length) return `<div class="empty" style="flex:1"><div class="empty-icon">${ic('sparkle')}</div><h3>Keine offenen Hinweise</h3><p>Neue Hinweise erscheinen, sobald das Modell etwas Relevantes erkennt.</p></div>`;
-      return `<div class="ins">${rows.map(x => `<div class="in" data-in="${x.id}"><div class="in-h"><span style="color:var(--${x.tone})">${ic(x.icon)}</span>${esc(x.t)}<span class="conf">${x.conf} % sicher</span></div><p>${esc(x.p)}</p><div class="in-a"><button class="btn btn-secondary btn-sm" data-act="ins" data-id="${x.id}">${esc(x.a)}</button><button class="btn btn-ghost btn-sm" data-act="ins-x" data-id="${x.id}">Verwerfen</button></div></div>`).join('')}</div>`;
+      return `<div class="ins">${rows.map(x => `<div class="in" data-in="${x.id}"><div class="in-h"><span style="color:var(--${x.tone})">${ic(x.icon)}</span>${esc(x.t)}<span class="conf">${x.conf} % sicher</span></div><p>${esc(x.p)}</p><div class="in-a"><button class="btn btn-secondary btn-sm" data-act="ins" data-id="${x.id}"${x.perm ? ` data-perm="${x.perm}"` : ''}>${esc(x.a)}</button><button class="btn btn-ghost btn-sm" data-act="ins-x" data-id="${x.id}">Verwerfen</button></div></div>`).join('')}</div>`;
     }},
   'ops.registers': {title: 'Kassen & RKSV', cat: 'Betrieb', icon: 'register', desc: 'Kassenstatus, Offline-Warteschlangen und RKSV-Fristen.', sizes: ['tall', 'wide'],
     sub: () => DESKTOP ? 'diese Kasse' : '3 Kassen · Filiale',

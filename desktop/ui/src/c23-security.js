@@ -22,9 +22,10 @@ function viewBlocked(id, u = S.user) {
 }
 /** Erster erlaubter Menüpunkt (wenn Start- oder Zielseite gesperrt ist) */
 function firstAllowedView() {
-  const ok = id => !viewBlocked(id) && (!VIEW_PERM[id] || can(VIEW_PERM[id]));
-  return ['dashboard', 'kasse'].find(ok) || navFlat().find(x => ok(x.id))?.id || 'dashboard';
+  return ['dashboard', 'kasse'].find(viewFree) || navFlat().find(x => viewFree(x.id))?.id || 'dashboard';
 }
+/** Seite ohne PIN-Freigabe erreichbar? (Recht der Seite über Rolle oder Benutzergruppe, nicht für die Gruppe gesperrt) – ohne Seite: ja */
+function viewFree(id) { return !id || (!viewBlocked(id) && (!VIEW_PERM[id] || can(VIEW_PERM[id]))); }
 /** Recht der Person: Rolle, abgewandelt durch die Benutzergruppe („ja“ erlaubt zusätzlich, „nein“ sperrt; Administratoren immer nach Rolle) */
 function can(perm, u = S.user) {
   const role = u?.roleKey; if (!role) return false;

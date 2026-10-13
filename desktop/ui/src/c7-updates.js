@@ -11,9 +11,9 @@ function updLabel() {
   return {available: `Update ${UPD.info?.version} verfügbar`, checking: 'Suche nach Updates …', current: `Aktuell · v${S.appVersion}`, error: 'Update-Suche fehlgeschlagen', idle: `v${S.appVersion}`}[UPD.state];
 }
 function updWidgetRow() {
-  if (!DESKTOP) return `<div class="ops-row">${ic('download', 'i-sm')}<div class="k"><b>${S.update === 'pending' ? 'Update 1.8.0 wartet' : 'Update 1.8.0 geplant'}</b>${S.update === 'pending' ? 'Stable · signiert · Freigabe nötig' : 'Installation heute 20:00'}</div><button class="btn ${S.update === 'pending' ? 'btn-primary' : 'btn-secondary'} btn-sm" data-act="update">${S.update === 'pending' ? 'Prüfen' : 'Details'}</button></div>`;
+  if (!DESKTOP) return `<div class="ops-row" data-perm="system">${ic('download', 'i-sm')}<div class="k"><b>${S.update === 'pending' ? 'Update 1.8.0 wartet' : 'Update 1.8.0 geplant'}</b>${S.update === 'pending' ? 'Stable · signiert · Freigabe nötig' : 'Installation heute 20:00'}</div><button class="btn ${S.update === 'pending' ? 'btn-primary' : 'btn-secondary'} btn-sm" data-act="update">${S.update === 'pending' ? 'Prüfen' : 'Details'}</button></div>`;
   const av = UPD.state === 'available';
-  return `<div class="ops-row">${ic('download', 'i-sm')}<div class="k"><b>${esc(updLabel())}</b>${av ? 'Signiert · wartet auf Freigabe' : `Installiert: ${esc(S.appVersion)}${UPD.last ? ' · geprüft ' + esc(fmtTs(UPD.last.toISOString()).split(', ').pop()) : ''}`}</div><button class="btn ${av ? 'btn-primary' : 'btn-secondary'} btn-sm" data-act="update">${av ? 'Ansehen' : 'Suchen'}</button></div>`;
+  return `<div class="ops-row" data-perm="system">${ic('download', 'i-sm')}<div class="k"><b>${esc(updLabel())}</b>${av ? 'Signiert · wartet auf Freigabe' : `Installiert: ${esc(S.appVersion)}${UPD.last ? ' · geprüft ' + esc(fmtTs(UPD.last.toISOString()).split(', ').pop()) : ''}`}</div><button class="btn ${av ? 'btn-primary' : 'btn-secondary'} btn-sm" data-act="update">${av ? 'Ansehen' : 'Suchen'}</button></div>`;
 }
 function renderUpdBits() { renderStatus(); renderUpdSection(); refreshDashboard(['ops.system']); }
 async function checkUpdates(manual) {

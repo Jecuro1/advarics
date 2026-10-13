@@ -1,3 +1,11 @@
+## Neu in 0.38.5
+
+- **Auch außerhalb des Menüs nur, was ohne PIN-Freigabe geht.** Weitere Einstiege, die bisher erst nach einer Freigabe etwas geöffnet hätten, erscheinen nur noch mit dem passenden Recht (Rolle und Benutzergruppe zählen, Administratoren sehen alles):
+  - **Statusleiste unten:** „Verbund“ und „Datensicherung“ sind ohne das Recht „System“ nur noch eine Anzeige – ein Klick darauf führte vorher zu einer gesperrten Seite. „Ereignisse“ (Ereignis-Inspektor) gibt es nur mit „System“, wie in der Befehlspalette.
+  - **Hilfe & Info:** „Erledigen“ steht nur bei den Einrichtungsschritten, die die Person selbst ausführen darf (z. B. „Firmendaten“ mit dem Recht „Einstellungen“, „Eigenes Sortiment“ mit „Artikel bearbeiten“). Im Schnellzugriff erscheinen „Handy als Scanner“ nur mit „Anpassen“ und „Nach Updates suchen“ nur mit „System“. „Daten importieren“ bietet nur die Arten an, für die das Recht vorhanden ist (Artikel, Kunden, Bestände). Der Hinweis „Einrichtung“ am Dashboard nennt nur Schritte, die die Person selbst erledigen darf.
+  - **Mitteilungen und Dashboard:** Der Update-Hinweis in den Mitteilungen und die Update-Zeile im Betriebs-Widget erscheinen nur mit „System“.
+  - **KI-Hinweise (Dashboard und KI-Analyse):** Die Aktion eines Hinweises („Artikel öffnen“, „Inventur ansehen“, „Nachbestellen“, „Preisaktion“, „Im Einkauf öffnen“, „Nachbestellvorschlag“) steht nur da, wenn die Person das passende Recht hat. Der Hinweis selbst bleibt sichtbar.
+
 ## Neu in 0.38.4
 
 - **Nur Menüpunkte, für die keine PIN-Freigabe nötig ist.** Was eine angemeldete Person nur mit der Freigabe einer anderen Person benutzen könnte, wird ihr gar nicht mehr angezeigt (Rolle und Benutzergruppe zählen, Administratoren sehen alles):
