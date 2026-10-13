@@ -197,9 +197,9 @@ async function renderStamm(kind, page, extra = {}) {
       : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic(D.ic || 'list')}</div><h3>Noch keine Einträge</h3><p>„Zeile“ hinzufügen oder per CSV importieren.</p></div>`}</div>
     ${visAll.length > STMAX ? `<div class="muted" style="padding:10px 4px;font-size:13px">Angezeigt werden die ersten ${STMAX} von ${num(visAll.length)} Einträgen – zum Eingrenzen die Suche oben verwenden.</div>` : ''}
     ${extra.below ? extra.below() : ''}</div>`;
-  // Zeilen per Ziehen sortieren (am Anfasser rechts)
+  // Zeilen per Ziehen sortieren: die ganze Zeile lässt sich greifen (in Textfeldern senkrecht ziehen)
   dndZone($('tbody', v), 'stamm:' + kind, {
-    label: ids => { const r = st.rows[+ids[0]]; return r ? (r[D.cols[0]?.k] || r.id || '') : ''; },
+    ghost: 'clone', label: ids => { const r = st.rows[+ids[0]]; return r ? (r[D.cols[0]?.k] || r.id || '') : ''; },
     reorder: (ids, ins) => {
       const i = +ids[0]; if (isNaN(i) || i < 0 || i >= st.rows.length) return;
       const j = ins ? +ins.id : st.rows.length - 1, [row] = st.rows.splice(i, 1);

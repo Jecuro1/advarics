@@ -8,7 +8,9 @@
    Aufbau
      • Zone  – Bereich, in dem gezogen und auf den abgelegt wird:   dndZone(element, 'kennung', {…})
      • Item  – ziehbares Element in einer Zone:                    data-dnd-item  data-dnd-id="…"   (dndAttr(id))
-               Enthält das Item eine Anfasser-Fläche [data-dnd-handle] (dndGrip()), wird nur dort gegriffen.
+               Die ganze Zeile lässt sich greifen – nur Schaltflächen, Auswahlfelder und Schalter darin nicht.
+               In Textfeldern einer Liste greift senkrechtes Ziehen die Zeile, waagerechtes markiert wie gewohnt Text.
+               Ein Anfasser (dndGrip()) ist nur ein sichtbarer Hinweis; Finger ziehen dort ohne Halten.
    Zone-Optionen
      from     Kennungen anderer Zonen (Liste oder Funktion), aus denen hier abgelegt werden darf
      drop     (ids, vonZone, ins) – Items aus einer anderen Zone wurden abgelegt;  ins = {id, after} oder null
@@ -17,13 +19,14 @@
      axis     'y' (Liste, Standard) oder 'x' (Kacheln, Spalten)
      hint     Text am Mauszeiger über dieser Zone („Zuordnen“)
      ids      (itemElement) → Ids, die mitgezogen werden (Standard: nur das Item)
-     label    (ids, itemElement) → Text am Mauszeiger
-     ghost    'clone' = das Element selbst folgt dem Zeiger (Kacheln, Chips)
+     label    (ids, itemElement) → Text am Mauszeiger (nur bei ghost 'pill')
+     ghost    'clone' = die ganze Zeile / das Element selbst folgt dem Zeiger;  sonst ein kleines Schild mit Beschriftung
      canDrag  (itemElement) → false = nicht ziehbar
      area     Element, das beim Darüberziehen hervorgehoben wird (Standard: die Zone)
    ═════════════════════════════════════════════════════════════════ */
 const DND = {zones: new Map(), pre: null, drag: null};
 const DND_SKIP = 'input,textarea,select,button,a[href],label.ea-sw,[contenteditable="true"],[data-dnd-no],.switch,[role="switch"]';
+const DND_TEXT = 'input:not([type]),input[type="text"],input[type="search"],input[type="number"],input[type="email"],input[type="tel"],input[type="url"],input[type="password"],input[type="date"],input[type="time"],input[type="color"]';   // einzeilige Textfelder (mehrzeilige: senkrechtes Ziehen markiert dort Text)
 
 /** Zone anmelden (nach jedem Neuzeichnen der Seite erneut aufrufen – gleiche Kennung ersetzt die alte) */
 function dndZone(el, id, def = {}) {
@@ -74,25 +77,62 @@ function dndLabel(z, ids, item) {
   return String(t ?? '').replace(/\s+/g, ' ').trim().slice(0, 48) || String(ids[0] ?? '');
 }
 
+/** Abbild eines Elements mit fest eingerechneten Stilen – so folgt die ganze Zeile dem Zeiger (auch aus Tabellen und Rastern) */
+function dndSnapshot(item, maxW = Math.max(640, Math.round(innerWidth * .62)), maxH = 300) {
+  const r = item.getBoundingClientRect(); if (!r.width || !r.height) return null;
+  const row = item.matches('.ag-row,tr,.set-row,label,li'), clone = item.cloneNode(true);
+  const src = [item, ...item.querySelectorAll('*')], dst = [clone, ...clone.querySelectorAll('*')];
+  for (let i = 0; i < src.length; i++) {
+    const d = dst[i]; if (!d || !d.style) continue;
+    const cs = getComputedStyle(src[i]); let css = '';
+    for (let k = 0; k < cs.length; k++) css += `${cs[k]}:${cs.getPropertyValue(cs[k])};`;
+    d.setAttribute('style', css + (d.getAttribute('style') || ''));   // eigene Angaben (z. B. --sw) behalten Vorrang
+    ['id', 'name', 'tabindex', 'autofocus', 'data-dnd-item', 'data-dnd-handle'].forEach(a => d.removeAttribute(a));
+  }
+  // Eingaben zeigen den aktuellen Wert, nicht den Ausgangswert
+  const sf = item.querySelectorAll('input,textarea,select'), df = clone.querySelectorAll('input,textarea,select');
+  sf.forEach((q, i) => { const d = df[i]; if (!d) return; if (q.type === 'checkbox' || q.type === 'radio') d.checked = q.checked; else d.value = q.value; });
+  let el = clone;
+  clone.style.cssText += ';animation:none;transition:none;margin:0;opacity:1;box-sizing:border-box';
+  if (item.tagName === 'TR') {
+    const t = document.createElement('table'), b = document.createElement('tbody'); b.append(clone); t.append(b);
+    t.style.cssText = `border-collapse:collapse;table-layout:fixed;width:${r.width}px;margin:0;background:transparent`;
+    clone.style.cssText += ';position:static';
+    el = t;
+  } else clone.style.cssText += `;position:relative;top:auto;left:auto;right:auto;bottom:auto;width:${r.width}px;height:${r.height}px`;
+  return {el, w: Math.min(r.width, maxW), h: Math.min(r.height, maxH), row, rect: r};
+}
+/** Schild am Zeiger: ganze Zeile (ghost 'clone') oder Beschriftung */
+function dndGhost(z, ids, item, x, y) {
+  const g = document.createElement('div'); g.className = 'dnd-ghost';
+  if (z.ghost === 'clone') {
+    let s = null; try { s = dndSnapshot(item); } catch { /* dann Schild mit Beschriftung */ }
+    if (s) {
+      g.classList.add('clone', s.row ? 'row' : 'tile'); if (ids.length > 1) g.classList.add('multi');
+      const body = document.createElement('div'); body.className = 'dnd-body'; body.style.cssText = `width:${s.w}px;height:${s.h}px`; body.append(s.el);
+      g.append(body);
+      if (ids.length > 1) g.insertAdjacentHTML('beforeend', `<b class="dnd-gn">${ids.length}</b>`);
+      g.insertAdjacentHTML('beforeend', '<span class="dnd-gh"></span>');
+      try { g.inert = true; } catch { /* */ }
+      return {g, off: {x: -clamp(x - s.rect.left, 10, Math.max(10, s.w - 24)), y: -clamp(y - s.rect.top, 6, Math.max(6, s.h - 6))}};
+    }
+  }
+  g.innerHTML = `<span class="dnd-gl">${esc(dndLabel(z, ids, item))}</span>${ids.length > 1 ? `<b class="dnd-gn">${ids.length}</b>` : ''}<span class="dnd-gh"></span>`;
+  return {g, off: {x: -14, y: -12}};
+}
+
 function dndStart(p, x, y) {
   clearTimeout(p.timer); DND.pre = null;
   const z = p.z, ids = (z.ids ? z.ids(p.item) : [p.item.dataset.dndId]).map(String).filter(Boolean);
   if (!ids.length) return;
-  const g = document.createElement('div'); g.className = 'dnd-ghost';
-  if (z.ghost === 'clone') {
-    const c = p.item.cloneNode(true), r = p.item.getBoundingClientRect();
-    c.removeAttribute('id'); c.querySelectorAll('[id]').forEach(n => n.removeAttribute('id')); c.querySelectorAll('[data-dnd-item]').forEach(n => n.removeAttribute('data-dnd-item')); c.removeAttribute('data-dnd-item');
-    c.style.cssText += `;width:${r.width}px;height:${r.height}px;margin:0;opacity:1`;
-    // die Stilregeln hängen oft am übergeordneten Element (z. B. „.cpick button“) – dessen Klassen mitgeben
-    const w = document.createElement('div'); w.className = p.item.parentElement?.className || ''; w.style.cssText = 'display:block;margin:0;padding:0;border:0;background:none;box-shadow:none;min-width:0';
-    w.append(c); g.classList.add('clone'); g.append(w);
-  } else g.innerHTML = `<span class="dnd-gl">${esc(dndLabel(z, ids, p.item))}</span>${ids.length > 1 ? `<b class="dnd-gn">${ids.length}</b>` : ''}<span class="dnd-gh"></span>`;
+  const {g, off} = dndGhost(z, ids, p.item, x, y);
   document.body.append(g);
   const line = document.createElement('div'); line.className = 'dnd-line'; line.hidden = true; document.body.append(line);
-  const d = DND.drag = {z, ids, item: p.item, ghost: g, line, x, y, pid: p.id, target: null, marks: [], raf: 0, off: z.ghost === 'clone' ? {x: x - p.item.getBoundingClientRect().left, y: y - p.item.getBoundingClientRect().top} : {x: -14, y: -12}};
+  const d = DND.drag = {z, ids, item: p.item, ghost: g, line, x, y, pid: p.id, target: null, marks: [], raf: 0, off};
   document.body.classList.add('dnd-on');
   try { document.documentElement.setPointerCapture(p.id); } catch { /* kein aktiver Zeiger (z. B. Test) */ }
   try { getSelection()?.removeAllRanges(); } catch { /* */ }
+  if (p.vertical) { try { const a = document.activeElement; if (a && a !== document.body) a.blur(); } catch { /* */ } }   // das Textfeld, auf dem gegriffen wurde, verliert den Fokus
   const idset = new Set(ids);
   dndItems(z).forEach(it => { if (idset.has(it.dataset.dndId)) { it.classList.add('dnd-src'); d.marks.push(it); } });
   // alle Zonen, auf die abgelegt werden darf, zeigen sich dezent
@@ -172,12 +212,15 @@ document.addEventListener('pointerdown', e => {
   if (DND.drag || e.isPrimary === false || (e.pointerType === 'mouse' && e.button !== 0)) return;
   const t = e.target; if (!(t instanceof Element)) return;
   const item = t.closest('[data-dnd-item]'); if (!item) return;
-  const handle = t.closest('[data-dnd-handle]'), inter = t.closest(DND_SKIP);
-  if (!handle && inter && inter !== item && item.contains(inter)) return;   // Eingabefelder und Schaltflächen im Item greifen nicht
-  if (!handle && item.querySelector('[data-dnd-handle]')) return;   // nur am Anfasser greifen
   const zEl = item.closest('[data-dnd-zone]'), z = zEl && DND.zones.get(zEl.dataset.dndZone);
   if (!z || z.el !== zEl || (z.canDrag && !z.canDrag(item))) return;
-  const p = DND.pre = {z, item, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, id: e.pointerId, touch: e.pointerType === 'touch' && !handle, timer: 0};
+  const handle = t.closest('[data-dnd-handle]'), inter = handle ? null : t.closest(DND_SKIP);
+  let vertical = false;
+  if (inter && inter !== item && item.contains(inter)) {   // Eingabefelder und Schaltflächen im Item
+    if (e.pointerType !== 'touch' && z.axis !== 'x' && inter.matches(DND_TEXT)) vertical = true;   // Textfeld: senkrecht ziehen = Zeile greifen
+    else return;
+  }
+  const p = DND.pre = {z, item, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, id: e.pointerId, vertical, touch: e.pointerType === 'touch' && !handle, timer: 0};
   if (p.touch) p.timer = setTimeout(() => { if (DND.pre === p) dndStart(p, p.lx, p.ly); }, 380);   // Finger: erst nach kurzem Halten ziehen, sonst wird gescrollt
 }, true);
 document.addEventListener('pointermove', e => {
@@ -187,6 +230,11 @@ document.addEventListener('pointermove', e => {
   p.lx = e.clientX; p.ly = e.clientY;
   const dist = Math.hypot(e.clientX - p.x, e.clientY - p.y);
   if (p.touch) { if (dist > 10) dndCancel(); return; }
+  if (p.vertical) {   // im Textfeld: senkrecht = Zeile ziehen, waagerecht = Text markieren
+    const dx = Math.abs(e.clientX - p.x), dy = Math.abs(e.clientY - p.y);
+    if (dy >= 7 && dy > dx * 1.5) dndStart(p, e.clientX, e.clientY); else if (dx >= 9 && dx > dy) DND.pre = null;
+    return;
+  }
   if (dist >= 5) dndStart(p, e.clientX, e.clientY);
 }, true);
 document.addEventListener('pointerup', e => {

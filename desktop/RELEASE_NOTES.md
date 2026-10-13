@@ -1,3 +1,9 @@
+## Neu in 0.38.2
+
+- **Drag & Drop: die ganze Zeile lässt sich greifen und ziehen** – es braucht keinen Anfasser mehr. In den Zuordnungslisten (Zugeordnet / Nicht zugeordnet), in den Stammdaten-Tabellen, bei den eigenen Feldern, in der Spalten-Auswahl und in der Artikelsortierung genügt es, die Zeile irgendwo anzufassen. Nur Schaltflächen, Auswahllisten und Schalter in der Zeile bleiben bedienbar wie bisher. In Stammdaten-Tabellen mit Textfeldern greift senkrechtes Ziehen die Zeile; waagerechtes Ziehen im Textfeld markiert wie gewohnt Text.
+- **Die ganze Zeile folgt dem Mauszeiger** – mit allen Spalten (nicht nur dem Namen), bei mehreren markierten Zeilen gestapelt und mit Anzahl. Oben an der Zeile steht, was passiert („Zuordnen“, „Entfernen“).
+- Über den Zuordnungslisten steht der Hinweis „Zeilen ziehen oder doppelklicken“.
+
 ## Neu in 0.38.1
 
 - **Ziehen und Ablegen (Drag & Drop) – überall, wo etwas zugeordnet oder sortiert wird.** Mit Maus, Stift und Finger (Finger: kurz halten, dann ziehen). Beim Ziehen zeigt eine Linie die Einfügestelle und eine Beschriftung am Zeiger, was passiert („Zuordnen“, „Entfernen“); am Rand scrollt die Liste von selbst mit, Esc bricht ab. Die bisherigen Schaltflächen („Zuordnen“, „Entfernen“) und der Doppelklick funktionieren weiter.

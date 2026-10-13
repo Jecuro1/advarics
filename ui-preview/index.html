@@ -1735,7 +1735,19 @@ body.dnd-on.dnd-no,body.dnd-on.dnd-no *{cursor:no-drop!important}
 .dnd-ghost .dnd-gh{display:none;color:var(--accent);padding-left:8px;border-left:1px solid var(--line-2);white-space:nowrap}
 .dnd-ghost.ok{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),var(--shadow-3)}
 .dnd-ghost.ok .dnd-gh:not(:empty){display:block}
-.dnd-ghost.clone{display:block;max-width:none;min-height:0;padding:0;border:0;border-radius:12px;background:transparent;box-shadow:var(--shadow-3);transform-origin:0 0}
+.dnd-ghost,.dnd-ghost *{pointer-events:none!important}
+.dnd-ghost.clone{display:block;max-width:none;min-height:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;font-weight:400;opacity:1}
+.dnd-ghost.clone .dnd-body{position:relative;overflow:hidden;box-sizing:content-box}
+.dnd-ghost.row .dnd-body{border-radius:10px;background:color-mix(in srgb,var(--accent) 7%,var(--surface));box-shadow:0 0 0 1px var(--line-2),var(--shadow-3)}
+.dnd-ghost.row.ok .dnd-body{box-shadow:0 0 0 2px var(--accent),var(--shadow-3)}
+.dnd-ghost.tile .dnd-body{overflow:visible;filter:drop-shadow(0 10px 18px rgba(16,24,40,.28))}
+.dnd-ghost.multi::before{content:"";position:absolute;inset:6px -6px -6px 6px;border-radius:10px;background:var(--surface-2);box-shadow:0 0 0 1px var(--line-2);z-index:-1}
+.dnd-ghost.clone .dnd-gn{position:absolute;left:-9px;top:-10px;z-index:2;box-shadow:0 2px 6px rgba(16,24,40,.3)}
+.dnd-ghost.clone .dnd-gh{position:absolute;right:10px;top:-13px;z-index:2;padding:3px 11px;border:0;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-size:11.5px;font-weight:650;box-shadow:0 2px 8px rgba(16,24,40,.3)}
+.dnd-ghost.clone.ok .dnd-gh:not(:empty){display:block}
+tr[data-dnd-item],.set-row[data-dnd-item]{cursor:grab}
+.ae-two .ae-card>h4::after{content:"Zeilen ziehen oder doppelklicken";float:right;font-size:12px;font-weight:500;color:var(--text-3)}
+@media (max-width:720px){.ae-two .ae-card>h4::after{content:none}}
 .dnd-line{position:fixed;z-index:899;pointer-events:none;border-radius:3px;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .dnd-line[hidden]{display:none}
 .file-hint{position:fixed;z-index:850;pointer-events:none;display:grid;place-items:center;border:2px dashed var(--accent);border-radius:14px;background:color-mix(in srgb,var(--accent) 9%,transparent)}
@@ -2121,7 +2133,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.38.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.38.2', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2693,7 +2705,9 @@ function openPalette(prefill = '') {
    Aufbau
      • Zone  – Bereich, in dem gezogen und auf den abgelegt wird:   dndZone(element, 'kennung', {…})
      • Item  – ziehbares Element in einer Zone:                    data-dnd-item  data-dnd-id="…"   (dndAttr(id))
-               Enthält das Item eine Anfasser-Fläche [data-dnd-handle] (dndGrip()), wird nur dort gegriffen.
+               Die ganze Zeile lässt sich greifen – nur Schaltflächen, Auswahlfelder und Schalter darin nicht.
+               In Textfeldern einer Liste greift senkrechtes Ziehen die Zeile, waagerechtes markiert wie gewohnt Text.
+               Ein Anfasser (dndGrip()) ist nur ein sichtbarer Hinweis; Finger ziehen dort ohne Halten.
    Zone-Optionen
      from     Kennungen anderer Zonen (Liste oder Funktion), aus denen hier abgelegt werden darf
      drop     (ids, vonZone, ins) – Items aus einer anderen Zone wurden abgelegt;  ins = {id, after} oder null
@@ -2702,13 +2716,14 @@ function openPalette(prefill = '') {
      axis     'y' (Liste, Standard) oder 'x' (Kacheln, Spalten)
      hint     Text am Mauszeiger über dieser Zone („Zuordnen“)
      ids      (itemElement) → Ids, die mitgezogen werden (Standard: nur das Item)
-     label    (ids, itemElement) → Text am Mauszeiger
-     ghost    'clone' = das Element selbst folgt dem Zeiger (Kacheln, Chips)
+     label    (ids, itemElement) → Text am Mauszeiger (nur bei ghost 'pill')
+     ghost    'clone' = die ganze Zeile / das Element selbst folgt dem Zeiger;  sonst ein kleines Schild mit Beschriftung
      canDrag  (itemElement) → false = nicht ziehbar
      area     Element, das beim Darüberziehen hervorgehoben wird (Standard: die Zone)
    ═════════════════════════════════════════════════════════════════ */
 const DND = {zones: new Map(), pre: null, drag: null};
 const DND_SKIP = 'input,textarea,select,button,a[href],label.ea-sw,[contenteditable="true"],[data-dnd-no],.switch,[role="switch"]';
+const DND_TEXT = 'input:not([type]),input[type="text"],input[type="search"],input[type="number"],input[type="email"],input[type="tel"],input[type="url"],input[type="password"],input[type="date"],input[type="time"],input[type="color"]';   // einzeilige Textfelder (mehrzeilige: senkrechtes Ziehen markiert dort Text)
 
 /** Zone anmelden (nach jedem Neuzeichnen der Seite erneut aufrufen – gleiche Kennung ersetzt die alte) */
 function dndZone(el, id, def = {}) {
@@ -2759,25 +2774,62 @@ function dndLabel(z, ids, item) {
   return String(t ?? '').replace(/\s+/g, ' ').trim().slice(0, 48) || String(ids[0] ?? '');
 }
 
+/** Abbild eines Elements mit fest eingerechneten Stilen – so folgt die ganze Zeile dem Zeiger (auch aus Tabellen und Rastern) */
+function dndSnapshot(item, maxW = Math.max(640, Math.round(innerWidth * .62)), maxH = 300) {
+  const r = item.getBoundingClientRect(); if (!r.width || !r.height) return null;
+  const row = item.matches('.ag-row,tr,.set-row,label,li'), clone = item.cloneNode(true);
+  const src = [item, ...item.querySelectorAll('*')], dst = [clone, ...clone.querySelectorAll('*')];
+  for (let i = 0; i < src.length; i++) {
+    const d = dst[i]; if (!d || !d.style) continue;
+    const cs = getComputedStyle(src[i]); let css = '';
+    for (let k = 0; k < cs.length; k++) css += `${cs[k]}:${cs.getPropertyValue(cs[k])};`;
+    d.setAttribute('style', css + (d.getAttribute('style') || ''));   // eigene Angaben (z. B. --sw) behalten Vorrang
+    ['id', 'name', 'tabindex', 'autofocus', 'data-dnd-item', 'data-dnd-handle'].forEach(a => d.removeAttribute(a));
+  }
+  // Eingaben zeigen den aktuellen Wert, nicht den Ausgangswert
+  const sf = item.querySelectorAll('input,textarea,select'), df = clone.querySelectorAll('input,textarea,select');
+  sf.forEach((q, i) => { const d = df[i]; if (!d) return; if (q.type === 'checkbox' || q.type === 'radio') d.checked = q.checked; else d.value = q.value; });
+  let el = clone;
+  clone.style.cssText += ';animation:none;transition:none;margin:0;opacity:1;box-sizing:border-box';
+  if (item.tagName === 'TR') {
+    const t = document.createElement('table'), b = document.createElement('tbody'); b.append(clone); t.append(b);
+    t.style.cssText = `border-collapse:collapse;table-layout:fixed;width:${r.width}px;margin:0;background:transparent`;
+    clone.style.cssText += ';position:static';
+    el = t;
+  } else clone.style.cssText += `;position:relative;top:auto;left:auto;right:auto;bottom:auto;width:${r.width}px;height:${r.height}px`;
+  return {el, w: Math.min(r.width, maxW), h: Math.min(r.height, maxH), row, rect: r};
+}
+/** Schild am Zeiger: ganze Zeile (ghost 'clone') oder Beschriftung */
+function dndGhost(z, ids, item, x, y) {
+  const g = document.createElement('div'); g.className = 'dnd-ghost';
+  if (z.ghost === 'clone') {
+    let s = null; try { s = dndSnapshot(item); } catch { /* dann Schild mit Beschriftung */ }
+    if (s) {
+      g.classList.add('clone', s.row ? 'row' : 'tile'); if (ids.length > 1) g.classList.add('multi');
+      const body = document.createElement('div'); body.className = 'dnd-body'; body.style.cssText = `width:${s.w}px;height:${s.h}px`; body.append(s.el);
+      g.append(body);
+      if (ids.length > 1) g.insertAdjacentHTML('beforeend', `<b class="dnd-gn">${ids.length}</b>`);
+      g.insertAdjacentHTML('beforeend', '<span class="dnd-gh"></span>');
+      try { g.inert = true; } catch { /* */ }
+      return {g, off: {x: -clamp(x - s.rect.left, 10, Math.max(10, s.w - 24)), y: -clamp(y - s.rect.top, 6, Math.max(6, s.h - 6))}};
+    }
+  }
+  g.innerHTML = `<span class="dnd-gl">${esc(dndLabel(z, ids, item))}</span>${ids.length > 1 ? `<b class="dnd-gn">${ids.length}</b>` : ''}<span class="dnd-gh"></span>`;
+  return {g, off: {x: -14, y: -12}};
+}
+
 function dndStart(p, x, y) {
   clearTimeout(p.timer); DND.pre = null;
   const z = p.z, ids = (z.ids ? z.ids(p.item) : [p.item.dataset.dndId]).map(String).filter(Boolean);
   if (!ids.length) return;
-  const g = document.createElement('div'); g.className = 'dnd-ghost';
-  if (z.ghost === 'clone') {
-    const c = p.item.cloneNode(true), r = p.item.getBoundingClientRect();
-    c.removeAttribute('id'); c.querySelectorAll('[id]').forEach(n => n.removeAttribute('id')); c.querySelectorAll('[data-dnd-item]').forEach(n => n.removeAttribute('data-dnd-item')); c.removeAttribute('data-dnd-item');
-    c.style.cssText += `;width:${r.width}px;height:${r.height}px;margin:0;opacity:1`;
-    // die Stilregeln hängen oft am übergeordneten Element (z. B. „.cpick button“) – dessen Klassen mitgeben
-    const w = document.createElement('div'); w.className = p.item.parentElement?.className || ''; w.style.cssText = 'display:block;margin:0;padding:0;border:0;background:none;box-shadow:none;min-width:0';
-    w.append(c); g.classList.add('clone'); g.append(w);
-  } else g.innerHTML = `<span class="dnd-gl">${esc(dndLabel(z, ids, p.item))}</span>${ids.length > 1 ? `<b class="dnd-gn">${ids.length}</b>` : ''}<span class="dnd-gh"></span>`;
+  const {g, off} = dndGhost(z, ids, p.item, x, y);
   document.body.append(g);
   const line = document.createElement('div'); line.className = 'dnd-line'; line.hidden = true; document.body.append(line);
-  const d = DND.drag = {z, ids, item: p.item, ghost: g, line, x, y, pid: p.id, target: null, marks: [], raf: 0, off: z.ghost === 'clone' ? {x: x - p.item.getBoundingClientRect().left, y: y - p.item.getBoundingClientRect().top} : {x: -14, y: -12}};
+  const d = DND.drag = {z, ids, item: p.item, ghost: g, line, x, y, pid: p.id, target: null, marks: [], raf: 0, off};
   document.body.classList.add('dnd-on');
   try { document.documentElement.setPointerCapture(p.id); } catch { /* kein aktiver Zeiger (z. B. Test) */ }
   try { getSelection()?.removeAllRanges(); } catch { /* */ }
+  if (p.vertical) { try { const a = document.activeElement; if (a && a !== document.body) a.blur(); } catch { /* */ } }   // das Textfeld, auf dem gegriffen wurde, verliert den Fokus
   const idset = new Set(ids);
   dndItems(z).forEach(it => { if (idset.has(it.dataset.dndId)) { it.classList.add('dnd-src'); d.marks.push(it); } });
   // alle Zonen, auf die abgelegt werden darf, zeigen sich dezent
@@ -2857,12 +2909,15 @@ document.addEventListener('pointerdown', e => {
   if (DND.drag || e.isPrimary === false || (e.pointerType === 'mouse' && e.button !== 0)) return;
   const t = e.target; if (!(t instanceof Element)) return;
   const item = t.closest('[data-dnd-item]'); if (!item) return;
-  const handle = t.closest('[data-dnd-handle]'), inter = t.closest(DND_SKIP);
-  if (!handle && inter && inter !== item && item.contains(inter)) return;   // Eingabefelder und Schaltflächen im Item greifen nicht
-  if (!handle && item.querySelector('[data-dnd-handle]')) return;   // nur am Anfasser greifen
   const zEl = item.closest('[data-dnd-zone]'), z = zEl && DND.zones.get(zEl.dataset.dndZone);
   if (!z || z.el !== zEl || (z.canDrag && !z.canDrag(item))) return;
-  const p = DND.pre = {z, item, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, id: e.pointerId, touch: e.pointerType === 'touch' && !handle, timer: 0};
+  const handle = t.closest('[data-dnd-handle]'), inter = handle ? null : t.closest(DND_SKIP);
+  let vertical = false;
+  if (inter && inter !== item && item.contains(inter)) {   // Eingabefelder und Schaltflächen im Item
+    if (e.pointerType !== 'touch' && z.axis !== 'x' && inter.matches(DND_TEXT)) vertical = true;   // Textfeld: senkrecht ziehen = Zeile greifen
+    else return;
+  }
+  const p = DND.pre = {z, item, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, id: e.pointerId, vertical, touch: e.pointerType === 'touch' && !handle, timer: 0};
   if (p.touch) p.timer = setTimeout(() => { if (DND.pre === p) dndStart(p, p.lx, p.ly); }, 380);   // Finger: erst nach kurzem Halten ziehen, sonst wird gescrollt
 }, true);
 document.addEventListener('pointermove', e => {
@@ -2872,6 +2927,11 @@ document.addEventListener('pointermove', e => {
   p.lx = e.clientX; p.ly = e.clientY;
   const dist = Math.hypot(e.clientX - p.x, e.clientY - p.y);
   if (p.touch) { if (dist > 10) dndCancel(); return; }
+  if (p.vertical) {   // im Textfeld: senkrecht = Zeile ziehen, waagerecht = Text markieren
+    const dx = Math.abs(e.clientX - p.x), dy = Math.abs(e.clientY - p.y);
+    if (dy >= 7 && dy > dx * 1.5) dndStart(p, e.clientX, e.clientY); else if (dx >= 9 && dx > dy) DND.pre = null;
+    return;
+  }
   if (dist >= 5) dndStart(p, e.clientX, e.clientY);
 }, true);
 document.addEventListener('pointerup', e => {
@@ -7008,7 +7068,7 @@ function renderApFields(box) {
     <div class="card">${defs.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Bezeichnung</th><th>Typ</th><th>Technischer Name</th><th>Pflicht</th>${['artikel', 'kunde'].includes(AP.obj) ? '<th>An der Kasse</th>' : ''}<th></th></tr></thead><tbody>${defs.map((d, i) => `<tr data-fdef="${d.id}" ${dndAttr(d.id)} style="cursor:pointer"><td style="padding-left:16px"><b>${esc(d.label)}</b>${d.help ? `<div class="muted" style="font-size:11.5px">${esc(d.help)}</div>` : ''}</td><td>${esc(FTYPES.find(t => t[0] === d.type)?.[1] || d.type)}${d.type === 'auswahl' ? `<div class="muted" style="font-size:11.5px">${esc(d.options.join(' · '))}</div>` : ''}</td><td class="mono" style="font-size:12px">${esc(d.key)}</td><td>${d.required ? '<span class="pill accent">Pflicht</span>' : '–'}</td>${['artikel', 'kunde'].includes(AP.obj) ? `<td>${d.at_pos ? ic('check', 'i-sm') : '–'}</td>` : ''}<td class="r" style="white-space:nowrap;padding-right:12px">${dndGrip('Ziehen zum Sortieren')}<button class="btn btn-ghost btn-sm btn-icon" data-fmove="${d.id}" data-dir="-1" ${i ? '' : 'disabled'} aria-label="nach oben"><span style="display:inline-flex;transform:rotate(180deg)">${ic('chevron-down', 'i-sm')}</span></button><button class="btn btn-ghost btn-sm btn-icon" data-fmove="${d.id}" data-dir="1" ${i < defs.length - 1 ? '' : 'disabled'} aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
       : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('list')}</div><h3>Noch keine Felder für ${esc(cfObjName(AP.obj))}</h3><p>z. B. „Saison“ (Auswahl), „Garantie bis“ (Datum), „Gewicht in g“ (Zahl) – mit Pflichtangabe und Prüfung. Erscheinen im Editor, in der API und in Regeln.</p></div>`}</div>
     <div class="prompt-hint blk" style="margin-top:10px">${ic('info', 'i-xs')}Felder von Artikeln und Kunden stehen in Regeln als <span class="mono">{{feld.Bezeichnung}}</span> zur Verfügung und werden über die REST-API mitgeliefert.</div>`;
-  if (defs.length > 1) dndZone($('tbody', box), 'cf:' + AP.obj, {label: ids => defs.find(d => String(d.id) === ids[0])?.label || '', reorder: (ids, ins) => moveFieldTo(ids, ins)});
+  if (defs.length > 1) dndZone($('tbody', box), 'cf:' + AP.obj, {ghost: 'clone', label: ids => defs.find(d => String(d.id) === ids[0])?.label || '', reorder: (ids, ins) => moveFieldTo(ids, ins)});
 }
 function openFieldEditor(d) {
   const obj = d?.object || AP.obj;
@@ -11503,7 +11563,7 @@ registerPage('artikelsortierung', {title: 'Manuelle Artikelsortierung', sub: () 
   initSeg($('#asSeg', v), b => { AS.cat = b.dataset.v; PAGES.artikelsortierung.render(); });
   // Kacheln per Ziehen sortieren – die Reihenfolge der Zeilen auf dem Bildschirm wird beim Speichern übernommen
   const list = $('#asList', v);
-  dndZone(list, 'artikelsortierung', {label: ids => artById(ids[0])?.name || '', reorder: (ids, ins) => {
+  dndZone(list, 'artikelsortierung', {ghost: 'clone', label: ids => artById(ids[0])?.name || '', reorder: (ids, ins) => {
     const row = $(`[data-asi="${CSS.escape(ids[0])}"]`, list), anchor = ins && $(`[data-asi="${CSS.escape(ins.id)}"]`, list); if (!row) return;
     anchor ? (ins.after ? anchor.after(row) : anchor.before(row)) : list.append(row);
     asRenumber();
@@ -12055,9 +12115,9 @@ async function renderStamm(kind, page, extra = {}) {
       : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic(D.ic || 'list')}</div><h3>Noch keine Einträge</h3><p>„Zeile“ hinzufügen oder per CSV importieren.</p></div>`}</div>
     ${visAll.length > STMAX ? `<div class="muted" style="padding:10px 4px;font-size:13px">Angezeigt werden die ersten ${STMAX} von ${num(visAll.length)} Einträgen – zum Eingrenzen die Suche oben verwenden.</div>` : ''}
     ${extra.below ? extra.below() : ''}</div>`;
-  // Zeilen per Ziehen sortieren (am Anfasser rechts)
+  // Zeilen per Ziehen sortieren: die ganze Zeile lässt sich greifen (in Textfeldern senkrecht ziehen)
   dndZone($('tbody', v), 'stamm:' + kind, {
-    label: ids => { const r = st.rows[+ids[0]]; return r ? (r[D.cols[0]?.k] || r.id || '') : ''; },
+    ghost: 'clone', label: ids => { const r = st.rows[+ids[0]]; return r ? (r[D.cols[0]?.k] || r.id || '') : ''; },
     reorder: (ids, ins) => {
       const i = +ids[0]; if (isNaN(i) || i < 0 || i >= st.rows.length) return;
       const j = ins ? +ins.id : st.rows.length - 1, [row] = st.rows.splice(i, 1);
@@ -14248,7 +14308,7 @@ function agColsMenu(page, anchor, v) {
   const list = () => st.cols.map(c => `<label ${dndAttr(c.k)}>${dndGrip('Ziehen zum Sortieren')}<input type="checkbox" data-agcs="${c.k}" ${c.show ? 'checked' : ''}> <span>${esc(c.l)}</span></label>`).join('');
   const el = openPopover(anchor, `<div class="ag-menu">${list()}</div>`, {align: 'right', width: 280});
   const menu = el && $('.ag-menu', el);
-  if (menu) dndZone(menu, `ag:${page}:menu`, {reorder: (ids, ins) => { st.cols = dndArrange(st.cols, ids, ins, c => c.k); menu.innerHTML = list(); agApply(page, false); }, label: ids => st.cols.find(c => c.k === ids[0])?.l || ''});
+  if (menu) dndZone(menu, `ag:${page}:menu`, {ghost: 'clone', reorder: (ids, ins) => { st.cols = dndArrange(st.cols, ids, ins, c => c.k); menu.innerHTML = list(); agApply(page, false); }, label: ids => st.cols.find(c => c.k === ids[0])?.l || ''});
   el?.addEventListener('change', e => { const k = e.target.dataset.agcs; const c = st.cols.find(x => x.k === k); if (c) { c.show = e.target.checked; if (!st.cols.some(x => x.show)) { c.show = true; e.target.checked = true; } agApply(page, false); } });
 }
 
@@ -14269,7 +14329,7 @@ function agDnd(key, v) {
   if (D) {
     const card = v.closest('.ae-card'), zone = card && card.querySelectorAll('.datagrid').length === 1 ? card : $('.datagrid', v);
     dndZone(zone, 'ag:' + key, {
-      from: (D.from || []).map(k => 'ag:' + k), ordered: !!D.ordered, hint: D.hint || '',
+      from: (D.from || []).map(k => 'ag:' + k), ordered: !!D.ordered, hint: D.hint || '', ghost: 'clone',
       drop: D.drop ? (ids, from, ins) => D.drop(ids, from.slice(3), ins) : null,
       reorder: D.reorder ? (ids, ins) => { st.sort = cfg.sort || null; return D.reorder(ids, ins); } : null,
       ids: item => agDragIds(key, item.dataset.dndId),

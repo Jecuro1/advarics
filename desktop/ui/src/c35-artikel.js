@@ -339,7 +339,7 @@ registerPage('artikelsortierung', {title: 'Manuelle Artikelsortierung', sub: () 
   initSeg($('#asSeg', v), b => { AS.cat = b.dataset.v; PAGES.artikelsortierung.render(); });
   // Kacheln per Ziehen sortieren – die Reihenfolge der Zeilen auf dem Bildschirm wird beim Speichern übernommen
   const list = $('#asList', v);
-  dndZone(list, 'artikelsortierung', {label: ids => artById(ids[0])?.name || '', reorder: (ids, ins) => {
+  dndZone(list, 'artikelsortierung', {ghost: 'clone', label: ids => artById(ids[0])?.name || '', reorder: (ids, ins) => {
     const row = $(`[data-asi="${CSS.escape(ids[0])}"]`, list), anchor = ins && $(`[data-asi="${CSS.escape(ins.id)}"]`, list); if (!row) return;
     anchor ? (ins.after ? anchor.after(row) : anchor.before(row)) : list.append(row);
     asRenumber();

@@ -200,7 +200,7 @@ function agColsMenu(page, anchor, v) {
   const list = () => st.cols.map(c => `<label ${dndAttr(c.k)}>${dndGrip('Ziehen zum Sortieren')}<input type="checkbox" data-agcs="${c.k}" ${c.show ? 'checked' : ''}> <span>${esc(c.l)}</span></label>`).join('');
   const el = openPopover(anchor, `<div class="ag-menu">${list()}</div>`, {align: 'right', width: 280});
   const menu = el && $('.ag-menu', el);
-  if (menu) dndZone(menu, `ag:${page}:menu`, {reorder: (ids, ins) => { st.cols = dndArrange(st.cols, ids, ins, c => c.k); menu.innerHTML = list(); agApply(page, false); }, label: ids => st.cols.find(c => c.k === ids[0])?.l || ''});
+  if (menu) dndZone(menu, `ag:${page}:menu`, {ghost: 'clone', reorder: (ids, ins) => { st.cols = dndArrange(st.cols, ids, ins, c => c.k); menu.innerHTML = list(); agApply(page, false); }, label: ids => st.cols.find(c => c.k === ids[0])?.l || ''});
   el?.addEventListener('change', e => { const k = e.target.dataset.agcs; const c = st.cols.find(x => x.k === k); if (c) { c.show = e.target.checked; if (!st.cols.some(x => x.show)) { c.show = true; e.target.checked = true; } agApply(page, false); } });
 }
 
@@ -221,7 +221,7 @@ function agDnd(key, v) {
   if (D) {
     const card = v.closest('.ae-card'), zone = card && card.querySelectorAll('.datagrid').length === 1 ? card : $('.datagrid', v);
     dndZone(zone, 'ag:' + key, {
-      from: (D.from || []).map(k => 'ag:' + k), ordered: !!D.ordered, hint: D.hint || '',
+      from: (D.from || []).map(k => 'ag:' + k), ordered: !!D.ordered, hint: D.hint || '', ghost: 'clone',
       drop: D.drop ? (ids, from, ins) => D.drop(ids, from.slice(3), ins) : null,
       reorder: D.reorder ? (ids, ins) => { st.sort = cfg.sort || null; return D.reorder(ids, ins); } : null,
       ids: item => agDragIds(key, item.dataset.dndId),
