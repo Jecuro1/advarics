@@ -2133,7 +2133,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.38.2', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.38.3', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2560,7 +2560,7 @@ function renderStatus() {
     <span class="sbi ${S.queue ? 'accent' : ''}">${ic('sync')}${S.queue ? `${S.queue} Beleg${S.queue > 1 ? 'e' : ''} in Warteschlange` : 'Synchron'}</span>
     <span class="sbi hide-sm">${ic('shield')}RKSV · Signatureinheit aktiv</span>`}
     <button class="sbi hide-sm ${S.backupH === Infinity || S.backupH >= 48 ? 'off' : ''}" id="sbBackup" data-tip="${DESKTOP ? 'Klicken: Datensicherung öffnen' : 'Backup-Werkzeuge'}">${ic('database')}${backupLabel()}${DESKTOP ? '' : ' · NAS-01'}</button>
-    <button class="sbi ${!DESKTOP || UPD.state === 'available' ? 'accent' : ''} hide-sm" id="sbUpdate">${ic('download')}${esc(updLabel())}</button>
+    <button class="sbi ${!DESKTOP || UPD.state === 'available' ? 'accent' : ''} hide-sm" id="sbUpdate" data-perm="system">${ic('download')}${esc(updLabel())}</button>
     <span class="sb-spacer"></span>
     <button class="sbi" id="sbHooks" data-tip="Ereignis-Inspektor · Hooks & Webhooks" data-tip-pos="up-left">${ic('braces')}Ereignisse <b class="num" id="sbHookCount" style="font-weight:600;color:var(--text-2)">${Hooks.count}</b></button>
     ${DESKTOP ? '' : `<span class="sbi hide-md">${ic('sparkle')}KI lokal · bereit</span>`}
@@ -3607,7 +3607,7 @@ function renderPOS() {
       </div>
       <div class="grid-meta"><span id="gridInfo"></span><span class="hide-sm">Sortiert nach Beliebtheit · <span class="kbd">↓</span> <span class="kbd">↵</span></span></div>
       <div class="grid-wrap" id="gridWrap"><div class="agrid" id="agrid" role="list"></div></div>
-      <div class="fbar">${fk.map(([k, l, a]) => `<button class="fk" data-fk="${a}"><span class="kbd">${k}</span>${l}</button>`).join('')}<button class="fk" data-fk="palette"><span class="kbd">${MOD} K</span>Befehle</button><button class="fk flow" data-fk="flow">${ic('flow', 'i-sm')}Kassenablauf: Standard</button></div>
+      <div class="fbar">${fk.map(([k, l, a]) => `<button class="fk" data-fk="${a}"><span class="kbd">${k}</span>${l}</button>`).join('')}<button class="fk" data-fk="palette"><span class="kbd">${MOD} K</span>Befehle</button><button class="fk flow" data-fk="flow" data-perm="einstellungen">${ic('flow', 'i-sm')}Kassenablauf: Standard</button></div>
     </div>
     <aside class="cart" id="cart" aria-label="Warenkorb">
       <div class="cart-head"><h2>Warenkorb</h2><span class="count" id="cartCount">0</span><div class="tools"><button class="btn btn-ghost btn-sm btn-icon" id="parkBtn" data-tip="Parken · F8" data-tip-pos="down" aria-label="Bon parken">${ic('pause', 'i-sm')}</button><button class="btn btn-ghost btn-sm btn-icon" id="clearBtn" data-tip="Leeren" data-tip-pos="down" aria-label="Warenkorb leeren">${ic('trash', 'i-sm')}</button></div></div>
@@ -3629,7 +3629,7 @@ function renderCats() {
 }
 function renderQuick() {
   $('#quick').innerHTML = SERVICES.map(s => `<button class="qb" data-svc="${s.id}"><span class="qi">${ic(s.icon, 'i-sm')}</span><span><span class="qn" style="display:block">${s.name}</span><span class="qp" style="display:block">${s.price == null ? 'Betrag wählen' : eur(s.price)}</span></span></button>`).join('')
-    + `<button class="qb cfg" data-fk="flow">${ic('plus', 'i-sm')}Schnellwahl anpassen</button>`;
+    + `<button class="qb cfg" data-fk="flow" data-perm="einstellungen">${ic('plus', 'i-sm')}Schnellwahl anpassen</button>`;
 }
 function filtered() {
   const q = norm(POS.q.trim());
@@ -4007,7 +4007,23 @@ function openFlow() {
   });
 }
 function openMore(anchor) {
-  const el = openPopover(anchor, `<button class="pop-i" data-m="gs">${ic('gift')}Gutschein verkaufen</button><button class="pop-i" data-m="ret">${ic('undo')}Retoure / Umtausch<span class="r muted" style="font-size:11.5px">mit Beleg</span></button><button class="pop-i" data-m="rcpts">${ic('receipt')}Belege<span class="r muted" style="font-size:11.5px">${DESKTOP ? 'gespeichert' : 'Sitzung'}</span></button><button class="pop-i" data-m="copy">${ic('printer')}Belegkopie drucken</button><button class="pop-i" data-m="drawer">${ic('cash')}Lade öffnen<span class="r muted" style="font-size:11.5px">protokolliert</span></button><button class="pop-i" data-m="book">${ic('cash')}Kassenbuch<span class="r muted" style="font-size:11.5px">Einlage · Entnahme</span></button><button class="pop-i" data-m="x">${ic('receipt')}X-Bericht (Zwischenstand)</button><button class="pop-i" data-m="z">${ic('lock')}Tagesabschluss</button><div class="pop-sep"></div>${DESKTOP ? '' : `<button class="pop-i" data-m="net">${ic(S.online ? 'wifi-off' : 'wifi')}${S.online ? 'Offline-Modus simulieren' : 'Verbindung wiederherstellen'}</button>`}<button class="pop-i" data-m="flow">${ic('flow')}Kassenablauf bearbeiten</button>`, {align: 'right', width: 260});
+  // Nur was ohne PIN-Freigabe benutzbar ist: Einträge, für die das Recht fehlt, erscheinen nicht
+  const items = [
+    ['gs', 'gift', 'Gutschein verkaufen', '', 'kasse.verkaufen'],
+    ['ret', 'undo', 'Retoure / Umtausch', 'mit Beleg', 'kasse.retoure'],
+    ['rcpts', 'receipt', 'Belege', DESKTOP ? 'gespeichert' : 'Sitzung', null],
+    ['copy', 'printer', 'Belegkopie drucken', '', null],
+    ['drawer', 'cash', 'Lade öffnen', 'protokolliert', null],
+    ['book', 'cash', 'Kassenbuch', 'Einlage · Entnahme', 'kasse.kassenbuch'],
+    ['x', 'receipt', 'X-Bericht (Zwischenstand)', '', null],
+    ['z', 'lock', 'Tagesabschluss', '', 'kasse.kassenbuch'],
+    'sep',
+    ...(DESKTOP ? [] : [['net', S.online ? 'wifi-off' : 'wifi', S.online ? 'Offline-Modus simulieren' : 'Verbindung wiederherstellen', '', null]]),
+    ['flow', 'flow', 'Kassenablauf bearbeiten', '', 'einstellungen']
+  ].filter(it => it === 'sep' || !it[4] || can(it[4]));
+  const html = items.filter((it, n) => it !== 'sep' || (n > 0 && n < items.length - 1 && items[n - 1] !== 'sep'))
+    .map(it => it === 'sep' ? '<div class="pop-sep"></div>' : `<button class="pop-i" data-m="${it[0]}">${ic(it[1])}${it[2]}${it[3] ? `<span class="r muted" style="font-size:11.5px">${it[3]}</span>` : ''}</button>`).join('');
+  const el = openPopover(anchor, html, {align: 'right', width: 260});
   if (!el) return;
   el.addEventListener('click', e => {
     const b = e.target.closest('[data-m]'); if (!b) return; closePopover();
@@ -4944,7 +4960,7 @@ async function checkUpdates(manual) {
       Hooks.emit('update.available', {version: i.version});
       const ap = CFG['update.freigabe'];
       if (ap && ap.version === i.version) scheduleApproved(ap);
-      else if (!manual) toast(`Update ${i.version} verfügbar`, {t2: 'Wartet auf Ihre Freigabe', icon: 'download', type: 'accent', dur: 9000, action: {label: 'Ansehen', run: openUpdate}});
+      else if (!manual && can('system')) toast(`Update ${i.version} verfügbar`, {t2: 'Wartet auf Ihre Freigabe', icon: 'download', type: 'accent', dur: 9000, action: {label: 'Ansehen', run: openUpdate}});
       else openUpdate();
     } else if (manual) toast('Kontor ist aktuell', {t2: `Version ${i.current}`, type: 'pos', icon: 'check'});
   } catch (e) {
@@ -5332,7 +5348,7 @@ async function openReceipts(opts = {}) {
       : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('receipt')}</div><h3>${list.length ? 'Kein Treffer' : 'Noch keine Belege'}</h3><p>${list.length ? 'Suche anpassen.' : 'Abgeschlossene Verkäufe erscheinen hier.'}</p></div>`;
     const s = f[sel];
     const can = s && DESKTOP && (s.kind || 'verkauf') === 'verkauf' && !s.voided;
-    $('#rcActs', el).innerHTML = `<span class="eyebrow">${s ? kindLabel(s) : 'Beleg'}</span><span style="margin-left:auto;display:flex;gap:6px">${can ? `<button class="btn btn-secondary btn-sm" id="rcRet">${ic('undo', 'i-sm')}Retoure</button><button class="btn btn-secondary btn-sm" id="rcVoid">${ic('x', 'i-sm')}Storno</button>` : ''}<button class="btn btn-secondary btn-sm" id="rcCopy" ${s ? '' : 'disabled'}>${ic('printer', 'i-sm')}Kopie</button>${DESKTOP && s ? `<button class="btn btn-secondary btn-sm" id="rcMore" aria-haspopup="menu">${ic('chevron-down', 'i-sm')}</button>` : ''}</span>`;
+    $('#rcActs', el).innerHTML = `<span class="eyebrow">${s ? kindLabel(s) : 'Beleg'}</span><span style="margin-left:auto;display:flex;gap:6px">${can ? `<button class="btn btn-secondary btn-sm" id="rcRet" data-perm="kasse.retoure">${ic('undo', 'i-sm')}Retoure</button><button class="btn btn-secondary btn-sm" id="rcVoid" data-perm="kasse.retoure">${ic('x', 'i-sm')}Storno</button>` : ''}<button class="btn btn-secondary btn-sm" id="rcCopy" ${s ? '' : 'disabled'}>${ic('printer', 'i-sm')}Kopie</button>${DESKTOP && s ? `<button class="btn btn-secondary btn-sm" id="rcMore" aria-haspopup="menu">${ic('chevron-down', 'i-sm')}</button>` : ''}</span>`;
     $('#rcView', el).innerHTML = s ? `<div class="receipt-wrap">${receiptHTML(recFromData(s.no, {...s.data, kind: s.kind || s.data?.kind}), prefs.tpl || 'classic')}</div>` : '';
     $('[aria-selected="true"]', el)?.scrollIntoView({block: 'nearest'});
   };
@@ -5627,7 +5643,7 @@ function realLowHTML(it) {
   if (!ST.d28) fetch28();
   const rows = realLowRows();
   if (!rows.length) return `<div class="empty" style="flex:1"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><h3>Alles im grünen Bereich</h3><p>Keine Variante mit 2 Stück oder weniger.</p></div>`;
-  return `<div class="wl">${rows.slice(0, it.s === 'wide' ? 4 : 5).map(({a, v, s}) => { const c = COLORS[v.c]?.[1] || '#888'; return `<div class="wl-row"><span class="thumb" style="--c:${c}">${glyph(a.g, c)}</span><div class="wl-main"><div class="wl-t">${esc(a.name)}</div><div class="wl-s">${esc(COLORS[v.c]?.[0] || v.c)}${v.s !== 'Einheitsgröße' ? ' · ' + esc(v.s) : ''} · <span style="color:${v.q <= 0 ? 'var(--neg)' : 'var(--warn)'}">${v.q <= 0 ? 'ausverkauft' : `noch ${v.q}`}</span>${s ? ` · ${s} verk. in 4 Wo.` : ''}</div></div><button class="btn btn-secondary btn-sm" data-act="book" data-ean="${esc(v.ean)}">${ic('boxes', 'i-sm')}${it.s === 'wide' ? 'Zugang buchen' : 'Buchen'}</button></div>`; }).join('')}</div><div class="wl-foot">${ic('database', 'i-xs')} ${rows.length} Varianten knapp · sortiert nach Abverkauf der letzten 4 Wochen</div>`;
+  return `<div class="wl">${rows.slice(0, it.s === 'wide' ? 4 : 5).map(({a, v, s}) => { const c = COLORS[v.c]?.[1] || '#888'; return `<div class="wl-row"><span class="thumb" style="--c:${c}">${glyph(a.g, c)}</span><div class="wl-main"><div class="wl-t">${esc(a.name)}</div><div class="wl-s">${esc(COLORS[v.c]?.[0] || v.c)}${v.s !== 'Einheitsgröße' ? ' · ' + esc(v.s) : ''} · <span style="color:${v.q <= 0 ? 'var(--neg)' : 'var(--warn)'}">${v.q <= 0 ? 'ausverkauft' : `noch ${v.q}`}</span>${s ? ` · ${s} verk. in 4 Wo.` : ''}</div></div><button class="btn btn-secondary btn-sm" data-act="book" data-perm="bestand.buchen" data-ean="${esc(v.ean)}">${ic('boxes', 'i-sm')}${it.s === 'wide' ? 'Zugang buchen' : 'Buchen'}</button></div>`; }).join('')}</div><div class="wl-foot">${ic('database', 'i-xs')} ${rows.length} Varianten knapp · sortiert nach Abverkauf der letzten 4 Wochen</div>`;
 }
 function realRegistersHTML() {
   const d = ST.cache.heute;
@@ -7863,7 +7879,17 @@ async function permToggle(pm) {
 
 /* ── Rechte an den Einstiegspunkten ── */
 const VIEW_PERM = {berichte: 'berichte', anpassen: 'anpassen', einstellungen: 'einstellungen', einkauf: 'einkauf', aktionen: 'preise.aktionen', inventur: 'bestand.buchen'};
+/** Alle Rechte (Namen wie in der Rechte-Matrix) */
+const ALL_PERMS = ['kasse.verkaufen', 'kasse.retoure', 'kasse.kassenbuch', 'artikel.bearbeiten', 'preise.aktionen', 'bestand.buchen', 'einkauf', 'rechnungen', 'faktura', 'marketing', 'kunden.bearbeiten', 'berichte', 'anpassen', 'einstellungen', 'system'];
+/* Schaltflächen und Menüeinträge, für die eine PIN-Freigabe nötig wäre, werden gar nicht erst angezeigt:
+   Ein Element mit data-perm="recht" ist nur sichtbar, wenn die angemeldete Person das Recht hat (Rolle oder Benutzergruppe). */
+{
+  const st = document.createElement('style');
+  st.textContent = ALL_PERMS.map(p => `body:not([data-can~="${p}"]) [data-perm="${p}"]{display:none!important}`).join('\n');
+  document.head.append(st);
+}
 function permNav() {
+  document.body.dataset.can = ALL_PERMS.filter(p => can(p)).join(' ');
   // Menüpunkte ohne Berechtigung werden ausgeblendet – samt leeren Untermenüs und Bereichen
   const nav = $('#nav'); if (!nav) return;
   $$('.nav-item[data-view]', nav).forEach(n => { const p = VIEW_PERM[n.dataset.view]; n.classList.toggle('nav-off', (!!p && !can(p)) || viewBlocked(n.dataset.view)); n.classList.remove('nav-locked'); });
@@ -8213,7 +8239,7 @@ registerPage('belege', {title: 'Belege', sub: () => 'Journal aller Bons, Retoure
 async function renderBelege() {
   const v = $('#view-belege');
   v.innerHTML = `<div class="cv">${pageHead('Belege', 'Bons suchen, Kopie drucken, per E-Mail senden, Rechnung erstellen, Retoure oder Storno buchen',
-    `<button class="btn btn-secondary" data-bl="ret">${ic('undo', 'i-sm')}Retoure starten</button><button class="btn btn-secondary" data-bl="x">${ic('receipt', 'i-sm')}X-Bericht</button>`)}
+    `<button class="btn btn-secondary" data-bl="ret" data-perm="kasse.retoure">${ic('undo', 'i-sm')}Retoure starten</button><button class="btn btn-secondary" data-bl="x">${ic('receipt', 'i-sm')}X-Bericht</button>`)}
     <div id="blKpi"></div>
     <div class="filters"><input class="input" id="blQ" placeholder="Belegnummer, Artikel, Kunde, Kassier:in …" value="${esc(BL.q)}" style="flex:1;min-width:240px;max-width:420px">
       <div class="seg" id="blKind">${[['alle', 'Alle'], ['verkauf', 'Verkäufe'], ['retoure', 'Retouren'], ['storno', 'Stornos']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${BL.kind === k}">${l}</button>`).join('')}</div>
@@ -8244,7 +8270,7 @@ function renderBlView() {
   if (!s) { box.innerHTML = `<div class="empty" style="padding:40px"><p>Beleg auswählen</p></div>`; return; }
   const k = s.kind || 'verkauf', can = DESKTOP && k === 'verkauf' && !s.voided;
   box.innerHTML = `<div class="set-row"><div><div class="set-l">${esc(kindLabel(s))} ${esc(s.no)}</div><div class="set-h">${esc(fmtTs(s.ts))} · ${esc(s.cashier || '')}${s.ref_no ? ` · zu ${esc(s.ref_no)}` : ''}</div></div></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line)"><button class="btn btn-secondary btn-sm" data-bl="copy">${ic('printer', 'i-sm')}Kopie</button>${DESKTOP ? `<button class="btn btn-secondary btn-sm" data-bl="mail">${ic('mail', 'i-sm')}E-Mail</button>` : ''}${DESKTOP && k === 'verkauf' ? `<button class="btn btn-secondary btn-sm" data-bl="rechnung">${ic('receipt', 'i-sm')}Rechnung</button><button class="btn btn-secondary btn-sm" data-bl="lieferschein">${ic('truck', 'i-sm')}Lieferschein</button>` : ''}${can ? `<button class="btn btn-secondary btn-sm" data-bl="retoure">${ic('undo', 'i-sm')}Retoure</button><button class="btn btn-ghost btn-sm" data-bl="storno" style="color:var(--neg)">${ic('x', 'i-sm')}Storno</button>` : ''}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line)"><button class="btn btn-secondary btn-sm" data-bl="copy">${ic('printer', 'i-sm')}Kopie</button>${DESKTOP ? `<button class="btn btn-secondary btn-sm" data-bl="mail">${ic('mail', 'i-sm')}E-Mail</button>` : ''}${DESKTOP && k === 'verkauf' ? `<button class="btn btn-secondary btn-sm" data-bl="rechnung">${ic('receipt', 'i-sm')}Rechnung</button><button class="btn btn-secondary btn-sm" data-bl="lieferschein">${ic('truck', 'i-sm')}Lieferschein</button>` : ''}${can ? `<button class="btn btn-secondary btn-sm" data-bl="retoure" data-perm="kasse.retoure">${ic('undo', 'i-sm')}Retoure</button><button class="btn btn-ghost btn-sm" data-bl="storno" data-perm="kasse.retoure" style="color:var(--neg)">${ic('x', 'i-sm')}Storno</button>` : ''}</div>
     <div style="padding:14px;max-height:calc(100dvh - 330px);overflow:auto"><div class="receipt-wrap" style="padding:0">${receiptHTML(recFromData(s.no, {...s.data, kind: k}), prefs.tpl || 'classic')}</div></div>`;
 }
 async function blAction(a) {
@@ -11275,7 +11301,7 @@ async function renderArtInfo(id, mode, title) {
   const head = `<div class="card" style="padding:16px;display:flex;gap:16px;align-items:center;margin-bottom:14px"><div style="width:${mode === 'kompakt' ? 64 : 92}px;height:${mode === 'kompakt' ? 64 : 92}px;flex:none;border-radius:14px;overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${artVisual(a, COLORS[a.colors[0]]?.[1] || '#888')}</div>
     <div style="min-width:0;flex:1"><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.06em">${esc(a.brand)} · ${esc(a.id)} · ${esc(CATS.find(c => c.id === a.cat)?.name || a.cat)}</div><div style="font-size:20px;font-weight:650">${esc(a.name)}</div><div class="muted" style="font-size:13px">${[a.supplierId ? esc(supName(a.supplierId)) : '', lagerplatz(a) ? 'Lagerplatz ' + esc(lagerplatz(a)) : ''].filter(Boolean).join(' · ')}</div></div>
     <div style="text-align:right"><div style="font-size:22px;font-weight:700;${a.sale ? 'color:var(--accent)' : ''}">${eur(vk)}</div>${a.sale ? `<div class="muted" style="text-decoration:line-through">${eur(a.price)}</div>` : ''}${mode !== 'kompakt' && ek != null ? `<div class="muted" style="font-size:12.5px">EK ${ekShow(ek)}</div>` : ''}</div>
-    ${mode !== 'kompakt' ? `<button class="btn btn-secondary btn-sm" data-aied="${esc(a.id)}">${ic('edit', 'i-sm')}Bearbeiten</button>` : ''}</div>`;
+    ${mode !== 'kompakt' ? `<button class="btn btn-secondary btn-sm" data-aied="${esc(a.id)}" data-perm="artikel.bearbeiten">${ic('edit', 'i-sm')}Bearbeiten</button>` : ''}</div>`;
   if (mode === 'kompakt') { box.innerHTML = head + `<div class="card">${matrixHTML(a, d, true)}</div>`; return; }
   const kpi = mode === 'plus' ? kpiCards([[num(stock), 'Bestand'], [num(res), 'reserviert', res ? 'warn' : ''], [num(d.open), 'offen bestellt'], [num(s30), 'verkauft 30 Tage'], [num(s90), 'verkauft 90 Tage'], [s30 + stock ? Math.round(s30 / (s30 + stock) * 100) + ' %' : '–', 'Abverkaufsquote 30 T'], [reich != null ? reich + ' Tage' : '–', 'Reichweite', reich != null && reich < 14 ? 'warn' : ''], [marge != null ? num(marge, 1) + ' %' : '–', 'Marge (netto)'], [ek != null ? eur0(stock * ek) : '–', 'Lagerwert EK'], [eur0(stock * vk), 'Lagerwert VK'], [ek != null && stock ? num(s90 * 4 / Math.max(1, stock), 1) : '–', 'Umschlag p. a.']])
     : kpiCards([[num(stock), 'Bestand gesamt'], [num(res), 'davon reserviert', res ? 'warn' : ''], [num(d.open), 'offen bestellt'], [num(s30), 'verkauft 30 Tage']]);
@@ -13909,7 +13935,7 @@ function detailsHTML(a) {
   for (const tab of ['beschreibung', 'material', 'technik', 'klass']) for (const g of DET[tab]) for (const f of g.f) { const v = d[f.k]; if (v == null || v === '' || (Array.isArray(v) && !v.length)) continue; rows.push([g.t, f.l, Array.isArray(v) ? v : v === true ? 'ja' : v, f.t === 'lines' || f.t === 'area']); }
   if (!rows.length) return '';
   const groups = {}; rows.forEach(r => (groups[r[0]] ||= []).push(r));
-  return `<div class="card" style="margin-top:14px"><div class="set-row"><div class="set-l">Produktdaten</div><button class="btn btn-ghost btn-sm" data-aied="${esc(a.id)}">${ic('edit', 'i-sm')}Bearbeiten</button></div><div style="padding:0 16px 16px;display:grid;gap:14px">${Object.entries(groups).map(([t, l]) => `<div><div class="muted" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${esc(t)}</div>${l.map(([, lb, v, long]) => `<div style="display:grid;grid-template-columns:200px 1fr;gap:12px;padding:5px 0;border-top:1px solid var(--line-2);font-size:13px"><span class="muted">${esc(lb.replace(/ \(.*\)/, ''))}</span><span style="white-space:pre-wrap">${Array.isArray(v) ? v.map(x => `<div>• ${esc(x)}</div>`).join('') : esc(v)}</span></div>`).join('')}</div>`).join('')}</div></div>`;
+  return `<div class="card" style="margin-top:14px"><div class="set-row"><div class="set-l">Produktdaten</div><button class="btn btn-ghost btn-sm" data-aied="${esc(a.id)}" data-perm="artikel.bearbeiten">${ic('edit', 'i-sm')}Bearbeiten</button></div><div style="padding:0 16px 16px;display:grid;gap:14px">${Object.entries(groups).map(([t, l]) => `<div><div class="muted" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${esc(t)}</div>${l.map(([, lb, v, long]) => `<div style="display:grid;grid-template-columns:200px 1fr;gap:12px;padding:5px 0;border-top:1px solid var(--line-2);font-size:13px"><span class="muted">${esc(lb.replace(/ \(.*\)/, ''))}</span><span style="white-space:pre-wrap">${Array.isArray(v) ? v.map(x => `<div>• ${esc(x)}</div>`).join('') : esc(v)}</span></div>`).join('')}</div>`).join('')}</div></div>`;
 }
 { const _r = renderArtInfo; renderArtInfo = async function (id, mode, title) { await _r(id, mode, title); const a = AIF.sel ? artById(AIF.sel) : null; const box = $('[data-aib]', $('#view-' + id)); if (a && box && mode !== 'kompakt') { box.insertAdjacentHTML('beforeend', detailsHTML(a)); const gal = (a.media || []).filter(m => m.file); if (gal.length) box.insertAdjacentHTML('afterbegin', `<div style="display:flex;gap:8px;overflow:auto;margin-bottom:12px">${gal.map(m => `<img src="${esc(imgUrl(m.file))}" alt="" style="height:${mode === 'plus' ? 150 : 110}px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line)">`).join('')}</div>`); } }; }
 
@@ -16490,6 +16516,9 @@ async function geRemove(ids, fromMask) {
   L('bestand.buchen', 'umlagerungen ul-neu ul-protokoll ul-positionen ul-planung ul-anforderung ul-rechnung ul-ungebucht ul-kompakt picklisten umbuchungslog bestandskorrektur');
   L('artikel.bearbeiten', 'nos import-protokoll artikel-import master-artikel advarics-import ean-zuordnung artikelsortierung');
   L('preise.aktionen', 'preis-uebersicht');
+  // Seiten, auf denen man nur bearbeitet oder bucht: ohne das Recht wäre bei jedem Schritt eine PIN-Freigabe nötig (zum Nachschlagen gibt es Artikelinfo und Bestandsinfo)
+  L('artikel.bearbeiten', 'artikel artikel-edit');
+  L('bestand.buchen', 'bestand');
   // Einkauf
   L('einkauf', 'einkauf order-import order-typen order-vorschlag order-konfig avis wareneingang we-scanner we-protokoll reklamationen reklamation-neu lretouren retouren-protokoll rueckgabegruende verteilung-konfig disposition lieferanten nachsortierung nachsort-nos nachsort-liste nachsort-param');
   L('einkauf', 'edi-nachrichten edi-fehler edi-konflikte edi-katalogartikel edi-katalog edi-ordrsp edi-invoic edi-desadv edi-verkaufsberichte edi-naechster-export edi-bestellungen edi-bestandsmeldungen edi-marktdaten edi-artikelimport edi-importprotokoll');
@@ -16499,11 +16528,16 @@ async function geRemove(ids, fromMask) {
   // Kunden
   L('kunden.bearbeiten', 'kunden kundenerfassung bon-kunden bon-kunden-protokoll kunden-kommunikation');
   // Einstellungen, Stammdaten und System
-  L('einstellungen', 'filialen');
   L('anpassen', 'anpassen erweiterungen');
   F('system', 'set-benutzer set-sso set-sicherung set-updates set-system set-rksv api-protokoll st-zugangsprofil protokoll datensicherung');
   F('system', 'benutzer benutzer-edit rollen st-benutzergruppe benutzergruppe-edit');
+  // Seiten, deren Hauptfunktion immer die Freigabe eines Administrators verlangt (Filialverbund, Filialen anlegen, Handy-Zugang)
+  F('system', 'set-verbund filialen');
+  F('anpassen', 'set-handy');
 }
+
+Hooks.on('auth.login', () => permNav());   // auch in der Browser-Vorschau: nach dem Wechsel der Person Menü und Schaltflächen neu bewerten
+if (window.KONTOR_UI) window.KONTOR_UI.viewPerm = () => ({...VIEW_PERM});   // nur lesend – für Prüfungen: welches Recht eine Seite verlangt
 
 /* Befehlspalette (Strg+K): Befehle, für die das Recht fehlt oder deren Seite gesperrt ist, erscheinen nicht */
 const CMD_PERM = {

@@ -37,7 +37,7 @@ function renderPOS() {
       </div>
       <div class="grid-meta"><span id="gridInfo"></span><span class="hide-sm">Sortiert nach Beliebtheit · <span class="kbd">↓</span> <span class="kbd">↵</span></span></div>
       <div class="grid-wrap" id="gridWrap"><div class="agrid" id="agrid" role="list"></div></div>
-      <div class="fbar">${fk.map(([k, l, a]) => `<button class="fk" data-fk="${a}"><span class="kbd">${k}</span>${l}</button>`).join('')}<button class="fk" data-fk="palette"><span class="kbd">${MOD} K</span>Befehle</button><button class="fk flow" data-fk="flow">${ic('flow', 'i-sm')}Kassenablauf: Standard</button></div>
+      <div class="fbar">${fk.map(([k, l, a]) => `<button class="fk" data-fk="${a}"><span class="kbd">${k}</span>${l}</button>`).join('')}<button class="fk" data-fk="palette"><span class="kbd">${MOD} K</span>Befehle</button><button class="fk flow" data-fk="flow" data-perm="einstellungen">${ic('flow', 'i-sm')}Kassenablauf: Standard</button></div>
     </div>
     <aside class="cart" id="cart" aria-label="Warenkorb">
       <div class="cart-head"><h2>Warenkorb</h2><span class="count" id="cartCount">0</span><div class="tools"><button class="btn btn-ghost btn-sm btn-icon" id="parkBtn" data-tip="Parken · F8" data-tip-pos="down" aria-label="Bon parken">${ic('pause', 'i-sm')}</button><button class="btn btn-ghost btn-sm btn-icon" id="clearBtn" data-tip="Leeren" data-tip-pos="down" aria-label="Warenkorb leeren">${ic('trash', 'i-sm')}</button></div></div>
@@ -59,7 +59,7 @@ function renderCats() {
 }
 function renderQuick() {
   $('#quick').innerHTML = SERVICES.map(s => `<button class="qb" data-svc="${s.id}"><span class="qi">${ic(s.icon, 'i-sm')}</span><span><span class="qn" style="display:block">${s.name}</span><span class="qp" style="display:block">${s.price == null ? 'Betrag wählen' : eur(s.price)}</span></span></button>`).join('')
-    + `<button class="qb cfg" data-fk="flow">${ic('plus', 'i-sm')}Schnellwahl anpassen</button>`;
+    + `<button class="qb cfg" data-fk="flow" data-perm="einstellungen">${ic('plus', 'i-sm')}Schnellwahl anpassen</button>`;
 }
 function filtered() {
   const q = norm(POS.q.trim());
@@ -437,7 +437,23 @@ function openFlow() {
   });
 }
 function openMore(anchor) {
-  const el = openPopover(anchor, `<button class="pop-i" data-m="gs">${ic('gift')}Gutschein verkaufen</button><button class="pop-i" data-m="ret">${ic('undo')}Retoure / Umtausch<span class="r muted" style="font-size:11.5px">mit Beleg</span></button><button class="pop-i" data-m="rcpts">${ic('receipt')}Belege<span class="r muted" style="font-size:11.5px">${DESKTOP ? 'gespeichert' : 'Sitzung'}</span></button><button class="pop-i" data-m="copy">${ic('printer')}Belegkopie drucken</button><button class="pop-i" data-m="drawer">${ic('cash')}Lade öffnen<span class="r muted" style="font-size:11.5px">protokolliert</span></button><button class="pop-i" data-m="book">${ic('cash')}Kassenbuch<span class="r muted" style="font-size:11.5px">Einlage · Entnahme</span></button><button class="pop-i" data-m="x">${ic('receipt')}X-Bericht (Zwischenstand)</button><button class="pop-i" data-m="z">${ic('lock')}Tagesabschluss</button><div class="pop-sep"></div>${DESKTOP ? '' : `<button class="pop-i" data-m="net">${ic(S.online ? 'wifi-off' : 'wifi')}${S.online ? 'Offline-Modus simulieren' : 'Verbindung wiederherstellen'}</button>`}<button class="pop-i" data-m="flow">${ic('flow')}Kassenablauf bearbeiten</button>`, {align: 'right', width: 260});
+  // Nur was ohne PIN-Freigabe benutzbar ist: Einträge, für die das Recht fehlt, erscheinen nicht
+  const items = [
+    ['gs', 'gift', 'Gutschein verkaufen', '', 'kasse.verkaufen'],
+    ['ret', 'undo', 'Retoure / Umtausch', 'mit Beleg', 'kasse.retoure'],
+    ['rcpts', 'receipt', 'Belege', DESKTOP ? 'gespeichert' : 'Sitzung', null],
+    ['copy', 'printer', 'Belegkopie drucken', '', null],
+    ['drawer', 'cash', 'Lade öffnen', 'protokolliert', null],
+    ['book', 'cash', 'Kassenbuch', 'Einlage · Entnahme', 'kasse.kassenbuch'],
+    ['x', 'receipt', 'X-Bericht (Zwischenstand)', '', null],
+    ['z', 'lock', 'Tagesabschluss', '', 'kasse.kassenbuch'],
+    'sep',
+    ...(DESKTOP ? [] : [['net', S.online ? 'wifi-off' : 'wifi', S.online ? 'Offline-Modus simulieren' : 'Verbindung wiederherstellen', '', null]]),
+    ['flow', 'flow', 'Kassenablauf bearbeiten', '', 'einstellungen']
+  ].filter(it => it === 'sep' || !it[4] || can(it[4]));
+  const html = items.filter((it, n) => it !== 'sep' || (n > 0 && n < items.length - 1 && items[n - 1] !== 'sep'))
+    .map(it => it === 'sep' ? '<div class="pop-sep"></div>' : `<button class="pop-i" data-m="${it[0]}">${ic(it[1])}${it[2]}${it[3] ? `<span class="r muted" style="font-size:11.5px">${it[3]}</span>` : ''}</button>`).join('');
+  const el = openPopover(anchor, html, {align: 'right', width: 260});
   if (!el) return;
   el.addEventListener('click', e => {
     const b = e.target.closest('[data-m]'); if (!b) return; closePopover();

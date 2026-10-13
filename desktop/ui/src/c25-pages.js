@@ -18,7 +18,7 @@ registerPage('belege', {title: 'Belege', sub: () => 'Journal aller Bons, Retoure
 async function renderBelege() {
   const v = $('#view-belege');
   v.innerHTML = `<div class="cv">${pageHead('Belege', 'Bons suchen, Kopie drucken, per E-Mail senden, Rechnung erstellen, Retoure oder Storno buchen',
-    `<button class="btn btn-secondary" data-bl="ret">${ic('undo', 'i-sm')}Retoure starten</button><button class="btn btn-secondary" data-bl="x">${ic('receipt', 'i-sm')}X-Bericht</button>`)}
+    `<button class="btn btn-secondary" data-bl="ret" data-perm="kasse.retoure">${ic('undo', 'i-sm')}Retoure starten</button><button class="btn btn-secondary" data-bl="x">${ic('receipt', 'i-sm')}X-Bericht</button>`)}
     <div id="blKpi"></div>
     <div class="filters"><input class="input" id="blQ" placeholder="Belegnummer, Artikel, Kunde, Kassier:in …" value="${esc(BL.q)}" style="flex:1;min-width:240px;max-width:420px">
       <div class="seg" id="blKind">${[['alle', 'Alle'], ['verkauf', 'Verkäufe'], ['retoure', 'Retouren'], ['storno', 'Stornos']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${BL.kind === k}">${l}</button>`).join('')}</div>
@@ -49,7 +49,7 @@ function renderBlView() {
   if (!s) { box.innerHTML = `<div class="empty" style="padding:40px"><p>Beleg auswählen</p></div>`; return; }
   const k = s.kind || 'verkauf', can = DESKTOP && k === 'verkauf' && !s.voided;
   box.innerHTML = `<div class="set-row"><div><div class="set-l">${esc(kindLabel(s))} ${esc(s.no)}</div><div class="set-h">${esc(fmtTs(s.ts))} · ${esc(s.cashier || '')}${s.ref_no ? ` · zu ${esc(s.ref_no)}` : ''}</div></div></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line)"><button class="btn btn-secondary btn-sm" data-bl="copy">${ic('printer', 'i-sm')}Kopie</button>${DESKTOP ? `<button class="btn btn-secondary btn-sm" data-bl="mail">${ic('mail', 'i-sm')}E-Mail</button>` : ''}${DESKTOP && k === 'verkauf' ? `<button class="btn btn-secondary btn-sm" data-bl="rechnung">${ic('receipt', 'i-sm')}Rechnung</button><button class="btn btn-secondary btn-sm" data-bl="lieferschein">${ic('truck', 'i-sm')}Lieferschein</button>` : ''}${can ? `<button class="btn btn-secondary btn-sm" data-bl="retoure">${ic('undo', 'i-sm')}Retoure</button><button class="btn btn-ghost btn-sm" data-bl="storno" style="color:var(--neg)">${ic('x', 'i-sm')}Storno</button>` : ''}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line)"><button class="btn btn-secondary btn-sm" data-bl="copy">${ic('printer', 'i-sm')}Kopie</button>${DESKTOP ? `<button class="btn btn-secondary btn-sm" data-bl="mail">${ic('mail', 'i-sm')}E-Mail</button>` : ''}${DESKTOP && k === 'verkauf' ? `<button class="btn btn-secondary btn-sm" data-bl="rechnung">${ic('receipt', 'i-sm')}Rechnung</button><button class="btn btn-secondary btn-sm" data-bl="lieferschein">${ic('truck', 'i-sm')}Lieferschein</button>` : ''}${can ? `<button class="btn btn-secondary btn-sm" data-bl="retoure" data-perm="kasse.retoure">${ic('undo', 'i-sm')}Retoure</button><button class="btn btn-ghost btn-sm" data-bl="storno" data-perm="kasse.retoure" style="color:var(--neg)">${ic('x', 'i-sm')}Storno</button>` : ''}</div>
     <div style="padding:14px;max-height:calc(100dvh - 330px);overflow:auto"><div class="receipt-wrap" style="padding:0">${receiptHTML(recFromData(s.no, {...s.data, kind: k}), prefs.tpl || 'classic')}</div></div>`;
 }
 async function blAction(a) {

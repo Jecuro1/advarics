@@ -104,7 +104,17 @@ async function permToggle(pm) {
 
 /* ── Rechte an den Einstiegspunkten ── */
 const VIEW_PERM = {berichte: 'berichte', anpassen: 'anpassen', einstellungen: 'einstellungen', einkauf: 'einkauf', aktionen: 'preise.aktionen', inventur: 'bestand.buchen'};
+/** Alle Rechte (Namen wie in der Rechte-Matrix) */
+const ALL_PERMS = ['kasse.verkaufen', 'kasse.retoure', 'kasse.kassenbuch', 'artikel.bearbeiten', 'preise.aktionen', 'bestand.buchen', 'einkauf', 'rechnungen', 'faktura', 'marketing', 'kunden.bearbeiten', 'berichte', 'anpassen', 'einstellungen', 'system'];
+/* Schaltflächen und Menüeinträge, für die eine PIN-Freigabe nötig wäre, werden gar nicht erst angezeigt:
+   Ein Element mit data-perm="recht" ist nur sichtbar, wenn die angemeldete Person das Recht hat (Rolle oder Benutzergruppe). */
+{
+  const st = document.createElement('style');
+  st.textContent = ALL_PERMS.map(p => `body:not([data-can~="${p}"]) [data-perm="${p}"]{display:none!important}`).join('\n');
+  document.head.append(st);
+}
 function permNav() {
+  document.body.dataset.can = ALL_PERMS.filter(p => can(p)).join(' ');
   // Menüpunkte ohne Berechtigung werden ausgeblendet – samt leeren Untermenüs und Bereichen
   const nav = $('#nav'); if (!nav) return;
   $$('.nav-item[data-view]', nav).forEach(n => { const p = VIEW_PERM[n.dataset.view]; n.classList.toggle('nav-off', (!!p && !can(p)) || viewBlocked(n.dataset.view)); n.classList.remove('nav-locked'); });

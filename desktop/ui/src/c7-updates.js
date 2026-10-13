@@ -26,7 +26,7 @@ async function checkUpdates(manual) {
       Hooks.emit('update.available', {version: i.version});
       const ap = CFG['update.freigabe'];
       if (ap && ap.version === i.version) scheduleApproved(ap);
-      else if (!manual) toast(`Update ${i.version} verfügbar`, {t2: 'Wartet auf Ihre Freigabe', icon: 'download', type: 'accent', dur: 9000, action: {label: 'Ansehen', run: openUpdate}});
+      else if (!manual && can('system')) toast(`Update ${i.version} verfügbar`, {t2: 'Wartet auf Ihre Freigabe', icon: 'download', type: 'accent', dur: 9000, action: {label: 'Ansehen', run: openUpdate}});
       else openUpdate();
     } else if (manual) toast('Kontor ist aktuell', {t2: `Version ${i.current}`, type: 'pos', icon: 'check'});
   } catch (e) {

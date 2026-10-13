@@ -202,7 +202,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.38.2', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.38.3', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -629,7 +629,7 @@ function renderStatus() {
     <span class="sbi ${S.queue ? 'accent' : ''}">${ic('sync')}${S.queue ? `${S.queue} Beleg${S.queue > 1 ? 'e' : ''} in Warteschlange` : 'Synchron'}</span>
     <span class="sbi hide-sm">${ic('shield')}RKSV · Signatureinheit aktiv</span>`}
     <button class="sbi hide-sm ${S.backupH === Infinity || S.backupH >= 48 ? 'off' : ''}" id="sbBackup" data-tip="${DESKTOP ? 'Klicken: Datensicherung öffnen' : 'Backup-Werkzeuge'}">${ic('database')}${backupLabel()}${DESKTOP ? '' : ' · NAS-01'}</button>
-    <button class="sbi ${!DESKTOP || UPD.state === 'available' ? 'accent' : ''} hide-sm" id="sbUpdate">${ic('download')}${esc(updLabel())}</button>
+    <button class="sbi ${!DESKTOP || UPD.state === 'available' ? 'accent' : ''} hide-sm" id="sbUpdate" data-perm="system">${ic('download')}${esc(updLabel())}</button>
     <span class="sb-spacer"></span>
     <button class="sbi" id="sbHooks" data-tip="Ereignis-Inspektor · Hooks & Webhooks" data-tip-pos="up-left">${ic('braces')}Ereignisse <b class="num" id="sbHookCount" style="font-weight:600;color:var(--text-2)">${Hooks.count}</b></button>
     ${DESKTOP ? '' : `<span class="sbi hide-md">${ic('sparkle')}KI lokal · bereit</span>`}

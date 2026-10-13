@@ -17,6 +17,9 @@
   L('bestand.buchen', 'umlagerungen ul-neu ul-protokoll ul-positionen ul-planung ul-anforderung ul-rechnung ul-ungebucht ul-kompakt picklisten umbuchungslog bestandskorrektur');
   L('artikel.bearbeiten', 'nos import-protokoll artikel-import master-artikel advarics-import ean-zuordnung artikelsortierung');
   L('preise.aktionen', 'preis-uebersicht');
+  // Seiten, auf denen man nur bearbeitet oder bucht: ohne das Recht wäre bei jedem Schritt eine PIN-Freigabe nötig (zum Nachschlagen gibt es Artikelinfo und Bestandsinfo)
+  L('artikel.bearbeiten', 'artikel artikel-edit');
+  L('bestand.buchen', 'bestand');
   // Einkauf
   L('einkauf', 'einkauf order-import order-typen order-vorschlag order-konfig avis wareneingang we-scanner we-protokoll reklamationen reklamation-neu lretouren retouren-protokoll rueckgabegruende verteilung-konfig disposition lieferanten nachsortierung nachsort-nos nachsort-liste nachsort-param');
   L('einkauf', 'edi-nachrichten edi-fehler edi-konflikte edi-katalogartikel edi-katalog edi-ordrsp edi-invoic edi-desadv edi-verkaufsberichte edi-naechster-export edi-bestellungen edi-bestandsmeldungen edi-marktdaten edi-artikelimport edi-importprotokoll');
@@ -26,11 +29,16 @@
   // Kunden
   L('kunden.bearbeiten', 'kunden kundenerfassung bon-kunden bon-kunden-protokoll kunden-kommunikation');
   // Einstellungen, Stammdaten und System
-  L('einstellungen', 'filialen');
   L('anpassen', 'anpassen erweiterungen');
   F('system', 'set-benutzer set-sso set-sicherung set-updates set-system set-rksv api-protokoll st-zugangsprofil protokoll datensicherung');
   F('system', 'benutzer benutzer-edit rollen st-benutzergruppe benutzergruppe-edit');
+  // Seiten, deren Hauptfunktion immer die Freigabe eines Administrators verlangt (Filialverbund, Filialen anlegen, Handy-Zugang)
+  F('system', 'set-verbund filialen');
+  F('anpassen', 'set-handy');
 }
+
+Hooks.on('auth.login', () => permNav());   // auch in der Browser-Vorschau: nach dem Wechsel der Person Menü und Schaltflächen neu bewerten
+if (window.KONTOR_UI) window.KONTOR_UI.viewPerm = () => ({...VIEW_PERM});   // nur lesend – für Prüfungen: welches Recht eine Seite verlangt
 
 /* Befehlspalette (Strg+K): Befehle, für die das Recht fehlt oder deren Seite gesperrt ist, erscheinen nicht */
 const CMD_PERM = {

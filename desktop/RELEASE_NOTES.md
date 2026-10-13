@@ -1,3 +1,12 @@
+## Neu in 0.38.3
+
+- **Nur Menüpunkte, für die keine PIN-Freigabe nötig ist.** Was eine angemeldete Person nur mit der Freigabe einer anderen Person benutzen könnte, wird ihr gar nicht mehr angezeigt (Rolle und Benutzergruppe zählen, Administratoren sehen alles):
+  - **Seitenmenü:** „Artikel“ (Bearbeiten) nur mit dem Recht „Artikel bearbeiten“ und „Bestand“ (Buchen) nur mit „Bestand buchen“ – zum Nachschlagen bleiben Artikelinfo, Artikelinfo Plus/Kompakt und Bestandsinfo für alle da. „Filialen“ und „Filialverbund“ nur für Administratoren, „Kontor mobil“ nur mit dem Recht „Anpassen“.
+  - **„Mehr“-Menü an der Kasse:** „Retoure / Umtausch“ nur mit „Retouren buchen“, „Kassenbuch“ und „Tagesabschluss“ nur mit „Kassenbuch und Tagesabschluss“, „Kassenablauf bearbeiten“ nur mit „Einstellungen“.
+  - **Schaltflächen:** „Retoure“ und „Storno“ bei den Belegen, „Bearbeiten“ in der Artikelinfo, „Buchen“ im Dashboard-Widget, der Kassenablauf-Knopf an der Kasse und der Update-Hinweis in der Statusleiste erscheinen nur noch, wenn das Recht vorhanden ist.
+  - Der Kassenablauf ließ sich bisher von jeder Person ändern – jetzt nur noch mit dem Recht „Einstellungen“.
+  - Gilt auch für die Befehlspalette (Strg+K) und die Menüsuche.
+
 ## Neu in 0.38.2
 
 - **Drag & Drop: die ganze Zeile lässt sich greifen und ziehen** – es braucht keinen Anfasser mehr. In den Zuordnungslisten (Zugeordnet / Nicht zugeordnet), in den Stammdaten-Tabellen, bei den eigenen Feldern, in der Spalten-Auswahl und in der Artikelsortierung genügt es, die Zeile irgendwo anzufassen. Nur Schaltflächen, Auswahllisten und Schalter in der Zeile bleiben bedienbar wie bisher. In Stammdaten-Tabellen mit Textfeldern greift senkrechtes Ziehen die Zeile; waagerechtes Ziehen im Textfeld markiert wie gewohnt Text.
