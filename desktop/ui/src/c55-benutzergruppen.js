@@ -165,9 +165,10 @@ function gePersonen() {
       const cols = [{k: 'nr', l: 'Nr.', t: 'num', w: 70}, {k: 'name', l: 'Name', w: 190}, {k: 'rolle', l: 'Rolle', w: 140, html: r => `${esc(r.rolle)}${r.abw ? ` <span class="pill warn" style="height:20px" title="Weicht von der Rolle der Gruppe ab">≠ Gruppe</span>` : ''}`, get: r => r.rolle}, {k: 'aktiv', l: 'Aktiv', t: 'check', w: 70}, {k: 'gruppe', l: 'Andere Gruppe', w: 160}];
       const mv = (ids, add) => { const s = GE.d.mitglieder.slice(); ids.map(geMemberName).filter(Boolean).forEach(n => { const i = s.findIndex(x => geSame(x, n)); if (add && i < 0) s.push(n); if (!add && i >= 0) s.splice(i, 1); }); GE.d.mitglieder = s; geDirty(el); geRender(); };
       const mk = (key, h, cfg) => { AG[key] = agNew({embed: true, cols, sort: {k: 'name', dir: 1}, ...cfg}); agMount(key, h); };
-      mk('ge-a', $('[data-aeg="a"]', el), {title: 'Zugeordnet', rows: () => geMemberRows(true), edit: id => mv([id], false), extra: [{k: 'neu', l: 'Neu', icon: 'plus'}, {k: 'rm', l: 'Entfernen', icon: 'x'}, {k: 'rolle', l: 'Rolle setzen', icon: 'shield'}],
+      const [da, db] = agDual('ge-a', 'ge-b', mv);
+      mk('ge-a', $('[data-aeg="a"]', el), {title: 'Zugeordnet', rows: () => geMemberRows(true), dnd: da, edit: id => mv([id], false), extra: [{k: 'neu', l: 'Neu', icon: 'plus'}, {k: 'rm', l: 'Entfernen', icon: 'x'}, {k: 'rolle', l: 'Rolle setzen', icon: 'shield'}],
         actions: {neu: () => geNeuePerson(), rm: () => { const s = [...AG['ge-a'].sel]; if (s.length) mv(s, false); }, rolle: () => geRolleSetzen([...AG['ge-a'].sel])}});
-      mk('ge-b', $('[data-aeg="b"]', el), {title: 'Nicht zugeordnet', rows: () => geMemberRows(false), edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ge-b'].sel]; if (s.length) mv(s, true); }}});
+      mk('ge-b', $('[data-aeg="b"]', el), {title: 'Nicht zugeordnet', rows: () => geMemberRows(false), dnd: db, edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ge-b'].sel]; if (s.length) mv(s, true); }}});
     }};
 }
 const geStoreRows = on => STORES.filter(s => GE.d.filialen.includes(s.id) === on).map(s => ({id: s.id, kurz: s.id, name: s.name, gruppe: stRows('filialgruppe').find(g => (g.filialen || []).some(f => geSame(f, s.id)))?.name || ''}));
@@ -178,8 +179,9 @@ function geFilialen() {
       const cols = [{k: 'kurz', l: 'Kurz-Name', w: 110}, {k: 'name', l: 'Filiale', w: 220}, {k: 'gruppe', l: 'Filial-Gruppe', w: 160}];
       const mv = (ids, add) => { const s = new Set(GE.d.filialen); ids.forEach(i => add ? s.add(i) : s.delete(i)); GE.d.filialen = [...s]; geDirty(el); geRender(); };
       const mk = (key, h, cfg) => { AG[key] = agNew({embed: true, cols, sort: {k: 'kurz', dir: 1}, ...cfg}); agMount(key, h); };
-      mk('ge-a', $('[data-aeg="a"]', el), {title: 'Zugeordnet', rows: () => geStoreRows(true), edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const s = [...AG['ge-a'].sel]; if (s.length) mv(s, false); }}});
-      mk('ge-b', $('[data-aeg="b"]', el), {title: 'Nicht zugeordnet', rows: () => geStoreRows(false), edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ge-b'].sel]; if (s.length) mv(s, true); }}});
+      const [da, db] = agDual('ge-a', 'ge-b', mv);
+      mk('ge-a', $('[data-aeg="a"]', el), {title: 'Zugeordnet', rows: () => geStoreRows(true), dnd: da, edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const s = [...AG['ge-a'].sel]; if (s.length) mv(s, false); }}});
+      mk('ge-b', $('[data-aeg="b"]', el), {title: 'Nicht zugeordnet', rows: () => geStoreRows(false), dnd: db, edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ge-b'].sel]; if (s.length) mv(s, true); }}});
     }};
 }
 

@@ -332,12 +332,13 @@ function bindEdi() {
       if (b.dataset.edinv != null) { await ediInvrpt(b.dataset.edinv || null); return docRefresh(); }
     } catch (err) { toast('EDI-Fehler', {t2: String(err), type: 'warn', dur: 8000}); }
   });
-  document.addEventListener('change', async e => {
-    const f = e.target.closest('[data-edfile]'); if (!f) return;
+  const ediFiles = async files => {
     let n = 0; await loadSuppliers(); await loadStamm();
-    for (const file of f.files) { try { await ediCreate(file.name, await file.text()); n++; } catch (err) { toast(file.name, {t2: String(err), type: 'warn'}); } }
+    for (const file of files) { try { await ediCreate(file.name, await file.text()); n++; } catch (err) { toast(file.name, {t2: String(err), type: 'warn'}); } }
     EDI.docs = null; toast(`${n} Datei${n === 1 ? '' : 'en'} eingelesen`, {type: 'pos', icon: 'download'}); docRefresh();
-  });
+  };
+  document.addEventListener('change', e => { const f = e.target.closest('[data-edfile]'); if (f) ediFiles([...f.files]); });
+  fileDrop($('#view-edi-nachrichten'), {multiple: true, hint: 'EDI-Dateien hier ablegen', onFiles: ediFiles});
 }
 
 /* ════════ Webshop ════════ */

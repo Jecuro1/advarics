@@ -41,7 +41,7 @@ DOC_AFTER.warenkorb = {uebernehmen: (st, el) => { closeLayer(el); posLoadLines(s
 {
   const _cl = cmdList;
   cmdList = function () {
-    const extra = navFlat().filter(n => n.id && TITLES[n.id]).map(n => ({group: 'Menü · ' + n.path.filter(Boolean).join(' · '), label: n.label, icon: n.icon, run: () => go(n.id), kw: n.path.join(' ')}));
+    const extra = navFlat().filter(n => n.id && TITLES[n.id]).map(n => ({group: 'Menü · ' + n.path.filter(Boolean).join(' · '), label: n.label, icon: n.icon, view: n.id, run: () => go(n.id), kw: n.path.join(' ')}));
     extra.push({group: 'Kasse', label: 'Warenkorb als Vorgang speichern', icon: 'bag', kw: 'merken telefon später', run: () => {
       if (!POS.cart.length) return toast('Warenkorb ist leer', {icon: 'bag'});
       const lines = POS.cart.map(l => l.art ? {ean: variant(l.art, l.c, l.s).ean, sku: l.art.id, name: `${l.name} · ${colorName(l.c)} · ${l.s}`, qty: l.qty, price: Math.round(l.unit * 100), vat: l.vat, disc: l.disc?.pct || 0} : {ean: '', name: l.name, qty: l.qty, price: Math.round(l.unit * 100), vat: l.vat});

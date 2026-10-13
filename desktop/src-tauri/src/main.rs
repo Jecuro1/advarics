@@ -1791,6 +1791,27 @@ async fn article_media_add_url(app: AppHandle, id: String, urls: Vec<String>, co
     .await
     .map_err(err)?
 }
+/// Bilder, die aus dem Explorer/Finder auf die Galerie gezogen wurden (Inhalt als Base64 bzw. Data-URL)
+#[tauri::command]
+async fn article_media_add_data(app: AppHandle, id: String, color: Option<String>, files: Vec<String>) -> Res<Value> {
+    let db = app.state::<db::Db>();
+    let dd = data_dir(&db);
+    let c = db.conn.lock().unwrap();
+    let (mut ok, mut bad) = (0, vec![]);
+    for (i, f) in files.iter().enumerate() {
+        let raw = f.rsplit(',').next().unwrap_or("").trim();
+        let r = base64::engine::general_purpose::STANDARD
+            .decode(raw)
+            .map_err(|_| "Datei nicht lesbar".to_string())
+            .and_then(|b| media::add_bytes(&c, &dd, &id, &b, color.as_deref().unwrap_or(""), None));
+        match r {
+            Ok(_) => ok += 1,
+            Err(e) => bad.push(format!("Bild {}: {e}", i + 1)),
+        }
+    }
+    let _ = db::audit_append(&c, "catalog.article.media", &json!({ "artikel": id, "bilder": ok, "fehler": bad.len() }));
+    Ok(json!({ "ok": ok, "fehler": bad }))
+}
 #[tauri::command]
 fn article_media_remove(db: State<db::Db>, id: i64) -> Res<()> {
     let dd = data_dir(&db);
@@ -2097,6 +2118,7 @@ fn main() {
             advarics_wg_import,
             article_media_list,
             article_media_pick,
+            article_media_add_data,
             article_media_add_url,
             article_media_remove,
             article_media_update,

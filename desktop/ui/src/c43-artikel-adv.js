@@ -214,12 +214,17 @@ for (const [k, label, kind, key, src] of [['attr', 'Attribut', 'Attribut', 'attr
     const all = src().map((r, i) => ({...r, id: k === 'attr' ? `${r.name}|${r.attribut}` : r.id}));
     const mine = aeList(ctx, key); const has = id => mine.some(x => (x.id || `${x.name}|${x.attribut}`) === id);
     const cols = k === 'attr' ? [{k: 'name', l: 'Name', w: 200}, {k: 'attribut', l: 'Attribut', w: 240}] : [{k: 'text', l: 'Text', w: 260}, {k: 'name', l: 'Name', w: 180}, {k: 'format', l: 'Format', w: 100}];
-    const flip = async id => {
-      const i = mine.findIndex(x => (x.id || `${x.name}|${x.attribut}`) === id);
-      if (i >= 0) mine.splice(i, 1); else { const r = all.find(x => x.id === id); if (r) mine.push(k === 'attr' ? {name: r.name, attribut: r.attribut} : {id: r.id, name: r.name, format: r.format, text: r.text}); }
+    const mv = (ids, add) => {
+      ids.forEach(id => {
+        const i = mine.findIndex(x => (x.id || `${x.name}|${x.attribut}`) === id);
+        if (i >= 0 && !add) mine.splice(i, 1);
+        else if (i < 0 && add) { const r = all.find(x => x.id === id); if (r) mine.push(k === 'attr' ? {name: r.name, attribut: r.attribut} : {id: r.id, name: r.name, format: r.format, text: r.text}); }
+      });
       ctx.setTab(k);
     };
-    return [{embed: true, title: label + ' zugeordnet', cols, rows: () => all.filter(r => has(r.id)), edit: flip}, {embed: true, title: label + ' nicht zugeordnet', cols, rows: () => all.filter(r => !has(r.id)), edit: flip}];
+    const flip = id => mv([id], !has(id));
+    const [da, db] = agDual(`ae-${k}-a`, `ae-${k}-b`, mv);
+    return [{embed: true, title: label + ' zugeordnet', cols, rows: () => all.filter(r => has(r.id)), edit: flip, dnd: da}, {embed: true, title: label + ' nicht zugeordnet', cols, rows: () => all.filter(r => !has(r.id)), edit: flip, dnd: db}];
   }};
 }
 
@@ -409,8 +414,9 @@ function gseRender() {
     const mv = (names, add) => { const s = new Set(D.groessen); names.forEach(n => add ? s.add(n) : s.delete(n)); D.groessen = [...s]; if (!add) names.forEach(n => delete D.stat[n]); gseCollect(el); gseRender(); };
     const mk = (key, host, cfg) => { if (!host) return; AG[key] = agNew({embed: true, ...cfg}); agMount(key, host); };
     if (GSE.tab === 'allg') {
-      mk('gse-a', $('[data-gg="a"]', el), {title: 'Zugeordnet', cols, rows: assigned, sort: {k: 'nr', dir: 1}, edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const sel = [...AG['gse-a'].sel]; if (sel.length) mv(sel, false); }}});
-      mk('gse-b', $('[data-gg="b"]', el), {title: 'Nicht zugeordnet', cols, rows: free, sort: {k: 'nr', dir: 1}, edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const sel = [...AG['gse-b'].sel]; if (sel.length) mv(sel, true); }}});
+      const [da, db] = agDual('gse-a', 'gse-b', mv);
+      mk('gse-a', $('[data-gg="a"]', el), {title: 'Zugeordnet', cols, rows: assigned, sort: {k: 'nr', dir: 1}, dnd: da, edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const sel = [...AG['gse-a'].sel]; if (sel.length) mv(sel, false); }}});
+      mk('gse-b', $('[data-gg="b"]', el), {title: 'Nicht zugeordnet', cols, rows: free, sort: {k: 'nr', dir: 1}, dnd: db, edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const sel = [...AG['gse-b'].sel]; if (sel.length) mv(sel, true); }}});
     } else {
       mk('gse-s', $('[data-gg="s"]', el), {title: 'Statistikgrößen', cols: [{k: 'name', l: 'Größe', w: 260}, {k: 'stat', l: 'Statistik-Größe', w: 260}], rows: () => assigned().map(r => ({id: r.id, name: r.name, stat: D.stat[r.name] || ''})),
         edit: async id => { const o = await aeForm('Statistik-Größe', [{k: 'name', l: 'Größe', ro: true}, {k: 'stat', l: 'Statistik-Größe'}], {name: id, stat: D.stat[id] || ''}); if (o) { if (o.stat) D.stat[id] = o.stat; else delete D.stat[id]; gseRender(); } }});

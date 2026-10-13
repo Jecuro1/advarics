@@ -14,6 +14,8 @@ function applyMethods() {
   METHODS.length = 0;
   BASE_METHODS.forEach(m => METHODS.push({...m, hidden: aus.has(m.id) || (m.id === 'ueberweisung' && !CFG['zahlung.iban'])}));
   (Array.isArray(CFG['zahlung.eigene']) ? CFG['zahlung.eigene'] : []).forEach(m => METHODS.splice(METHODS.findIndex(x => x.id === 'gutschein'), 0, {id: m.id, label: plain(m.label), sub: plain(m.sub || (m.link ? 'QR-Code' : 'extern bestätigen')), icon: m.link ? 'qr' : 'card', kind: 'qr', link: m.link || '', custom: true, hidden: aus.has(m.id)}));
+  const ord = Array.isArray(CFG['zahlung.reihenfolge']) ? CFG['zahlung.reihenfolge'] : [];   // vom Betreiber per Ziehen festgelegt
+  if (ord.length) METHODS.sort((a, b) => { const i = ord.indexOf(a.id), j = ord.indexOf(b.id); return (i < 0 ? 999 : i) - (j < 0 ? 999 : j); });
   const p = METHODS.find(m => m.id === 'paypal'); if (p && CFG['zahlung.paypalme']) p.sub = 'paypal.me/' + plain(CFG['zahlung.paypalme']);
 }
 { const _as = applySettings; applySettings = function (...a) { const r = _as.apply(this, a); applyMethods(); return r; }; }
@@ -42,13 +44,19 @@ runQR = async function (m, amount) {
 SET_SECTIONS.splice(SET_SECTIONS.findIndex(s => s[0] === 'terminal'), 0, ['zahlung', 'Zahlungsarten', 'card']);
 function renderZahlBox() {
   const box = $('#zahlBox'); if (!box) return;
-  const aus = new Set(CFG['zahlung.aus'] || []);
-  box.innerHTML = `<div class="set-row"><div><div class="set-l">An der Kasse anbieten</div><div class="set-h">Reihenfolge = Tasten 1–8 im Bezahlen-Dialog</div></div><div class="set-c" style="flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:460px">${BASE_METHODS.concat((CFG['zahlung.eigene'] || []).map(m => ({...m, icon: m.link ? 'qr' : 'card'}))).map(m => `<button class="chip" data-zm="${esc(m.id)}" aria-pressed="${!aus.has(m.id)}">${ic(m.icon, 'i-sm')}${esc(plain(m.label))}</button>`).join('')}</div></div>
+  const aus = new Set(CFG['zahlung.aus'] || []), ord = Array.isArray(CFG['zahlung.reihenfolge']) ? CFG['zahlung.reihenfolge'] : [];
+  const all = BASE_METHODS.concat((CFG['zahlung.eigene'] || []).map(m => ({...m, icon: m.link ? 'qr' : 'card'}))).sort((a, b) => { const i = ord.indexOf(a.id), j = ord.indexOf(b.id); return (i < 0 ? 999 : i) - (j < 0 ? 999 : j); });
+  box.innerHTML = `<div class="set-row"><div><div class="set-l">An der Kasse anbieten</div><div class="set-h">Reihenfolge = Tasten 1–8 im Bezahlen-Dialog · zum Ändern ziehen</div></div><div class="set-c" id="zahlChips" style="flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:460px">${all.map(m => `<button class="chip" data-zm="${esc(m.id)}" ${dndAttr(m.id)} aria-pressed="${!aus.has(m.id)}">${ic(m.icon, 'i-sm')}${esc(plain(m.label))}</button>`).join('')}</div></div>
     ${field('zahlung.paypalme', 'PayPal.me-Name', 'z. B. alpenlichtsport → QR-Code mit Betrag (paypal.me/…/49.90EUR)')}
     ${field('zahlung.iban', 'IBAN für Überweisung per QR', 'aktiviert „Überweisung“ mit SEPA-QR (EPC-Girocode)')}
     ${field('zahlung.bic', 'BIC', 'optional')}
     ${field('zahlung.empfaenger', 'Empfänger', 'leer = Firmenname')}
     <div class="set-row" style="border-bottom:0"><div><div class="set-l">Eigene Zahlungsarten</div><div class="set-h">${(CFG['zahlung.eigene'] || []).map(m => `${esc(plain(m.label))}${m.link ? ' (QR)' : ''} <button class="btn btn-ghost btn-sm" data-zdel="${esc(m.id)}" style="height:22px">${ic('x', 'i-xs')}</button>`).join(' · ') || 'z. B. Rechnung, Firmenkonto, Twint, Bluecode – mit oder ohne QR-Link'}</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" data-z="neu">${ic('plus', 'i-sm')}Zahlungsart</button></div></div>`;
+  // Reihenfolge der Zahlungsarten im Bezahlen-Dialog per Ziehen festlegen
+  dndZone($('#zahlChips', box), 'zahlung-reihenfolge', {axis: 'x', ghost: 'clone', reorder: async (ids, ins) => {
+    await saveSettings({'zahlung.reihenfolge': dndArrange(all.map(m => m.id), ids, ins)}, true);
+    applyMethods(); renderZahlBox();
+  }});
 }
 function openOwnMethod() {
   const el = openLayer(`<div class="modal" style="width:min(520px,100%)" role="dialog" aria-modal="true" aria-label="Zahlungsart"><div class="m-head"><div class="m-ic">${ic('card')}</div><div><h2>Eigene Zahlungsart</h2><p>Erscheint im Bezahlen-Dialog; wird am Bon und im Bericht ausgewiesen</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>

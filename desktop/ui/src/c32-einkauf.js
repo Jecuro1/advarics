@@ -520,6 +520,10 @@ async function bonusUmlegen(id) {
 
 function bindEinkauf2() {
   const on = (id, fn) => $('#view-' + id)?.addEventListener('click', fn);
+  fileDrop($('#view-order-import'), {accept: /\.(csv|txt)$/i, hint: 'Bestelldatei hier ablegen', onFiles: async ([f]) => {
+    const t = await f.text(), s = $('#oiSup'); if (s) { OI.sup = s.value; OI.type = $('#oiType').value; }
+    OI.text = t; OI.res = parseOrderText(t); renderOrderImport();
+  }});
   on('order-import', async e => {
     const b = e.target.closest('[data-oi]'); if (!b) return;
     const sync = () => { OI.sup = $('#oiSup').value; OI.type = $('#oiType').value; OI.text = $('#oiText').value; };

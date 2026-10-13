@@ -335,9 +335,17 @@ registerPage('artikelsortierung', {title: 'Manuelle Artikelsortierung', sub: () 
   const l = ART.filter(a => AS.cat === 'alle' || a.cat === AS.cat).sort((a, b) => b.pop - a.pop);
   v.innerHTML = `<div class="cv">${pageHead('Manuelle Artikelsortierung', 'Reihenfolge der Kacheln an der Kasse festlegen (je Warengruppe) – oben = zuerst', `<button class="btn btn-primary" data-as="save">${ic('check', 'i-sm')}Reihenfolge speichern</button>`)}
     <div class="filters"><div class="seg" id="asSeg" style="flex-wrap:wrap;height:auto">${cats.map(c => `<button data-v="${c.id}" aria-pressed="${AS.cat === c.id}">${esc(c.name)} <span class="muted">${c.id === 'alle' ? ART.length : ART.filter(a => a.cat === c.id).length}</span></button>`).join('')}</div></div>
-    <div class="card"><div id="asList">${l.map((a, i) => `<div class="set-row" data-asi="${esc(a.id)}" draggable="true" style="cursor:grab"><div style="display:flex;gap:12px;align-items:center"><span class="muted num" style="width:26px">${i + 1}</span><div style="width:40px;height:40px;border-radius:10px;overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${artVisual(a, COLORS[a.colors[0]]?.[1] || '#888')}</div><div><b>${esc(a.name)}</b><div class="muted" style="font-size:12px">${esc(a.brand)} · ${eur(a.sale || a.price)}</div></div></div><div class="set-c" style="gap:4px"><button class="btn btn-ghost btn-icon btn-sm" data-asu="${esc(a.id)}" aria-label="nach oben">${ic('chevron-up', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-asd="${esc(a.id)}" aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button></div></div>`).join('')}</div></div></div>`;
+    <div class="card"><div id="asList">${l.map((a, i) => `<div class="set-row" data-asi="${esc(a.id)}" ${dndAttr(a.id)} style="cursor:grab"><div style="display:flex;gap:12px;align-items:center"><span class="muted num" style="width:26px">${i + 1}</span><div style="width:40px;height:40px;border-radius:10px;overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${artVisual(a, COLORS[a.colors[0]]?.[1] || '#888')}</div><div><b>${esc(a.name)}</b><div class="muted" style="font-size:12px">${esc(a.brand)} · ${eur(a.sale || a.price)}</div></div></div><div class="set-c" style="gap:4px"><button class="btn btn-ghost btn-icon btn-sm" data-asu="${esc(a.id)}" aria-label="nach oben">${ic('chevron-up', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-asd="${esc(a.id)}" aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button></div></div>`).join('')}</div></div></div>`;
   initSeg($('#asSeg', v), b => { AS.cat = b.dataset.v; PAGES.artikelsortierung.render(); });
+  // Kacheln per Ziehen sortieren – die Reihenfolge der Zeilen auf dem Bildschirm wird beim Speichern übernommen
+  const list = $('#asList', v);
+  dndZone(list, 'artikelsortierung', {label: ids => artById(ids[0])?.name || '', reorder: (ids, ins) => {
+    const row = $(`[data-asi="${CSS.escape(ids[0])}"]`, list), anchor = ins && $(`[data-asi="${CSS.escape(ins.id)}"]`, list); if (!row) return;
+    anchor ? (ins.after ? anchor.after(row) : anchor.before(row)) : list.append(row);
+    asRenumber();
+  }});
 }});
+const asRenumber = () => $$('#asList [data-asi]').forEach((r, i) => { const n = $('.num', r); if (n) n.textContent = i + 1; });
 registerPage('master-artikel', {title: 'Master-Artikel', sub: () => 'Vorlagen für neue Artikel', render: () => {
   const v = $('#view-master-artikel'), masters = ART.filter(a => a.fields?.['Master'] === 'ja');
   v.innerHTML = `<div class="cv">${pageHead('Master-Artikel', 'Artikel als Vorlage markieren und daraus neue Artikel (z. B. neue Saison, neues Modell) mit allen Feldern, Farben und Größen anlegen – neue EANs werden vergeben')}${artPicker('master-artikel', MA.q)}
@@ -427,7 +435,7 @@ function bindArtikel() {
       return;
     }
     const au = e.target.closest('[data-asu]'), ad = e.target.closest('[data-asd]');
-    if (au || ad) { const row = $(`[data-asi="${CSS.escape((au || ad).dataset[au ? 'asu' : 'asd'])}"]`), sib = au ? row.previousElementSibling : row.nextElementSibling; if (sib) au ? sib.before(row) : sib.after(row); return; }
+    if (au || ad) { const row = $(`[data-asi="${CSS.escape((au || ad).dataset[au ? 'asu' : 'asd'])}"]`), sib = au ? row.previousElementSibling : row.nextElementSibling; if (sib) { au ? sib.before(row) : sib.after(row); asRenumber(); } return; }
     if (e.target.closest('[data-as="save"]')) {
       const ids = $$('[data-asi]').map(r => r.dataset.asi), top = Math.max(...ART.map(a => a.pop || 0), 100) + ids.length;
       try { await needPerm('artikel.bearbeiten', 'Artikelsortierung'); for (const [i, id] of ids.entries()) { const a = artById(id), p = top - i; if (a.pop !== p) { a.pop = p; await invoke('article_save', {article: artToDb(a), user: S.user.name}); } } await reloadArt(); toast('Reihenfolge gespeichert', {t2: 'gilt an der Kasse', type: 'pos', icon: 'list'}); } catch (err) { toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
@@ -455,10 +463,5 @@ function bindArtikel() {
     const csv = ['Zeit;Artikel;Farbe;Größe;Grund;Beleg;Benutzer;Menge;Bestand'].concat(rows.map(x => [x.ts, x.name, colorName(x.color), x.size, x.reason, x.ref || '', x.user || '', x.delta, x.stock_after].join(';'))).join('\r\n');
     try { const p = await invoke('save_text', {name: `Umbuchungs-Log_${today()}.csv`, content: csv, title: 'Umbuchungs-Log exportieren'}); if (p) toast('Exportiert', {t2: p, type: 'pos', icon: 'download'}); } catch (err) { toast('Fehler', {t2: String(err), type: 'warn'}); }
   });
-  // Drag & Drop in der Artikelsortierung
-  let drag = null;
-  document.addEventListener('dragstart', e => { const r = e.target.closest?.('[data-asi]'); if (r) { drag = r; r.style.opacity = '.4'; } });
-  document.addEventListener('dragend', () => { if (drag) drag.style.opacity = ''; drag = null; });
-  document.addEventListener('dragover', e => { const r = e.target.closest?.('[data-asi]'); if (drag && r && r !== drag) { e.preventDefault(); const b = r.getBoundingClientRect(); e.clientY < b.top + b.height / 2 ? r.before(drag) : r.after(drag); } });
   runDuePrices(); setInterval(runDuePrices, 60000);
 }

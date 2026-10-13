@@ -1708,5 +1708,36 @@ button.ge-caret:hover{background:var(--surface-3);color:var(--text)}
 .ge-seg button.ja[aria-pressed="true"]{background:color-mix(in srgb,var(--pos) 16%,var(--surface));color:var(--pos)}
 .ge-seg button.nein[aria-pressed="true"]{background:color-mix(in srgb,var(--neg) 14%,var(--surface));color:var(--neg)}
 @media (max-width:720px){.ge-row{padding-left:calc(8px + var(--d,0)*14px)}.ge-perm{grid-template-columns:minmax(0,1fr)}.ge-seg{width:100%}.ge-seg button{flex:1}.ge-th,.ge-row{grid-template-columns:minmax(0,1fr) 64px 56px}}
+/* Dialoge: Titel oben und Schaltflächen unten bleiben sichtbar – gescrollt wird nur der Inhalt (z. B. Hinweise beim Update) */
+.modal .m-head{position:sticky;top:0;z-index:4;background:var(--surface)}
+.modal .m-foot{position:sticky;bottom:0;z-index:4;background:var(--surface);border-top:1px solid var(--line);margin-top:2px;padding-top:12px}
+.upd-notes{max-height:min(34vh,300px);overflow:auto;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface-2)}
+.upd-notes .chg{margin:0}
+/* Ziehen und Ablegen */
+.dnd-grip{display:inline-grid;place-items:center;flex:none;width:24px;height:28px;border-radius:6px;color:var(--text-3);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;vertical-align:middle}
+.dnd-grip:hover{color:var(--text);background:var(--surface-2)}
+.dnd-grip .i{width:16px;height:16px}
+.ag-dnd .ag-row[data-dnd-item]{cursor:grab;user-select:none;-webkit-user-select:none}
+.ag-h[data-dnd-item]{cursor:grab}
+.ag-menu label[data-dnd-item]{padding-left:4px}
+.dnd-src{opacity:.38!important}
+.ag-row.dnd-src{background:var(--accent-soft)}
+.dnd-on .dnd-can{outline:2px dashed color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:-2px}
+.dnd-on .dnd-over{outline:2px solid var(--accent);outline-offset:-2px;background-color:var(--accent-soft)}
+.dnd-on .ae-card.dnd-over{background-color:color-mix(in srgb,var(--accent) 7%,var(--surface))}
+.ag-drop.dnd-over{border-style:solid;border-color:var(--accent);background:var(--accent-soft);outline:0}
+body.dnd-on,body.dnd-on *{cursor:grabbing!important;user-select:none!important;-webkit-user-select:none!important}
+body.dnd-on.dnd-no,body.dnd-on.dnd-no *{cursor:no-drop!important}
+.dnd-ghost{position:fixed;left:0;top:0;z-index:900;pointer-events:none;display:flex;align-items:center;gap:8px;max-width:340px;min-height:34px;padding:6px 12px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--line-2);box-shadow:var(--shadow-3);font-size:13px;font-weight:600;will-change:transform;opacity:.97}
+.dnd-ghost .dnd-gl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dnd-ghost .dnd-gn{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-size:11.5px;display:grid;place-items:center}
+.dnd-ghost .dnd-gh{display:none;color:var(--accent);padding-left:8px;border-left:1px solid var(--line-2);white-space:nowrap}
+.dnd-ghost.ok{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),var(--shadow-3)}
+.dnd-ghost.ok .dnd-gh:not(:empty){display:block}
+.dnd-ghost.clone{display:block;max-width:none;min-height:0;padding:0;border:0;border-radius:12px;background:transparent;box-shadow:var(--shadow-3);transform-origin:0 0}
+.dnd-line{position:fixed;z-index:899;pointer-events:none;border-radius:3px;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.dnd-line[hidden]{display:none}
+.file-hint{position:fixed;z-index:850;pointer-events:none;display:grid;place-items:center;border:2px dashed var(--accent);border-radius:14px;background:color-mix(in srgb,var(--accent) 9%,transparent)}
+.file-hint span{display:inline-flex;gap:8px;align-items:center;padding:10px 16px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow-2);font-size:14px;font-weight:650;color:var(--accent)}
 </style>
 </head>

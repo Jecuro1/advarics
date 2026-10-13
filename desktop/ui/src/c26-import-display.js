@@ -145,6 +145,8 @@ function openImport(kind = 'artikel') {
       </div>
       <div class="m-foot"><button class="btn btn-ghost" id="imBack">Andere Datei</button><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="imGo" ${(chk.articles?.length || chk.list?.length || chk.stock?.length) ? '' : 'disabled'}>${ic('check', 'i-sm')}Jetzt importieren</button></div>`;
   };
+  const loadCsv = txt => { st.csv = parseCSV(txt); if (!st.csv.rows.length) { st.csv = null; return toast('Datei enthält keine Zeilen', {type: 'warn'}); } automap(); render(); };
+  fileDrop($('.modal', el), {accept: /\.(csv|txt)$/i, hint: 'CSV-Datei hier ablegen', onFiles: async ([f]) => loadCsv(await f.text())});
   el.addEventListener('change', e => { const k = e.target.dataset.im; if (k != null) { if (e.target.value === '') delete st.map[k]; else st.map[k] = +e.target.value; render(); } });
   el.addEventListener('click', async e => {
     const k = e.target.closest('[data-ik]'); if (k) { st.kind = k.dataset.ik; return render(); }
@@ -154,8 +156,7 @@ function openImport(kind = 'artikel') {
     if (e.target.closest('#imFile')) {
       let txt; try { txt = await invoke('open_text', {title: 'CSV-Datei wählen', ext: 'csv'}); } catch (err) { return toast('Datei nicht lesbar', {t2: String(err), type: 'warn'}); }
       if (!txt) return;
-      st.csv = parseCSV(txt); if (!st.csv.rows.length) { st.csv = null; return toast('Datei enthält keine Zeilen', {type: 'warn'}); }
-      automap(); return render();
+      return loadCsv(txt);
     }
     if (e.target.closest('#imGo')) {
       const c = st.check, perm = st.kind === 'kunde' ? 'kunden.bearbeiten' : st.kind === 'bestand' ? 'bestand.buchen' : 'artikel.bearbeiten';

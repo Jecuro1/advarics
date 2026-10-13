@@ -168,8 +168,9 @@ function usrFilialenTab() {
       const cols = [{k: 'kurz', l: 'Kurz-Name', w: 110}, {k: 'name', l: 'Filiale', w: 220}, {k: 'gruppe', l: 'Filial-Gruppe', w: 160}];
       const mv = (ids, add) => { const s = new Set(UE.d.filialen); ids.forEach(i => add ? s.add(i) : s.delete(i)); UE.d.filialen = [...s]; ueDirty(el); usrRender(); };
       const mk = (key, h, cfg) => { AG[key] = agNew({embed: true, cols, sort: {k: 'kurz', dir: 1}, ...cfg}); agMount(key, h); };
-      mk('ue-a', $('[data-aeg="a"]', el), {title: 'Zugeordnet', rows: () => usrStoreRows(true), edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const s = [...AG['ue-a'].sel]; if (s.length) mv(s, false); }}});
-      mk('ue-b', $('[data-aeg="b"]', el), {title: 'Nicht zugeordnet', rows: () => usrStoreRows(false), edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ue-b'].sel]; if (s.length) mv(s, true); }}});
+      const [da, db] = agDual('ue-a', 'ue-b', mv);
+      mk('ue-a', $('[data-aeg="a"]', el), {title: 'Zugeordnet', rows: () => usrStoreRows(true), dnd: da, edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const s = [...AG['ue-a'].sel]; if (s.length) mv(s, false); }}});
+      mk('ue-b', $('[data-aeg="b"]', el), {title: 'Nicht zugeordnet', rows: () => usrStoreRows(false), dnd: db, edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ue-b'].sel]; if (s.length) mv(s, true); }}});
     }};
 }
 function usrMeldungen() {

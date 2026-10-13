@@ -69,8 +69,8 @@ function kkRender() {
     body = `<p class="ea-hint" style="margin:0 0 8px">Diese Zusatzinformationen werden beim Bezahlen abgefragt. Ist nichts zugeordnet, werden alle abgefragt.</p>${kkHost}`;
     mount = () => fxPair($('[data-kk]', el), D, 'belegzusatz', () => stActive('belegzusatz').map(r => ({id: r.id, name: r.name || r.id, typ: r.typ || '', pflicht: !!r.pflicht})), [{k: 'name', l: 'Zusatzinformation', w: 240}, {k: 'typ', l: 'Art', w: 120}, {k: 'pflicht', l: 'Pflicht', t: 'check', w: 100}], dirty, kkRender);
   } else if (KK.tab === 'hot') {
-    body = `<p class="ea-hint" style="margin:0 0 8px">Zugeordnete Warengruppen erscheinen an der Kasse zuerst in der Warengruppen-Leiste (in der Reihenfolge der Zuordnung).</p>${kkHost}`;
-    mount = () => fxPair($('[data-kk]', el), D, 'hotcats', () => CATS.filter(c => c.id !== 'alle' && ART.some(a => a.cat === c.id)).map(c => ({id: c.id, name: c.name, n: ART.filter(a => a.cat === c.id).length})), [{k: 'name', l: 'Warengruppe', w: 240}, {k: 'n', l: 'Artikel', t: 'num', w: 100}], dirty, kkRender);
+    body = `<p class="ea-hint" style="margin:0 0 8px">Zugeordnete Warengruppen erscheinen an der Kasse zuerst in der Warengruppen-Leiste – in der Reihenfolge dieser Liste (Zeilen zum Sortieren ziehen).</p>${kkHost}`;
+    mount = () => fxPair($('[data-kk]', el), D, 'hotcats', () => CATS.filter(c => c.id !== 'alle' && ART.some(a => a.cat === c.id)).map(c => ({id: c.id, name: c.name, n: ART.filter(a => a.cat === c.id).length})), [{k: 'name', l: 'Warengruppe', w: 240}, {k: 'n', l: 'Artikel', t: 'num', w: 100}], dirty, kkRender, {ordered: true});
   } else if (KK.tab === 'pflicht') {
     body = `<p class="ea-hint" style="margin:0 0 8px">Zugeordnete Felder sind beim Anlegen und Ändern eines Kunden Pflicht (Verkauf › Kunden).</p>${kkHost}`;
     mount = () => fxPair($('[data-kk]', el), D, 'pflicht', () => KK_PFLICHT, [{k: 'name', l: 'Kundenfeld', w: 240}], dirty, kkRender);

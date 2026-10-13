@@ -191,12 +191,22 @@ async function renderStamm(kind, page, extra = {}) {
     ${extra.above ? extra.above() : ''}
     <div class="filters"><input class="input" data-stq="${kind}" value="${esc(st.q)}" placeholder="In ${esc(D.t)} suchen …" style="max-width:320px"><span class="sp" style="flex:1"></span>${st.dirty ? `<span class="pill warn" style="height:24px">nicht gespeichert</span>` : ''}<button class="btn btn-secondary" data-stadd="${kind}">${ic('plus', 'i-sm')}Zeile</button></div>
     <div class="card" style="overflow:auto">${st.rows.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:120px">Kürzel</th>${D.cols.map(c => `<th>${esc(c.l)}</th>`).join('')}<th>aktiv</th><th class="r" style="padding-right:16px"></th></tr></thead><tbody>
-      ${vis.map(([r, i]) => `<tr style="${r._aktiv === false ? 'opacity:.55' : ''}"><td style="padding-left:16px"><input class="input mono" data-stc="id" data-sti="${i}" value="${esc(r.id || '')}" style="max-width:120px;min-width:104px"></td>${D.cols.map(c => `<td>${stCell(c, r, i)}</td>`).join('')}
+      ${vis.map(([r, i]) => `<tr ${dndAttr(i)} style="${r._aktiv === false ? 'opacity:.55' : ''}"><td style="padding-left:16px"><input class="input mono" data-stc="id" data-sti="${i}" value="${esc(r.id || '')}" style="max-width:120px;min-width:104px"></td>${D.cols.map(c => `<td>${stCell(c, r, i)}</td>`).join('')}
         <td><button class="switch" role="switch" data-stakt="${i}" aria-checked="${r._aktiv !== false}" aria-label="aktiv"></button></td>
-        <td class="r" style="padding-right:12px;white-space:nowrap"><button class="btn btn-ghost btn-icon btn-sm" data-stmv="${i}" data-d="-1" aria-label="nach oben">${ic('chevron-up', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-stmv="${i}" data-d="1" aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-stdel="${i}" aria-label="Löschen">${ic('trash', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
+        <td class="r" style="padding-right:12px;white-space:nowrap">${dndGrip('Ziehen zum Sortieren')}<button class="btn btn-ghost btn-icon btn-sm" data-stmv="${i}" data-d="-1" aria-label="nach oben">${ic('chevron-up', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-stmv="${i}" data-d="1" aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-stdel="${i}" aria-label="Löschen">${ic('trash', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
       : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic(D.ic || 'list')}</div><h3>Noch keine Einträge</h3><p>„Zeile“ hinzufügen oder per CSV importieren.</p></div>`}</div>
     ${visAll.length > STMAX ? `<div class="muted" style="padding:10px 4px;font-size:13px">Angezeigt werden die ersten ${STMAX} von ${num(visAll.length)} Einträgen – zum Eingrenzen die Suche oben verwenden.</div>` : ''}
     ${extra.below ? extra.below() : ''}</div>`;
+  // Zeilen per Ziehen sortieren (am Anfasser rechts)
+  dndZone($('tbody', v), 'stamm:' + kind, {
+    label: ids => { const r = st.rows[+ids[0]]; return r ? (r[D.cols[0]?.k] || r.id || '') : ''; },
+    reorder: (ids, ins) => {
+      const i = +ids[0]; if (isNaN(i) || i < 0 || i >= st.rows.length) return;
+      const j = ins ? +ins.id : st.rows.length - 1, [row] = st.rows.splice(i, 1);
+      let at = ins ? (j > i ? j - 1 : j) : st.rows.length; if (ins?.after) at++;
+      st.rows.splice(at, 0, row); st.dirty = true; renderStamm(kind, page, extra);
+    }
+  });
   v.onfocusin = e => { const t = e.target; if (t.dataset?.lazy != null && t.tagName === 'SELECT') { const c = D.cols.find(x => x.k === t.dataset.stc); const cur = t.value; t.removeAttribute('data-lazy'); t.innerHTML = `<option value="">–</option>` + c.o().map(([x, l]) => `<option value="${esc(x)}" ${String(x) === cur ? 'selected' : ''}>${esc(l)}</option>`).join(''); } };
   const mark = () => { st.dirty = true; const b = $(`[data-stsave="${kind}"]`, v); if (b) b.disabled = false; };
   v.oninput = v.onchange = e => {
@@ -252,6 +262,7 @@ function stammCsvImport(kind, page, extra) {
     <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" data-strep> bestehende Einträge ersetzen (sonst ergänzen/aktualisieren)</label></div>
     <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" data-stgo>${ic('check', 'i-sm')}Übernehmen</button></div></div>`, {focus: '[data-stt]'});
   $('[data-stf]', el).onchange = async e => { const f = e.target.files[0]; if (f) $('[data-stt]', el).value = await f.text(); };
+  fileDrop($('.modal', el), {accept: /\.(csv|txt)$/i, hint: 'CSV-Datei hier ablegen', onFiles: async ([f]) => { $('[data-stt]', el).value = await f.text(); }});
   $('[data-stgo]', el).onclick = () => {
     const rows = parseCsv($('[data-stt]', el).value.replace(/^﻿/, '')); if (rows.length < 2) { toast('Keine Daten erkannt', {type: 'warn'}); return; }
     const head = rows[0].map(h => norm(h.trim())), map = head.map(h => cols.find(c => norm(c.l) === h || norm(c.k) === h));

@@ -1708,6 +1708,37 @@ button.ge-caret:hover{background:var(--surface-3);color:var(--text)}
 .ge-seg button.ja[aria-pressed="true"]{background:color-mix(in srgb,var(--pos) 16%,var(--surface));color:var(--pos)}
 .ge-seg button.nein[aria-pressed="true"]{background:color-mix(in srgb,var(--neg) 14%,var(--surface));color:var(--neg)}
 @media (max-width:720px){.ge-row{padding-left:calc(8px + var(--d,0)*14px)}.ge-perm{grid-template-columns:minmax(0,1fr)}.ge-seg{width:100%}.ge-seg button{flex:1}.ge-th,.ge-row{grid-template-columns:minmax(0,1fr) 64px 56px}}
+/* Dialoge: Titel oben und Schaltflächen unten bleiben sichtbar – gescrollt wird nur der Inhalt (z. B. Hinweise beim Update) */
+.modal .m-head{position:sticky;top:0;z-index:4;background:var(--surface)}
+.modal .m-foot{position:sticky;bottom:0;z-index:4;background:var(--surface);border-top:1px solid var(--line);margin-top:2px;padding-top:12px}
+.upd-notes{max-height:min(34vh,300px);overflow:auto;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface-2)}
+.upd-notes .chg{margin:0}
+/* Ziehen und Ablegen */
+.dnd-grip{display:inline-grid;place-items:center;flex:none;width:24px;height:28px;border-radius:6px;color:var(--text-3);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;vertical-align:middle}
+.dnd-grip:hover{color:var(--text);background:var(--surface-2)}
+.dnd-grip .i{width:16px;height:16px}
+.ag-dnd .ag-row[data-dnd-item]{cursor:grab;user-select:none;-webkit-user-select:none}
+.ag-h[data-dnd-item]{cursor:grab}
+.ag-menu label[data-dnd-item]{padding-left:4px}
+.dnd-src{opacity:.38!important}
+.ag-row.dnd-src{background:var(--accent-soft)}
+.dnd-on .dnd-can{outline:2px dashed color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:-2px}
+.dnd-on .dnd-over{outline:2px solid var(--accent);outline-offset:-2px;background-color:var(--accent-soft)}
+.dnd-on .ae-card.dnd-over{background-color:color-mix(in srgb,var(--accent) 7%,var(--surface))}
+.ag-drop.dnd-over{border-style:solid;border-color:var(--accent);background:var(--accent-soft);outline:0}
+body.dnd-on,body.dnd-on *{cursor:grabbing!important;user-select:none!important;-webkit-user-select:none!important}
+body.dnd-on.dnd-no,body.dnd-on.dnd-no *{cursor:no-drop!important}
+.dnd-ghost{position:fixed;left:0;top:0;z-index:900;pointer-events:none;display:flex;align-items:center;gap:8px;max-width:340px;min-height:34px;padding:6px 12px;border-radius:10px;background:var(--surface);color:var(--text);border:1px solid var(--line-2);box-shadow:var(--shadow-3);font-size:13px;font-weight:600;will-change:transform;opacity:.97}
+.dnd-ghost .dnd-gl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dnd-ghost .dnd-gn{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-size:11.5px;display:grid;place-items:center}
+.dnd-ghost .dnd-gh{display:none;color:var(--accent);padding-left:8px;border-left:1px solid var(--line-2);white-space:nowrap}
+.dnd-ghost.ok{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),var(--shadow-3)}
+.dnd-ghost.ok .dnd-gh:not(:empty){display:block}
+.dnd-ghost.clone{display:block;max-width:none;min-height:0;padding:0;border:0;border-radius:12px;background:transparent;box-shadow:var(--shadow-3);transform-origin:0 0}
+.dnd-line{position:fixed;z-index:899;pointer-events:none;border-radius:3px;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.dnd-line[hidden]{display:none}
+.file-hint{position:fixed;z-index:850;pointer-events:none;display:grid;place-items:center;border:2px dashed var(--accent);border-radius:14px;background:color-mix(in srgb,var(--accent) 9%,transparent)}
+.file-hint span{display:inline-flex;gap:8px;align-items:center;padding:10px 16px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow-2);font-size:14px;font-weight:650;color:var(--accent)}
 </style>
 </head>
 <body>
@@ -2089,7 +2120,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.37.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.38.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2651,6 +2682,243 @@ function openPalette(prefill = '') {
   listEl.addEventListener('click', e => { const b = e.target.closest('.pal-i'); if (b) run(+b.dataset.i); });
   input.value = prefill; build();
 }
+/* ═════════════════════════════════════════════════════════════════
+   1a · ZIEHEN UND ABLEGEN (Drag & Drop)
+   Eine gemeinsame Funktion für alle Listen und Tabellen: Zeilen zwischen „Zugeordnet“ und „Nicht zugeordnet“ ziehen,
+   Reihenfolgen per Ziehen ändern, Spalten anordnen oder gruppieren, Bilder und Farben sortieren.
+   Läuft über Zeigerereignisse (Maus, Stift, Finger) und ist dadurch in der Desktop-App und im Browser gleich – ohne die
+   eingebaute HTML5-Funktion der Web-Ansicht, die unter Windows von der Fensterverwaltung abgefangen werden kann.
+
+   Aufbau
+     • Zone  – Bereich, in dem gezogen und auf den abgelegt wird:   dndZone(element, 'kennung', {…})
+     • Item  – ziehbares Element in einer Zone:                    data-dnd-item  data-dnd-id="…"   (dndAttr(id))
+               Enthält das Item eine Anfasser-Fläche [data-dnd-handle] (dndGrip()), wird nur dort gegriffen.
+   Zone-Optionen
+     from     Kennungen anderer Zonen (Liste oder Funktion), aus denen hier abgelegt werden darf
+     drop     (ids, vonZone, ins) – Items aus einer anderen Zone wurden abgelegt;  ins = {id, after} oder null
+     reorder  (ids, ins)          – Items dieser Zone wurden umsortiert
+     ordered  true = auch beim Ablegen von außen die Einfügestelle zeigen
+     axis     'y' (Liste, Standard) oder 'x' (Kacheln, Spalten)
+     hint     Text am Mauszeiger über dieser Zone („Zuordnen“)
+     ids      (itemElement) → Ids, die mitgezogen werden (Standard: nur das Item)
+     label    (ids, itemElement) → Text am Mauszeiger
+     ghost    'clone' = das Element selbst folgt dem Zeiger (Kacheln, Chips)
+     canDrag  (itemElement) → false = nicht ziehbar
+     area     Element, das beim Darüberziehen hervorgehoben wird (Standard: die Zone)
+   ═════════════════════════════════════════════════════════════════ */
+const DND = {zones: new Map(), pre: null, drag: null};
+const DND_SKIP = 'input,textarea,select,button,a[href],label.ea-sw,[contenteditable="true"],[data-dnd-no],.switch,[role="switch"]';
+
+/** Zone anmelden (nach jedem Neuzeichnen der Seite erneut aufrufen – gleiche Kennung ersetzt die alte) */
+function dndZone(el, id, def = {}) {
+  if (!el) return null;
+  el.dataset.dndZone = id; el.classList.add('dnd-zone');
+  DND.zones.set(id, {...def, id, el});
+  return el;
+}
+/** Attribute für ein ziehbares Element */
+const dndAttr = id => `data-dnd-item data-dnd-id="${esc(String(id))}"`;
+/** Anfasser (sechs Punkte) – nur hier greift das Ziehen */
+const dndGrip = (title = 'Ziehen zum Verschieben') => `<span class="dnd-grip" data-dnd-handle title="${esc(title)}" aria-hidden="true">${ic('grip', 'i-sm')}</span>`;
+/**
+ * Liste `list` so umsortieren, dass die Einträge `ids` an der Einfügestelle `ins` ({id, after} | null = ans Ende) stehen.
+ * Fehlen Einträge in der Liste (Ablegen von außen), werden sie mit `make(id)` neu erzeugt.
+ */
+function dndArrange(list, ids, ins, key = x => x, make = id => id) {
+  const set = new Set(ids.map(String));
+  const have = new Map(list.filter(x => set.has(String(key(x)))).map(x => [String(key(x)), x]));
+  const rest = list.filter(x => !set.has(String(key(x))));
+  const moved = ids.map(String).map(id => have.get(id) ?? make(id)).filter(x => x != null);
+  let at = ins && ins.id != null ? rest.findIndex(x => String(key(x)) === String(ins.id)) : -1;
+  if (at < 0) at = rest.length; else if (ins.after) at++;
+  rest.splice(at, 0, ...moved);
+  return rest;
+}
+
+const dndAccepts = (z, d) => d.z.id === z.id ? !!z.reorder : !!z.drop && (typeof z.from === 'function' ? !!z.from(d.z.id, d) : (z.from || []).includes(d.z.id));
+const dndItems = z => $$('[data-dnd-item]', z.el).filter(it => it.closest('[data-dnd-zone]') === z.el && it.getClientRects().length);
+
+/** Einfügestelle: das nächstgelegene Item und ob davor oder dahinter */
+function dndIns(z, d) {
+  if (!(z.reorder || z.ordered)) return null;
+  const x = z.axis === 'x';
+  let best = null, bd = Infinity;
+  for (const it of dndItems(z)) {
+    const r = it.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const dist = x ? Math.hypot(d.x - cx, (d.y - cy) * 2) : Math.abs(d.y - cy);
+    if (dist < bd) { bd = dist; best = {it, cx, cy}; }
+  }
+  if (!best) return null;
+  const id = best.it.dataset.dndId;
+  return {id, after: x ? d.x > best.cx : d.y > best.cy, el: best.it, self: d.z.id === z.id && d.ids.includes(id)};
+}
+
+function dndLabel(z, ids, item) {
+  const t = z.label ? z.label(ids, item) : (item.dataset.dndLabel || item.textContent || '');
+  return String(t).replace(/\s+/g, ' ').trim().slice(0, 48);
+}
+
+function dndStart(p, x, y) {
+  clearTimeout(p.timer); DND.pre = null;
+  const z = p.z, ids = (z.ids ? z.ids(p.item) : [p.item.dataset.dndId]).map(String).filter(Boolean);
+  if (!ids.length) return;
+  const g = document.createElement('div'); g.className = 'dnd-ghost';
+  if (z.ghost === 'clone') {
+    const c = p.item.cloneNode(true), r = p.item.getBoundingClientRect();
+    c.removeAttribute('id'); c.querySelectorAll('[id]').forEach(n => n.removeAttribute('id')); c.querySelectorAll('[data-dnd-item]').forEach(n => n.removeAttribute('data-dnd-item')); c.removeAttribute('data-dnd-item');
+    c.style.cssText += `;width:${r.width}px;height:${r.height}px;margin:0;opacity:1`;
+    // die Stilregeln hängen oft am übergeordneten Element (z. B. „.cpick button“) – dessen Klassen mitgeben
+    const w = document.createElement('div'); w.className = p.item.parentElement?.className || ''; w.style.cssText = 'display:block;margin:0;padding:0;border:0;background:none;box-shadow:none;min-width:0';
+    w.append(c); g.classList.add('clone'); g.append(w);
+  } else g.innerHTML = `<span class="dnd-gl">${esc(dndLabel(z, ids, p.item))}</span>${ids.length > 1 ? `<b class="dnd-gn">${ids.length}</b>` : ''}<span class="dnd-gh"></span>`;
+  document.body.append(g);
+  const line = document.createElement('div'); line.className = 'dnd-line'; line.hidden = true; document.body.append(line);
+  const d = DND.drag = {z, ids, item: p.item, ghost: g, line, x, y, pid: p.id, target: null, marks: [], raf: 0, off: z.ghost === 'clone' ? {x: x - p.item.getBoundingClientRect().left, y: y - p.item.getBoundingClientRect().top} : {x: -14, y: -12}};
+  document.body.classList.add('dnd-on');
+  try { document.documentElement.setPointerCapture(p.id); } catch { /* kein aktiver Zeiger (z. B. Test) */ }
+  try { getSelection()?.removeAllRanges(); } catch { /* */ }
+  const idset = new Set(ids);
+  dndItems(z).forEach(it => { if (idset.has(it.dataset.dndId)) { it.classList.add('dnd-src'); d.marks.push(it); } });
+  // alle Zonen, auf die abgelegt werden darf, zeigen sich dezent
+  DND.zones.forEach(zz => { if (zz.id !== z.id && zz.el.isConnected && dndAccepts(zz, d)) (zz.area || zz.el).classList.add('dnd-can'); });
+  window.addEventListener('click', dndSwallow, true);
+  const tick = () => { if (DND.drag !== d) return; dndPlace(); d.raf = requestAnimationFrame(tick); };
+  d.raf = requestAnimationFrame(tick);
+  dndPlace();
+}
+const dndSwallow = e => { e.stopPropagation(); e.preventDefault(); };
+
+/** Zeigerposition auswerten: Zielzone, Einfügestelle, Hervorhebung, Auto-Scrollen */
+function dndPlace() {
+  const d = DND.drag; if (!d) return;
+  d.ghost.style.transform = `translate(${d.x + d.off.x}px,${d.y + d.off.y}px)`;
+  const el = document.elementFromPoint(d.x, d.y);
+  let target = null;
+  for (let n = el?.closest?.('[data-dnd-zone]'); n; n = n.parentElement?.closest?.('[data-dnd-zone]')) {
+    const z = DND.zones.get(n.dataset.dndZone);
+    if (z && z.el === n && dndAccepts(z, d)) { target = {z, ins: dndIns(z, d)}; break; }
+  }
+  d.target = target;
+  // Hervorhebung der Zone (beim Umsortieren in der eigenen Liste genügt die Einfügelinie)
+  const same = !!target && target.z.id === d.z.id, hl = target && !same ? (target.z.area || target.z.el) : null;
+  $$('.dnd-over').forEach(n => { if (n !== hl) n.classList.remove('dnd-over'); });
+  if (hl) hl.classList.add('dnd-over');
+  d.ghost.classList.toggle('ok', !!target);
+  const gh = d.ghost.querySelector('.dnd-gh'); if (gh) gh.textContent = (same ? target.z.reorderHint : target?.z.hint) || '';
+  document.body.classList.toggle('dnd-no', !target);
+  // Einfügelinie
+  const L = d.line, ins = target?.ins;
+  if (ins && !ins.self && ins.el.isConnected) {
+    const r = ins.el.getBoundingClientRect(), c = target.z.el.getBoundingClientRect();
+    if (target.z.axis === 'x') { L.style.cssText = `left:${(ins.after ? r.right : r.left) - 1.5}px;top:${Math.max(r.top, c.top)}px;width:3px;height:${Math.min(r.bottom, c.bottom) - Math.max(r.top, c.top)}px`; }
+    else { const l = Math.max(r.left, c.left), rr = Math.min(r.right, c.right); L.style.cssText = `left:${l}px;top:${(ins.after ? r.bottom : r.top) - 1.5}px;width:${Math.max(0, rr - l)}px;height:3px`; }
+    L.hidden = false;
+  } else L.hidden = true;
+  dndScroll(el, d);
+}
+
+/** Am Rand eines scrollbaren Bereichs automatisch weiterscrollen */
+function dndScroll(el, d) {
+  const E = 52, step = v => Math.sign(v) * Math.min(26, Math.max(4, Math.abs(v) / 2.2));
+  for (let n = el; n && n !== document.body && n !== document.documentElement; n = n.parentElement) {
+    const cs = getComputedStyle(n);
+    const sy = /(auto|scroll)/.test(cs.overflowY) && n.scrollHeight > n.clientHeight + 1, sx = /(auto|scroll)/.test(cs.overflowX) && n.scrollWidth > n.clientWidth + 1;
+    if (!sy && !sx) continue;
+    const r = n.getBoundingClientRect();
+    const dy = sy ? (d.y < r.top + E ? d.y - (r.top + E) : d.y > r.bottom - E ? d.y - (r.bottom - E) : 0) : 0;
+    const dx = sx ? (d.x < r.left + E ? d.x - (r.left + E) : d.x > r.right - E ? d.x - (r.right - E) : 0) : 0;
+    if (dx || dy) { n.scrollBy(dx ? step(dx) : 0, dy ? step(dy) : 0); return; }
+  }
+}
+
+function dndEnd() {
+  const d = DND.drag; DND.drag = null;
+  if (!d) return;
+  cancelAnimationFrame(d.raf);
+  d.ghost.remove(); d.line.remove();
+  d.marks.forEach(n => n.classList.remove('dnd-src'));
+  $$('.dnd-src,.dnd-can,.dnd-over').forEach(n => n.classList.remove('dnd-src', 'dnd-can', 'dnd-over'));
+  document.body.classList.remove('dnd-on', 'dnd-no');
+  try { document.documentElement.releasePointerCapture(d.pid); } catch { /* */ }
+  setTimeout(() => window.removeEventListener('click', dndSwallow, true), 0);   // der Klick nach dem Loslassen zählt nicht
+}
+function dndCancel() { if (DND.pre) { clearTimeout(DND.pre.timer); DND.pre = null; } dndEnd(); }
+
+function dndDrop(d, t) {
+  const same = d.z.id === t.z.id;
+  if (same && t.ins?.self) return;   // auf sich selbst abgelegt
+  const ins = t.ins ? {id: t.ins.id, after: t.ins.after} : null;
+  Promise.resolve().then(() => same ? t.z.reorder(d.ids, ins) : t.z.drop(d.ids, d.z.id, ins))
+    .catch(err => { if (String(err?.message || err) !== 'abgebrochen') toast('Nicht möglich', {t2: String(err?.message || err), type: 'warn'}); });
+}
+
+document.addEventListener('pointerdown', e => {
+  if (DND.drag || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  const t = e.target; if (!(t instanceof Element)) return;
+  const item = t.closest('[data-dnd-item]'); if (!item) return;
+  const handle = t.closest('[data-dnd-handle]'), inter = t.closest(DND_SKIP);
+  if (!handle && inter && inter !== item && item.contains(inter)) return;   // Eingabefelder und Schaltflächen im Item greifen nicht
+  if (!handle && item.querySelector('[data-dnd-handle]')) return;   // nur am Anfasser greifen
+  const zEl = item.closest('[data-dnd-zone]'), z = zEl && DND.zones.get(zEl.dataset.dndZone);
+  if (!z || z.el !== zEl || (z.canDrag && !z.canDrag(item))) return;
+  const p = DND.pre = {z, item, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, id: e.pointerId, touch: e.pointerType === 'touch' && !handle, timer: 0};
+  if (p.touch) p.timer = setTimeout(() => { if (DND.pre === p) dndStart(p, p.lx, p.ly); }, 380);   // Finger: erst nach kurzem Halten ziehen, sonst wird gescrollt
+}, true);
+document.addEventListener('pointermove', e => {
+  const d = DND.drag;
+  if (d) { d.x = e.clientX; d.y = e.clientY; e.preventDefault(); dndPlace(); return; }
+  const p = DND.pre; if (!p || e.pointerId !== p.id) return;
+  p.lx = e.clientX; p.ly = e.clientY;
+  const dist = Math.hypot(e.clientX - p.x, e.clientY - p.y);
+  if (p.touch) { if (dist > 10) dndCancel(); return; }
+  if (dist >= 5) dndStart(p, e.clientX, e.clientY);
+}, true);
+document.addEventListener('pointerup', e => {
+  if (DND.pre) { clearTimeout(DND.pre.timer); DND.pre = null; }
+  const d = DND.drag; if (!d) return;
+  d.x = e.clientX; d.y = e.clientY; dndPlace();
+  const t = d.target;
+  dndEnd();
+  if (t) dndDrop(d, t);
+}, true);
+document.addEventListener('pointercancel', () => dndCancel(), true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && (DND.drag || DND.pre)) { e.stopPropagation(); dndCancel(); } }, true);
+window.addEventListener('blur', () => dndCancel());
+document.addEventListener('touchmove', e => { if (DND.drag) e.preventDefault(); }, {passive: false});
+// kein eingebautes Ziehen von Bildern/Links starten, solange wir ziehen
+document.addEventListener('dragstart', e => { if ((DND.pre || DND.drag) && e.target instanceof Element && e.target.closest('[data-dnd-item]')) e.preventDefault(); }, true);
+
+/* ── Dateien aus dem Explorer/Finder auf eine Fläche ziehen ──
+   fileDrop(element, {accept: /\.csv$/i, multiple, hint, enabled, onFiles(files)})
+   Die Web-Ansicht öffnet sonst eine fallen gelassene Datei und ersetzt damit das Programm – deshalb wird das überall abgefangen. */
+const FILE_DROP = new WeakMap();
+const dndIsFiles = e => !!e.dataTransfer?.types && Array.from(e.dataTransfer.types).includes('Files');
+function fileDrop(el, opt) {
+  if (!el) return;
+  const have = FILE_DROP.get(el); if (have) { Object.assign(have, opt); return; }
+  const o = {multiple: false, hint: 'Datei hier ablegen', ...opt, depth: 0, ov: null};
+  FILE_DROP.set(el, o);
+  const on = e => dndIsFiles(e) && (!o.enabled || o.enabled());
+  const show = () => {
+    if (o.ov) return; const r = el.getBoundingClientRect(), d = document.createElement('div');
+    d.className = 'file-hint'; d.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`;
+    d.innerHTML = `<span>${ic('upload', 'i-sm')}${esc(o.hint)}</span>`; document.body.append(d); o.ov = d;
+  };
+  const hide = () => { o.depth = 0; o.ov?.remove(); o.ov = null; };
+  el.addEventListener('dragenter', e => { if (!on(e)) return; e.preventDefault(); e.stopPropagation(); if (o.depth++ === 0) show(); });
+  el.addEventListener('dragover', e => { if (!on(e)) return; e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'copy'; e._fileDrop = true; });
+  el.addEventListener('dragleave', e => { if (!on(e)) return; if (--o.depth <= 0) hide(); });
+  el.addEventListener('drop', e => {
+    if (!on(e)) return; e.preventDefault(); e.stopPropagation(); hide();
+    let files = Array.from(e.dataTransfer.files || []);
+    if (o.accept) { const ok = files.filter(f => o.accept.test(f.name)); if (!ok.length && files.length) { toast('Dateityp passt nicht', {t2: files.map(f => f.name).join(', ').slice(0, 80), type: 'warn'}); return; } files = ok; }
+    if (!o.multiple) files = files.slice(0, 1);
+    if (files.length) Promise.resolve(o.onFiles(files)).catch(err => toast('Datei nicht lesbar', {t2: String(err?.message || err), type: 'warn'}));
+  });
+}
+// nirgends sonst: die Datei nicht öffnen, kein „Ablegen“-Mauszeiger
+window.addEventListener('dragover', e => { if (dndIsFiles(e)) { e.preventDefault(); if (!e._fileDrop) e.dataTransfer.dropEffect = 'none'; } });
+window.addEventListener('drop', e => { if (dndIsFiles(e)) e.preventDefault(); });
 
 /* ════════════════════════════════════════════════════════════════════
    9 · DASHBOARD
@@ -4626,6 +4894,16 @@ async function checkUpdates(manual) {
   }
   renderUpdBits();
 }
+/** Die Release-Notes enthalten den ganzen Verlauf („## Neu in x.y.z“) – im Update-Dialog genügt, was seit der installierten Version neu ist */
+function updNotesSince(md, cur, next) {
+  const parts = String(md || '').split(/^(?=##\s+Neu in\s)/m).filter(p => /^##\s+Neu in\s/.test(p));
+  if (!parts.length) return md;
+  const v = s => (String(s).match(/\d+(?:\.\d+)*/)?.[0] || '0').split('.').map(Number);
+  const cmp = (a, b) => { for (let i = 0; i < 4; i++) { const d = (a[i] || 0) - (b[i] || 0); if (d) return d; } return 0; };
+  const c = v(cur), n = v(next);
+  const keep = parts.filter(p => { const x = v(p.match(/^##\s+Neu in\s+(\S+)/)[1]); return cmp(x, c) > 0 && cmp(x, n) <= 0; });
+  return (keep.length ? keep : parts.slice(0, 1)).join('\n');
+}
 function notesHTML(md) {
   if (!md) return '<p class="muted" style="font-size:13px">Keine Hinweise angegeben.</p>';
   let out = /sicherheit/i.test(md) ? `<div class="rule-box" style="margin-bottom:10px">${ic('shield')}<div><b style="color:var(--text)">Sicherheitsupdate</b> – bitte zeitnah freigeben und installieren.</div></div>` : '', list = false;
@@ -4651,7 +4929,7 @@ function openRealUpdate() {
   const el = openLayer(`<div class="modal" style="width:min(620px,100%)" role="dialog" aria-modal="true" aria-label="Update freigeben">
     <div class="m-head"><div class="m-ic">${ic('download')}</div><div style="flex:1"><div class="upd-head"><span class="upd-ver">${esc(i.version)}</span><span class="pill pos">Stable</span><span class="pill">${ic('shield')}signiert</span></div><p>Installiert: ${esc(i.current)}${i.date ? ' · veröffentlicht ' + esc(fmtTs(i.date.replace(' ', 'T').replace(/ \+.*$/, ''))) : ''} · Signatur wird beim Download geprüft</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
     <div class="m-body" style="display:grid;gap:16px">
-      ${notesHTML(i.notes)}
+      <div class="upd-notes">${notesHTML(updNotesSince(i.notes, i.current || S.appVersion, i.version))}</div>
       <div class="rule-box" style="background:var(--info-soft);border-color:color-mix(in srgb,var(--info) 22%,transparent)">${ic('info')}<div>Vor der Installation erstellt Kontor <b style="color:var(--text)">automatisch eine Datensicherung</b>. Während der Installation (ca. 1 Minute) wird das Programm beendet und danach neu gestartet. Daten und Einstellungen bleiben erhalten.</div></div>
       <div><div class="field"><span>Wann installieren?</span></div><div class="radio-list" style="margin-top:6px">
         <label class="radio"><input type="radio" name="uw" value="jetzt" checked>Jetzt installieren<small>Programm startet neu</small></label>
@@ -6726,9 +7004,10 @@ function renderApFields(box) {
   if (!objs.some(o => o[0] === AP.obj)) AP.obj = 'artikel';
   const defs = cfDefs(AP.obj);
   box.innerHTML = `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><span class="muted" style="font-size:12.5px">Felder für</span>${objs.map(([k, l, i]) => `<button class="chip" data-apo="${esc(k)}" aria-pressed="${AP.obj === k}">${ic(i, 'i-sm')}${esc(l)}</button>`).join('')}<span class="sp" style="flex:1"></span><button class="btn btn-primary btn-sm" id="apFieldNew">${ic('plus', 'i-sm')}Neues Feld</button></div>
-    <div class="card">${defs.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Bezeichnung</th><th>Typ</th><th>Technischer Name</th><th>Pflicht</th>${['artikel', 'kunde'].includes(AP.obj) ? '<th>An der Kasse</th>' : ''}<th></th></tr></thead><tbody>${defs.map((d, i) => `<tr data-fdef="${d.id}" style="cursor:pointer"><td style="padding-left:16px"><b>${esc(d.label)}</b>${d.help ? `<div class="muted" style="font-size:11.5px">${esc(d.help)}</div>` : ''}</td><td>${esc(FTYPES.find(t => t[0] === d.type)?.[1] || d.type)}${d.type === 'auswahl' ? `<div class="muted" style="font-size:11.5px">${esc(d.options.join(' · '))}</div>` : ''}</td><td class="mono" style="font-size:12px">${esc(d.key)}</td><td>${d.required ? '<span class="pill accent">Pflicht</span>' : '–'}</td>${['artikel', 'kunde'].includes(AP.obj) ? `<td>${d.at_pos ? ic('check', 'i-sm') : '–'}</td>` : ''}<td class="r" style="white-space:nowrap;padding-right:12px"><button class="btn btn-ghost btn-sm btn-icon" data-fmove="${d.id}" data-dir="-1" ${i ? '' : 'disabled'} aria-label="nach oben"><span style="display:inline-flex;transform:rotate(180deg)">${ic('chevron-down', 'i-sm')}</span></button><button class="btn btn-ghost btn-sm btn-icon" data-fmove="${d.id}" data-dir="1" ${i < defs.length - 1 ? '' : 'disabled'} aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
+    <div class="card">${defs.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Bezeichnung</th><th>Typ</th><th>Technischer Name</th><th>Pflicht</th>${['artikel', 'kunde'].includes(AP.obj) ? '<th>An der Kasse</th>' : ''}<th></th></tr></thead><tbody>${defs.map((d, i) => `<tr data-fdef="${d.id}" ${dndAttr(d.id)} style="cursor:pointer"><td style="padding-left:16px"><b>${esc(d.label)}</b>${d.help ? `<div class="muted" style="font-size:11.5px">${esc(d.help)}</div>` : ''}</td><td>${esc(FTYPES.find(t => t[0] === d.type)?.[1] || d.type)}${d.type === 'auswahl' ? `<div class="muted" style="font-size:11.5px">${esc(d.options.join(' · '))}</div>` : ''}</td><td class="mono" style="font-size:12px">${esc(d.key)}</td><td>${d.required ? '<span class="pill accent">Pflicht</span>' : '–'}</td>${['artikel', 'kunde'].includes(AP.obj) ? `<td>${d.at_pos ? ic('check', 'i-sm') : '–'}</td>` : ''}<td class="r" style="white-space:nowrap;padding-right:12px">${dndGrip('Ziehen zum Sortieren')}<button class="btn btn-ghost btn-sm btn-icon" data-fmove="${d.id}" data-dir="-1" ${i ? '' : 'disabled'} aria-label="nach oben"><span style="display:inline-flex;transform:rotate(180deg)">${ic('chevron-down', 'i-sm')}</span></button><button class="btn btn-ghost btn-sm btn-icon" data-fmove="${d.id}" data-dir="1" ${i < defs.length - 1 ? '' : 'disabled'} aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
       : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('list')}</div><h3>Noch keine Felder für ${esc(cfObjName(AP.obj))}</h3><p>z. B. „Saison“ (Auswahl), „Garantie bis“ (Datum), „Gewicht in g“ (Zahl) – mit Pflichtangabe und Prüfung. Erscheinen im Editor, in der API und in Regeln.</p></div>`}</div>
     <div class="prompt-hint blk" style="margin-top:10px">${ic('info', 'i-xs')}Felder von Artikeln und Kunden stehen in Regeln als <span class="mono">{{feld.Bezeichnung}}</span> zur Verfügung und werden über die REST-API mitgeliefert.</div>`;
+  if (defs.length > 1) dndZone($('tbody', box), 'cf:' + AP.obj, {label: ids => defs.find(d => String(d.id) === ids[0])?.label || '', reorder: (ids, ins) => moveFieldTo(ids, ins)});
 }
 function openFieldEditor(d) {
   const obj = d?.object || AP.obj;
@@ -6765,6 +7044,12 @@ function openFieldEditor(d) {
   });
   el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); $('#feSave', el).click(); } });
   render();
+}
+/** Feld per Ziehen an eine andere Stelle setzen */
+async function moveFieldTo(ids, ins) {
+  const a = dndArrange([...cfDefs(AP.obj)], ids, ins, d => d.id);
+  try { for (let k = 0; k < a.length; k++) if (a[k].pos !== k) CF.defs = await invoke('field_save', {field: {...a[k], pos: k}}); } catch (e) { toast('Reihenfolge nicht gespeichert', {t2: String(e), type: 'warn'}); }
+  renderApBody();
 }
 async function moveField(id, dir) {
   const defs = cfDefs(AP.obj), i = defs.findIndex(d => d.id === id), j = i + dir; if (i < 0 || j < 0 || j >= defs.length) return;
@@ -6885,6 +7170,7 @@ function bindCustom() {
     const tab = t.closest('[data-apt]'); if (tab) { AP.tab = tab.dataset.apt; return renderApBody(); }
     const o = t.closest('[data-apo]'); if (o) { AP.obj = o.dataset.apo; return renderApBody(); }
     if (t.closest('#apFieldNew')) return openFieldEditor(null);
+    if (t.closest('.dnd-grip')) return;
     const mv = t.closest('[data-fmove]'); if (mv) { e.stopPropagation(); return moveField(+mv.dataset.fmove, +mv.dataset.dir); }
     const fd = t.closest('[data-fdef]'); if (fd) return openFieldEditor(CF.defs.find(d => d.id === +fd.dataset.fdef));
     if (t.closest('#apEntNew')) return openEntityEditor(null);
@@ -8354,6 +8640,8 @@ function openImport(kind = 'artikel') {
       </div>
       <div class="m-foot"><button class="btn btn-ghost" id="imBack">Andere Datei</button><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="imGo" ${(chk.articles?.length || chk.list?.length || chk.stock?.length) ? '' : 'disabled'}>${ic('check', 'i-sm')}Jetzt importieren</button></div>`;
   };
+  const loadCsv = txt => { st.csv = parseCSV(txt); if (!st.csv.rows.length) { st.csv = null; return toast('Datei enthält keine Zeilen', {type: 'warn'}); } automap(); render(); };
+  fileDrop($('.modal', el), {accept: /\.(csv|txt)$/i, hint: 'CSV-Datei hier ablegen', onFiles: async ([f]) => loadCsv(await f.text())});
   el.addEventListener('change', e => { const k = e.target.dataset.im; if (k != null) { if (e.target.value === '') delete st.map[k]; else st.map[k] = +e.target.value; render(); } });
   el.addEventListener('click', async e => {
     const k = e.target.closest('[data-ik]'); if (k) { st.kind = k.dataset.ik; return render(); }
@@ -8363,8 +8651,7 @@ function openImport(kind = 'artikel') {
     if (e.target.closest('#imFile')) {
       let txt; try { txt = await invoke('open_text', {title: 'CSV-Datei wählen', ext: 'csv'}); } catch (err) { return toast('Datei nicht lesbar', {t2: String(err), type: 'warn'}); }
       if (!txt) return;
-      st.csv = parseCSV(txt); if (!st.csv.rows.length) { st.csv = null; return toast('Datei enthält keine Zeilen', {type: 'warn'}); }
-      automap(); return render();
+      return loadCsv(txt);
     }
     if (e.target.closest('#imGo')) {
       const c = st.check, perm = st.kind === 'kunde' ? 'kunden.bearbeiten' : st.kind === 'bestand' ? 'bestand.buchen' : 'artikel.bearbeiten';
@@ -8957,7 +9244,7 @@ if (DESKTOP) { delete W['ext.repairs']; }
 {
   const _cl = cmdList;
   cmdList = function () {
-    const extra = [{group: 'Navigation', label: 'Erweiterungen', icon: 'puzzle', run: () => go('erweiterungen'), kw: 'plugins installieren galerie'}];
+    const extra = [{group: 'Navigation', label: 'Erweiterungen', icon: 'puzzle', view: 'erweiterungen', run: () => go('erweiterungen'), kw: 'plugins installieren galerie'}];
     for (const e of extOn()) for (const b of e.manifest.befehle || []) extra.push({group: e.name, label: b.titel, icon: b.icon || 'puzzle', kw: 'erweiterung', run: () => runExtCommand(e, b)});
     return [..._cl(), ...extra];
   };
@@ -9019,6 +9306,8 @@ function applyMethods() {
   METHODS.length = 0;
   BASE_METHODS.forEach(m => METHODS.push({...m, hidden: aus.has(m.id) || (m.id === 'ueberweisung' && !CFG['zahlung.iban'])}));
   (Array.isArray(CFG['zahlung.eigene']) ? CFG['zahlung.eigene'] : []).forEach(m => METHODS.splice(METHODS.findIndex(x => x.id === 'gutschein'), 0, {id: m.id, label: plain(m.label), sub: plain(m.sub || (m.link ? 'QR-Code' : 'extern bestätigen')), icon: m.link ? 'qr' : 'card', kind: 'qr', link: m.link || '', custom: true, hidden: aus.has(m.id)}));
+  const ord = Array.isArray(CFG['zahlung.reihenfolge']) ? CFG['zahlung.reihenfolge'] : [];   // vom Betreiber per Ziehen festgelegt
+  if (ord.length) METHODS.sort((a, b) => { const i = ord.indexOf(a.id), j = ord.indexOf(b.id); return (i < 0 ? 999 : i) - (j < 0 ? 999 : j); });
   const p = METHODS.find(m => m.id === 'paypal'); if (p && CFG['zahlung.paypalme']) p.sub = 'paypal.me/' + plain(CFG['zahlung.paypalme']);
 }
 { const _as = applySettings; applySettings = function (...a) { const r = _as.apply(this, a); applyMethods(); return r; }; }
@@ -9047,13 +9336,19 @@ runQR = async function (m, amount) {
 SET_SECTIONS.splice(SET_SECTIONS.findIndex(s => s[0] === 'terminal'), 0, ['zahlung', 'Zahlungsarten', 'card']);
 function renderZahlBox() {
   const box = $('#zahlBox'); if (!box) return;
-  const aus = new Set(CFG['zahlung.aus'] || []);
-  box.innerHTML = `<div class="set-row"><div><div class="set-l">An der Kasse anbieten</div><div class="set-h">Reihenfolge = Tasten 1–8 im Bezahlen-Dialog</div></div><div class="set-c" style="flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:460px">${BASE_METHODS.concat((CFG['zahlung.eigene'] || []).map(m => ({...m, icon: m.link ? 'qr' : 'card'}))).map(m => `<button class="chip" data-zm="${esc(m.id)}" aria-pressed="${!aus.has(m.id)}">${ic(m.icon, 'i-sm')}${esc(plain(m.label))}</button>`).join('')}</div></div>
+  const aus = new Set(CFG['zahlung.aus'] || []), ord = Array.isArray(CFG['zahlung.reihenfolge']) ? CFG['zahlung.reihenfolge'] : [];
+  const all = BASE_METHODS.concat((CFG['zahlung.eigene'] || []).map(m => ({...m, icon: m.link ? 'qr' : 'card'}))).sort((a, b) => { const i = ord.indexOf(a.id), j = ord.indexOf(b.id); return (i < 0 ? 999 : i) - (j < 0 ? 999 : j); });
+  box.innerHTML = `<div class="set-row"><div><div class="set-l">An der Kasse anbieten</div><div class="set-h">Reihenfolge = Tasten 1–8 im Bezahlen-Dialog · zum Ändern ziehen</div></div><div class="set-c" id="zahlChips" style="flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:460px">${all.map(m => `<button class="chip" data-zm="${esc(m.id)}" ${dndAttr(m.id)} aria-pressed="${!aus.has(m.id)}">${ic(m.icon, 'i-sm')}${esc(plain(m.label))}</button>`).join('')}</div></div>
     ${field('zahlung.paypalme', 'PayPal.me-Name', 'z. B. alpenlichtsport → QR-Code mit Betrag (paypal.me/…/49.90EUR)')}
     ${field('zahlung.iban', 'IBAN für Überweisung per QR', 'aktiviert „Überweisung“ mit SEPA-QR (EPC-Girocode)')}
     ${field('zahlung.bic', 'BIC', 'optional')}
     ${field('zahlung.empfaenger', 'Empfänger', 'leer = Firmenname')}
     <div class="set-row" style="border-bottom:0"><div><div class="set-l">Eigene Zahlungsarten</div><div class="set-h">${(CFG['zahlung.eigene'] || []).map(m => `${esc(plain(m.label))}${m.link ? ' (QR)' : ''} <button class="btn btn-ghost btn-sm" data-zdel="${esc(m.id)}" style="height:22px">${ic('x', 'i-xs')}</button>`).join(' · ') || 'z. B. Rechnung, Firmenkonto, Twint, Bluecode – mit oder ohne QR-Link'}</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" data-z="neu">${ic('plus', 'i-sm')}Zahlungsart</button></div></div>`;
+  // Reihenfolge der Zahlungsarten im Bezahlen-Dialog per Ziehen festlegen
+  dndZone($('#zahlChips', box), 'zahlung-reihenfolge', {axis: 'x', ghost: 'clone', reorder: async (ids, ins) => {
+    await saveSettings({'zahlung.reihenfolge': dndArrange(all.map(m => m.id), ids, ins)}, true);
+    applyMethods(); renderZahlBox();
+  }});
 }
 function openOwnMethod() {
   const el = openLayer(`<div class="modal" style="width:min(520px,100%)" role="dialog" aria-modal="true" aria-label="Zahlungsart"><div class="m-head"><div class="m-ic">${ic('card')}</div><div><h2>Eigene Zahlungsart</h2><p>Erscheint im Bezahlen-Dialog; wird am Bon und im Bericht ausgewiesen</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
@@ -10170,6 +10465,10 @@ async function bonusUmlegen(id) {
 
 function bindEinkauf2() {
   const on = (id, fn) => $('#view-' + id)?.addEventListener('click', fn);
+  fileDrop($('#view-order-import'), {accept: /\.(csv|txt)$/i, hint: 'Bestelldatei hier ablegen', onFiles: async ([f]) => {
+    const t = await f.text(), s = $('#oiSup'); if (s) { OI.sup = s.value; OI.type = $('#oiType').value; }
+    OI.text = t; OI.res = parseOrderText(t); renderOrderImport();
+  }});
   on('order-import', async e => {
     const b = e.target.closest('[data-oi]'); if (!b) return;
     const sync = () => { OI.sup = $('#oiSup').value; OI.type = $('#oiType').value; OI.text = $('#oiText').value; };
@@ -10263,7 +10562,7 @@ DOC_AFTER.warenkorb = {uebernehmen: (st, el) => { closeLayer(el); posLoadLines(s
 {
   const _cl = cmdList;
   cmdList = function () {
-    const extra = navFlat().filter(n => n.id && TITLES[n.id]).map(n => ({group: 'Menü · ' + n.path.filter(Boolean).join(' · '), label: n.label, icon: n.icon, run: () => go(n.id), kw: n.path.join(' ')}));
+    const extra = navFlat().filter(n => n.id && TITLES[n.id]).map(n => ({group: 'Menü · ' + n.path.filter(Boolean).join(' · '), label: n.label, icon: n.icon, view: n.id, run: () => go(n.id), kw: n.path.join(' ')}));
     extra.push({group: 'Kasse', label: 'Warenkorb als Vorgang speichern', icon: 'bag', kw: 'merken telefon später', run: () => {
       if (!POS.cart.length) return toast('Warenkorb ist leer', {icon: 'bag'});
       const lines = POS.cart.map(l => l.art ? {ean: variant(l.art, l.c, l.s).ean, sku: l.art.id, name: `${l.name} · ${colorName(l.c)} · ${l.s}`, qty: l.qty, price: Math.round(l.unit * 100), vat: l.vat, disc: l.disc?.pct || 0} : {ean: '', name: l.name, qty: l.qty, price: Math.round(l.unit * 100), vat: l.vat});
@@ -11199,9 +11498,17 @@ registerPage('artikelsortierung', {title: 'Manuelle Artikelsortierung', sub: () 
   const l = ART.filter(a => AS.cat === 'alle' || a.cat === AS.cat).sort((a, b) => b.pop - a.pop);
   v.innerHTML = `<div class="cv">${pageHead('Manuelle Artikelsortierung', 'Reihenfolge der Kacheln an der Kasse festlegen (je Warengruppe) – oben = zuerst', `<button class="btn btn-primary" data-as="save">${ic('check', 'i-sm')}Reihenfolge speichern</button>`)}
     <div class="filters"><div class="seg" id="asSeg" style="flex-wrap:wrap;height:auto">${cats.map(c => `<button data-v="${c.id}" aria-pressed="${AS.cat === c.id}">${esc(c.name)} <span class="muted">${c.id === 'alle' ? ART.length : ART.filter(a => a.cat === c.id).length}</span></button>`).join('')}</div></div>
-    <div class="card"><div id="asList">${l.map((a, i) => `<div class="set-row" data-asi="${esc(a.id)}" draggable="true" style="cursor:grab"><div style="display:flex;gap:12px;align-items:center"><span class="muted num" style="width:26px">${i + 1}</span><div style="width:40px;height:40px;border-radius:10px;overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${artVisual(a, COLORS[a.colors[0]]?.[1] || '#888')}</div><div><b>${esc(a.name)}</b><div class="muted" style="font-size:12px">${esc(a.brand)} · ${eur(a.sale || a.price)}</div></div></div><div class="set-c" style="gap:4px"><button class="btn btn-ghost btn-icon btn-sm" data-asu="${esc(a.id)}" aria-label="nach oben">${ic('chevron-up', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-asd="${esc(a.id)}" aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button></div></div>`).join('')}</div></div></div>`;
+    <div class="card"><div id="asList">${l.map((a, i) => `<div class="set-row" data-asi="${esc(a.id)}" ${dndAttr(a.id)} style="cursor:grab"><div style="display:flex;gap:12px;align-items:center"><span class="muted num" style="width:26px">${i + 1}</span><div style="width:40px;height:40px;border-radius:10px;overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${artVisual(a, COLORS[a.colors[0]]?.[1] || '#888')}</div><div><b>${esc(a.name)}</b><div class="muted" style="font-size:12px">${esc(a.brand)} · ${eur(a.sale || a.price)}</div></div></div><div class="set-c" style="gap:4px"><button class="btn btn-ghost btn-icon btn-sm" data-asu="${esc(a.id)}" aria-label="nach oben">${ic('chevron-up', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-asd="${esc(a.id)}" aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button></div></div>`).join('')}</div></div></div>`;
   initSeg($('#asSeg', v), b => { AS.cat = b.dataset.v; PAGES.artikelsortierung.render(); });
+  // Kacheln per Ziehen sortieren – die Reihenfolge der Zeilen auf dem Bildschirm wird beim Speichern übernommen
+  const list = $('#asList', v);
+  dndZone(list, 'artikelsortierung', {label: ids => artById(ids[0])?.name || '', reorder: (ids, ins) => {
+    const row = $(`[data-asi="${CSS.escape(ids[0])}"]`, list), anchor = ins && $(`[data-asi="${CSS.escape(ins.id)}"]`, list); if (!row) return;
+    anchor ? (ins.after ? anchor.after(row) : anchor.before(row)) : list.append(row);
+    asRenumber();
+  }});
 }});
+const asRenumber = () => $$('#asList [data-asi]').forEach((r, i) => { const n = $('.num', r); if (n) n.textContent = i + 1; });
 registerPage('master-artikel', {title: 'Master-Artikel', sub: () => 'Vorlagen für neue Artikel', render: () => {
   const v = $('#view-master-artikel'), masters = ART.filter(a => a.fields?.['Master'] === 'ja');
   v.innerHTML = `<div class="cv">${pageHead('Master-Artikel', 'Artikel als Vorlage markieren und daraus neue Artikel (z. B. neue Saison, neues Modell) mit allen Feldern, Farben und Größen anlegen – neue EANs werden vergeben')}${artPicker('master-artikel', MA.q)}
@@ -11291,7 +11598,7 @@ function bindArtikel() {
       return;
     }
     const au = e.target.closest('[data-asu]'), ad = e.target.closest('[data-asd]');
-    if (au || ad) { const row = $(`[data-asi="${CSS.escape((au || ad).dataset[au ? 'asu' : 'asd'])}"]`), sib = au ? row.previousElementSibling : row.nextElementSibling; if (sib) au ? sib.before(row) : sib.after(row); return; }
+    if (au || ad) { const row = $(`[data-asi="${CSS.escape((au || ad).dataset[au ? 'asu' : 'asd'])}"]`), sib = au ? row.previousElementSibling : row.nextElementSibling; if (sib) { au ? sib.before(row) : sib.after(row); asRenumber(); } return; }
     if (e.target.closest('[data-as="save"]')) {
       const ids = $$('[data-asi]').map(r => r.dataset.asi), top = Math.max(...ART.map(a => a.pop || 0), 100) + ids.length;
       try { await needPerm('artikel.bearbeiten', 'Artikelsortierung'); for (const [i, id] of ids.entries()) { const a = artById(id), p = top - i; if (a.pop !== p) { a.pop = p; await invoke('article_save', {article: artToDb(a), user: S.user.name}); } } await reloadArt(); toast('Reihenfolge gespeichert', {t2: 'gilt an der Kasse', type: 'pos', icon: 'list'}); } catch (err) { toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
@@ -11319,11 +11626,6 @@ function bindArtikel() {
     const csv = ['Zeit;Artikel;Farbe;Größe;Grund;Beleg;Benutzer;Menge;Bestand'].concat(rows.map(x => [x.ts, x.name, colorName(x.color), x.size, x.reason, x.ref || '', x.user || '', x.delta, x.stock_after].join(';'))).join('\r\n');
     try { const p = await invoke('save_text', {name: `Umbuchungs-Log_${today()}.csv`, content: csv, title: 'Umbuchungs-Log exportieren'}); if (p) toast('Exportiert', {t2: p, type: 'pos', icon: 'download'}); } catch (err) { toast('Fehler', {t2: String(err), type: 'warn'}); }
   });
-  // Drag & Drop in der Artikelsortierung
-  let drag = null;
-  document.addEventListener('dragstart', e => { const r = e.target.closest?.('[data-asi]'); if (r) { drag = r; r.style.opacity = '.4'; } });
-  document.addEventListener('dragend', () => { if (drag) drag.style.opacity = ''; drag = null; });
-  document.addEventListener('dragover', e => { const r = e.target.closest?.('[data-asi]'); if (drag && r && r !== drag) { e.preventDefault(); const b = r.getBoundingClientRect(); e.clientY < b.top + b.height / 2 ? r.before(drag) : r.after(drag); } });
   runDuePrices(); setInterval(runDuePrices, 60000);
 }
 
@@ -11746,12 +12048,22 @@ async function renderStamm(kind, page, extra = {}) {
     ${extra.above ? extra.above() : ''}
     <div class="filters"><input class="input" data-stq="${kind}" value="${esc(st.q)}" placeholder="In ${esc(D.t)} suchen …" style="max-width:320px"><span class="sp" style="flex:1"></span>${st.dirty ? `<span class="pill warn" style="height:24px">nicht gespeichert</span>` : ''}<button class="btn btn-secondary" data-stadd="${kind}">${ic('plus', 'i-sm')}Zeile</button></div>
     <div class="card" style="overflow:auto">${st.rows.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:120px">Kürzel</th>${D.cols.map(c => `<th>${esc(c.l)}</th>`).join('')}<th>aktiv</th><th class="r" style="padding-right:16px"></th></tr></thead><tbody>
-      ${vis.map(([r, i]) => `<tr style="${r._aktiv === false ? 'opacity:.55' : ''}"><td style="padding-left:16px"><input class="input mono" data-stc="id" data-sti="${i}" value="${esc(r.id || '')}" style="max-width:120px;min-width:104px"></td>${D.cols.map(c => `<td>${stCell(c, r, i)}</td>`).join('')}
+      ${vis.map(([r, i]) => `<tr ${dndAttr(i)} style="${r._aktiv === false ? 'opacity:.55' : ''}"><td style="padding-left:16px"><input class="input mono" data-stc="id" data-sti="${i}" value="${esc(r.id || '')}" style="max-width:120px;min-width:104px"></td>${D.cols.map(c => `<td>${stCell(c, r, i)}</td>`).join('')}
         <td><button class="switch" role="switch" data-stakt="${i}" aria-checked="${r._aktiv !== false}" aria-label="aktiv"></button></td>
-        <td class="r" style="padding-right:12px;white-space:nowrap"><button class="btn btn-ghost btn-icon btn-sm" data-stmv="${i}" data-d="-1" aria-label="nach oben">${ic('chevron-up', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-stmv="${i}" data-d="1" aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-stdel="${i}" aria-label="Löschen">${ic('trash', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
+        <td class="r" style="padding-right:12px;white-space:nowrap">${dndGrip('Ziehen zum Sortieren')}<button class="btn btn-ghost btn-icon btn-sm" data-stmv="${i}" data-d="-1" aria-label="nach oben">${ic('chevron-up', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-stmv="${i}" data-d="1" aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-stdel="${i}" aria-label="Löschen">${ic('trash', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
       : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic(D.ic || 'list')}</div><h3>Noch keine Einträge</h3><p>„Zeile“ hinzufügen oder per CSV importieren.</p></div>`}</div>
     ${visAll.length > STMAX ? `<div class="muted" style="padding:10px 4px;font-size:13px">Angezeigt werden die ersten ${STMAX} von ${num(visAll.length)} Einträgen – zum Eingrenzen die Suche oben verwenden.</div>` : ''}
     ${extra.below ? extra.below() : ''}</div>`;
+  // Zeilen per Ziehen sortieren (am Anfasser rechts)
+  dndZone($('tbody', v), 'stamm:' + kind, {
+    label: ids => { const r = st.rows[+ids[0]]; return r ? (r[D.cols[0]?.k] || r.id || '') : ''; },
+    reorder: (ids, ins) => {
+      const i = +ids[0]; if (isNaN(i) || i < 0 || i >= st.rows.length) return;
+      const j = ins ? +ins.id : st.rows.length - 1, [row] = st.rows.splice(i, 1);
+      let at = ins ? (j > i ? j - 1 : j) : st.rows.length; if (ins?.after) at++;
+      st.rows.splice(at, 0, row); st.dirty = true; renderStamm(kind, page, extra);
+    }
+  });
   v.onfocusin = e => { const t = e.target; if (t.dataset?.lazy != null && t.tagName === 'SELECT') { const c = D.cols.find(x => x.k === t.dataset.stc); const cur = t.value; t.removeAttribute('data-lazy'); t.innerHTML = `<option value="">–</option>` + c.o().map(([x, l]) => `<option value="${esc(x)}" ${String(x) === cur ? 'selected' : ''}>${esc(l)}</option>`).join(''); } };
   const mark = () => { st.dirty = true; const b = $(`[data-stsave="${kind}"]`, v); if (b) b.disabled = false; };
   v.oninput = v.onchange = e => {
@@ -11807,6 +12119,7 @@ function stammCsvImport(kind, page, extra) {
     <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" data-strep> bestehende Einträge ersetzen (sonst ergänzen/aktualisieren)</label></div>
     <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" data-stgo>${ic('check', 'i-sm')}Übernehmen</button></div></div>`, {focus: '[data-stt]'});
   $('[data-stf]', el).onchange = async e => { const f = e.target.files[0]; if (f) $('[data-stt]', el).value = await f.text(); };
+  fileDrop($('.modal', el), {accept: /\.(csv|txt)$/i, hint: 'CSV-Datei hier ablegen', onFiles: async ([f]) => { $('[data-stt]', el).value = await f.text(); }});
   $('[data-stgo]', el).onclick = () => {
     const rows = parseCsv($('[data-stt]', el).value.replace(/^﻿/, '')); if (rows.length < 2) { toast('Keine Daten erkannt', {type: 'warn'}); return; }
     const head = rows[0].map(h => norm(h.trim())), map = head.map(h => cols.find(c => norm(c.l) === h || norm(c.k) === h));
@@ -12661,12 +12974,13 @@ function bindEdi() {
       if (b.dataset.edinv != null) { await ediInvrpt(b.dataset.edinv || null); return docRefresh(); }
     } catch (err) { toast('EDI-Fehler', {t2: String(err), type: 'warn', dur: 8000}); }
   });
-  document.addEventListener('change', async e => {
-    const f = e.target.closest('[data-edfile]'); if (!f) return;
+  const ediFiles = async files => {
     let n = 0; await loadSuppliers(); await loadStamm();
-    for (const file of f.files) { try { await ediCreate(file.name, await file.text()); n++; } catch (err) { toast(file.name, {t2: String(err), type: 'warn'}); } }
+    for (const file of files) { try { await ediCreate(file.name, await file.text()); n++; } catch (err) { toast(file.name, {t2: String(err), type: 'warn'}); } }
     EDI.docs = null; toast(`${n} Datei${n === 1 ? '' : 'en'} eingelesen`, {type: 'pos', icon: 'download'}); docRefresh();
-  });
+  };
+  document.addEventListener('change', e => { const f = e.target.closest('[data-edfile]'); if (f) ediFiles([...f.files]); });
+  fileDrop($('#view-edi-nachrichten'), {multiple: true, hint: 'EDI-Dateien hier ablegen', onFiles: ediFiles});
 }
 
 /* ════════ Webshop ════════ */
@@ -13354,7 +13668,7 @@ function artEditorMount(host, a, tab0) {
   const refreshMedia = async () => { if (!DESKTOP || !a) return; replaceCatalog(await invoke('catalog_list')); const fresh = ART.find(x => x.id === a.id); if (fresh) { a.media = fresh.media; a.image = fresh.image; } renderArtTable(); };
   const imgTile = (m, i, n) => {
     const u = m.file ? imgUrl(m.file) : null;
-    return `<div class="card" style="padding:8px;display:grid;gap:6px;min-width:0" data-mid="${m.id}"><div style="position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${u ? `<img src="${esc(u)}" alt="" style="width:100%;height:100%;object-fit:contain">` : `<span class="muted" style="font-size:12px;text-align:center;padding:8px">${m.status === 'fehler' ? 'Bild nicht ladbar' : 'lädt …'}</span>`}${i === 0 ? '<span class="pill accent" style="position:absolute;left:6px;top:6px;height:20px">Hauptbild</span>' : ''}</div>
+    return `<div class="card" style="padding:8px;display:grid;gap:6px;min-width:0" data-mid="${m.id}" ${dndAttr(m.id)}><div style="position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${u ? `<img src="${esc(u)}" alt="" style="width:100%;height:100%;object-fit:contain">` : `<span class="muted" style="font-size:12px;text-align:center;padding:8px">${m.status === 'fehler' ? 'Bild nicht ladbar' : 'lädt …'}</span>`}${i === 0 ? '<span class="pill accent" style="position:absolute;left:6px;top:6px;height:20px">Hauptbild</span>' : ''}</div>
       <select class="input select" data-mcol="${m.id}" style="height:30px;font-size:12px;width:100%;min-width:0"><option value="">alle Farben</option>${st.colors.map(c => `<option value="${esc(c)}" ${m.color === c ? 'selected' : ''}>${esc(colorName(c))}</option>`).join('')}</select>
       <input class="input" data-mcap="${m.id}" value="${esc(m.caption || '')}" placeholder="Beschriftung" style="height:30px;font-size:12px;width:100%;min-width:0">
       <div style="display:flex;gap:0;justify-content:space-between;min-width:0"><button class="btn btn-ghost btn-icon btn-sm" data-mmv="${m.id}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="nach vorn">${ic('chevron-left', 'i-sm')}</button><button class="btn btn-ghost btn-sm" data-mmain="${m.id}" ${i === 0 ? 'disabled' : ''}>${ic('star', 'i-sm')}Haupt</button><button class="btn btn-ghost btn-icon btn-sm" data-mdel="${m.id}" aria-label="Löschen">${ic('trash', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-mmv="${m.id}" data-d="1" ${i === n - 1 ? 'disabled' : ''} aria-label="nach hinten">${ic('chevron-right', 'i-sm')}</button></div></div>`;
@@ -13397,9 +13711,9 @@ function artEditorMount(host, a, tab0) {
       const ms = media(), pend = st.pending;
       return `<div class="ed-sec"><div class="lab">Bildergalerie <span class="muted">${ms.length} Bild${ms.length === 1 ? '' : 'er'} · das erste ist das Hauptbild (Kasse, Listen, Schaufenster) · JPEG, PNG oder WebP, wird verkleinert gespeichert</span></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><button type="button" class="btn btn-primary btn-sm" id="gAdd">${ic('plus', 'i-sm')}Bilder wählen …</button><button type="button" class="btn btn-secondary btn-sm" id="gUrl">${ic('globe', 'i-sm')}Von Webadresse laden …</button><button type="button" class="btn btn-secondary btn-sm" id="edPage">${ic('download', 'i-sm')}Alle Bilder einer Produktseite …</button></div>
-        ${!a ? `<div class="prompt-hint">${ic('info', 'i-xs')}Der Artikel wird mit „Speichern“ angelegt – danach können Bilder gewählt werden${pend.length ? ` (${pend.length} Adresse${pend.length === 1 ? '' : 'n'} vorgemerkt)` : ''}.</div>` : ms.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;min-width:0">${ms.map((m, i) => imgTile(m, i, ms.length)).join('')}</div>` : '<div class="empty" style="padding:36px 20px"><div class="empty-icon">' + ic('image') + '</div><h3>Noch keine Bilder</h3><p>Mehrere Ansichten je Farbe hinzufügen – Vorderseite, Rückseite, Detail, Modell.</p></div>'}</div>`;
+        ${!a ? `<div class="prompt-hint">${ic('info', 'i-xs')}Der Artikel wird mit „Speichern“ angelegt – danach können Bilder gewählt werden${pend.length ? ` (${pend.length} Adresse${pend.length === 1 ? '' : 'n'} vorgemerkt)` : ''}.</div>` : ms.length ? `<div id="gGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;min-width:0">${ms.map((m, i) => imgTile(m, i, ms.length)).join('')}</div>` : '<div class="empty" style="padding:36px 20px"><div class="empty-icon">' + ic('image') + '</div><h3>Noch keine Bilder</h3><p>Mehrere Ansichten je Farbe hinzufügen – Vorderseite, Rückseite, Detail, Modell.</p></div>'}</div>`;
     }
-    if (tab === 'varianten') return `<div class="ed-sec"><div class="lab">Farben <span class="muted">Reihenfolge = Anzeige · erste Farbe = Kachelbild · neue Farben unter Stammdaten › Hausfarben</span></div><div class="cpick">${Object.keys(COLORS).map(k => { const i = st.colors.indexOf(k); return `<button type="button" data-col="${k}" aria-pressed="${i >= 0}" style="--sw:${COLORS[k][1]}"><i></i>${esc(COLORS[k][0])}${i >= 0 ? `<span class="ord">${i + 1}</span>` : ''}</button>`; }).join('')}</div></div>
+    if (tab === 'varianten') return `<div class="ed-sec"><div class="lab">Farben <span class="muted">Reihenfolge = Anzeige · erste Farbe = Kachelbild · neue Farben unter Stammdaten › Hausfarben</span></div><div class="cpick">${Object.keys(COLORS).map(k => { const i = st.colors.indexOf(k); return `<button type="button" data-col="${k}" ${i >= 0 ? dndAttr(k) : ''} aria-pressed="${i >= 0}" style="--sw:${COLORS[k][1]}"><i></i>${esc(COLORS[k][0])}${i >= 0 ? `<span class="ord">${i + 1}</span>` : ''}</button>`; }).join('')}</div></div>
       <div class="ed-sec"><div class="lab">Größen <span class="muted">durch Komma getrennt</span></div><input class="input" data-f="sizes" value="${esc(st.sizes)}"><div class="reasons" style="margin-top:8px">${SIZE_PRESETS.map(([l, val]) => `<button type="button" class="chip" data-sz="${esc(val)}">${l}</button>`).join('')}${stActive('groessenschluessel').map(g => `<button type="button" class="chip" data-sz="${esc((g.groessen || []).join(', '))}">${esc(g.name)}</button>`).join('')}</div>
         <div class="prompt-hint">${ic('info', 'i-xs')}${st.colors.length * sizesArr().length} Varianten · EAN werden automatisch vergeben, bestehende bleiben erhalten · neue Varianten starten mit Bestand 0</div></div>
       ${cfHTML('artikel', st.cf, true, 'Felder')}
@@ -13416,6 +13730,20 @@ function artEditorMount(host, a, tab0) {
     $('#edTabs', el).innerHTML = AE_TABS.map(([k, l]) => `<button type="button" class="ed-tab" data-tab="${k}" aria-selected="${k === tab}">${esc(l)}${k === 'bilder' && media().length ? `<span class="nav-badge">${media().length}</span>` : ''}</button>`).join('');
     $('#edBody', el).innerHTML = tabBody();
     aeAfter(ctx, tab);
+    // Bilder und Farben per Ziehen anordnen (erstes Bild = Hauptbild, erste Farbe = Kachelbild)
+    dndZone($('#gGrid', el), 'galerie', {axis: 'x', ghost: 'clone', hint: '', reorder: async (ids, ins) => {
+      const items = dndArrange(media().map(m => ({id: m.id, color: m.color, caption: m.caption})), ids, ins, x => x.id);
+      await invoke('article_media_update', {id: a.id, items}); await refreshMedia(); render();
+    }});
+    fileDrop($('#edBody', el), {accept: /\.(jpe?g|png|webp)$/i, multiple: true, hint: 'Bilder hier ablegen', enabled: () => tab === 'bilder' && !!a && DESKTOP, onFiles: async files => {
+      const big = files.filter(f => f.size > 15 * 1024 * 1024); if (big.length) toast('Bild zu groß', {t2: `${big.map(f => f.name).join(', ')} – höchstens 15 MB`, type: 'warn'});
+      const ok = files.filter(f => f.size <= 15 * 1024 * 1024); if (!ok.length) return;
+      collect();
+      const data = await Promise.all(ok.map(f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(new Error(f.name + ' nicht lesbar')); r.readAsDataURL(f); })));
+      const rr = await invoke('article_media_add_data', {id: a.id, color: null, files: data}); await refreshMedia(); render();
+      toast(`${rr.ok} Bild${rr.ok === 1 ? '' : 'er'} hinzugefügt`, {t2: rr.fehler[0] || '', type: rr.fehler.length ? 'warn' : 'pos', icon: 'image'});
+    }});
+    dndZone($('.cpick', el), 'farben', {axis: 'x', ghost: 'clone', reorder: (ids, ins) => { collect(); st.colors = dndArrange(st.colors, ids, ins); render(); }});
     $('#edTabs .ed-tab[aria-selected="true"]', el)?.scrollIntoView({block: 'nearest', inline: 'center'});
     edTabMem.last = tab;
   };
@@ -13586,7 +13914,9 @@ registerPage('fedas-import', {title: 'FEDAS Datei-Import', sub: () => 'CSV oder 
       <div style="display:flex;gap:10px;align-items:center"><div class="seg" data-fiseg>${[['csv', 'CSV'], ['json', 'JSON']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${k === (FED.fmt || 'csv')}">${l}</button>`).join('')}</div><span class="sp" style="flex:1"></span><button class="btn btn-primary" data-fiimp>${ic('download', 'i-sm')}Importieren</button></div>
       <div class="prompt-hint">${ic('info', 'i-xs')}Erkannte Spalten (Groß/Klein egal): EAN/GTIN · Artikelnummer · Bezeichnung · Marke · Farbe · Größe · UVP · EK · MwSt · FEDAS-Code · Beschreibung · Material · Herkunft · Zolltarif · Bild-URLs. Unbekannte Spalten werden ignoriert.</div><div data-fir></div></div></div>`;
   initSeg($('[data-fiseg]', v), b => { FED.fmt = b.dataset.v; });
-  $('[data-fif]', v).onchange = async e => { const f = e.target.files[0]; if (!f) return; $('[data-fit]', v).value = await f.text(); FED.fmt = /\.json$/i.test(f.name) ? 'json' : 'csv'; $$('[data-fiseg] button', v).forEach(b => b.setAttribute('aria-pressed', b.dataset.v === FED.fmt)); };
+  const fedFile = async f => { $('[data-fit]', v).value = await f.text(); FED.fmt = /\.json$/i.test(f.name) ? 'json' : 'csv'; $$('[data-fiseg] button', v).forEach(b => b.setAttribute('aria-pressed', b.dataset.v === FED.fmt)); };
+  $('[data-fif]', v).onchange = async e => { const f = e.target.files[0]; if (f) await fedFile(f); };
+  fileDrop($('.card', v), {accept: /\.(csv|json|txt)$/i, hint: 'Datei hier ablegen', onFiles: ([f]) => fedFile(f)});
   $('[data-fiimp]', v).onclick = async () => {
     const txt = $('[data-fit]', v).value; if (!txt.trim()) return toast('Keine Daten', {type: 'warn'});
     try { await needPerm('artikel.bearbeiten', 'FEDAS-Import'); const r = await invoke('fedas_import_file', {content: txt, format: FED.fmt || 'csv', user: S.user.name}); await loadStamm(true); replaceCatalog(await invoke('catalog_list')); $('[data-fir]', v).innerHTML = `<div class="card" style="padding:12px 16px;color:var(--pos)">${ic('check', 'i-sm')} ${r.zeilen} Zeilen gelesen: ${r.neu} Artikel neu · ${r.aktualisiert} aktualisiert · ${r.uebersprungen} unverändert · ${r.bilder} Bilder vorgemerkt</div>`; invoke('media_fetch_pending', {limit: 30}).catch(() => {}); } catch (err) { $('[data-fir]', v).innerHTML = `<div class="card" style="padding:12px 16px;color:var(--neg)">${esc(String(err))}</div>`; }
@@ -13731,7 +14061,7 @@ function agMount(key, v) {
   const st = AG[key], cfg = st.cfg;
   st.rows = cfg.rows();
   st.cols.forEach(c => { delete c.aw; });
-  v.innerHTML = `<div class="datagrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
+  v.innerHTML = `<div class="datagrid ${cfg.embed ? 'ag-embed' : ''} ${cfg.dnd ? 'ag-dnd' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
       ${cfg.toolbar?.length ? `<div class="ag-bar">${cfg.toolbar.map(b => `<button class="ag-btn" data-ag="${b.k}">${ic(b.icon, 'i-sm')}<span>${esc(b.l)}</span></button>`).join('')}<button class="ag-btn ag-del" data-ag="del" hidden>${ic(cfg.removeIcon || 'trash', 'i-sm')}<span>${esc(cfg.removeLabel || 'Löschen')}</span></button></div>` : ''}
       <div class="ag-tools"><div class="ag-drop" data-agdrop><span class="ag-ph">Zu gruppierende Spalten hierhin ziehen…</span></div>
         ${(cfg.extra || []).map(b => `<button class="ag-xbtn" data-ag="${b.k}">${ic(b.icon || 'plus', 'i-sm')}${esc(b.l)}</button>`).join('')}
@@ -13745,6 +14075,7 @@ function agMount(key, v) {
       <div class="ag-foot"><b data-agcount></b><span class="ag-sel" data-agselinfo></span><span class="ag-sel" data-agsums></span><button class="ag-tbtn ag-fbtn" data-ag="filter">${ic('filter', 'i-sm')}Filter erstellen</button></div></div>`;
   agBind(key, v);
   agApply(key, true);
+  agDnd(key, v);
 }
 function agridPage(page, cfg) {
   AG[page] = agNew(cfg);
@@ -13829,7 +14160,7 @@ function agApply(page, resetScroll) {
 function agHead(page, v, vis) {
   const st = AG[page];
   const all = st.filtered && st.filtered.length && st.filtered.every(r => st.sel.has(r.id));
-  $('[data-aghead]', v).innerHTML = `<div class="ag-c ag-ck"><i class="agchk ${all ? 'on' : ''}" data-agall></i></div>${vis.map(c => `<div class="ag-c ag-h ${c.t === 'num' ? 'r' : ''}" draggable="true" data-agcol="${c.k}"><span class="ag-hl" data-agsort="${c.k}">${esc(c.l)}</span>${c.l ? `<span class="ag-fi" data-agfi="${c.k}">${ic('filter', 'i-xs')}</span>` : ''}${st.sort?.k === c.k ? `<span class="ag-sort">${st.sort.dir > 0 ? '▲' : '▼'}</span>` : ''}<span class="ag-rs" data-agrs="${c.k}"></span></div>`).join('')}`;
+  $('[data-aghead]', v).innerHTML = `<div class="ag-c ag-ck"><i class="agchk ${all ? 'on' : ''}" data-agall></i></div>${vis.map(c => `<div class="ag-c ag-h ${c.t === 'num' ? 'r' : ''}" ${dndAttr(c.k)} data-agcol="${c.k}"><span class="ag-hl" data-agsort="${c.k}">${esc(c.l)}</span>${c.l ? `<span class="ag-fi" data-dnd-no data-agfi="${c.k}">${ic('filter', 'i-xs')}</span>` : ''}${st.sort?.k === c.k ? `<span class="ag-sort">${st.sort.dir > 0 ? '▲' : '▼'}</span>` : ''}<span class="ag-rs" data-dnd-no data-agrs="${c.k}"></span></div>`).join('')}`;
   agMeasure(page, v, vis);
   const flex = vis.some(agFlex) ? agFlex : (c => c === vis[vis.length - 1]);
   const inner = $('[data-aginner]', v);
@@ -13854,7 +14185,7 @@ function agRows(page, v, vis) {
     const it = st.view[i];
     if (it.g != null) { html += `<div class="ag-row ag-grp" style="top:${i * H}px;padding-left:${8 + it.depth * 16}px" data-aggrp="${esc(it.id)}"><span>${st.collapsed.has(it.id) ? '▸' : '▾'}</span> <b>${esc(it.c)}:</b> ${esc(it.g)} <span class="ag-n">(${num(it.n)})</span></div>`; continue; }
     const r = it.r;
-    html += `<div class="ag-row ${st.sel.has(r.id) ? 'sel' : ''} ${i % 2 ? 'alt' : ''}" style="top:${i * H}px" data-agrow="${esc(r.id)}"><div class="ag-c ag-ck"><i class="agchk ${st.sel.has(r.id) ? 'on' : ''}" data-agck="${esc(r.id)}"></i></div>${vis.map(c => c.t === 'check' ? `<div class="ag-c ag-cc"><i class="agchk ${agVal(r, c) ? 'on' : ''} ro"></i></div>` : `<div class="ag-c ${c.t === 'num' ? 'r' : ''}" ${c.html ? '' : `title="${esc(agText(r, c))}"`}>${c.html ? c.html(r) : esc(agText(r, c))}</div>`).join('')}</div>`;
+    html += `<div class="ag-row ${st.sel.has(r.id) ? 'sel' : ''} ${i % 2 ? 'alt' : ''}" style="top:${i * H}px" data-agrow="${esc(r.id)}" ${st.cfg.dnd ? dndAttr(r.id) : ''}><div class="ag-c ag-ck"><i class="agchk ${st.sel.has(r.id) ? 'on' : ''}" data-agck="${esc(r.id)}"></i></div>${vis.map(c => c.t === 'check' ? `<div class="ag-c ag-cc"><i class="agchk ${agVal(r, c) ? 'on' : ''} ro"></i></div>` : `<div class="ag-c ${c.t === 'num' ? 'r' : ''}" ${c.html ? '' : `title="${esc(agText(r, c))}"`}>${c.html ? c.html(r) : esc(agText(r, c))}</div>`).join('')}</div>`;
   }
   host.innerHTML = html;
 }
@@ -13896,12 +14227,7 @@ function agBind(page, v) {
   };
   const render_ = () => cfg.reload ? cfg.reload() : PAGES[page].render();
   v.ondblclick = e => { const r = e.target.closest('[data-agrow]'); if (r && !e.target.closest('[data-agck]')) cfg.edit?.(r.dataset.agrow, render_); };
-  // Spalten ziehen → gruppieren; Spaltenbreite ändern
-  v.ondragstart = e => { const h = e.target.closest('[data-agcol]'); if (h) { e.dataTransfer.setData('text/plain', h.dataset.agcol); e.dataTransfer.effectAllowed = 'move'; } };
-  const drop = $('[data-agdrop]', v);
-  v.ondragover = e => { if (e.target.closest('[data-agdrop]')) { e.preventDefault(); drop.classList.add('over'); } };
-  v.ondragleave = () => drop.classList.remove('over');
-  v.ondrop = e => { const d = e.target.closest('[data-agdrop]'); drop.classList.remove('over'); if (!d) return; e.preventDefault(); const k = e.dataTransfer.getData('text/plain'); if (k && !st.group.includes(k)) { st.group.push(k); refresh(true); } };
+  // Spaltenbreite ändern (Spalten ziehen: siehe agDnd)
   v.onmousedown = e => {
     const rs = e.target.closest('[data-agrs]'); if (!rs) return;
     e.preventDefault(); e.stopPropagation();
@@ -13918,8 +14244,39 @@ function agFit(page) {
 
 function agColsMenu(page, anchor, v) {
   const st = AG[page];
-  const el = openPopover(anchor, `<div class="ag-menu">${st.cols.map(c => `<label><input type="checkbox" data-agcs="${c.k}" ${c.show ? 'checked' : ''}> ${esc(c.l)}</label>`).join('')}</div>`, {align: 'right', width: 280});
+  const list = () => st.cols.map(c => `<label ${dndAttr(c.k)}>${dndGrip('Ziehen zum Sortieren')}<input type="checkbox" data-agcs="${c.k}" ${c.show ? 'checked' : ''}> <span>${esc(c.l)}</span></label>`).join('');
+  const el = openPopover(anchor, `<div class="ag-menu">${list()}</div>`, {align: 'right', width: 280});
+  const menu = el && $('.ag-menu', el);
+  if (menu) dndZone(menu, `ag:${page}:menu`, {reorder: (ids, ins) => { st.cols = dndArrange(st.cols, ids, ins, c => c.k); menu.innerHTML = list(); agApply(page, false); }, label: ids => st.cols.find(c => c.k === ids[0])?.l || ''});
   el?.addEventListener('change', e => { const k = e.target.dataset.agcs; const c = st.cols.find(x => x.k === k); if (c) { c.show = e.target.checked; if (!st.cols.some(x => x.show)) { c.show = true; e.target.checked = true; } agApply(page, false); } });
+}
+
+/** Ziehen und Ablegen: Zeilen (cfg.dnd – zwischen Tabellen oder umsortieren), Spaltenköpfe (umordnen, auf die Gruppierleiste = gruppieren) */
+function agDragIds(key, id) {
+  const st = AG[key];
+  if (!st.sel.has(id) || st.sel.size < 2) return [id];
+  const vis = (st.filtered || []).map(r => r.id).filter(i => st.sel.has(i));
+  return [...vis, ...[...st.sel].filter(i => !vis.includes(i))];
+}
+/** Zwei Tabellen „Zugeordnet“ (A) und „Nicht zugeordnet“ (B): Zeilen lassen sich zwischen beiden ziehen – mv(ids, zuordnen, ins) führt es aus */
+const agDual = (keyA, keyB, mv, a = {}, b = {}) => [
+  {from: [keyB], drop: (ids, f, ins) => mv(ids, true, ins), hint: 'Zuordnen', ...a},
+  {from: [keyA], drop: ids => mv(ids, false), hint: 'Entfernen', ...b}
+];
+function agDnd(key, v) {
+  const st = AG[key], cfg = st.cfg, D = cfg.dnd;
+  if (D) {
+    const card = v.closest('.ae-card'), zone = card && card.querySelectorAll('.datagrid').length === 1 ? card : $('.datagrid', v);
+    dndZone(zone, 'ag:' + key, {
+      from: (D.from || []).map(k => 'ag:' + k), ordered: !!D.ordered, hint: D.hint || '',
+      drop: D.drop ? (ids, from, ins) => D.drop(ids, from.slice(3), ins) : null,
+      reorder: D.reorder ? (ids, ins) => { st.sort = cfg.sort || null; return D.reorder(ids, ins); } : null,
+      ids: item => agDragIds(key, item.dataset.dndId),
+      label: ids => { const c = st.cols.find(x => x.show && !x.html && x.t !== 'check'), r = st.rows.find(x => x.id === ids[0]); return D.label ? D.label(ids) : r && c ? agText(r, c) : ids[0]; }
+    });
+  }
+  dndZone($('[data-aghead]', v), `ag:${key}:cols`, {axis: 'x', reorder: (ids, ins) => { st.cols = dndArrange(st.cols, ids, ins, c => c.k); agApply(key, false); }, label: ids => st.cols.find(c => c.k === ids[0])?.l || ids[0]});
+  dndZone($('[data-agdrop]', v), `ag:${key}:grp`, {from: [`ag:${key}:cols`], hint: 'Gruppieren', drop: ids => { const k = ids[0]; if (k && !st.group.includes(k)) { st.group.push(k); agApply(key, true); } }});
 }
 
 function agExport(page) {
@@ -14217,12 +14574,17 @@ for (const [k, label, kind, key, src] of [['attr', 'Attribut', 'Attribut', 'attr
     const all = src().map((r, i) => ({...r, id: k === 'attr' ? `${r.name}|${r.attribut}` : r.id}));
     const mine = aeList(ctx, key); const has = id => mine.some(x => (x.id || `${x.name}|${x.attribut}`) === id);
     const cols = k === 'attr' ? [{k: 'name', l: 'Name', w: 200}, {k: 'attribut', l: 'Attribut', w: 240}] : [{k: 'text', l: 'Text', w: 260}, {k: 'name', l: 'Name', w: 180}, {k: 'format', l: 'Format', w: 100}];
-    const flip = async id => {
-      const i = mine.findIndex(x => (x.id || `${x.name}|${x.attribut}`) === id);
-      if (i >= 0) mine.splice(i, 1); else { const r = all.find(x => x.id === id); if (r) mine.push(k === 'attr' ? {name: r.name, attribut: r.attribut} : {id: r.id, name: r.name, format: r.format, text: r.text}); }
+    const mv = (ids, add) => {
+      ids.forEach(id => {
+        const i = mine.findIndex(x => (x.id || `${x.name}|${x.attribut}`) === id);
+        if (i >= 0 && !add) mine.splice(i, 1);
+        else if (i < 0 && add) { const r = all.find(x => x.id === id); if (r) mine.push(k === 'attr' ? {name: r.name, attribut: r.attribut} : {id: r.id, name: r.name, format: r.format, text: r.text}); }
+      });
       ctx.setTab(k);
     };
-    return [{embed: true, title: label + ' zugeordnet', cols, rows: () => all.filter(r => has(r.id)), edit: flip}, {embed: true, title: label + ' nicht zugeordnet', cols, rows: () => all.filter(r => !has(r.id)), edit: flip}];
+    const flip = id => mv([id], !has(id));
+    const [da, db] = agDual(`ae-${k}-a`, `ae-${k}-b`, mv);
+    return [{embed: true, title: label + ' zugeordnet', cols, rows: () => all.filter(r => has(r.id)), edit: flip, dnd: da}, {embed: true, title: label + ' nicht zugeordnet', cols, rows: () => all.filter(r => !has(r.id)), edit: flip, dnd: db}];
   }};
 }
 
@@ -14412,8 +14774,9 @@ function gseRender() {
     const mv = (names, add) => { const s = new Set(D.groessen); names.forEach(n => add ? s.add(n) : s.delete(n)); D.groessen = [...s]; if (!add) names.forEach(n => delete D.stat[n]); gseCollect(el); gseRender(); };
     const mk = (key, host, cfg) => { if (!host) return; AG[key] = agNew({embed: true, ...cfg}); agMount(key, host); };
     if (GSE.tab === 'allg') {
-      mk('gse-a', $('[data-gg="a"]', el), {title: 'Zugeordnet', cols, rows: assigned, sort: {k: 'nr', dir: 1}, edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const sel = [...AG['gse-a'].sel]; if (sel.length) mv(sel, false); }}});
-      mk('gse-b', $('[data-gg="b"]', el), {title: 'Nicht zugeordnet', cols, rows: free, sort: {k: 'nr', dir: 1}, edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const sel = [...AG['gse-b'].sel]; if (sel.length) mv(sel, true); }}});
+      const [da, db] = agDual('gse-a', 'gse-b', mv);
+      mk('gse-a', $('[data-gg="a"]', el), {title: 'Zugeordnet', cols, rows: assigned, sort: {k: 'nr', dir: 1}, dnd: da, edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const sel = [...AG['gse-a'].sel]; if (sel.length) mv(sel, false); }}});
+      mk('gse-b', $('[data-gg="b"]', el), {title: 'Nicht zugeordnet', cols, rows: free, sort: {k: 'nr', dir: 1}, dnd: db, edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const sel = [...AG['gse-b'].sel]; if (sel.length) mv(sel, true); }}});
     } else {
       mk('gse-s', $('[data-gg="s"]', el), {title: 'Statistikgrößen', cols: [{k: 'name', l: 'Größe', w: 260}, {k: 'stat', l: 'Statistik-Größe', w: 260}], rows: () => assigned().map(r => ({id: r.id, name: r.name, stat: D.stat[r.name] || ''})),
         edit: async id => { const o = await aeForm('Statistik-Größe', [{k: 'name', l: 'Größe', ro: true}, {k: 'stat', l: 'Statistik-Größe'}], {name: id, stat: D.stat[id] || ''}); if (o) { if (o.stat) D.stat[id] = o.stat; else delete D.stat[id]; gseRender(); } }});
@@ -14758,8 +15121,9 @@ function kaeRender() {
   const rc = [{k: 'pct', l: 'Rabatt %', t: 'num', w: 100, fmt: v => num(v) + ' %'}, {k: 'wert', l: 'Rabatt-Wert', t: 'num', w: 110, fmt: v => eur(Math.round(v * 100))}, {k: 'alsWert', l: 'Als Wert nutzen', t: 'check', w: 130}, {k: 'typ', l: 'Rabatt-Typ', w: 110}, {k: 'von', l: 'Gültig von', w: 110, fmt: e2Date}, {k: 'bis', l: 'Gültig bis', w: 110, fmt: e2Date}, {k: 'sort', l: 'Sortierung', t: 'num', w: 100}, {k: 'modus', l: 'Rabatt-Modus', w: 160}];
   const mv = (ids, add) => { const s = new Set(D.rabatte); ids.forEach(i => add ? s.add(i) : s.delete(i)); D.rabatte = [...s]; KAE.dirty = true; kaeCollect(el); kaeRender(); };
   if (KAE.tab === 'rabatt') {
-    mk('ke-a', $('[data-kg="a"]', el), {title: 'Zugeordnet', cols: rc, rows: () => kaeRabattRows(true), sort: {k: 'sort', dir: 1}, edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const s = [...AG['ke-a'].sel]; if (s.length) mv(s, false); }}});
-    mk('ke-b', $('[data-kg="b"]', el), {title: 'Nicht zugeordnet', cols: rc, rows: () => kaeRabattRows(false), sort: {k: 'sort', dir: 1}, edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ke-b'].sel]; if (s.length) mv(s, true); }}});
+    const [da, db] = agDual('ke-a', 'ke-b', mv);
+    mk('ke-a', $('[data-kg="a"]', el), {title: 'Zugeordnet', cols: rc, rows: () => kaeRabattRows(true), sort: {k: 'sort', dir: 1}, dnd: da, edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const s = [...AG['ke-a'].sel]; if (s.length) mv(s, false); }}});
+    mk('ke-b', $('[data-kg="b"]', el), {title: 'Nicht zugeordnet', cols: rc, rows: () => kaeRabattRows(false), sort: {k: 'sort', dir: 1}, dnd: db, edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ke-b'].sel]; if (s.length) mv(s, true); }}});
   }
   if (extraMount) extraMount(el, () => kaeDirty(el));
   if (KAE.tab === 'sync') mk('ke-s', $('[data-kg="s"]', el), {title: 'Sync', cols: [{k: 'a', l: 'Artikel', w: 180}, {k: 'g', l: 'Gutscheine', w: 160}, {k: 'k', l: 'Kunde', w: 160}, {k: 'au', l: 'Auswahlen', w: 160}, {k: 'r', l: 'Rechnungen', w: 160}], rows: () => [{id: 1, a: `Geladen: 0 von ${num(ART.length)}`, g: 'Geladen: 0 von 0', k: 'Geladen: 0 von 0', au: 'Geladen: 0 von 0', r: 'Geladen: 0 von 0'}], extra: [{k: 'rf', l: 'Aktualisieren', icon: 'sync'}], actions: {rf: () => kaeRender()}});
@@ -14861,16 +15225,30 @@ function fxSubGrid(host, S, tab, dirty, defs = FX_SUB) {
     dirty(); remount();
   };
   const move = d => { const sel = [...AG[key].sel][0]; if (!sel) return; const a = [...rows()].sort((x, y) => x.sort - y.sort), i = a.findIndex(x => x.id === sel), j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; a.forEach((x, n) => { x.sort = n + 1; }); dirty(); remount(); AG[key].sel = new Set([sel]); };
-  AG[key] = agNew({embed: true, title: tab, cols: D.cols(), rows, sort: D.order ? {k: 'sort', dir: 1} : undefined, edit, extra,
+  const reorder = (ids, ins) => { const a = dndArrange([...rows()].sort((x, y) => x.sort - y.sort), ids, ins, r => r.id); a.forEach((x, n) => { x.sort = n + 1; }); dirty(); remount(); };
+  AG[key] = agNew({embed: true, title: tab, cols: D.cols(), rows, sort: D.order ? {k: 'sort', dir: 1} : undefined, edit, extra, dnd: D.order ? {reorder} : undefined,
     remove: D.del ? async ids => { if (!await confirmBox(`${num(ids.length)} Eintrag löschen?`, 'Löschen')) throw new Error('abgebrochen'); const s = new Set(ids); S.sub[tab] = rows().filter(r => !s.has(r.id)); dirty(); } : undefined,
     actions: {rf: remount, up: () => move(-1), dn: () => move(1), neu: async () => { const o = D.form ? await D.form({}, true) : await fxRowForm('Neu', D.fields().filter(f => !f.ro), {}); if (!o) return; if (D.validate) { const m = D.validate(o, rows(), null); if (m) return toast(m, {type: 'warn'}); } S.sub[tab].push({id: fxId(), ...(D.newRow ? D.newRow(o) : o)}); dirty(); remount(); }}});
   agMount(key, host);
 }
-/* Paarweise Zuordnung (Zugeordnet / Nicht zugeordnet) */
-function fxPair(host, S, key, src, cols, dirty, rerender) {
-  const mv = (ids, add) => { const s = new Set(S[key] || []); ids.forEach(i => add ? s.add(i) : s.delete(i)); S[key] = [...s]; dirty(); rerender(); };
+/* Paarweise Zuordnung (Zugeordnet / Nicht zugeordnet) – Zeilen lassen sich zwischen den Listen ziehen; opt.ordered = die Reihenfolge der Zuordnung zählt (per Ziehen änderbar) */
+function fxPair(host, S, key, src, cols, dirty, rerender, opt = {}) {
+  const mv = (ids, add, ins) => {
+    const cur = S[key] || [];
+    if (opt.ordered && add) S[key] = dndArrange(cur, ids, ins);
+    else { const s = new Set(cur); ids.forEach(i => add ? s.add(i) : s.delete(i)); S[key] = [...s]; }
+    dirty(); rerender();
+  };
+  const rowsOf = on => {
+    const all = src(), cur = S[key] || [];
+    if (!on) return all.filter(r => !cur.includes(r.id));
+    if (!opt.ordered) return all.filter(r => cur.includes(r.id));
+    const m = new Map(all.map(r => [r.id, r])); return cur.map(i => m.get(i)).filter(Boolean);
+  };
   host.innerHTML = `<div class="ae-pane ae-two"><div class="ae-card"><h4>Zugeordnet</h4><div data-fxp="a"></div></div><div class="ae-card"><h4>Nicht zugeordnet</h4><div data-fxp="b"></div></div></div>`;
-  const mk = (id, h, on) => { AG[`fxp-${key}-${id}`] = agNew({embed: true, title: id, cols, rows: () => src().filter(r => (S[key] || []).includes(r.id) === on), edit: i => mv([i], !on), extra: [{k: 'mv', l: on ? 'Entfernen' : 'Zuordnen', icon: on ? 'x' : 'plus'}], actions: {mv: () => { const s = [...AG[`fxp-${key}-${id}`].sel]; if (s.length) mv(s, !on); }}}); agMount(`fxp-${key}-${id}`, h); };
+  const ka = `fxp-${key}-a`, kb = `fxp-${key}-b`;
+  const [da, db] = agDual(ka, kb, mv, opt.ordered ? {ordered: true, reorder: (ids, ins) => mv(ids, true, ins)} : {});
+  const mk = (id, h, on) => { AG[`fxp-${key}-${id}`] = agNew({embed: true, title: id, cols, rows: () => rowsOf(on), edit: i => mv([i], !on), extra: [{k: 'mv', l: on ? 'Entfernen' : 'Zuordnen', icon: on ? 'x' : 'plus'}], dnd: on ? da : db, actions: {mv: () => { const s = [...AG[`fxp-${key}-${id}`].sel]; if (s.length) mv(s, !on); }}}); agMount(`fxp-${key}-${id}`, h); };
   mk('a', $('[data-fxp="a"]', host), true); mk('b', $('[data-fxp="b"]', host), false);
 }
 
@@ -14958,8 +15336,8 @@ function kkRender() {
     body = `<p class="ea-hint" style="margin:0 0 8px">Diese Zusatzinformationen werden beim Bezahlen abgefragt. Ist nichts zugeordnet, werden alle abgefragt.</p>${kkHost}`;
     mount = () => fxPair($('[data-kk]', el), D, 'belegzusatz', () => stActive('belegzusatz').map(r => ({id: r.id, name: r.name || r.id, typ: r.typ || '', pflicht: !!r.pflicht})), [{k: 'name', l: 'Zusatzinformation', w: 240}, {k: 'typ', l: 'Art', w: 120}, {k: 'pflicht', l: 'Pflicht', t: 'check', w: 100}], dirty, kkRender);
   } else if (KK.tab === 'hot') {
-    body = `<p class="ea-hint" style="margin:0 0 8px">Zugeordnete Warengruppen erscheinen an der Kasse zuerst in der Warengruppen-Leiste (in der Reihenfolge der Zuordnung).</p>${kkHost}`;
-    mount = () => fxPair($('[data-kk]', el), D, 'hotcats', () => CATS.filter(c => c.id !== 'alle' && ART.some(a => a.cat === c.id)).map(c => ({id: c.id, name: c.name, n: ART.filter(a => a.cat === c.id).length})), [{k: 'name', l: 'Warengruppe', w: 240}, {k: 'n', l: 'Artikel', t: 'num', w: 100}], dirty, kkRender);
+    body = `<p class="ea-hint" style="margin:0 0 8px">Zugeordnete Warengruppen erscheinen an der Kasse zuerst in der Warengruppen-Leiste – in der Reihenfolge dieser Liste (Zeilen zum Sortieren ziehen).</p>${kkHost}`;
+    mount = () => fxPair($('[data-kk]', el), D, 'hotcats', () => CATS.filter(c => c.id !== 'alle' && ART.some(a => a.cat === c.id)).map(c => ({id: c.id, name: c.name, n: ART.filter(a => a.cat === c.id).length})), [{k: 'name', l: 'Warengruppe', w: 240}, {k: 'n', l: 'Artikel', t: 'num', w: 100}], dirty, kkRender, {ordered: true});
   } else if (KK.tab === 'pflicht') {
     body = `<p class="ea-hint" style="margin:0 0 8px">Zugeordnete Felder sind beim Anlegen und Ändern eines Kunden Pflicht (Verkauf › Kunden).</p>${kkHost}`;
     mount = () => fxPair($('[data-kk]', el), D, 'pflicht', () => KK_PFLICHT, [{k: 'name', l: 'Kundenfeld', w: 240}], dirty, kkRender);
@@ -15056,6 +15434,7 @@ async function gfMove(d) {
 const gfBar = () => { const s = $('#view-st-groessenfolge [data-ag="save"]'), u = $('#view-st-groessenfolge [data-ag="undo"]'); if (s) s.disabled = !GF.dirty; if (u) u.disabled = !GF.dirty; };
 agridPage('st-groessenfolge', {
   title: 'Größen sortieren', rows: () => { if (!GF.rows) gfLoad(); return GF.rows; }, count: () => stRows('groesse').length, sort: {k: 'nr', dir: 1},
+  dnd: {reorder: (ids, ins) => { const a = dndArrange(GF.rows, ids, ins, r => r.id); GF.rows.splice(0, GF.rows.length, ...a); GF.rows.forEach((x, n) => { x.nr = n + 1; }); GF.dirty = true; AG['st-groessenfolge'].sel = new Set(ids); agApply('st-groessenfolge'); gfBar(); }},
   toolbar: [{k: 'save', l: 'Sichern', icon: 'check'}, {k: 'new', l: 'Neu', icon: 'plus'}, {k: 'undo', l: 'Änderungen zurücknehmen', icon: 'undo'}, {k: 'up', l: 'Rauf', icon: 'chevron-up'}, {k: 'dn', l: 'Runter', icon: 'chevron-down'}, {k: 'auto', l: 'Automatisch sortieren', icon: 'sync'}],
   cols: [{k: 'nr', l: 'Sortierungsnr.', t: 'num', w: 150}, {k: 'name', l: 'Größe', w: 220}, {k: 'g1', l: 'Größe 1', w: 160}, {k: 'g2', l: 'Größe 2', w: 160}],
   actions: {
@@ -15552,8 +15931,9 @@ function usrFilialenTab() {
       const cols = [{k: 'kurz', l: 'Kurz-Name', w: 110}, {k: 'name', l: 'Filiale', w: 220}, {k: 'gruppe', l: 'Filial-Gruppe', w: 160}];
       const mv = (ids, add) => { const s = new Set(UE.d.filialen); ids.forEach(i => add ? s.add(i) : s.delete(i)); UE.d.filialen = [...s]; ueDirty(el); usrRender(); };
       const mk = (key, h, cfg) => { AG[key] = agNew({embed: true, cols, sort: {k: 'kurz', dir: 1}, ...cfg}); agMount(key, h); };
-      mk('ue-a', $('[data-aeg="a"]', el), {title: 'Zugeordnet', rows: () => usrStoreRows(true), edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const s = [...AG['ue-a'].sel]; if (s.length) mv(s, false); }}});
-      mk('ue-b', $('[data-aeg="b"]', el), {title: 'Nicht zugeordnet', rows: () => usrStoreRows(false), edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ue-b'].sel]; if (s.length) mv(s, true); }}});
+      const [da, db] = agDual('ue-a', 'ue-b', mv);
+      mk('ue-a', $('[data-aeg="a"]', el), {title: 'Zugeordnet', rows: () => usrStoreRows(true), dnd: da, edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const s = [...AG['ue-a'].sel]; if (s.length) mv(s, false); }}});
+      mk('ue-b', $('[data-aeg="b"]', el), {title: 'Nicht zugeordnet', rows: () => usrStoreRows(false), dnd: db, edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ue-b'].sel]; if (s.length) mv(s, true); }}});
     }};
 }
 function usrMeldungen() {
@@ -15900,9 +16280,10 @@ function gePersonen() {
       const cols = [{k: 'nr', l: 'Nr.', t: 'num', w: 70}, {k: 'name', l: 'Name', w: 190}, {k: 'rolle', l: 'Rolle', w: 140, html: r => `${esc(r.rolle)}${r.abw ? ` <span class="pill warn" style="height:20px" title="Weicht von der Rolle der Gruppe ab">≠ Gruppe</span>` : ''}`, get: r => r.rolle}, {k: 'aktiv', l: 'Aktiv', t: 'check', w: 70}, {k: 'gruppe', l: 'Andere Gruppe', w: 160}];
       const mv = (ids, add) => { const s = GE.d.mitglieder.slice(); ids.map(geMemberName).filter(Boolean).forEach(n => { const i = s.findIndex(x => geSame(x, n)); if (add && i < 0) s.push(n); if (!add && i >= 0) s.splice(i, 1); }); GE.d.mitglieder = s; geDirty(el); geRender(); };
       const mk = (key, h, cfg) => { AG[key] = agNew({embed: true, cols, sort: {k: 'name', dir: 1}, ...cfg}); agMount(key, h); };
-      mk('ge-a', $('[data-aeg="a"]', el), {title: 'Zugeordnet', rows: () => geMemberRows(true), edit: id => mv([id], false), extra: [{k: 'neu', l: 'Neu', icon: 'plus'}, {k: 'rm', l: 'Entfernen', icon: 'x'}, {k: 'rolle', l: 'Rolle setzen', icon: 'shield'}],
+      const [da, db] = agDual('ge-a', 'ge-b', mv);
+      mk('ge-a', $('[data-aeg="a"]', el), {title: 'Zugeordnet', rows: () => geMemberRows(true), dnd: da, edit: id => mv([id], false), extra: [{k: 'neu', l: 'Neu', icon: 'plus'}, {k: 'rm', l: 'Entfernen', icon: 'x'}, {k: 'rolle', l: 'Rolle setzen', icon: 'shield'}],
         actions: {neu: () => geNeuePerson(), rm: () => { const s = [...AG['ge-a'].sel]; if (s.length) mv(s, false); }, rolle: () => geRolleSetzen([...AG['ge-a'].sel])}});
-      mk('ge-b', $('[data-aeg="b"]', el), {title: 'Nicht zugeordnet', rows: () => geMemberRows(false), edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ge-b'].sel]; if (s.length) mv(s, true); }}});
+      mk('ge-b', $('[data-aeg="b"]', el), {title: 'Nicht zugeordnet', rows: () => geMemberRows(false), dnd: db, edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ge-b'].sel]; if (s.length) mv(s, true); }}});
     }};
 }
 const geStoreRows = on => STORES.filter(s => GE.d.filialen.includes(s.id) === on).map(s => ({id: s.id, kurz: s.id, name: s.name, gruppe: stRows('filialgruppe').find(g => (g.filialen || []).some(f => geSame(f, s.id)))?.name || ''}));
@@ -15913,8 +16294,9 @@ function geFilialen() {
       const cols = [{k: 'kurz', l: 'Kurz-Name', w: 110}, {k: 'name', l: 'Filiale', w: 220}, {k: 'gruppe', l: 'Filial-Gruppe', w: 160}];
       const mv = (ids, add) => { const s = new Set(GE.d.filialen); ids.forEach(i => add ? s.add(i) : s.delete(i)); GE.d.filialen = [...s]; geDirty(el); geRender(); };
       const mk = (key, h, cfg) => { AG[key] = agNew({embed: true, cols, sort: {k: 'kurz', dir: 1}, ...cfg}); agMount(key, h); };
-      mk('ge-a', $('[data-aeg="a"]', el), {title: 'Zugeordnet', rows: () => geStoreRows(true), edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const s = [...AG['ge-a'].sel]; if (s.length) mv(s, false); }}});
-      mk('ge-b', $('[data-aeg="b"]', el), {title: 'Nicht zugeordnet', rows: () => geStoreRows(false), edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ge-b'].sel]; if (s.length) mv(s, true); }}});
+      const [da, db] = agDual('ge-a', 'ge-b', mv);
+      mk('ge-a', $('[data-aeg="a"]', el), {title: 'Zugeordnet', rows: () => geStoreRows(true), dnd: da, edit: id => mv([id], false), extra: [{k: 'rm', l: 'Entfernen', icon: 'x'}], actions: {rm: () => { const s = [...AG['ge-a'].sel]; if (s.length) mv(s, false); }}});
+      mk('ge-b', $('[data-aeg="b"]', el), {title: 'Nicht zugeordnet', rows: () => geStoreRows(false), dnd: db, edit: id => mv([id], true), extra: [{k: 'add', l: 'Zuordnen', icon: 'plus'}], actions: {add: () => { const s = [...AG['ge-b'].sel]; if (s.length) mv(s, true); }}});
     }};
 }
 
@@ -16027,6 +16409,60 @@ async function geRemove(ids, fromMask) {
   geWirkung();
   toast(gr.length === 1 ? 'Gruppe gelöscht' : `${gr.length} Gruppen gelöscht`, {t2: gr.map(g => g.name || g.id).join(', '), icon: 'users', dur: 2400});
   if (fromMask) { GE.dirty = false; GE.d = null; go('st-benutzergruppe'); }
+}
+/* ═════════════════════════════════════════════════════════════════
+   56 · MENÜPUNKTE UND RECHTE
+   Wer ein Recht nicht hat – weder über seine Rolle noch über seine Benutzergruppe – sieht die zugehörigen Menüpunkte nicht
+   (auch nicht in der Menüsuche, unter „Zuletzt benutzt“ und in der Befehlspalette). Direkt aufgerufen verlangt die Seite eine Freigabe per PIN.
+   Die Zuordnung steht je Seite in VIEW_PERM; hier werden die Lücken geschlossen (nur wo noch nichts festgelegt ist)
+   und die System-Seiten dem Recht „system“ zugeordnet. Seiten ohne Eintrag sind für alle da (Dashboard, Artikelsuche, Zeiterfassung, Hilfe …).
+   ═════════════════════════════════════════════════════════════════ */
+{
+  const L = (perm, ids) => ids.split(/\s+/).filter(Boolean).forEach(id => { if (!VIEW_PERM[id]) VIEW_PERM[id] = perm; });   // nur Lücken füllen
+  const F = (perm, ids) => ids.split(/\s+/).filter(Boolean).forEach(id => { VIEW_PERM[id] = perm; });                         // festlegen (überschreibt)
+  // Verkauf
+  L('kasse.verkaufen', 'kasse warenkorb-neu warenkoerbe belege reservierungen reservierung-neu auswahl-neu auswahl auswahl-summen gutscheine gutscheine-extern');
+  L('kasse.kassenbuch', 'gutschein-buchungen gutschein-protokoll gutscheine-geloescht');
+  L('berichte', 'bon-verkaeufer-protokoll');
+  L('faktura', 'rechnungen angebote-auftraege lieferscheine kundenbestellungen fremdrechnungen offene-posten mahnwesen versand-etiketten webshop-bestellungen');
+  // Artikel und Bestand
+  L('bestand.buchen', 'umlagerungen ul-neu ul-protokoll ul-positionen ul-planung ul-anforderung ul-rechnung ul-ungebucht ul-kompakt picklisten umbuchungslog bestandskorrektur');
+  L('artikel.bearbeiten', 'nos import-protokoll artikel-import master-artikel advarics-import ean-zuordnung artikelsortierung');
+  L('preise.aktionen', 'preis-uebersicht');
+  // Einkauf
+  L('einkauf', 'einkauf order-import order-typen order-vorschlag order-konfig avis wareneingang we-scanner we-protokoll reklamationen reklamation-neu lretouren retouren-protokoll rueckgabegruende verteilung-konfig disposition lieferanten nachsortierung nachsort-nos nachsort-liste nachsort-param');
+  L('einkauf', 'edi-nachrichten edi-fehler edi-konflikte edi-katalogartikel edi-katalog edi-ordrsp edi-invoic edi-desadv edi-verkaufsberichte edi-naechster-export edi-bestellungen edi-bestandsmeldungen edi-marktdaten edi-artikelimport edi-importprotokoll');
+  L('rechnungen', 'er zahlungen lieferantenbonus');
+  // Auswertung
+  L('berichte', 'an-filialbestand an-nos-filialen an-artikelbericht an-intrastat an-groessen an-preislagen an-artikelliste an-rabatte flaechenproduktivitaet altersbewertung analyse-einstellungen powerbi berichte ki buchhaltung filialumsatz');
+  // Kunden
+  L('kunden.bearbeiten', 'kunden kundenerfassung bon-kunden bon-kunden-protokoll kunden-kommunikation');
+  // Einstellungen, Stammdaten und System
+  L('einstellungen', 'filialen');
+  L('anpassen', 'anpassen erweiterungen');
+  F('system', 'set-benutzer set-sso set-sicherung set-updates set-system set-rksv api-protokoll st-zugangsprofil protokoll datensicherung');
+  F('system', 'benutzer benutzer-edit rollen st-benutzergruppe benutzergruppe-edit');
+}
+
+/* Befehlspalette (Strg+K): Befehle, für die das Recht fehlt oder deren Seite gesperrt ist, erscheinen nicht */
+const CMD_PERM = {
+  'Berichte': 'berichte', 'Berichte & Abschlüsse': 'berichte', 'Anpassen': 'anpassen', 'Einstellungen': 'einstellungen',
+  'Kassenbuch (Einlage/Entnahme)': 'kasse.kassenbuch', 'Tagesabschluss (Z-Bericht)': 'kasse.kassenbuch',
+  'Neue Bestellung': 'einkauf', 'Bestellvorschlag': 'einkauf', 'Inventur': 'bestand.buchen', 'Bestand buchen': 'bestand.buchen',
+  'Preisaktion anlegen': 'preise.aktionen', 'Retoure / Umtausch': 'kasse.retoure', 'Neuer Kunde': 'kunden.bearbeiten', 'Neuer Artikel': 'artikel.bearbeiten',
+  'Bezahlen': 'kasse.verkaufen', 'Gutschein verkaufen': 'kasse.verkaufen', 'Neuer Verkauf': 'kasse.verkaufen',
+  'Nach Updates suchen': 'system', 'Update 1.8.0 prüfen & freigeben': 'system', 'Backup jetzt erstellen': 'system', 'RKSV: DEP-Export erstellen': 'system',
+  'Ereignis-Inspektor (Hooks & Webhooks)': 'system', 'Kassenablauf bearbeiten': 'einstellungen'
+};
+const CMD_VIEW = {'Dashboard': 'dashboard', 'Kasse': 'kasse', 'Artikel': 'artikel', 'Bestand': 'bestand', 'Kunden': 'kunden', 'Berichte': 'berichte', 'Anpassen': 'anpassen', 'Einstellungen': 'einstellungen', 'Inventur': 'inventur'};
+{
+  const _cl = cmdList;
+  cmdList = function () {
+    return _cl.apply(this, arguments).filter(c => {
+      const p = CMD_PERM[c.label], v = c.view || (c.group === 'Navigation' || c.label === 'Inventur' ? CMD_VIEW[c.label] : null);
+      return (!p || can(p)) && !(v && (viewBlocked(v) || (VIEW_PERM[v] && !can(VIEW_PERM[v]))));
+    });
+  };
 }
 
 /* ════════════════════════════════════════════════════════════════════

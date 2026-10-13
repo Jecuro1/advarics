@@ -119,9 +119,10 @@ function renderApFields(box) {
   if (!objs.some(o => o[0] === AP.obj)) AP.obj = 'artikel';
   const defs = cfDefs(AP.obj);
   box.innerHTML = `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><span class="muted" style="font-size:12.5px">Felder für</span>${objs.map(([k, l, i]) => `<button class="chip" data-apo="${esc(k)}" aria-pressed="${AP.obj === k}">${ic(i, 'i-sm')}${esc(l)}</button>`).join('')}<span class="sp" style="flex:1"></span><button class="btn btn-primary btn-sm" id="apFieldNew">${ic('plus', 'i-sm')}Neues Feld</button></div>
-    <div class="card">${defs.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Bezeichnung</th><th>Typ</th><th>Technischer Name</th><th>Pflicht</th>${['artikel', 'kunde'].includes(AP.obj) ? '<th>An der Kasse</th>' : ''}<th></th></tr></thead><tbody>${defs.map((d, i) => `<tr data-fdef="${d.id}" style="cursor:pointer"><td style="padding-left:16px"><b>${esc(d.label)}</b>${d.help ? `<div class="muted" style="font-size:11.5px">${esc(d.help)}</div>` : ''}</td><td>${esc(FTYPES.find(t => t[0] === d.type)?.[1] || d.type)}${d.type === 'auswahl' ? `<div class="muted" style="font-size:11.5px">${esc(d.options.join(' · '))}</div>` : ''}</td><td class="mono" style="font-size:12px">${esc(d.key)}</td><td>${d.required ? '<span class="pill accent">Pflicht</span>' : '–'}</td>${['artikel', 'kunde'].includes(AP.obj) ? `<td>${d.at_pos ? ic('check', 'i-sm') : '–'}</td>` : ''}<td class="r" style="white-space:nowrap;padding-right:12px"><button class="btn btn-ghost btn-sm btn-icon" data-fmove="${d.id}" data-dir="-1" ${i ? '' : 'disabled'} aria-label="nach oben"><span style="display:inline-flex;transform:rotate(180deg)">${ic('chevron-down', 'i-sm')}</span></button><button class="btn btn-ghost btn-sm btn-icon" data-fmove="${d.id}" data-dir="1" ${i < defs.length - 1 ? '' : 'disabled'} aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
+    <div class="card">${defs.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Bezeichnung</th><th>Typ</th><th>Technischer Name</th><th>Pflicht</th>${['artikel', 'kunde'].includes(AP.obj) ? '<th>An der Kasse</th>' : ''}<th></th></tr></thead><tbody>${defs.map((d, i) => `<tr data-fdef="${d.id}" ${dndAttr(d.id)} style="cursor:pointer"><td style="padding-left:16px"><b>${esc(d.label)}</b>${d.help ? `<div class="muted" style="font-size:11.5px">${esc(d.help)}</div>` : ''}</td><td>${esc(FTYPES.find(t => t[0] === d.type)?.[1] || d.type)}${d.type === 'auswahl' ? `<div class="muted" style="font-size:11.5px">${esc(d.options.join(' · '))}</div>` : ''}</td><td class="mono" style="font-size:12px">${esc(d.key)}</td><td>${d.required ? '<span class="pill accent">Pflicht</span>' : '–'}</td>${['artikel', 'kunde'].includes(AP.obj) ? `<td>${d.at_pos ? ic('check', 'i-sm') : '–'}</td>` : ''}<td class="r" style="white-space:nowrap;padding-right:12px">${dndGrip('Ziehen zum Sortieren')}<button class="btn btn-ghost btn-sm btn-icon" data-fmove="${d.id}" data-dir="-1" ${i ? '' : 'disabled'} aria-label="nach oben"><span style="display:inline-flex;transform:rotate(180deg)">${ic('chevron-down', 'i-sm')}</span></button><button class="btn btn-ghost btn-sm btn-icon" data-fmove="${d.id}" data-dir="1" ${i < defs.length - 1 ? '' : 'disabled'} aria-label="nach unten">${ic('chevron-down', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
       : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('list')}</div><h3>Noch keine Felder für ${esc(cfObjName(AP.obj))}</h3><p>z. B. „Saison“ (Auswahl), „Garantie bis“ (Datum), „Gewicht in g“ (Zahl) – mit Pflichtangabe und Prüfung. Erscheinen im Editor, in der API und in Regeln.</p></div>`}</div>
     <div class="prompt-hint blk" style="margin-top:10px">${ic('info', 'i-xs')}Felder von Artikeln und Kunden stehen in Regeln als <span class="mono">{{feld.Bezeichnung}}</span> zur Verfügung und werden über die REST-API mitgeliefert.</div>`;
+  if (defs.length > 1) dndZone($('tbody', box), 'cf:' + AP.obj, {label: ids => defs.find(d => String(d.id) === ids[0])?.label || '', reorder: (ids, ins) => moveFieldTo(ids, ins)});
 }
 function openFieldEditor(d) {
   const obj = d?.object || AP.obj;
@@ -158,6 +159,12 @@ function openFieldEditor(d) {
   });
   el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); $('#feSave', el).click(); } });
   render();
+}
+/** Feld per Ziehen an eine andere Stelle setzen */
+async function moveFieldTo(ids, ins) {
+  const a = dndArrange([...cfDefs(AP.obj)], ids, ins, d => d.id);
+  try { for (let k = 0; k < a.length; k++) if (a[k].pos !== k) CF.defs = await invoke('field_save', {field: {...a[k], pos: k}}); } catch (e) { toast('Reihenfolge nicht gespeichert', {t2: String(e), type: 'warn'}); }
+  renderApBody();
 }
 async function moveField(id, dir) {
   const defs = cfDefs(AP.obj), i = defs.findIndex(d => d.id === id), j = i + dir; if (i < 0 || j < 0 || j >= defs.length) return;
@@ -278,6 +285,7 @@ function bindCustom() {
     const tab = t.closest('[data-apt]'); if (tab) { AP.tab = tab.dataset.apt; return renderApBody(); }
     const o = t.closest('[data-apo]'); if (o) { AP.obj = o.dataset.apo; return renderApBody(); }
     if (t.closest('#apFieldNew')) return openFieldEditor(null);
+    if (t.closest('.dnd-grip')) return;
     const mv = t.closest('[data-fmove]'); if (mv) { e.stopPropagation(); return moveField(+mv.dataset.fmove, +mv.dataset.dir); }
     const fd = t.closest('[data-fdef]'); if (fd) return openFieldEditor(CF.defs.find(d => d.id === +fd.dataset.fdef));
     if (t.closest('#apEntNew')) return openEntityEditor(null);

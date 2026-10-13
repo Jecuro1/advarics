@@ -55,16 +55,30 @@ function fxSubGrid(host, S, tab, dirty, defs = FX_SUB) {
     dirty(); remount();
   };
   const move = d => { const sel = [...AG[key].sel][0]; if (!sel) return; const a = [...rows()].sort((x, y) => x.sort - y.sort), i = a.findIndex(x => x.id === sel), j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; a.forEach((x, n) => { x.sort = n + 1; }); dirty(); remount(); AG[key].sel = new Set([sel]); };
-  AG[key] = agNew({embed: true, title: tab, cols: D.cols(), rows, sort: D.order ? {k: 'sort', dir: 1} : undefined, edit, extra,
+  const reorder = (ids, ins) => { const a = dndArrange([...rows()].sort((x, y) => x.sort - y.sort), ids, ins, r => r.id); a.forEach((x, n) => { x.sort = n + 1; }); dirty(); remount(); };
+  AG[key] = agNew({embed: true, title: tab, cols: D.cols(), rows, sort: D.order ? {k: 'sort', dir: 1} : undefined, edit, extra, dnd: D.order ? {reorder} : undefined,
     remove: D.del ? async ids => { if (!await confirmBox(`${num(ids.length)} Eintrag löschen?`, 'Löschen')) throw new Error('abgebrochen'); const s = new Set(ids); S.sub[tab] = rows().filter(r => !s.has(r.id)); dirty(); } : undefined,
     actions: {rf: remount, up: () => move(-1), dn: () => move(1), neu: async () => { const o = D.form ? await D.form({}, true) : await fxRowForm('Neu', D.fields().filter(f => !f.ro), {}); if (!o) return; if (D.validate) { const m = D.validate(o, rows(), null); if (m) return toast(m, {type: 'warn'}); } S.sub[tab].push({id: fxId(), ...(D.newRow ? D.newRow(o) : o)}); dirty(); remount(); }}});
   agMount(key, host);
 }
-/* Paarweise Zuordnung (Zugeordnet / Nicht zugeordnet) */
-function fxPair(host, S, key, src, cols, dirty, rerender) {
-  const mv = (ids, add) => { const s = new Set(S[key] || []); ids.forEach(i => add ? s.add(i) : s.delete(i)); S[key] = [...s]; dirty(); rerender(); };
+/* Paarweise Zuordnung (Zugeordnet / Nicht zugeordnet) – Zeilen lassen sich zwischen den Listen ziehen; opt.ordered = die Reihenfolge der Zuordnung zählt (per Ziehen änderbar) */
+function fxPair(host, S, key, src, cols, dirty, rerender, opt = {}) {
+  const mv = (ids, add, ins) => {
+    const cur = S[key] || [];
+    if (opt.ordered && add) S[key] = dndArrange(cur, ids, ins);
+    else { const s = new Set(cur); ids.forEach(i => add ? s.add(i) : s.delete(i)); S[key] = [...s]; }
+    dirty(); rerender();
+  };
+  const rowsOf = on => {
+    const all = src(), cur = S[key] || [];
+    if (!on) return all.filter(r => !cur.includes(r.id));
+    if (!opt.ordered) return all.filter(r => cur.includes(r.id));
+    const m = new Map(all.map(r => [r.id, r])); return cur.map(i => m.get(i)).filter(Boolean);
+  };
   host.innerHTML = `<div class="ae-pane ae-two"><div class="ae-card"><h4>Zugeordnet</h4><div data-fxp="a"></div></div><div class="ae-card"><h4>Nicht zugeordnet</h4><div data-fxp="b"></div></div></div>`;
-  const mk = (id, h, on) => { AG[`fxp-${key}-${id}`] = agNew({embed: true, title: id, cols, rows: () => src().filter(r => (S[key] || []).includes(r.id) === on), edit: i => mv([i], !on), extra: [{k: 'mv', l: on ? 'Entfernen' : 'Zuordnen', icon: on ? 'x' : 'plus'}], actions: {mv: () => { const s = [...AG[`fxp-${key}-${id}`].sel]; if (s.length) mv(s, !on); }}}); agMount(`fxp-${key}-${id}`, h); };
+  const ka = `fxp-${key}-a`, kb = `fxp-${key}-b`;
+  const [da, db] = agDual(ka, kb, mv, opt.ordered ? {ordered: true, reorder: (ids, ins) => mv(ids, true, ins)} : {});
+  const mk = (id, h, on) => { AG[`fxp-${key}-${id}`] = agNew({embed: true, title: id, cols, rows: () => rowsOf(on), edit: i => mv([i], !on), extra: [{k: 'mv', l: on ? 'Entfernen' : 'Zuordnen', icon: on ? 'x' : 'plus'}], dnd: on ? da : db, actions: {mv: () => { const s = [...AG[`fxp-${key}-${id}`].sel]; if (s.length) mv(s, !on); }}}); agMount(`fxp-${key}-${id}`, h); };
   mk('a', $('[data-fxp="a"]', host), true); mk('b', $('[data-fxp="b"]', host), false);
 }
 

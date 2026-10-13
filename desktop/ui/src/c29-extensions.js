@@ -129,7 +129,7 @@ if (DESKTOP) { delete W['ext.repairs']; }
 {
   const _cl = cmdList;
   cmdList = function () {
-    const extra = [{group: 'Navigation', label: 'Erweiterungen', icon: 'puzzle', run: () => go('erweiterungen'), kw: 'plugins installieren galerie'}];
+    const extra = [{group: 'Navigation', label: 'Erweiterungen', icon: 'puzzle', view: 'erweiterungen', run: () => go('erweiterungen'), kw: 'plugins installieren galerie'}];
     for (const e of extOn()) for (const b of e.manifest.befehle || []) extra.push({group: e.name, label: b.titel, icon: b.icon || 'puzzle', kw: 'erweiterung', run: () => runExtCommand(e, b)});
     return [..._cl(), ...extra];
   };

@@ -14,7 +14,7 @@ function agMount(key, v) {
   const st = AG[key], cfg = st.cfg;
   st.rows = cfg.rows();
   st.cols.forEach(c => { delete c.aw; });
-  v.innerHTML = `<div class="datagrid ${cfg.embed ? 'ag-embed' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
+  v.innerHTML = `<div class="datagrid ${cfg.embed ? 'ag-embed' : ''} ${cfg.dnd ? 'ag-dnd' : ''}" id="ag-${key}" style="--agrow:${cfg.rowH || 40}px">
       ${cfg.toolbar?.length ? `<div class="ag-bar">${cfg.toolbar.map(b => `<button class="ag-btn" data-ag="${b.k}">${ic(b.icon, 'i-sm')}<span>${esc(b.l)}</span></button>`).join('')}<button class="ag-btn ag-del" data-ag="del" hidden>${ic(cfg.removeIcon || 'trash', 'i-sm')}<span>${esc(cfg.removeLabel || 'Löschen')}</span></button></div>` : ''}
       <div class="ag-tools"><div class="ag-drop" data-agdrop><span class="ag-ph">Zu gruppierende Spalten hierhin ziehen…</span></div>
         ${(cfg.extra || []).map(b => `<button class="ag-xbtn" data-ag="${b.k}">${ic(b.icon || 'plus', 'i-sm')}${esc(b.l)}</button>`).join('')}
@@ -28,6 +28,7 @@ function agMount(key, v) {
       <div class="ag-foot"><b data-agcount></b><span class="ag-sel" data-agselinfo></span><span class="ag-sel" data-agsums></span><button class="ag-tbtn ag-fbtn" data-ag="filter">${ic('filter', 'i-sm')}Filter erstellen</button></div></div>`;
   agBind(key, v);
   agApply(key, true);
+  agDnd(key, v);
 }
 function agridPage(page, cfg) {
   AG[page] = agNew(cfg);
@@ -112,7 +113,7 @@ function agApply(page, resetScroll) {
 function agHead(page, v, vis) {
   const st = AG[page];
   const all = st.filtered && st.filtered.length && st.filtered.every(r => st.sel.has(r.id));
-  $('[data-aghead]', v).innerHTML = `<div class="ag-c ag-ck"><i class="agchk ${all ? 'on' : ''}" data-agall></i></div>${vis.map(c => `<div class="ag-c ag-h ${c.t === 'num' ? 'r' : ''}" draggable="true" data-agcol="${c.k}"><span class="ag-hl" data-agsort="${c.k}">${esc(c.l)}</span>${c.l ? `<span class="ag-fi" data-agfi="${c.k}">${ic('filter', 'i-xs')}</span>` : ''}${st.sort?.k === c.k ? `<span class="ag-sort">${st.sort.dir > 0 ? '▲' : '▼'}</span>` : ''}<span class="ag-rs" data-agrs="${c.k}"></span></div>`).join('')}`;
+  $('[data-aghead]', v).innerHTML = `<div class="ag-c ag-ck"><i class="agchk ${all ? 'on' : ''}" data-agall></i></div>${vis.map(c => `<div class="ag-c ag-h ${c.t === 'num' ? 'r' : ''}" ${dndAttr(c.k)} data-agcol="${c.k}"><span class="ag-hl" data-agsort="${c.k}">${esc(c.l)}</span>${c.l ? `<span class="ag-fi" data-dnd-no data-agfi="${c.k}">${ic('filter', 'i-xs')}</span>` : ''}${st.sort?.k === c.k ? `<span class="ag-sort">${st.sort.dir > 0 ? '▲' : '▼'}</span>` : ''}<span class="ag-rs" data-dnd-no data-agrs="${c.k}"></span></div>`).join('')}`;
   agMeasure(page, v, vis);
   const flex = vis.some(agFlex) ? agFlex : (c => c === vis[vis.length - 1]);
   const inner = $('[data-aginner]', v);
@@ -137,7 +138,7 @@ function agRows(page, v, vis) {
     const it = st.view[i];
     if (it.g != null) { html += `<div class="ag-row ag-grp" style="top:${i * H}px;padding-left:${8 + it.depth * 16}px" data-aggrp="${esc(it.id)}"><span>${st.collapsed.has(it.id) ? '▸' : '▾'}</span> <b>${esc(it.c)}:</b> ${esc(it.g)} <span class="ag-n">(${num(it.n)})</span></div>`; continue; }
     const r = it.r;
-    html += `<div class="ag-row ${st.sel.has(r.id) ? 'sel' : ''} ${i % 2 ? 'alt' : ''}" style="top:${i * H}px" data-agrow="${esc(r.id)}"><div class="ag-c ag-ck"><i class="agchk ${st.sel.has(r.id) ? 'on' : ''}" data-agck="${esc(r.id)}"></i></div>${vis.map(c => c.t === 'check' ? `<div class="ag-c ag-cc"><i class="agchk ${agVal(r, c) ? 'on' : ''} ro"></i></div>` : `<div class="ag-c ${c.t === 'num' ? 'r' : ''}" ${c.html ? '' : `title="${esc(agText(r, c))}"`}>${c.html ? c.html(r) : esc(agText(r, c))}</div>`).join('')}</div>`;
+    html += `<div class="ag-row ${st.sel.has(r.id) ? 'sel' : ''} ${i % 2 ? 'alt' : ''}" style="top:${i * H}px" data-agrow="${esc(r.id)}" ${st.cfg.dnd ? dndAttr(r.id) : ''}><div class="ag-c ag-ck"><i class="agchk ${st.sel.has(r.id) ? 'on' : ''}" data-agck="${esc(r.id)}"></i></div>${vis.map(c => c.t === 'check' ? `<div class="ag-c ag-cc"><i class="agchk ${agVal(r, c) ? 'on' : ''} ro"></i></div>` : `<div class="ag-c ${c.t === 'num' ? 'r' : ''}" ${c.html ? '' : `title="${esc(agText(r, c))}"`}>${c.html ? c.html(r) : esc(agText(r, c))}</div>`).join('')}</div>`;
   }
   host.innerHTML = html;
 }
@@ -179,12 +180,7 @@ function agBind(page, v) {
   };
   const render_ = () => cfg.reload ? cfg.reload() : PAGES[page].render();
   v.ondblclick = e => { const r = e.target.closest('[data-agrow]'); if (r && !e.target.closest('[data-agck]')) cfg.edit?.(r.dataset.agrow, render_); };
-  // Spalten ziehen → gruppieren; Spaltenbreite ändern
-  v.ondragstart = e => { const h = e.target.closest('[data-agcol]'); if (h) { e.dataTransfer.setData('text/plain', h.dataset.agcol); e.dataTransfer.effectAllowed = 'move'; } };
-  const drop = $('[data-agdrop]', v);
-  v.ondragover = e => { if (e.target.closest('[data-agdrop]')) { e.preventDefault(); drop.classList.add('over'); } };
-  v.ondragleave = () => drop.classList.remove('over');
-  v.ondrop = e => { const d = e.target.closest('[data-agdrop]'); drop.classList.remove('over'); if (!d) return; e.preventDefault(); const k = e.dataTransfer.getData('text/plain'); if (k && !st.group.includes(k)) { st.group.push(k); refresh(true); } };
+  // Spaltenbreite ändern (Spalten ziehen: siehe agDnd)
   v.onmousedown = e => {
     const rs = e.target.closest('[data-agrs]'); if (!rs) return;
     e.preventDefault(); e.stopPropagation();
@@ -201,8 +197,39 @@ function agFit(page) {
 
 function agColsMenu(page, anchor, v) {
   const st = AG[page];
-  const el = openPopover(anchor, `<div class="ag-menu">${st.cols.map(c => `<label><input type="checkbox" data-agcs="${c.k}" ${c.show ? 'checked' : ''}> ${esc(c.l)}</label>`).join('')}</div>`, {align: 'right', width: 280});
+  const list = () => st.cols.map(c => `<label ${dndAttr(c.k)}>${dndGrip('Ziehen zum Sortieren')}<input type="checkbox" data-agcs="${c.k}" ${c.show ? 'checked' : ''}> <span>${esc(c.l)}</span></label>`).join('');
+  const el = openPopover(anchor, `<div class="ag-menu">${list()}</div>`, {align: 'right', width: 280});
+  const menu = el && $('.ag-menu', el);
+  if (menu) dndZone(menu, `ag:${page}:menu`, {reorder: (ids, ins) => { st.cols = dndArrange(st.cols, ids, ins, c => c.k); menu.innerHTML = list(); agApply(page, false); }, label: ids => st.cols.find(c => c.k === ids[0])?.l || ''});
   el?.addEventListener('change', e => { const k = e.target.dataset.agcs; const c = st.cols.find(x => x.k === k); if (c) { c.show = e.target.checked; if (!st.cols.some(x => x.show)) { c.show = true; e.target.checked = true; } agApply(page, false); } });
+}
+
+/** Ziehen und Ablegen: Zeilen (cfg.dnd – zwischen Tabellen oder umsortieren), Spaltenköpfe (umordnen, auf die Gruppierleiste = gruppieren) */
+function agDragIds(key, id) {
+  const st = AG[key];
+  if (!st.sel.has(id) || st.sel.size < 2) return [id];
+  const vis = (st.filtered || []).map(r => r.id).filter(i => st.sel.has(i));
+  return [...vis, ...[...st.sel].filter(i => !vis.includes(i))];
+}
+/** Zwei Tabellen „Zugeordnet“ (A) und „Nicht zugeordnet“ (B): Zeilen lassen sich zwischen beiden ziehen – mv(ids, zuordnen, ins) führt es aus */
+const agDual = (keyA, keyB, mv, a = {}, b = {}) => [
+  {from: [keyB], drop: (ids, f, ins) => mv(ids, true, ins), hint: 'Zuordnen', ...a},
+  {from: [keyA], drop: ids => mv(ids, false), hint: 'Entfernen', ...b}
+];
+function agDnd(key, v) {
+  const st = AG[key], cfg = st.cfg, D = cfg.dnd;
+  if (D) {
+    const card = v.closest('.ae-card'), zone = card && card.querySelectorAll('.datagrid').length === 1 ? card : $('.datagrid', v);
+    dndZone(zone, 'ag:' + key, {
+      from: (D.from || []).map(k => 'ag:' + k), ordered: !!D.ordered, hint: D.hint || '',
+      drop: D.drop ? (ids, from, ins) => D.drop(ids, from.slice(3), ins) : null,
+      reorder: D.reorder ? (ids, ins) => { st.sort = cfg.sort || null; return D.reorder(ids, ins); } : null,
+      ids: item => agDragIds(key, item.dataset.dndId),
+      label: ids => { const c = st.cols.find(x => x.show && !x.html && x.t !== 'check'), r = st.rows.find(x => x.id === ids[0]); return D.label ? D.label(ids) : r && c ? agText(r, c) : ids[0]; }
+    });
+  }
+  dndZone($('[data-aghead]', v), `ag:${key}:cols`, {axis: 'x', reorder: (ids, ins) => { st.cols = dndArrange(st.cols, ids, ins, c => c.k); agApply(key, false); }, label: ids => st.cols.find(c => c.k === ids[0])?.l || ids[0]});
+  dndZone($('[data-agdrop]', v), `ag:${key}:grp`, {from: [`ag:${key}:cols`], hint: 'Gruppieren', drop: ids => { const k = ids[0]; if (k && !st.group.includes(k)) { st.group.push(k); agApply(key, true); } }});
 }
 
 function agExport(page) {

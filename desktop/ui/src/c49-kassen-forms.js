@@ -14,6 +14,7 @@ async function gfMove(d) {
 const gfBar = () => { const s = $('#view-st-groessenfolge [data-ag="save"]'), u = $('#view-st-groessenfolge [data-ag="undo"]'); if (s) s.disabled = !GF.dirty; if (u) u.disabled = !GF.dirty; };
 agridPage('st-groessenfolge', {
   title: 'Größen sortieren', rows: () => { if (!GF.rows) gfLoad(); return GF.rows; }, count: () => stRows('groesse').length, sort: {k: 'nr', dir: 1},
+  dnd: {reorder: (ids, ins) => { const a = dndArrange(GF.rows, ids, ins, r => r.id); GF.rows.splice(0, GF.rows.length, ...a); GF.rows.forEach((x, n) => { x.nr = n + 1; }); GF.dirty = true; AG['st-groessenfolge'].sel = new Set(ids); agApply('st-groessenfolge'); gfBar(); }},
   toolbar: [{k: 'save', l: 'Sichern', icon: 'check'}, {k: 'new', l: 'Neu', icon: 'plus'}, {k: 'undo', l: 'Änderungen zurücknehmen', icon: 'undo'}, {k: 'up', l: 'Rauf', icon: 'chevron-up'}, {k: 'dn', l: 'Runter', icon: 'chevron-down'}, {k: 'auto', l: 'Automatisch sortieren', icon: 'sync'}],
   cols: [{k: 'nr', l: 'Sortierungsnr.', t: 'num', w: 150}, {k: 'name', l: 'Größe', w: 220}, {k: 'g1', l: 'Größe 1', w: 160}, {k: 'g2', l: 'Größe 2', w: 160}],
   actions: {

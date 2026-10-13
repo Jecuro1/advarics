@@ -37,6 +37,16 @@ async function checkUpdates(manual) {
   }
   renderUpdBits();
 }
+/** Die Release-Notes enthalten den ganzen Verlauf („## Neu in x.y.z“) – im Update-Dialog genügt, was seit der installierten Version neu ist */
+function updNotesSince(md, cur, next) {
+  const parts = String(md || '').split(/^(?=##\s+Neu in\s)/m).filter(p => /^##\s+Neu in\s/.test(p));
+  if (!parts.length) return md;
+  const v = s => (String(s).match(/\d+(?:\.\d+)*/)?.[0] || '0').split('.').map(Number);
+  const cmp = (a, b) => { for (let i = 0; i < 4; i++) { const d = (a[i] || 0) - (b[i] || 0); if (d) return d; } return 0; };
+  const c = v(cur), n = v(next);
+  const keep = parts.filter(p => { const x = v(p.match(/^##\s+Neu in\s+(\S+)/)[1]); return cmp(x, c) > 0 && cmp(x, n) <= 0; });
+  return (keep.length ? keep : parts.slice(0, 1)).join('\n');
+}
 function notesHTML(md) {
   if (!md) return '<p class="muted" style="font-size:13px">Keine Hinweise angegeben.</p>';
   let out = /sicherheit/i.test(md) ? `<div class="rule-box" style="margin-bottom:10px">${ic('shield')}<div><b style="color:var(--text)">Sicherheitsupdate</b> – bitte zeitnah freigeben und installieren.</div></div>` : '', list = false;
@@ -62,7 +72,7 @@ function openRealUpdate() {
   const el = openLayer(`<div class="modal" style="width:min(620px,100%)" role="dialog" aria-modal="true" aria-label="Update freigeben">
     <div class="m-head"><div class="m-ic">${ic('download')}</div><div style="flex:1"><div class="upd-head"><span class="upd-ver">${esc(i.version)}</span><span class="pill pos">Stable</span><span class="pill">${ic('shield')}signiert</span></div><p>Installiert: ${esc(i.current)}${i.date ? ' · veröffentlicht ' + esc(fmtTs(i.date.replace(' ', 'T').replace(/ \+.*$/, ''))) : ''} · Signatur wird beim Download geprüft</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
     <div class="m-body" style="display:grid;gap:16px">
-      ${notesHTML(i.notes)}
+      <div class="upd-notes">${notesHTML(updNotesSince(i.notes, i.current || S.appVersion, i.version))}</div>
       <div class="rule-box" style="background:var(--info-soft);border-color:color-mix(in srgb,var(--info) 22%,transparent)">${ic('info')}<div>Vor der Installation erstellt Kontor <b style="color:var(--text)">automatisch eine Datensicherung</b>. Während der Installation (ca. 1 Minute) wird das Programm beendet und danach neu gestartet. Daten und Einstellungen bleiben erhalten.</div></div>
       <div><div class="field"><span>Wann installieren?</span></div><div class="radio-list" style="margin-top:6px">
         <label class="radio"><input type="radio" name="uw" value="jetzt" checked>Jetzt installieren<small>Programm startet neu</small></label>
