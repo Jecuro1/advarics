@@ -37,6 +37,12 @@
   F('anpassen', 'set-handy');
 }
 
+// Verweise in Seiten (data-goto="seite") auf Seiten, für die das Recht fehlt, erscheinen ebenfalls nicht
+{
+  const st = document.createElement('style');
+  st.textContent = Object.entries(VIEW_PERM).filter(([id, p]) => /^[\w.-]+$/.test(id) && /^[\w.]+$/.test(p)).map(([id, p]) => `body:not([data-can~="${p}"]) [data-goto="${id}"]{display:none!important}`).join('\n');
+  document.head.append(st);
+}
 Hooks.on('auth.login', () => permNav());   // auch in der Browser-Vorschau: nach dem Wechsel der Person Menü und Schaltflächen neu bewerten
 if (window.KONTOR_UI) window.KONTOR_UI.viewPerm = () => ({...VIEW_PERM});   // nur lesend – für Prüfungen: welches Recht eine Seite verlangt
 

@@ -2133,7 +2133,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.38.3', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.38.4', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -16536,6 +16536,12 @@ async function geRemove(ids, fromMask) {
   F('anpassen', 'set-handy');
 }
 
+// Verweise in Seiten (data-goto="seite") auf Seiten, für die das Recht fehlt, erscheinen ebenfalls nicht
+{
+  const st = document.createElement('style');
+  st.textContent = Object.entries(VIEW_PERM).filter(([id, p]) => /^[\w.-]+$/.test(id) && /^[\w.]+$/.test(p)).map(([id, p]) => `body:not([data-can~="${p}"]) [data-goto="${id}"]{display:none!important}`).join('\n');
+  document.head.append(st);
+}
 Hooks.on('auth.login', () => permNav());   // auch in der Browser-Vorschau: nach dem Wechsel der Person Menü und Schaltflächen neu bewerten
 if (window.KONTOR_UI) window.KONTOR_UI.viewPerm = () => ({...VIEW_PERM});   // nur lesend – für Prüfungen: welches Recht eine Seite verlangt
 
