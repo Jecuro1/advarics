@@ -1,4 +1,4 @@
-## Neu in 0.38.0
+## Neu in 0.38.1
 
 - **Ziehen und Ablegen (Drag & Drop) – überall, wo etwas zugeordnet oder sortiert wird.** Mit Maus, Stift und Finger (Finger: kurz halten, dann ziehen). Beim Ziehen zeigt eine Linie die Einfügestelle und eine Beschriftung am Zeiger, was passiert („Zuordnen“, „Entfernen“); am Rand scrollt die Liste von selbst mit, Esc bricht ab. Die bisherigen Schaltflächen („Zuordnen“, „Entfernen“) und der Doppelklick funktionieren weiter.
   - **Zugeordnet ↔ Nicht zugeordnet:** Zeilen einfach in die andere Liste ziehen – auch mehrere markierte auf einmal. Bei Benutzergruppen (Benutzer, Filialen), Benutzer (Zugeordnete Filialen), Kassen (Rabatte), Kassen-Konfiguration (Rabatte, Zusatzinformationen, Hot Items, Zahlungsarten, Pflichtangaben), Größenschlüssel und in der Artikelmaske (Attribute, Texte).

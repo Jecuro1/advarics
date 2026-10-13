@@ -71,7 +71,7 @@ function dndIns(z, d) {
 
 function dndLabel(z, ids, item) {
   const t = z.label ? z.label(ids, item) : (item.dataset.dndLabel || item.textContent || '');
-  return String(t).replace(/\s+/g, ' ').trim().slice(0, 48);
+  return String(t ?? '').replace(/\s+/g, ' ').trim().slice(0, 48) || String(ids[0] ?? '');
 }
 
 function dndStart(p, x, y) {
@@ -143,7 +143,7 @@ function dndScroll(el, d) {
     const r = n.getBoundingClientRect();
     const dy = sy ? (d.y < r.top + E ? d.y - (r.top + E) : d.y > r.bottom - E ? d.y - (r.bottom - E) : 0) : 0;
     const dx = sx ? (d.x < r.left + E ? d.x - (r.left + E) : d.x > r.right - E ? d.x - (r.right - E) : 0) : 0;
-    if (dx || dy) { n.scrollBy(dx ? step(dx) : 0, dy ? step(dy) : 0); return; }
+    if (dx || dy) { n.scrollBy({left: dx ? step(dx) : 0, top: dy ? step(dy) : 0, behavior: 'instant'}); return; }
   }
 }
 
@@ -169,7 +169,7 @@ function dndDrop(d, t) {
 }
 
 document.addEventListener('pointerdown', e => {
-  if (DND.drag || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  if (DND.drag || e.isPrimary === false || (e.pointerType === 'mouse' && e.button !== 0)) return;
   const t = e.target; if (!(t instanceof Element)) return;
   const item = t.closest('[data-dnd-item]'); if (!item) return;
   const handle = t.closest('[data-dnd-handle]'), inter = t.closest(DND_SKIP);
@@ -233,5 +233,5 @@ function fileDrop(el, opt) {
   });
 }
 // nirgends sonst: die Datei nicht öffnen, kein „Ablegen“-Mauszeiger
-window.addEventListener('dragover', e => { if (dndIsFiles(e)) { e.preventDefault(); if (!e._fileDrop) e.dataTransfer.dropEffect = 'none'; } });
+window.addEventListener('dragover', e => { if (dndIsFiles(e) && !e.defaultPrevented) { e.preventDefault(); e.dataTransfer.dropEffect = 'none'; } });   // wo ein Element schon zugesagt hat (preventDefault), bleibt es dabei
 window.addEventListener('drop', e => { if (dndIsFiles(e)) e.preventDefault(); });

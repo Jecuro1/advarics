@@ -1719,6 +1719,7 @@ button.ge-caret:hover{background:var(--surface-3);color:var(--text)}
 .dnd-grip .i{width:16px;height:16px}
 .ag-dnd .ag-row[data-dnd-item]{cursor:grab;user-select:none;-webkit-user-select:none}
 .ag-h[data-dnd-item]{cursor:grab}
+[data-dnd-item] img{-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:none}
 .ag-menu label[data-dnd-item]{padding-left:4px}
 .dnd-src{opacity:.38!important}
 .ag-row.dnd-src{background:var(--accent-soft)}
@@ -2120,7 +2121,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.38.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.38.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2755,7 +2756,7 @@ function dndIns(z, d) {
 
 function dndLabel(z, ids, item) {
   const t = z.label ? z.label(ids, item) : (item.dataset.dndLabel || item.textContent || '');
-  return String(t).replace(/\s+/g, ' ').trim().slice(0, 48);
+  return String(t ?? '').replace(/\s+/g, ' ').trim().slice(0, 48) || String(ids[0] ?? '');
 }
 
 function dndStart(p, x, y) {
@@ -2827,7 +2828,7 @@ function dndScroll(el, d) {
     const r = n.getBoundingClientRect();
     const dy = sy ? (d.y < r.top + E ? d.y - (r.top + E) : d.y > r.bottom - E ? d.y - (r.bottom - E) : 0) : 0;
     const dx = sx ? (d.x < r.left + E ? d.x - (r.left + E) : d.x > r.right - E ? d.x - (r.right - E) : 0) : 0;
-    if (dx || dy) { n.scrollBy(dx ? step(dx) : 0, dy ? step(dy) : 0); return; }
+    if (dx || dy) { n.scrollBy({left: dx ? step(dx) : 0, top: dy ? step(dy) : 0, behavior: 'instant'}); return; }
   }
 }
 
@@ -2853,7 +2854,7 @@ function dndDrop(d, t) {
 }
 
 document.addEventListener('pointerdown', e => {
-  if (DND.drag || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  if (DND.drag || e.isPrimary === false || (e.pointerType === 'mouse' && e.button !== 0)) return;
   const t = e.target; if (!(t instanceof Element)) return;
   const item = t.closest('[data-dnd-item]'); if (!item) return;
   const handle = t.closest('[data-dnd-handle]'), inter = t.closest(DND_SKIP);
@@ -2917,7 +2918,7 @@ function fileDrop(el, opt) {
   });
 }
 // nirgends sonst: die Datei nicht öffnen, kein „Ablegen“-Mauszeiger
-window.addEventListener('dragover', e => { if (dndIsFiles(e)) { e.preventDefault(); if (!e._fileDrop) e.dataTransfer.dropEffect = 'none'; } });
+window.addEventListener('dragover', e => { if (dndIsFiles(e) && !e.defaultPrevented) { e.preventDefault(); e.dataTransfer.dropEffect = 'none'; } });   // wo ein Element schon zugesagt hat (preventDefault), bleibt es dabei
 window.addEventListener('drop', e => { if (dndIsFiles(e)) e.preventDefault(); });
 
 /* ════════════════════════════════════════════════════════════════════
@@ -13668,7 +13669,7 @@ function artEditorMount(host, a, tab0) {
   const refreshMedia = async () => { if (!DESKTOP || !a) return; replaceCatalog(await invoke('catalog_list')); const fresh = ART.find(x => x.id === a.id); if (fresh) { a.media = fresh.media; a.image = fresh.image; } renderArtTable(); };
   const imgTile = (m, i, n) => {
     const u = m.file ? imgUrl(m.file) : null;
-    return `<div class="card" style="padding:8px;display:grid;gap:6px;min-width:0" data-mid="${m.id}" ${dndAttr(m.id)}><div style="position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${u ? `<img src="${esc(u)}" alt="" style="width:100%;height:100%;object-fit:contain">` : `<span class="muted" style="font-size:12px;text-align:center;padding:8px">${m.status === 'fehler' ? 'Bild nicht ladbar' : 'lädt …'}</span>`}${i === 0 ? '<span class="pill accent" style="position:absolute;left:6px;top:6px;height:20px">Hauptbild</span>' : ''}</div>
+    return `<div class="card" style="padding:8px;display:grid;gap:6px;min-width:0" data-mid="${m.id}" ${dndAttr(m.id)}><div style="position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${u ? `<img src="${esc(u)}" alt="" draggable="false" style="width:100%;height:100%;object-fit:contain">` : `<span class="muted" style="font-size:12px;text-align:center;padding:8px">${m.status === 'fehler' ? 'Bild nicht ladbar' : 'lädt …'}</span>`}${i === 0 ? '<span class="pill accent" style="position:absolute;left:6px;top:6px;height:20px">Hauptbild</span>' : ''}</div>
       <select class="input select" data-mcol="${m.id}" style="height:30px;font-size:12px;width:100%;min-width:0"><option value="">alle Farben</option>${st.colors.map(c => `<option value="${esc(c)}" ${m.color === c ? 'selected' : ''}>${esc(colorName(c))}</option>`).join('')}</select>
       <input class="input" data-mcap="${m.id}" value="${esc(m.caption || '')}" placeholder="Beschriftung" style="height:30px;font-size:12px;width:100%;min-width:0">
       <div style="display:flex;gap:0;justify-content:space-between;min-width:0"><button class="btn btn-ghost btn-icon btn-sm" data-mmv="${m.id}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="nach vorn">${ic('chevron-left', 'i-sm')}</button><button class="btn btn-ghost btn-sm" data-mmain="${m.id}" ${i === 0 ? 'disabled' : ''}>${ic('star', 'i-sm')}Haupt</button><button class="btn btn-ghost btn-icon btn-sm" data-mdel="${m.id}" aria-label="Löschen">${ic('trash', 'i-sm')}</button><button class="btn btn-ghost btn-icon btn-sm" data-mmv="${m.id}" data-d="1" ${i === n - 1 ? 'disabled' : ''} aria-label="nach hinten">${ic('chevron-right', 'i-sm')}</button></div></div>`;
