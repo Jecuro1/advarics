@@ -338,6 +338,7 @@ function bindShell() {
 
 async function init() {
   if (window.__KONTOR_DISPLAY__) return runDisplay();   // zweites Fenster: nur Kundendisplay
+  if (window.__KONTOR_UPDATER__) return runUpdaterWindow();   // Hilfsfenster des Update-Installers (Windows): nur Installer-Ansicht
   applyPrefs();
   await loadSettings();
   await loadCatalog();
@@ -353,6 +354,7 @@ async function init() {
   bindShell(); bindDashboard(); bindPOS(); bindDesign(); bindPlaceholder(); bindSettings(); bindCatalog(); bindUpdates(); bindCustomers(); bindPurchasing(); bindReports(); bindExtraSettings(); bindStockViews(); bindP5(); bindCustom(); bindAutomation(); bindAiFibu(); bindPages(); bindImportDisplay(); bindVerbund(); bindAuth(); bindExtensions(); bindMore(); bindDocs(); bindEinkauf2(); bindVerkauf2(); bindMarketing(); bindArtikel(); bindVerkauf3(); bindKundenService(); bindArtikel2();
   go(location.hash.slice(1) || 'dashboard');
   if (DESKTOP) lock();   // Anmeldung mit PIN beim Start
+  if (DESKTOP) invoke('update_ready').catch(() => {});   // nach einem Update: das Installer-Fenster darf sich schließen
   if (DESKTOP) { loadPurchasing().then(() => navBadge('wareneingang', EK.pos.filter(p => ['bestellt', 'teilgeliefert'].includes(p.status)).length)).catch(() => {}); if (CFG['display.auto']) setTimeout(() => toggleDisplay(true), 1500); }
   if (DESKTOP) { Hooks.emit('desktop.ready', {version: S.appVersion, datenbank: S.info?.db_path}); setTimeout(autoBackupCheck, 4000); setInterval(autoBackupCheck, 36e5); }
   Hooks.emit('system.ready', {version: S.appVersion, kanal: 'stable', server: 'KONTOR-SRV01', modus: DESKTOP ? 'desktop' : 'vorschau'});

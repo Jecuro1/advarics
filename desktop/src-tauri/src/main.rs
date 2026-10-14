@@ -28,6 +28,7 @@ mod purchasing;
 mod rksv;
 mod sales;
 mod updates;
+mod uphelper;
 mod users;
 mod vouchers;
 mod vorgang;
@@ -2293,6 +2294,11 @@ fn window_base(window: tauri::WebviewWindow) -> Res<Vec<f64>> {
 }
 
 fn main() {
+    let context = tauri::generate_context!();
+    // Windows-Update: Hilfsprozess mit dem Installer-Fenster (siehe uphelper.rs) – öffnet weder Datenbank noch sonstige Dienste
+    if let Some(dir) = uphelper::argument() {
+        return uphelper::run(dir, context);
+    }
     // Portabler Betrieb / mehrere Kassen auf einem Rechner (z. B. Schulung, Test): eigener Datenordner
     let portable = std::env::var("KONTOR_DATA_DIR").ok().filter(|d| !d.trim().is_empty());
     let mut builder = tauri::Builder::default();
@@ -2593,8 +2599,9 @@ fn main() {
             po_receive,
             po_suggest,
             updates::update_check,
-            updates::update_install
+            updates::update_install,
+            updates::update_ready
         ])
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("Kontor konnte nicht gestartet werden");
 }

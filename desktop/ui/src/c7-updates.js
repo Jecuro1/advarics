@@ -105,39 +105,36 @@ function scheduleApproved(ap) {
 }
 async function runInstall(auto) {
   if (auto && POS.cart.length) { UPD.timer = setTimeout(() => runInstall(true), 5 * 60e3); return toast('Update wartet', {t2: 'Offener Verkauf – neuer Versuch in 5 Minuten', icon: 'clock'}); }
-  const el = openLayer(`<div class="modal" style="width:min(460px,100%)" role="dialog" aria-modal="true" aria-label="Update wird installiert"><div class="m-body" style="padding:28px 26px">
-    <div class="authwait"><div class="ring">${ic('download')}</div><p id="upPhase"><b style="color:var(--text)">Update wird vorbereitet …</b></p></div>
-    <div class="pay-prog" style="margin-top:14px"><i id="upBar" style="width:0;background:var(--accent)"></i></div>
-    <p class="muted" style="font-size:12px;text-align:center;margin-top:12px">Bitte Kontor nicht schließen. Das Programm startet anschließend automatisch neu.</p></div></div>`, {closeOnScrim: false, esc: false});
-  const phase = (t, s) => { $('#upPhase', el).innerHTML = `<b style="color:var(--text)">${esc(t)}</b>${s ? '<br>' + esc(s) : ''}`; };
+  const i = UPD.info || {};
+  const ux = upxOpen({mode: 'real', from: S.appVersion, to: i.version, notes: i.notes});   // Vollbild-Installer (c7a-updinstaller.js)
   let unlisten = null;
   try {
     unlisten = await window.__TAURI__.event.listen('update-progress', ({payload: p}) => {
-      if (p.phase === 'backup') phase('Datensicherung …', 'Sicherung vor dem Update');
-      if (p.phase === 'download') { const pc = p.total ? Math.min(100, p.done / p.total * 100) : 0; $('#upBar', el).style.width = pc + '%'; phase('Lade Update …', p.total ? `${fmtBytes(p.done)} von ${fmtBytes(p.total)}` : fmtBytes(p.done)); }
-      if (p.phase === 'install') { $('#upBar', el).style.width = '100%'; phase('Installiere …', 'Signatur geprüft · Kontor startet gleich neu'); }
+      if (p.phase === 'download') { ux.go('download'); ux.progress(p.done, p.total); } else ux.go(p.phase);
     });
-    await saveSettings({'update.freigabe': null}, true);
+    await saveSettings({'update.freigabe': null, 'update.erledigt': {from: S.appVersion, to: i.version, notes: i.notes || '', at: new Date().toISOString()}}, true);   // „Willkommen“ nach dem Neustart
     await invoke('update_install', {user: S.user.name});
   } catch (e) {
     unlisten && unlisten();
-    closeLayer(el);
+    await saveSettings({'update.erledigt': null}, true);
+    ux.fail(String(e));
     toast('Update nicht installiert', {t2: String(e), type: 'warn', dur: 10000});
     UPD.state = 'idle'; checkUpdates(false);
   }
 }
 function renderUpdSection() {
   const box = $('#updBox'); if (!box) return;
-  if (!DESKTOP) { box.innerHTML = `<div class="set-row"><div><div class="set-l">Installierte Version</div><div class="set-h">Browser-Vorschau</div></div><div class="set-c"><b class="num">${esc(S.appVersion)}</b></div></div><div class="set-row"><div><div class="set-l">Updates</div><div class="set-h">Nur in der Desktop-App</div></div><div class="set-c"><span class="pill">Vorschau</span></div></div>`; return; }
+  if (!DESKTOP) { box.innerHTML = `<div class="set-row"><div><div class="set-l">Installierte Version</div><div class="set-h">Browser-Vorschau</div></div><div class="set-c"><b class="num">${esc(S.appVersion)}</b></div></div><div class="set-row"><div><div class="set-l">Updates</div><div class="set-h">Nur in der Desktop-App</div></div><div class="set-c"><span class="pill">Vorschau</span></div></div><div class="set-row"><div><div class="set-l">Installer-Ansicht ansehen</div><div class="set-h">So sieht ein Update aus – mit simuliertem Ablauf, es wird nichts installiert.</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" id="updDemo">${ic('play', 'i-sm')}Vorschau</button></div></div>`; return; }
   const av = UPD.state === 'available', ap = CFG['update.freigabe'];
   box.innerHTML = `<div class="set-row"><div><div class="set-l">Installierte Version</div><div class="set-h">Kontor für Windows</div></div><div class="set-c"><b class="num">${esc(S.appVersion)}</b></div></div>
     <div class="set-row"><div><div class="set-l">${esc(updLabel())}</div><div class="set-h">${UPD.state === 'error' ? esc(UPD.error) : UPD.last ? 'Zuletzt geprüft: ' + esc(fmtTs(UPD.last.toISOString())) : 'Noch nicht geprüft'}${ap && av ? ` · freigegeben von ${esc(ap.by)}` : ''}</div></div><div class="set-c" style="gap:8px">${av ? `<button class="btn btn-primary btn-sm" id="updOpen">${ic('download', 'i-sm')}Ansehen & freigeben</button>` : ''}<button class="btn btn-secondary btn-sm" id="updCheck" ${UPD.state === 'checking' ? 'disabled' : ''}>${ic('sync', 'i-sm')}Jetzt suchen</button></div></div>
+    <div class="set-row"><div><div class="set-l">Installer-Ansicht ansehen</div><div class="set-h">So sieht ein Update aus – mit simuliertem Ablauf, es wird nichts installiert und nichts verändert.</div></div><div class="set-c" style="gap:8px"><button class="btn btn-secondary btn-sm" id="updDemo">${ic('play', 'i-sm')}Vorschau</button></div></div>
     ${field('update.auto', 'Automatisch nach Updates suchen', 'Beim Start und alle 6 Stunden. Installiert wird nie ohne Freigabe.', 'switch')}
     <div class="set-row"><div><div class="set-l">Kanal</div><div class="set-h">Stable: nur geprüfte Versionen · Beta: neue Funktionen früher, für Technik-Begeisterte (enthält auch alle Stable-Versionen)</div></div><div class="set-c"><div class="seg" id="chanSeg2">${[['stable', 'Stable'], ['beta', 'Beta']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${(CFG['update.kanal'] || 'stable') === k}">${l}</button>`).join('')}</div></div></div>`;
   initSeg($('#chanSeg2', box), async b => { await saveSettings({'update.kanal': b.dataset.v}, true); toast(b.dataset.v === 'beta' ? 'Beta-Kanal aktiv' : 'Stable-Kanal aktiv', {t2: 'Suche nach Updates …', icon: 'download'}); UPD.state = 'idle'; checkUpdates(false); });
 }
 function bindUpdates() {
-  $('#view-einstellungen').addEventListener('click', e => { if (e.target.closest('#updCheck')) checkUpdates(true); if (e.target.closest('#updOpen')) openUpdate(); });
+  $('#view-einstellungen').addEventListener('click', e => { if (e.target.closest('#updCheck')) checkUpdates(true); if (e.target.closest('#updOpen')) openUpdate(); if (e.target.closest('#updDemo')) upxDemo(); });
   if (!DESKTOP) return;
   setTimeout(() => CFG['update.auto'] !== false || CFG['update.freigabe'] ? checkUpdates(false) : null, 6000);
   setInterval(() => CFG['update.auto'] !== false && checkUpdates(false), 6 * 36e5);

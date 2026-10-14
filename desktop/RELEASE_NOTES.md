@@ -1,3 +1,14 @@
+## Neu in 0.45.0
+
+- **Eigener Update-Installer im Kontor-Design.** Ein Update läuft jetzt in einer eigenen Vollbild-Ansicht statt im kleinen Dialog:
+  - **Fünf Schritte** – Sicherung, Download, Prüfung, Installation, Neustart – mit echtem Fortschritt (Prozent, Tempo in MB/s, geladene Menge, Restzeit), Schritt-Leiste, Live-Protokoll und dem Karussell „Das ist neu“ aus den Release-Notes.
+  - **Animationen:** fließender Shader-Hintergrund, ein Warp-Tunnel, der mit der Download-Geschwindigkeit schneller wird, Hex-Ströme bei der Signaturprüfung, das Kontor-Logo setzt sich bei der Installation aus Partikeln zusammen, Schockwellen und Lichtblitze bei jedem Schritt, ein 3D-Ring, der sich zur Maus neigt, Titel, die sich „entschlüsseln“, und Konfetti zum Schluss. Auf schwächeren Rechnern schaltet sich der Aufwand von selbst herunter; bei „Animationen reduzieren“ (Windows-Einstellung) bleibt die Ansicht ruhig.
+  - **Windows:** Während der eigentlichen Installation übernimmt ein Hilfsfenster nahtlos dieselbe Ansicht (Kontor selbst ist dabei beendet, der Installer läuft unsichtbar). Danach startet Kontor neu. Schlägt der Installer fehl, startet die bisherige Version wieder und der Fehler wird angezeigt; scheitert schon die Übergabe, installiert Kontor wie bisher.
+  - **Willkommen-Seite:** Nach dem ersten Start der neuen Version zeigt Kontor nach der Anmeldung „Willkommen in Kontor x“ mit den Neuerungen. Läuft danach noch die alte Version, meldet Kontor, dass das Update nicht abgeschlossen wurde.
+  - **Vorschau:** Einstellungen › Updates › „Installer-Ansicht ansehen“ spielt den Ablauf mit simulierten Daten ab – es wird nichts installiert.
+  - Freigabe mit PIN, Sicherung vor dem Update und Signaturprüfung sind unverändert. Die neue Ansicht erscheint beim Update **von** 0.45.0 auf die nächste Version; das Update auf 0.45.0 selbst läuft noch mit dem bisherigen Installer.
+- **Setup-Programm (Erstinstallation)** mit Kontor-Grafik: Kopf- und Seitenbild des Windows-Installers im Kontor-Design.
+
 ## Neu in 0.44.1
 
 - **Windows: die Anzeige zuckte (wechselte ständig minimal die Größe).** Die automatische Anzeigegröße rechnete die Fenstergröße aus der Seitengröße und dem eingestellten Zoom zurück. Unter Windows (Skalierung 125 %/150 %, Seitengröße in ganzen Pixeln) landete diese Rechnung bei manchen Fenstergrößen genau auf der Grenze zwischen zwei Stufen: die Anzeige sprang dann dauernd zwischen zwei Größen hin und her. Jetzt liefert das Programm die tatsächliche Fenstergröße (Pixel ÷ Windows-Skalierung) – sie hängt nicht vom Zoom ab, eine Rückkopplung ist nicht mehr möglich. Zusätzlich bleibt die Größe stehen, wenn sie sich trotz gleichem Fenster mehrfach in wenigen Sekunden ändern wollte. Die Stufen und die Einstellung „Anzeigegröße“ bleiben unverändert.

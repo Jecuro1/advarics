@@ -1,10 +1,13 @@
 //! Update-Dienst: signierte Pakete von GitHub Releases. Nichts wird ohne Freigabe installiert.
-//! Ablauf: suchen → anzeigen (Version, Hinweise) → Freigabe → Sicherung → Download (Fortschritt) → Installation → Neustart.
+//! Ablauf: suchen → anzeigen (Version, Hinweise) → Freigabe → Sicherung → Download (Fortschritt) → Signaturprüfung → Installation → Neustart.
+//! Die Oberfläche zeigt dazu die Installer-Ansicht (Ereignis `update-progress`). Unter Windows übernimmt nach dem Download ein
+//! Hilfsprozess mit demselben Fenster die Installation (siehe `uphelper`), sonst installiert das Programm selbst.
 
 use crate::{backup, db};
 use serde::Serialize;
 use serde_json::json;
 use std::sync::Mutex;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_updater::{Update, UpdaterExt};
 
@@ -52,7 +55,12 @@ struct Progress {
     total: Option<u64>,
 }
 
+fn emit(app: &AppHandle, phase: &'static str, done: u64, total: Option<u64>) {
+    let _ = app.emit("update-progress", Progress { phase, done, total });
+}
+
 /// Installiert das zuvor gefundene Update. Vorher automatische Datensicherung.
+/// Phasen für die Installer-Ansicht: backup → download (done/total) → verify → install → restart
 #[tauri::command]
 pub async fn update_install(app: AppHandle, user: Option<String>) -> Result<(), String> {
     let update = app
@@ -63,9 +71,10 @@ pub async fn update_install(app: AppHandle, user: Option<String>) -> Result<(), 
         .take()
         .ok_or("Kein Update vorbereitet – bitte erneut suchen")?;
     let version = update.version.clone();
+    let notes = update.body.clone().unwrap_or_default();
 
     // 1 · Sicherung vor dem Update
-    let _ = app.emit("update-progress", Progress { phase: "backup", done: 0, total: None });
+    emit(&app, "backup", 0, None);
     {
         let dbs = app.state::<db::Db>();
         let dir = crate::backup_dir(&app, &dbs);
@@ -79,25 +88,74 @@ pub async fn update_install(app: AppHandle, user: Option<String>) -> Result<(), 
         let _ = db::audit_append(&c, "update.install.started", &json!({ "version": version, "freigabe": user }));
     }
 
-    // 2 · Download + Signaturprüfung + Installation
+    // 2 · Download; die Signatur wird unmittelbar nach dem Laden geprüft (schlägt sie fehl, wird nichts installiert)
     let mut done: u64 = 0;
-    let app2 = app.clone();
-    update
-        .download_and_install(
+    let mut last: Option<Instant> = None;
+    let (app_a, app_b) = (app.clone(), app.clone());
+    let mut bytes = update
+        .download(
             move |chunk, total| {
                 done += chunk as u64;
-                let _ = app2.emit("update-progress", Progress { phase: "download", done, total });
-            },
-            {
-                let app3 = app.clone();
-                move || {
-                    let _ = app3.emit("update-progress", Progress { phase: "install", done: 0, total: None });
+                // höchstens ~20 Meldungen pro Sekunde – sonst staut sich die Oberfläche bei schnellen Leitungen
+                if last.map_or(true, |t| t.elapsed() >= Duration::from_millis(50)) || total == Some(done) {
+                    last = Some(Instant::now());
+                    emit(&app_a, "download", done, total);
                 }
             },
+            move || emit(&app_b, "verify", 0, None),
         )
         .await
         .map_err(|e| format!("Update fehlgeschlagen: {e}"))?;
 
-    // 3 · Neustart (unter Windows beendet der Installer das Programm bereits selbst)
+    // 3 · Installation
+    emit(&app, "install", 0, None);
+    #[cfg(windows)]
+    {
+        // „MZ“ = Setup-Programm (NSIS). Dann übernimmt der Hilfsprozess mit eigenem Fenster; scheitert die Übergabe, installiert das Programm selbst.
+        if bytes.starts_with(b"MZ") {
+            let from = app.package_info().version.to_string();
+            let shared = std::sync::Arc::new(bytes);
+            let res = {
+                let (a, b, v, n) = (app.clone(), shared.clone(), version.clone(), notes.clone());
+                tauri::async_runtime::spawn_blocking(move || crate::uphelper::handover(&a, &b, &from, &v, &n)).await.map_err(|e| e.to_string())?
+            };
+            bytes = std::sync::Arc::try_unwrap(shared).unwrap_or_default();
+            match res {
+                Ok(()) => {
+                    if let Some(w) = app.get_webview_window("main") {
+                        let _ = w.hide();
+                    }
+                    if let Ok(c) = app.state::<db::Db>().conn.lock() {
+                        let _ = db::audit_append(&c, "update.install.handover", &json!({ "version": version }));
+                    }
+                    app.exit(0);
+                    return Ok(());
+                }
+                Err(e) => {
+                    if let Ok(c) = app.state::<db::Db>().conn.lock() {
+                        let _ = db::audit_append(&c, "update.install.handover.failed", &json!({ "version": version, "fehler": e }));
+                    }
+                }
+            }
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = (&notes, &mut bytes);
+    update.install(&bytes).map_err(|e| format!("Update fehlgeschlagen: {e}"))?;
+
+    // 4 · Neustart (unter Windows beendet der Installer das Programm bereits selbst)
+    emit(&app, "restart", 0, None);
+    pause().await;
     app.restart();
+}
+
+/// Kurze Pause, damit die Installer-Ansicht den Schritt „Neustart“ noch zeigt
+async fn pause() {
+    tauri::async_runtime::spawn_blocking(|| std::thread::sleep(Duration::from_millis(1400))).await.ok();
+}
+
+/// Das (neu gestartete) Programm ist oben: ein eventuell wartendes Installer-Fenster darf sich schließen.
+#[tauri::command]
+pub fn update_ready() {
+    crate::uphelper::started();
 }
