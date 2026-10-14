@@ -138,7 +138,7 @@ function field(key, label, help, type = 'text', extra = '') {
 /** Angaben, die Stammdaten › Filialen pflegt (Name, Adresse, UID, Telefon): nur lesbar, solange die eigene Filial-Zeile existiert */
 function fieldFil(key, label, help) {
   if (typeof flRow !== 'function' || !flRow(FIL.eigene)) return field(key, label, help);
-  return `<div class="set-row"><div><div class="set-l">${esc(label)}</div><div class="set-h">${esc(help || 'Wird unter Stammdaten › Filialen › Filialen gepflegt')}</div></div><div class="set-c"><input class="input" value="${esc(CFG[key])}" readonly tabindex="-1" aria-label="${esc(label)}"><button class="btn btn-secondary btn-sm" data-goto="st-filiale">${ic('store', 'i-sm')}In den Filialen ändern</button></div></div>`;
+  return `<div class="set-row"><div><div class="set-l">${esc(label)}</div><div class="set-h">${esc(help ? help + ' · ' : '')}Wird unter Stammdaten › Filialen › Filialen gepflegt</div></div><div class="set-c"><input class="input" value="${esc(CFG[key])}" readonly tabindex="-1" aria-label="${esc(label)}"><button class="btn btn-secondary btn-sm" data-goto="st-filiale">${ic('store', 'i-sm')}In den Filialen ändern</button></div></div>`;
 }
 function renderSettings() {
   const v = $('#view-einstellungen');

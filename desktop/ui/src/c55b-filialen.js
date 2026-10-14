@@ -70,9 +70,10 @@ function flMirrorCfg(r) {
 }
 /** Wurden die Einstellungen am Arbeitsplatz durch den Abgleich verändert (Filialkasse)? Dann neu einlesen. */
 async function flSyncCfg() {
-  const r = flRow(FIL.eigene); if (!r || !DESKTOP) return;
-  const map = {'firma.name': 'name', 'firma.uid': 'uid', 'firma.telefon': 'tel', 'firma.email': 'email', 'zahlung.iban': 'iban'};
-  if (Object.entries(map).some(([k, f]) => String(CFG[k] ?? '') !== String(r[f] ?? ''))) { await loadSettings(); if ($('.brand-tenant')) $('.brand-tenant').textContent = CFG['firma.name']; }
+  const r = flRow(FIL.eigene); if (!r || !DESKTOP || r.vorlaeufig) return;
+  const map = {'firma.name': 'name', 'firma.adrzeile1': 'adrzeile1', 'firma.adrzeile2': 'adrzeile2', 'firma.postfach': 'postfach', 'firma.land': 'land', 'firma.uid': 'uid', 'firma.steuernr': 'steuernr', 'firma.telefon': 'tel', 'firma.fax': 'fax', 'firma.mobil': 'mobil', 'firma.email': 'email', 'firma.web': 'web', 'firma.inhaber': 'inhaber', 'zahlung.iban': 'iban', 'zahlung.bic': 'bic', 'zahlung.bank': 'bank'};
+  const adr = flAdrZeile(r);
+  if (String(CFG['firma.adresse'] ?? '') !== adr || Object.entries(map).some(([k, f]) => String(CFG[k] ?? '') !== String(r[f] ?? ''))) { await loadSettings(); if ($('.brand-tenant')) $('.brand-tenant').textContent = CFG['firma.name']; }
 }
 
 /* ── Adressen und Beleg-Kopf ── */
@@ -105,6 +106,9 @@ function flErrors(d) {
   else { const o = FIL.rows.find(r => !flSame(r.id, FE.id || d.id) && +r.nr === nr); if (o) add('nr', `Die Nr. ${nr} hat schon die Filiale „${flName(o)}“`); }
   if (d.farbe && !/^#[0-9a-f]{6}$/i.test(d.farbe)) add('farbe', 'Farbwert wie #1F6FD1');
   const em = flS(d.email); if (em && (!em.includes('@') || em.startsWith('@') || em.endsWith('@') || /\s/.test(em))) add('email', 'E-Mail-Adresse wie name@firma.at');
+  for (const [k, l] of [['name', 'Name'], ['kurz', 'Kurz-Name'], ['haustyp', 'Haus-Typ'], ['tel', 'Telefon'], ['fax', 'Fax'], ['mobil', 'Mobiltelefon'], ['email', 'E-Mail'], ['web', 'Website'], ['inhaber', 'Inhabername'], ['steuernr', 'Steuernummer'], ['bank', 'Bank']]) if (String(d[k] ?? '').trim().length > 120) add(k, `${l}: höchstens 120 Zeichen`);
+  for (const k of FL_ADR) if (String(d[k] ?? '').trim().length > 80) add(k, 'Höchstens 80 Zeichen');
+  if ((d.zusatz || []).length > 10) add('z0.ort', 'Höchstens 10 zusätzliche Adressen');
   const uid = flS(d.uid).replace(/\s+/g, ''); if (uid && !/^[A-Za-z]{2}[A-Za-z0-9]{2,12}$/.test(uid)) add('uid', 'USt-IdNr.: Länderkennung und Nummer (z. B. ATU12345678)');
   if (!flIbanOk(d.iban)) add('iban', 'IBAN: Prüfziffer stimmt nicht – bitte Eingabe kontrollieren');
   const bic = flS(d.bic).replace(/\s+/g, ''); if (bic && !/^[A-Za-z0-9]{8}([A-Za-z0-9]{3})?$/.test(bic)) add('bic', 'BIC: 8 oder 11 Zeichen (z. B. BKAUATWW)');
@@ -119,12 +123,12 @@ const flTabOf = k => /^z\d+\./.test(k) ? 'zusatz' : ['adrzeile1', 'adrzeile2', '
 
 /* ── Zustand ── */
 const flBlank = () => ({id: '', nr: String(Math.max(0, ...FIL.rows.map(r => +r.nr || 0)) + 1), name: '', kurz: '', gruppe: '', farbe: '', haustyp: '', tel: '', fax: '', mobil: '', email: '', web: '', inhaber: '', uid: '', steuernr: '', iban: '', bic: '', bank: '',
-  adrzeile1: '', adrzeile2: '', strasse: '', hausnr: '', plz: '', ort: '', postfach: '', land: 'AT', zusatz: [], _aktiv: true});
+  adrzeile1: '', adrzeile2: '', strasse: '', hausnr: '', plz: '', ort: '', postfach: '', land: 'AT', zusatz: [], _aktiv: true, _vorl: false});
 function flDraft(id) {
   const r = id ? flRow(id) : null; if (!r) return flBlank();
   const b = flBlank(), d = {...b};
   for (const k of Object.keys(b)) if (k !== 'zusatz' && k !== 'gruppe' && k !== 'nr' && r[k] != null) d[k] = String(r[k]);
-  d.nr = String(r.nr ?? ''); d.iban = flFormatIban(r.iban); d._aktiv = r._aktiv !== false; d.gruppe = flGruppe(r.id)?.id || '';
+  d.nr = String(r.nr ?? ''); d.iban = flFormatIban(r.iban); d._aktiv = r._aktiv !== false; d._vorl = r.vorlaeufig === true; d.gruppe = flGruppe(r.id)?.id || '';
   d.zusatz = (r.zusatz || []).map(z => ({uid: flUid(), typ: z.typ || 'liefer', ...Object.fromEntries(FL_ADR.map(k => [k, String(z[k] ?? '')]))}));
   return d;
 }
@@ -138,6 +142,8 @@ function flToRow(d) {
   return r;
 }
 const flLocked = () => flRO();
+/** Hinweisleiste oben in der Maske: nur lesbar (Filialkasse) bzw. vorläufig übernommene Zeile */
+const flNote = () => `${flRO() ? `<div class="zp-note">${ic('lock', 'i-sm')}<span><b>Filialen pflegt die Zentrale.</b> Diese Kasse bekommt die Angaben beim Abgleich; hier sind sie nur lesbar.</span></div>` : ''}${FE.d?._vorl && !flRO() ? `<div class="zp-note">${ic('info', 'i-sm')}<span><b>Aus dem Filialverbund übernommen, noch nicht bestätigt.</b> Die Filialkasse verwendet bis zum Sichern weiter ihre eigenen Angaben. Mit „Sichern“ gelten diese Angaben dort.</span></div>` : ''}`;
 
 /* ── Liste ── */
 function flListRows() {
@@ -145,6 +151,7 @@ function flListRows() {
     const g = flGruppe(r.id); let st = '';
     if (flIstEigene(r.id)) st = FIL.rolle === 'filiale' ? 'diese Kasse' : FIL.rolle === 'zentrale' ? 'Zentrale (diese Kasse)' : 'Einzelplatz';
     else if (FIL.rolle === 'zentrale') st = r._angebunden ? (r._sync ? (Date.now() - new Date(r._sync) < 3 * 6e4 ? 'online' : 'zuletzt ' + fmtTs(r._sync)) : 'noch nicht verbunden') : '–';
+    if (r.vorlaeufig && !flRO()) st = (st ? st + ' · ' : '') + 'vorläufig';
     return {id: r.id, nr: +r.nr || 0, aktiv: r._aktiv !== false, kurz: r.kurz || '', name: r.name || '', gruppe: g?.name || 'Standard', land: r.land || '', ort: r.ort || '', farbe: r.farbe || '', haustyp: r.haustyp || '', status: st};
   });
 }
@@ -169,7 +176,7 @@ async function flNeu() {
 /* ── Maske ── */
 function flOpen(id, ids) {
   FE.id = id; FE.ids = ids?.length ? ids : FE.ids; FE.d = flDraft(id); FE.orig = flClone(FE.d); FE.tab = 'allg'; FE.dirty = false; FE.show = false;
-  if (S.view === 'filiale-edit') flRender(); else go('filiale-edit');
+  if (S.view === 'filiale-edit') { flRender(); renderTopbar(); } else go('filiale-edit');
 }
 registerPage('filiale-edit', {title: 'Filialen', sub: () => FE.d ? (FE.id ? `${FE.d.nr} ${flName(flRow(FE.id)) || FE.d.name}` : 'neue Filiale') : '', render: async () => {
   if (!FE.d) { setTimeout(() => go('st-filiale'), 0); return; }
@@ -209,12 +216,12 @@ function flAnbindung() {
   const st = r?._angebunden ? (r._sync ? `zuletzt abgeglichen ${fmtTs(r._sync)}` : 'noch nicht verbunden') : 'nicht angebunden';
   return `<div class="ge-facts"><div class="ge-fact"><span>Status</span><b>${esc(st)}</b></div></div>
     <p class="ea-hint">Ist die Filiale deaktiviert, wird ihr Abgleich abgelehnt. Mit einem neuen Verbindungscode wird der bisherige ungültig.</p>
-    <button type="button" class="btn btn-secondary" data-fl-a="code" ${flLocked() ? 'disabled' : ''}>${ic('key', 'i-sm')}Verbindungscode erzeugen</button>`;
+    <button type="button" class="btn btn-secondary" data-fl-a="code" ${flLocked() ? 'disabled' : ''}>${ic('link', 'i-sm')}Verbindungscode erzeugen</button>`;
 }
 function flAllg() {
   const D = FE.d, gr = stRows('filialgruppe'), typen = [...new Set(FIL.rows.map(r => flS(r.haustyp)).filter(Boolean))];
   const own = FE.id && flIstEigene(FE.id), iso = FL_ISO3[String(D.land).toUpperCase()] || '–';
-  const note = flRO() ? `<div class="zp-note">${ic('lock', 'i-sm')}<span><b>Filialen pflegt die Zentrale.</b> Diese Kasse bekommt die Angaben beim Abgleich; hier sind sie nur lesbar.</span></div>` : '';
+  const note = flNote();
   const grp = `<label class="field"><span>Filial-Gruppe</span><div class="ea-cmb-row"><select class="input select" data-fl="gruppe" style="flex:1;min-width:0" ${flLocked() ? 'disabled' : ''}><option value="">Standard</option>${gr.map(g => `<option value="${esc(g.id)}" ${g.id === D.gruppe ? 'selected' : ''}>${esc(g.name || g.id)}</option>`).join('')}</select><button type="button" class="ea-ib" data-fl-a="gruppen" title="Filialgruppen bearbeiten oder neu anlegen" aria-label="Filialgruppen bearbeiten">${ic('edit', 'i-sm')}</button></div><small class="ea-hint">Für Analysen (Dimension „Filialgruppe“) und die Filialauswahl. Gruppen legen Sie unter Filialen › Filialengruppe an.</small></label>`;
   const color = `<label class="field ${flErr('farbe') && FE.show ? 'zp-bad' : ''}"><span>Filial-Farbe</span><div class="fl-colorrow"><input type="color" class="fl-color ${D.farbe ? '' : 'none'}" data-fl="farbe" value="${esc(D.farbe || '#888888')}" ${flLocked() ? 'disabled' : ''} aria-label="Filial-Farbe"><span class="muted">${D.farbe ? esc(D.farbe.toUpperCase()) : 'keine Farbe'}</span>${D.farbe && !flLocked() ? `<button type="button" class="ea-ib" data-fl-a="farbex" title="Farbe entfernen" aria-label="Farbe entfernen">${ic('x', 'i-sm')}</button>` : ''}</div><small class="ea-hint">Erscheint in der Filialauswahl, in der Artikelinfo und im Filialvergleich.</small></label>`;
   return {html: `${note}<div class="fl-grid">
@@ -232,7 +239,7 @@ function flAllg() {
 }
 function flAdresse() {
   const D = FE.d, zeilen = flAdrLines(D);
-  return {html: `${flRO() ? `<div class="zp-note">${ic('lock', 'i-sm')}<span><b>Filialen pflegt die Zentrale.</b> Hier nur lesbar.</span></div>` : ''}<div class="fl-grid fl-2">
+  return {html: `${flNote()}<div class="fl-grid fl-2">
     ${flCard('Haupt-Adresse', `${flIn('adrzeile1', 'Adr.-Zeile 1', {hint: 'Für weitere Teile des Firmennamens, die unter „Name“ nicht Platz haben.'})}${flIn('adrzeile2', 'Adr.-Zeile 2')}
       <div class="zp-pair">${flIn('strasse', 'Straße')}${flIn('hausnr', 'Haus-Nr.')}</div><div class="zp-pair">${flIn('plz', 'PLZ')}${flIn('ort', 'Ort')}</div>${flIn('postfach', 'Postfach')}${flLandSel('land')}`)}
     ${flCard('Druck-Ansicht', `<div class="fl-prev">${zeilen.length ? [flS(D.name), ...zeilen].filter(Boolean).map(esc).join('<br>') : '<span class="muted">Noch keine Adresse</span>'}</div><small class="ea-hint">So steht die Adresse auf Belegen. Die Einzeilen-Form „${esc(flAdrZeile(D) || '–')}“ gilt für Bon und Kundendisplay.</small>`)}
@@ -243,9 +250,9 @@ function flZusatzHTML() {
   const card = (z, i) => `<div class="ae-card ea-card fl-zadr" data-zi="${i}"><h4>Adresse ${i + 1}${ro ? '' : `<button type="button" class="ea-ib" style="float:right" data-fl-a="zdel" data-zi="${i}" title="Adresse entfernen" aria-label="Adresse ${i + 1} entfernen">${ic('trash', 'i-sm')}</button>`}</h4><div class="ea-fields ge-one">
     <label class="field"><span>Art *</span><select class="input select" data-fl="z${i}.typ" ${ro ? 'disabled' : ''}>${FL_ART.map(([v, l]) => `<option value="${v}" ${z.typ === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     ${flIn('adrzeile1', 'Adr.-Zeile 1', {z: i})}${flIn('adrzeile2', 'Adr.-Zeile 2', {z: i})}<div class="zp-pair">${flIn('strasse', 'Straße', {z: i})}${flIn('hausnr', 'Haus-Nr.', {z: i})}</div><div class="zp-pair">${flIn('plz', 'PLZ', {z: i})}${flIn('ort', 'Ort *', {z: i})}</div>${flIn('postfach', 'Postfach', {z: i})}${flLandSel('land', {z: i})}</div></div>`;
-  return {html: `${ro ? `<div class="zp-note">${ic('lock', 'i-sm')}<span><b>Filialen pflegt die Zentrale.</b> Hier nur lesbar.</span></div>` : ''}
+  return {html: `${flNote()}
     <p class="ea-hint ue-note">Eine Rechnungs- und/oder Lieferadresse der Filiale. Sie erscheinen auf Bestellungen an Lieferanten, wenn diese Filiale bestellt: die Ware kommt an die Lieferadresse, die Rechnung geht an die Rechnungsadresse.</p>
-    <div class="fl-grid fl-3">${D.zusatz.map(card).join('')}${ro ? '' : `<button type="button" class="fl-add" data-fl-a="zadd">${ic('plus')}<span>Adresse hinzufügen</span></button>`}</div>
+    <div class="fl-grid fl-3">${D.zusatz.map(card).join('')}${ro || D.zusatz.length >= 10 ? '' : `<button type="button" class="fl-add" data-fl-a="zadd">${ic('plus')}<span>Adresse hinzufügen</span></button>`}</div>
     ${!D.zusatz.length && ro ? '<p class="muted" style="padding:6px 2px">Keine zusätzlichen Adressen.</p>' : ''}`};
 }
 function flRender() {
@@ -256,7 +263,7 @@ function flRender() {
   const errs = flErrors(D), cnt = k => errs.filter(e => flTabOf(e.k) === k).length;
   const tab = ([k, l]) => { const n = cnt(k); return `<button type="button" class="ed-tab" role="tab" data-fl-tab="${k}" aria-selected="${FE.tab === k}">${esc(l)}${k === 'zusatz' && D.zusatz.length ? ` <span class="ed-badge" style="background:var(--surface-3);color:var(--text-2)">${D.zusatz.length}</span>` : ''}${n ? ` <span class="ed-badge">${n}</span>` : ''}</button>`; };
   const body = (FE.tab === 'zusatz' ? flZusatzHTML : FE.tab === 'adresse' ? flAdresse : flAllg)();
-  el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', 'Übersicht: Filialen')}${btn('refresh', 'sync', 'Aktualisieren', !FE.id)}${btn('save', 'check', 'Sichern', lock || !FE.dirty)}${btn('new', 'plus', 'Neu', !zentrale)}${btn('undo', 'undo', 'Änderungen zurücknehmen', lock || !FE.dirty)}${btn('del', 'trash', 'Löschen', !FE.id || !zentrale || own)}
+  el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', 'Übersicht: Filialen')}${btn('refresh', 'sync', 'Aktualisieren', !FE.id)}${btn('save', 'check', 'Sichern', lock || !FE.dirty)}${btn('new', 'plus', 'Neu', !zentrale)}${btn('undo', 'undo', 'Änderungen zurücknehmen', lock || !FE.dirty)}${btn('del', 'trash', 'Löschen', !FE.id || !zentrale || own)}${btn('code', 'link', 'Filial-Code erzeugen', !FE.id || !zentrale || own || lock)}
       <span class="sp"></span>${FE.id && FE.ids.length > 1 ? `${btn('prev', 'chevron-left', 'Vorherige Filiale', pos <= 0, false)}<span class="ae-nr">${pos + 1}/${FE.ids.length}</span>${btn('next', 'chevron-right', 'Nächste Filiale', pos >= FE.ids.length - 1, false)}` : ''}</div>
     <div class="ae-tabsw"><div class="ed-tabs" role="tablist">${FL_TABS.map(tab).join('')}</div></div>
     <div class="ae-body"><div id="edBody">${body.html}</div></div>`;
@@ -332,7 +339,7 @@ async function flSave() {
     else { const had = FIL.rows.some(r => flSame(r.id, row.id)), l = FIL.rows.map(r => flSame(r.id, row.id) ? {...r, ...row} : r); if (!had) l.push(row); persist.set('filialen', l); FIL.rows = l; res = {row, code: null}; if (flIstEigene(row.id)) flMirrorCfg(row); }
   } catch (err) { return toast('Speichern fehlgeschlagen', {t2: String(err.message || err), type: 'warn', dur: 7000}); }
   const id = res.row.id;
-  try { await flSetGroup(id, D.gruppe); } catch (err) { toast('Gruppe nicht gespeichert', {t2: String(err.message || err), type: 'warn'}); }
+  if (isNew || D.gruppe !== O.gruppe) try { await flSetGroup(id, D.gruppe); } catch (err) { toast('Gruppe nicht gespeichert', {t2: String(err.message || err), type: 'warn'}); }
   if (DESKTOP) await loadSettings();
   await filLoad(true); await loadVerbund();
   FE.id = id; FE.d = flDraft(id); FE.orig = flClone(FE.d); FE.dirty = false; FE.show = false; if (isNew) FE.ids = [...FE.ids, id];
@@ -363,7 +370,7 @@ async function flRemove(ids, fromMask) {
   if (ids.some(i => flIstEigene(i))) { toast('Die eigene Filiale lässt sich nicht löschen', {icon: 'lock'}); if (ids.length === 1) abort(); ids = ids.filter(i => !flIstEigene(i)); }
   const rs = ids.map(flRow).filter(Boolean); if (!rs.length) abort();
   const wer = rs.length === 1 ? `Filiale „${flName(rs[0])}“` : `${rs.length} Filialen`;
-  if (!await confirmBox(`${wer} löschen? Filialen mit Belegen oder Umlagerungen lassen sich nicht löschen – sie werden stattdessen deaktiviert (Schalter „Aktiv“).`, 'Löschen')) abort();
+  if (!await confirmBox(`${wer} löschen? Filialen mit Belegen oder Umlagerungen lassen sich nicht löschen – sie lassen sich nur deaktivieren (Schalter „Aktiv“).`, 'Löschen')) abort();
   if (DESKTOP) await stepUp({title: 'Administrator-Freigabe', text: `${wer} löschen`, admin: true}).catch(abort);
   const fehler = [];
   for (const r of rs) {

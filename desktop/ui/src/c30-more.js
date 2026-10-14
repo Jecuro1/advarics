@@ -48,8 +48,8 @@ function renderZahlBox() {
   const all = BASE_METHODS.concat((CFG['zahlung.eigene'] || []).map(m => ({...m, icon: m.link ? 'qr' : 'card'}))).sort((a, b) => { const i = ord.indexOf(a.id), j = ord.indexOf(b.id); return (i < 0 ? 999 : i) - (j < 0 ? 999 : j); });
   box.innerHTML = `<div class="set-row"><div><div class="set-l">An der Kasse anbieten</div><div class="set-h">Reihenfolge = Tasten 1–8 im Bezahlen-Dialog · zum Ändern ziehen</div></div><div class="set-c" id="zahlChips" style="flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:460px">${all.map(m => `<button class="chip" data-zm="${esc(m.id)}" ${dndAttr(m.id)} aria-pressed="${!aus.has(m.id)}">${ic(m.icon, 'i-sm')}${esc(plain(m.label))}</button>`).join('')}</div></div>
     ${field('zahlung.paypalme', 'PayPal.me-Name', 'z. B. alpenlichtsport → QR-Code mit Betrag (paypal.me/…/49.90EUR)')}
-    ${field('zahlung.iban', 'IBAN für Überweisung per QR', 'aktiviert „Überweisung“ mit SEPA-QR (EPC-Girocode)')}
-    ${field('zahlung.bic', 'BIC', 'optional')}
+    ${fieldFil('zahlung.iban', 'IBAN für Überweisung per QR', 'aktiviert „Überweisung“ mit SEPA-QR (EPC-Girocode)')}
+    ${fieldFil('zahlung.bic', 'BIC', 'optional')}
     ${field('zahlung.empfaenger', 'Empfänger', 'leer = Firmenname')}
     <div class="set-row" style="border-bottom:0"><div><div class="set-l">Eigene Zahlungsarten</div><div class="set-h">${(CFG['zahlung.eigene'] || []).map(m => `${esc(plain(m.label))}${m.link ? ' (QR)' : ''} <button class="btn btn-ghost btn-sm" data-zdel="${esc(m.id)}" style="height:22px">${ic('x', 'i-xs')}</button>`).join(' · ') || 'z. B. Rechnung, Firmenkonto, Twint, Bluecode – mit oder ohne QR-Link'}</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" data-z="neu">${ic('plus', 'i-sm')}Zahlungsart</button></div></div>`;
   // Reihenfolge der Zahlungsarten im Bezahlen-Dialog per Ziehen festlegen

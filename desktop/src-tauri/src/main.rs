@@ -1489,13 +1489,18 @@ fn verbund_code(c: &rusqlite::Connection, id: &str, key: &str) -> Value {
 #[tauri::command]
 fn filiale_list(db: State<db::Db>, seed: Option<Value>) -> Res<Value> {
     let c = db.conn.lock().unwrap();
-    filiale::ensure_all(&c, &seed.unwrap_or(Value::Null)).map_err(err)?;
+    let warnung = filiale::ensure_all(&c, &seed.unwrap_or(Value::Null)).err();
     let angebunden: std::collections::HashMap<String, (Option<String>, bool)> = {
         let mut st = c.prepare("SELECT id, last_sync, active FROM stores").map_err(err)?;
         let r = st.query_map([], |r| Ok((r.get::<_, String>(0)?, (r.get::<_, Option<String>>(1)?, r.get::<_, i64>(2)? != 0)))).map_err(err)?.filter_map(Result::ok).collect();
         r
     };
     let mut rows = stamm::list(&c, filiale::KIND).map_err(err)?;
+    let (rolle, eigene) = (verbund::rolle(&c), verbund::own_store(&c));
+    if rolle == "einzel" {
+        // Einzelplatz: nur die eigene Filiale (Zeilen einer früheren Zentrale bleiben verborgen, bis wieder ein Verbund besteht)
+        rows.retain(|r| r["id"].as_str().map(|i| i.eq_ignore_ascii_case(&eigene)).unwrap_or(false));
+    }
     for r in rows.iter_mut() {
         let id = r["id"].as_str().unwrap_or("").to_string();
         if let Some((sync, _)) = angebunden.get(&id) {
@@ -1503,7 +1508,7 @@ fn filiale_list(db: State<db::Db>, seed: Option<Value>) -> Res<Value> {
             r["_sync"] = json!(sync);
         }
     }
-    Ok(json!({ "rolle": verbund::rolle(&c), "eigene": verbund::own_store(&c), "zeilen": rows }))
+    Ok(json!({ "rolle": rolle, "eigene": eigene, "zeilen": rows, "warnung": warnung }))
 }
 /// Filiale sichern (neu oder ändern). Neue Filialen in der Zentrale liefern den Verbindungscode mit.
 #[tauri::command]

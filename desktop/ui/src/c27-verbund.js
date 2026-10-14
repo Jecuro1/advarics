@@ -33,7 +33,8 @@ function vbStatus() {
   const i = VB.info, st = i.status || {};
   if (vbRole() === 'zentrale') { const n = (i.stores || []).filter(s => s.id !== vbOwn() && s.active !== false).length; return {ok: true, text: `Zentrale ${vbOwn()} · ${n} Filiale${n === 1 ? '' : 'n'}`, tip: 'Klicken: Filialen öffnen'}; }
   const t = st.zeit ? new Date(st.zeit).toLocaleTimeString('de-AT', {hour: '2-digit', minute: '2-digit'}) : '';
-  return st.ok === false ? {ok: false, text: `Filiale ${vbOwn()} · Zentrale nicht erreichbar · lokaler Betrieb`, tip: String(st.fehler || 'Abgleich wird automatisch wiederholt')}
+  return st.ok === false && /deaktiviert/.test(String(st.fehler || '')) ? {ok: false, text: `Filiale ${vbOwn()} · in der Zentrale deaktiviert · lokaler Betrieb`, tip: String(st.fehler)}
+    : st.ok === false ? {ok: false, text: `Filiale ${vbOwn()} · Zentrale nicht erreichbar · lokaler Betrieb`, tip: String(st.fehler || 'Abgleich wird automatisch wiederholt')}
     : {ok: true, text: `Filiale ${vbOwn()} · ${t ? 'abgeglichen ' + t : 'verbunden'}`, tip: 'Klicken: Filialen öffnen'};
 }
 // Verfügbarkeit nach jedem Katalog-Neuladen wieder ergänzen

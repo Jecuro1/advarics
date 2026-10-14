@@ -108,8 +108,19 @@ pub fn stock_matrix(c: &Connection) -> Result<Value, String> {
     let mut st = c.prepare("SELECT ean, stock FROM variants WHERE active = 1").map_err(|e| e.to_string())?;
     let mine: serde_json::Map<String, Value> = st.query_map([], |r| Ok((r.get::<_, String>(0)?, json!(r.get::<_, i64>(1)?)))).map_err(|e| e.to_string())?.filter_map(Result::ok).collect();
     m.insert(own.clone(), Value::Object(mine));
+    // in der Zentrale zählen nur angebundene, aktive Filialen (abgeschaltete oder gelöschte erscheinen nicht in Bestand und Umlagerungsvorschlägen)
+    let aktive: Option<std::collections::HashSet<String>> = if rolle(c) == "zentrale" {
+        let mut q = c.prepare("SELECT id FROM stores WHERE active = 1").map_err(|e| e.to_string())?;
+        let ids: std::collections::HashSet<String> = q.query_map([], |r| r.get(0)).map_err(|e| e.to_string())?.filter_map(Result::ok).collect();
+        Some(ids)
+    } else {
+        None
+    };
     let mut st = c.prepare("SELECT store, ean, stock FROM store_stock WHERE store <> ?1").map_err(|e| e.to_string())?;
     for r in st.query_map([&own], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, i64>(2)?))).map_err(|e| e.to_string())?.flatten() {
+        if aktive.as_ref().map(|a| !a.contains(&r.0)).unwrap_or(false) {
+            continue;
+        }
         m.entry(r.0).or_insert_with(|| json!({}))[&r.1] = json!(r.2);
     }
     Ok(Value::Object(m))
@@ -131,6 +142,15 @@ pub fn transfers(c: &Connection, store: Option<&str>) -> rusqlite::Result<Vec<Va
 pub fn transfer_create(c: &Connection, from: &str, to: &str, lines: &Value, note: &str, user: &str) -> Result<Value, String> {
     if from == to {
         return Err("Von- und Nach-Filiale sind gleich".into());
+    }
+    if rolle(c) == "zentrale" {
+        let own = own_store(c);
+        for x in [from, to] {
+            let ok = x == own || c.query_row("SELECT 1 FROM stores WHERE id = ?1 AND active = 1", [x], |_| Ok(())).optional().map(|v| v.is_some()).unwrap_or(false);
+            if !ok {
+                return Err(format!("Die Filiale „{x}“ ist nicht angebunden oder deaktiviert"));
+            }
+        }
     }
     let ls = lines.as_array().filter(|a| !a.is_empty()).ok_or("Keine Positionen")?;
     if ls.iter().any(|l| l["ean"].as_str().unwrap_or("").is_empty() || l["qty"].as_i64().unwrap_or(0) <= 0) {
@@ -430,7 +450,9 @@ pub fn sync_once(c: &Connection) -> Result<Value, String> {
             }
         }
     }
-    let info = json!({ "version": env!("CARGO_PKG_VERSION"), "kasse": s(c, "kasse.id"), "belege_offen": c.query_row("SELECT COUNT(*) FROM sales WHERE id > ?1", [last_sale], |r| r.get::<_, i64>(0)).unwrap_or(0) });
+    let firma = json!({ "name": s(c, "firma.name"), "adresse": s(c, "firma.adresse"), "uid": s(c, "firma.uid"), "steuernr": s(c, "firma.steuernr"), "telefon": s(c, "firma.telefon"), "fax": s(c, "firma.fax"), "mobil": s(c, "firma.mobil"),
+        "email": s(c, "firma.email"), "web": s(c, "firma.web"), "inhaber": s(c, "firma.inhaber"), "iban": s(c, "zahlung.iban"), "bic": s(c, "zahlung.bic"), "bank": s(c, "zahlung.bank") });
+    let info = json!({ "version": env!("CARGO_PKG_VERSION"), "kasse": s(c, "kasse.id"), "firma": firma, "belege_offen": c.query_row("SELECT COUNT(*) FROM sales WHERE id > ?1", [last_sale], |r| r.get::<_, i64>(0)).unwrap_or(0) });
     let pushed = call(c, "/sync/v1/push", &json!({ "sales": sales, "stock": stock, "points": points, "customers": custs, "info": info }))?;
     set(c, "verbund.c_sale", json!(last_sale));
     set(c, "verbund.c_move", json!(last_move));

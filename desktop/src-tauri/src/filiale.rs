@@ -139,7 +139,7 @@ pub fn pruefen(row: &Value) -> Result<Value, String> {
     }
     o.insert("bic".into(), json!(bic));
     let uid: String = s(&o["uid"]).chars().filter(|c| !c.is_whitespace()).collect::<String>().to_uppercase();
-    if !uid.is_empty() && !(uid.len() >= 4 && uid.len() <= 14 && uid[..2].chars().all(|c| c.is_ascii_alphabetic()) && uid.chars().all(|c| c.is_ascii_alphanumeric())) {
+    if !uid.is_empty() && !(uid.chars().all(|c| c.is_ascii_alphanumeric()) && (4..=14).contains(&uid.len()) && uid.chars().take(2).all(|c| c.is_ascii_alphabetic())) {
         return Err("USt-IdNr.: Länderkennung und Nummer (z. B. ATU12345678)".into());
     }
     o.insert("uid".into(), json!(uid));
@@ -235,14 +235,17 @@ pub fn ensure_own(c: &Connection, seed: &Value) -> Result<(), String> {
     if s(&r["name"]).is_empty() {
         r["name"] = json!(own);
     }
+    // alte Werte nicht lesbar (z. B. IBAN mit Tippfehler)? Schrittweise ohne die fehlerhaften Angaben übernehmen, zuletzt nur Nr. und Name
     let r = match pruefen(&r) {
         Ok(v) => v,
-        // alte Werte nicht lesbar (z. B. IBAN mit Tippfehler): ohne die fehlerhaften Bankangaben übernehmen
         Err(_) => {
-            r["iban"] = json!("");
-            r["bic"] = json!("");
-            r["uid"] = json!("");
-            pruefen(&r)?
+            for k in ["iban", "bic", "uid", "email"] {
+                r[k] = json!("");
+            }
+            match pruefen(&r) {
+                Ok(v) => v,
+                Err(_) => pruefen(&json!({ "id": own, "nr": r["nr"], "name": s(&r["name"]).chars().take(120).collect::<String>(), "land": "AT", "_aktiv": true }))?,
+            }
         }
     };
     schreiben(c, &r)
@@ -277,26 +280,81 @@ fn adresse_lesen(a: &str) -> (String, String, String, String) {
     (strasse, hausnr, plz, ort)
 }
 
-/// Filialen, die schon im Filialverbund angelegt sind (Tabelle „stores“), bekommen ihre Zeile in den Stammdaten (einmalig, Zentrale)
+/// Angaben, die die Filialkasse beim Abgleich mitschickt (Einstellungen firma.*/zahlung.*) → Felder einer Filial-Zeile (nur nichtleere)
+fn aus_info(info: &Value) -> serde_json::Map<String, Value> {
+    let f = &info["firma"];
+    let mut o = serde_json::Map::new();
+    let mut put = |k: &str, v: String| {
+        if !v.is_empty() {
+            o.insert(k.into(), json!(v));
+        }
+    };
+    put("name", s(&f["name"]));
+    let (strasse, hausnr, plz, ort) = adresse_lesen(&s(&f["adresse"]));
+    if !ort.is_empty() || !strasse.is_empty() {
+        put("strasse", strasse);
+        put("hausnr", hausnr);
+        put("plz", plz);
+        put("ort", ort);
+    }
+    for (k, q) in [("uid", "uid"), ("steuernr", "steuernr"), ("tel", "telefon"), ("fax", "fax"), ("mobil", "mobil"), ("email", "email"), ("web", "web"), ("inhaber", "inhaber"), ("iban", "iban"), ("bic", "bic"), ("bank", "bank")] {
+        put(k, s(&f[q]));
+    }
+    o
+}
+
+/// Filialen, die schon im Filialverbund angelegt sind (Tabelle „stores“), bekommen ihre Zeile in den Stammdaten (Zentrale).
+/// Die Zeile ist „vorläufig“, bis die Zentrale sie speichert: sie enthält Name und Adresse aus der Anbindung und – soweit die
+/// Filialkasse sie beim Abgleich mitgeschickt hat – deren bisherige Firmen- und Bankdaten. Eine vorläufige Zeile ändert die
+/// Einstellungen der Filialkasse nicht (apply_own); fehlende Angaben werden bei jedem Aufruf nachgetragen.
 pub fn ensure_stores(c: &Connection) -> Result<(), String> {
     if verbund::rolle(c) != "zentrale" {
         return Ok(());
     }
     let all = rows(c)?;
     let mut nr = all.iter().filter_map(|r| r["nr"].as_i64()).max().unwrap_or(0);
-    let mut st = c.prepare("SELECT id, name, addr, active FROM stores ORDER BY created_at, id").map_err(|e| e.to_string())?;
-    let list: Vec<(String, String, String, bool)> = st.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get::<_, i64>(3)? != 0))).map_err(|e| e.to_string())?.filter_map(Result::ok).collect();
-    for (id, name, addr, aktiv) in list {
-        if all.iter().any(|r| s(&r["id"]).eq_ignore_ascii_case(&id)) {
+    let mut st = c.prepare("SELECT id, name, addr, active, info FROM stores ORDER BY created_at, id").map_err(|e| e.to_string())?;
+    let list: Vec<(String, String, String, bool, Value)> = st
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get::<_, i64>(3)? != 0, serde_json::from_str::<Value>(&r.get::<_, String>(4)?).unwrap_or(json!({})))))
+        .map_err(|e| e.to_string())?
+        .filter_map(Result::ok)
+        .collect();
+    for (id, name, addr, aktiv, info) in list {
+        let extra = aus_info(&info);
+        if let Some(alt) = all.iter().find(|r| s(&r["id"]).eq_ignore_ascii_case(&id)) {
+            // vorläufige Zeile: leere Felder aus den Angaben der Filialkasse nachtragen
+            if alt["vorlaeufig"].as_bool() == Some(true) {
+                let mut r = alt.clone();
+                let mut ch = false;
+                for (k, v) in &extra {
+                    if s(&r[k.as_str()]).is_empty() || (k == "name" && s(&r["name"]) == name) {
+                        r[k.as_str()] = v.clone();
+                        ch = true;
+                    }
+                }
+                if ch {
+                    if let Ok(mut p) = pruefen(&r) {
+                        p["vorlaeufig"] = json!(true);
+                        schreiben(c, &p)?;
+                    }
+                }
+            }
             continue;
         }
         nr += 1;
         let (strasse, hausnr, plz, ort) = adresse_lesen(&addr);
-        let r = json!({ "id": id, "nr": nr, "name": name, "kurz": name, "strasse": strasse, "hausnr": hausnr, "plz": plz, "ort": ort, "land": "AT", "zusatz": [], "_aktiv": aktiv });
-        let r = match pruefen(&r) {
+        let mut r = json!({ "id": id, "nr": nr, "name": name, "kurz": name, "strasse": strasse, "hausnr": hausnr, "plz": plz, "ort": ort, "land": "AT", "zusatz": [], "_aktiv": aktiv });
+        for (k, v) in &extra {
+            r[k.as_str()] = v.clone();
+        }
+        let mut r = match pruefen(&r) {
             Ok(v) => v,
-            Err(_) => pruefen(&json!({ "id": id, "nr": nr, "name": if name.trim().is_empty() { id.clone() } else { name }, "land": "AT", "_aktiv": aktiv }))?,
+            Err(_) => match pruefen(&json!({ "id": id, "nr": nr, "name": name, "kurz": name, "strasse": strasse, "hausnr": hausnr, "plz": plz, "ort": ort, "land": "AT", "_aktiv": aktiv })) {
+                Ok(v) => v,
+                Err(_) => pruefen(&json!({ "id": id, "nr": nr, "name": if name.trim().is_empty() { id.clone() } else { name }, "land": "AT", "_aktiv": aktiv }))?,
+            },
         };
+        r["vorlaeufig"] = json!(true);
         schreiben(c, &r)?;
     }
     Ok(())
@@ -350,6 +408,9 @@ pub fn kurz_setzen(c: &Connection, name: &str) -> Result<(), String> {
 pub fn apply_own(c: &Connection) -> Result<(), String> {
     let own = verbund::own_store(c);
     let Some(r) = rows(c)?.into_iter().find(|r| s(&r["id"]).eq_ignore_ascii_case(&own)) else { return Ok(()) };
+    if r["vorlaeufig"].as_bool() == Some(true) {
+        return Ok(());   // noch nicht von der Zentrale bestätigt: die Filialkasse behält ihre eigenen Angaben
+    }
     let set = |k: &str, v: String| db::setting_set(c, k, &json!(v)).map_err(|e| e.to_string());
     set("firma.name", s(&r["name"]))?;
     set("firma.adresse", adresse_zeile(&r))?;
@@ -437,6 +498,8 @@ pub fn delete(c: &Connection, id: &str, by: &str) -> Result<(), String> {
     let tx = c.unchecked_transaction().map_err(|e| e.to_string())?;
     tx.execute("DELETE FROM stamm WHERE kind = ?1 AND id = ?2", params![KIND, id]).map_err(|e| e.to_string())?;
     tx.execute("DELETE FROM stores WHERE id = ?1", [&id]).map_err(|e| e.to_string())?;
+    tx.execute("DELETE FROM store_stock WHERE store = ?1", [&id]).map_err(|e| e.to_string())?;
+    tx.execute("DELETE FROM store_points WHERE store = ?1", [&id]).map_err(|e| e.to_string())?;
     // aus den Filialgruppen entfernen
     let mut gr = stamm::list(&tx, "filialgruppe")?;
     let mut ch = false;
@@ -735,5 +798,88 @@ mod tests {
         assert!(e.1.contains("deaktiviert"));
         let e = verbund::handle(&z, "POST", "/sync/v1/pull", "kfil_falsch", &json!({}), "10.0.0.5").unwrap_err();
         assert_eq!(e.0, 401, "unbekannter Schlüssel bleibt ein Anmeldefehler");
+    }
+
+    #[test]
+    fn vorlaeufige_zeile_aendert_die_filialkasse_nicht() {
+        let z = db();
+        zentrale(&z);
+        verbund::store_create(&z, "sbg", "Salzburg", "Getreidegasse 31, 5020 Salzburg").unwrap();
+        ensure_all(&z, &json!({ "name": "Zentrale GmbH" })).unwrap();
+        let sbg = |c: &Connection| rows(c).unwrap().into_iter().find(|r| r["id"] == "SBG").unwrap();
+        assert_eq!(sbg(&z)["vorlaeufig"], true);
+        assert!(sbg(&z)["uid"].as_str().unwrap().is_empty(), "noch keine Angaben der Filialkasse");
+        // die Filialkasse schickt beim nächsten Abgleich ihre bisherigen Angaben mit
+        let info = json!({ "version": "0.40.1", "firma": { "name": "Alpenlicht Salzburg GmbH", "adresse": "Getreidegasse 31, 5020 Salzburg", "uid": "ATU22222222", "telefon": "0662 123", "iban": "AT611904300234573201", "bic": "BKAUATWW", "bank": "UniCredit" } });
+        z.execute("UPDATE stores SET info = ?1 WHERE id = 'SBG'", [info.to_string()]).unwrap();
+        ensure_all(&z, &json!({})).unwrap();
+        let v = sbg(&z);
+        assert_eq!((v["name"].as_str(), v["uid"].as_str(), v["tel"].as_str(), v["iban"].as_str(), v["kurz"].as_str()), (Some("Alpenlicht Salzburg GmbH"), Some("ATU22222222"), Some("0662 123"), Some("AT611904300234573201"), Some("Salzburg")));
+        assert_eq!(v["vorlaeufig"], true, "bleibt vorläufig, bis die Zentrale speichert");
+        // Filialkasse: eigene Angaben bleiben, solange die Zeile vorläufig ist
+        let f = db();
+        db::setting_set(&f, "verbund.rolle", &json!("filiale")).unwrap();
+        db::setting_set(&f, "verbund.filiale", &json!("SBG")).unwrap();
+        db::setting_set(&f, "firma.uid", &json!("ATU99999999")).unwrap();
+        db::setting_set(&f, "zahlung.iban", &json!("AT611904300234573201")).unwrap();
+        let r = all_for(&z, "SBG").unwrap();
+        stamm::write_rows(&f, KIND, r["filiale"].as_array().unwrap()).unwrap();
+        apply_own(&f).unwrap();
+        let g = |c: &Connection, k: &str| db::setting_get(c, k).and_then(|v| v.as_str().map(str::to_string)).unwrap_or_default();
+        assert_eq!(g(&f, "firma.uid"), "ATU99999999");
+        assert_eq!(g(&f, "zahlung.iban"), "AT611904300234573201");
+        // Die Zentrale bestätigt (speichert) → gilt auf der Filialkasse
+        let mut bestaetigt = sbg(&z);
+        bestaetigt["uid"] = json!("ATU22222222");
+        save(&z, &bestaetigt, "T").unwrap();
+        assert!(sbg(&z)["vorlaeufig"].is_null(), "nach dem Speichern nicht mehr vorläufig");
+        let r = all_for(&z, "SBG").unwrap();
+        stamm::write_rows(&f, KIND, r["filiale"].as_array().unwrap()).unwrap();
+        apply_own(&f).unwrap();
+        assert_eq!(g(&f, "firma.uid"), "ATU22222222");
+    }
+
+    #[test]
+    fn abgeschaltete_und_geloeschte_filialen_zaehlen_nicht_mehr() {
+        let c = db();
+        zentrale(&c);
+        ensure_all(&c, &json!({ "name": "Zentrale GmbH" })).unwrap();
+        save(&c, &zeile("sbg", 2, "Salzburg"), "T").unwrap();
+        save(&c, &zeile("kit", 3, "Kitzbühel"), "T").unwrap();
+        for st in ["SBG", "KIT"] {
+            c.execute("INSERT INTO store_stock(store, ean, stock, updated_at) VALUES (?1,'111',5,'x')", [st]).unwrap();
+        }
+        c.execute("INSERT INTO store_points(store, log_id) VALUES ('KIT', 1)", []).unwrap();
+        let m = verbund::stock_matrix(&c).unwrap();
+        assert!(m["SBG"].is_object() && m["KIT"].is_object());
+        let lines = json!([{ "ean": "111", "qty": 1, "name": "x" }]);
+        assert!(verbund::transfer_create(&c, "SBG", "INN", &lines, "", "T").is_ok());
+        let mut sbg = rows(&c).unwrap().into_iter().find(|r| r["id"] == "SBG").unwrap();
+        sbg["_aktiv"] = json!(false);
+        save(&c, &sbg, "T").unwrap();
+        let m = verbund::stock_matrix(&c).unwrap();
+        assert!(m["SBG"].is_null() && m["KIT"].is_object(), "abgeschaltete Filiale fehlt in der Bestandsmatrix");
+        assert!(verbund::transfer_create(&c, "SBG", "INN", &lines, "", "T").unwrap_err().contains("deaktiviert"));
+        assert!(verbund::transfer_create(&c, "INN", "XXX", &lines, "", "T").is_err(), "unbekannte Filiale");
+        // Löschen räumt Bestand und Bonuspunkte der Filiale auf
+        delete(&c, "KIT", "T").unwrap();
+        assert_eq!(c.query_row::<i64, _, _>("SELECT COUNT(*) FROM store_stock WHERE store='KIT'", [], |x| x.get(0)).unwrap(), 0);
+        assert_eq!(c.query_row::<i64, _, _>("SELECT COUNT(*) FROM store_points WHERE store='KIT'", [], |x| x.get(0)).unwrap(), 0);
+    }
+
+    #[test]
+    fn ungewoehnliche_eingaben_stuerzen_nicht_ab() {
+        let mut r = zeile("sbg", 2, "Salzburg");
+        r["uid"] = json!("ÄÖ1234567");
+        assert!(pruefen(&r).unwrap_err().contains("USt-IdNr"), "Umlaute in der UID: Fehler statt Absturz");
+        r["uid"] = json!("");
+        r["iban"] = json!("ÄÖ611904300234573201");
+        assert!(pruefen(&r).is_err());
+        // ein fehlerhafter alter Wert (E-Mail) verhindert die eigene Zeile nicht
+        let c = db();
+        zentrale(&c);
+        ensure_all(&c, &json!({ "name": "Zentrale GmbH", "email": "kein-at", "iban": "falsch", "uid": "ÄÖ" })).unwrap();
+        let me = rows(&c).unwrap().remove(0);
+        assert_eq!((me["id"].as_str(), me["name"].as_str(), me["email"].as_str()), (Some("INN"), Some("Zentrale GmbH"), Some("")));
     }
 }

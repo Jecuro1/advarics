@@ -20,7 +20,7 @@ async function openDrawer(reason, auto) {
   catch (e) { toast('Kassenlade nicht erreichbar', {t2: String(e), type: 'warn', icon: 'cash'}); }
 }
 function headOps() {
-  return [...(CFG['bon.logo'] && CFG['bon.logoDruck'] ? [{t: 'logo'}] : []), {t: 'text', s: CFG['firma.marke'], a: 'c', b: true, big: true}, {t: 'text', s: CFG['firma.zusatz'], a: 'c'}, {t: 'text', s: `${CFG['firma.adresse']}\nUID ${CFG['firma.uid']} · Tel. ${CFG['firma.telefon']}`, a: 'c'}, ...(CFG['bon.kopf'] ? [{t: 'text', s: CFG['bon.kopf'], a: 'c'}] : []), {t: 'line'}];
+  return [...(CFG['bon.logo'] && CFG['bon.logoDruck'] ? [{t: 'logo'}] : []), {t: 'text', s: CFG['firma.marke'], a: 'c', b: true, big: true}, {t: 'text', s: CFG['firma.zusatz'], a: 'c'}, {t: 'text', s: [CFG['firma.adresse'], [CFG['firma.uid'] && `UID ${CFG['firma.uid']}`, CFG['firma.telefon'] && `Tel. ${CFG['firma.telefon']}`].filter(Boolean).join(' · ')].filter(Boolean).join('\n'), a: 'c'}, ...(CFG['bon.kopf'] ? [{t: 'text', s: CFG['bon.kopf'], a: 'c'}] : []), {t: 'line'}];
 }
 function receiptOps(rec) {
   const ops = headOps(), dt = rec.date;

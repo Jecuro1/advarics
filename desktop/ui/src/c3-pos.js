@@ -714,7 +714,7 @@ function pseudoQR(seed, N = 25) {
 function receiptHeadBase(tpl) {
   return tpl === 'modern' ? `<div class="band"></div><div class="logo"><span class="mk"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.5v15"/><path d="M18 4.5 10.5 12 18 19.5"/></svg></span><b>${esc(CFG['firma.marke'])} ${esc(CFG['firma.zusatz'].split(' ')[0])}</b><span class="sm">${esc(CFG['firma.adresse'])}</span></div>`
     : tpl === 'minimal' ? `<div class="logo"><b>${esc(CFG['firma.marke'].toUpperCase())}</b><span class="sm">${esc(CFG['firma.adresse'].split(',').pop().trim())}</span></div>`
-    : `<div class="logo"><b>${esc(CFG['firma.marke'].toUpperCase())}</b><span>${esc(CFG['firma.zusatz'])}</span><span class="sm">${esc(CFG['firma.adresse'])}<br>UID ${esc(CFG['firma.uid'])} · Tel. ${esc(CFG['firma.telefon'])}</span></div>`;
+    : `<div class="logo"><b>${esc(CFG['firma.marke'].toUpperCase())}</b><span>${esc(CFG['firma.zusatz'])}</span><span class="sm">${esc(CFG['firma.adresse'])}${[CFG['firma.uid'] && `UID ${CFG['firma.uid']}`, CFG['firma.telefon'] && `Tel. ${CFG['firma.telefon']}`].filter(Boolean).length ? '<br>' + [CFG['firma.uid'] && `UID ${CFG['firma.uid']}`, CFG['firma.telefon'] && `Tel. ${CFG['firma.telefon']}`].filter(Boolean).map(esc).join(' · ') : ''}</span></div>`;
 }
 function receiptHead(tpl) {
   const u = DESKTOP ? imgUrl(CFG['bon.logo']) : null;
