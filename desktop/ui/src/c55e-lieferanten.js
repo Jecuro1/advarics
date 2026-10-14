@@ -254,7 +254,7 @@ function lfAllg() {
       ${K.sw(`${P}order_vorschlag`, 'Order-Vorschläge nutzen', 'Aus = Artikel dieses Lieferanten erscheinen nicht im Bestellvorschlag und in der KI-Nachbestellung.')}
       ${K.in('lead_days', 'Lief.-Term. 1 Offset (Tage)', {num: true, inputmode: 'numeric', hint: 'Lieferzeit – Grundlage der KI-Nachbestellung und „Liefertermin 1“ der Bestellung (Bestelldatum + Tage).'})}
       ${K.in(`${P}term2`, 'Lief.-Term. 2 Offset (Tage)', {num: true, inputmode: 'numeric', hint: '„Liefertermin 2“ der Bestellung (Bestelldatum + Tage), z. B. spätester Liefertermin; leer = keiner. Überfällige Bestellungen sind in der Liste markiert.'})}`)}
-      ${K.card('EDI und Kalkulation', `${K.sw(`${P}desadv_auto`, 'DESADV automatisch verbuchen', 'Ein Lieferavis (DESADV) dieses Lieferanten wird beim Verarbeiten gleich als Wareneingang eingebucht – das Verarbeiten geschieht automatisch, wenn der Lieferant unter Stammdaten › EDI-Lieferanten mit „automatisch verarbeiten“ angebunden ist, sonst von Hand in der EDI-Liste. Nicht bei „Gegenscannen“ (das Avis bleibt zum Scannen offen) und nicht bei Positionen ohne Menge.')}
+      ${K.card('EDI und Kalkulation', `${K.sw(`${P}desadv_auto`, 'DESADV automatisch verbuchen', 'Ein Lieferavis (DESADV) dieses Lieferanten wird beim Verarbeiten gleich als Wareneingang eingebucht – das Verarbeiten geschieht automatisch, wenn der Lieferant unter EDI › EDI-Einstellungen › Lieferanten EDI-Einstellungen mit „automatisch verarbeiten“ angebunden ist und der Hintergrundjob „EDI-Import“ läuft, sonst von Hand in der EDI-Liste. Nicht bei „Gegenscannen“ (das Avis bleibt zum Scannen offen) und nicht bei Positionen ohne Menge.')}
         ${K.sw(`${P}pricat_ek`, 'EK-Preise aus PRICAT übernehmen', 'Wird ein Preiskatalog (PRICAT) dieses Lieferanten verarbeitet, bekommen vorhandene Artikel den neuen Einkaufspreis (der Verkaufspreis bleibt).')}
         ${K.sel(`${P}wg_schema`, 'Warengruppen-Schema', [['fedas', 'FEDAS']], {leer: '–', hint: 'FEDAS: Die Warengruppe in den PRICAT-Artikeln gilt als FEDAS-Schlüssel (6 Ziffern) und wird bei neuen Artikeln als FEDAS-Schlüssel eingetragen.'})}
         ${K.in(`${P}kalk_faktor`, 'Kalkulationsfaktor (EK → VK)', {num: true, inputmode: 'decimal', hint: 'Verkaufspreis-Vorschlag für neue PRICAT-Artikel ohne Verkaufspreis: EK × Faktor (leer = 2,2), gerundet nach Stammdaten › Preisrundung.'})}`)}</div>
@@ -278,7 +278,7 @@ function lfAllg() {
 /* ── Haupt-Adresse und Rechnungsadresse ── */
 /** Druck-Ansicht des Empfängers (Name + Anschrift) – wird beim Tippen nachgeführt */
 function lfPrevHTML(a) {
-  const D = LE.d, v = D.profile[a], bill = a === 'rechnung', lines = lfAdrLines(v, v.land || D.country), nm = bill ? (String(v.name || '').trim() || D.name) : D.name;
+  const D = LE.d, v = D.profile[a], bill = a === 'rechnung', lines = lfAdrLines(v, bill ? (v.land || D.country) : D.country), nm = bill ? (String(v.name || '').trim() || D.name) : D.name;
   return lines.length || nm ? [`<b>${esc(nm)}</b>`, ...lines.map(esc)].join('<br>') : '<span class="muted">Noch keine Adresse</span>';
 }
 function lfPrevAktual(el) { const a = LE.tab === 'haupt' ? 'adresse' : LE.tab === 'rechn' ? 'rechnung' : null, f = a && $('.fl-prev', el); if (f) f.innerHTML = lfPrevHTML(a); }
@@ -387,7 +387,7 @@ const lfRabattNorm = t => mkNorm(t);
 function lfRabattFehler(sid, id, name, pctText) {
   if (!sid) return 'Rabatt: Lieferant fehlt';
   const n = String(name || '').trim(); if (!n || n.length > 80) return 'Rabatt: Bezeichnung angeben (höchstens 80 Zeichen)';
-  const p = parseFloat(String(pctText ?? '').trim().replace(',', '.')); if (!isFinite(p) || Math.round(p * 100) / 100 <= 0 || p > 100) return 'Rabatt: Prozentsatz von 0,01 bis 100';
+  const p = parseFloat(String(pctText ?? '').trim().replace(',', '.')); if (!isFinite(p) || Math.round(p * 100) / 100 <= 0 || Math.round(p * 100) / 100 > 100) return 'Rabatt: Prozentsatz von 0,01 bis 100';
   if (lfRabatteVon(sid).some(r => r.id !== id && lfRabattNorm(r.name) === lfRabattNorm(n))) return `Rabatt: den Namen „${n}“ gibt es für diesen Lieferanten schon`;
   return '';
 }
@@ -585,7 +585,7 @@ async function lfRemove(ids, fromMask) {
       else { if (r._artikel) throw `Zum Lieferanten „${lfName(r)}“ gehören ${r._artikel} Artikel – er lässt sich nicht löschen, aber deaktivieren (Schalter „Aktiv“)`; persist.set('lieferanten', persist.get('lieferanten', []).filter(x => x.id !== r.id)); }
     } catch (e) { fehler.push(String(e.message || e)); }
   }
-  await Promise.all([lfLoad(true), loadSuppliers(), loadStamm()]);   // loadStamm: seine Rabatte sind mit ihm gelöscht – nicht im Zwischenspeicher stehen lassen
+  await Promise.all([lfLoad(true), loadSuppliers(), loadStamm(true)]);   // loadStamm: seine Rabatte sind mit ihm gelöscht – nicht im Zwischenspeicher stehen lassen
   if (fehler.length) { toast('Nicht alles gelöscht', {t2: fehler.join(' · '), type: 'warn', dur: 9000}); if (fehler.length === rs.length) abort(); return; }
   toast(rs.length === 1 ? 'Lieferant gelöscht' : `${rs.length} Lieferanten gelöscht`, {t2: rs.map(lfName).join(', '), icon: 'building', dur: 2400});
   if (fromMask) { LE.dirty = false; LE.d = null; go('lieferanten'); }

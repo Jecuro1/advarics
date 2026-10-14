@@ -68,7 +68,7 @@ async function openPO(id, preset) {
   /** Bestellwert nach Rabatt (auf Cent gerundet wie im Programmkern) */
   const totalC = () => st.lines.reduce((s, l) => s + Math.round((parseAmt(l.costE) || 0) * 100) * (parseInt(l.qty, 10) || 0), 0);   // in Cent, wie der Programmkern (Preis je Stück gerundet, dann Menge, dann Rabatt)
   const netto = () => Math.round(totalC() * (1 - rabattPct() / 100)) / 100;
-  const sumHTML = () => rabattPct() > 0 ? `<span class="muted" style="font-size:12px;display:block">Zwischensumme ${eur(total())} · Rabatt ${esc(rabattObj().name)} ${num(rabattPct(), 2)} % = −${eur(total() - netto())}</span>` : '';
+  const sumHTML = () => rabattPct() > 0 ? `<span class="muted" style="font-size:12px;display:block">Zwischensumme ${eur(totalC() / 100)} · Rabatt ${esc(rabattObj().name)} ${num(rabattPct(), 2)} % = −${eur(totalC() / 100 - netto())}</span>` : '';
   const supObj = () => SUPPLIERS_ALL.find(x => x.id === st.supplier) || SUPPLIERS.find(x => x.id === st.supplier);
   /** Mindestauftragssumme/-menge des Lieferanten: Hinweis, solange die Bestellung darunter liegt (die Summe nur, wenn alle Positionen einen Preis haben) */
   const mindestHint = () => {
@@ -92,7 +92,7 @@ async function openPO(id, preset) {
         <div class="card" style="overflow:hidden">${st.lines.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:14px">Artikel</th><th class="r">Bestand</th><th class="r">${draft ? 'Menge' : 'geliefert / bestellt'}</th><th class="r">EK netto</th><th class="r" style="padding-right:14px">Summe</th>${draft ? '<th></th>' : ''}</tr></thead><tbody>${st.lines.map((l, i) => { const x = varById(l.variant_id); return `<tr><td style="padding-left:14px"><b>${esc(l.name || x?.a.name || '')}</b><div class="muted" style="font-size:12px">${esc(colorName(l.color || x?.v.c))} · ${esc(l.size || x?.v.s)}</div></td><td class="r num">${x ? x.v.q : l.stock ?? '–'}</td>
             <td class="r">${draft ? `<input class="input num" data-lq="${i}" value="${esc(l.qty)}" inputmode="numeric" style="width:70px;height:32px;text-align:right">` : `<span class="num" style="color:${l.received >= l.qty ? 'var(--pos)' : 'inherit'}">${l.received} / ${l.qty}</span>`}</td>
             <td class="r">${draft ? `<input class="input num" data-lc="${i}" value="${esc(l.costE)}" inputmode="decimal" placeholder="0,00" style="width:90px;height:32px;text-align:right">` : eur(parseAmt(l.costE) || 0)}</td>
-            <td class="r num" style="padding-right:14px">${eur((parseAmt(l.costE) || 0) * (parseInt(l.qty, 10) || 0))}</td>${draft ? `<td><button class="btn btn-ghost btn-icon btn-sm" data-rml="${i}" aria-label="Entfernen">${ic('x', 'i-sm')}</button></td>` : ''}</tr>`; }).join('')}</tbody></table>`
+            <td class="r num" style="padding-right:14px">${eur(Math.round((parseAmt(l.costE) || 0) * 100) * (parseInt(l.qty, 10) || 0) / 100)}</td>${draft ? `<td><button class="btn btn-ghost btn-icon btn-sm" data-rml="${i}" aria-label="Entfernen">${ic('x', 'i-sm')}</button></td>` : ''}</tr>`; }).join('')}</tbody></table>`
           : '<div class="empty" style="padding:28px"><p>Noch keine Positionen – oben suchen und hinzufügen.</p></div>'}</div>
         <div class="preview-box"><span>Bestellwert (EK netto${rabattPct() > 0 ? ' nach Rabatt' : ''})<br><span class="muted" style="font-size:12px">${st.lines.reduce((s, l) => s + (parseInt(l.qty, 10) || 0), 0)} Stück</span><span id="poDisc">${sumHTML()}</span></span><b id="poTotal">${eur(netto())}</b></div>
         ${draft ? `<div id="poMin">${mindestHint()}</div>` : ''}

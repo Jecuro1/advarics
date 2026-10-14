@@ -2346,7 +2346,7 @@ fn main() {
             }
             // Kopien geöffneter Lieferanten-Dokumente: nach zwei Stunden entfernen (nicht erst beim nächsten Öffnen oder Start)
             std::thread::spawn(|| loop {
-                std::thread::sleep(std::time::Duration::from_secs(1800));
+                std::thread::sleep(std::time::Duration::from_secs(600));
                 dokumente_aufraeumen(std::time::Duration::from_secs(2 * 3600), None);
             });
             // Hintergrund-Dienste: Webhook-Zustellung, lokale REST-API (falls eingeschaltet)

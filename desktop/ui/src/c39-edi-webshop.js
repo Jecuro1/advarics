@@ -103,12 +103,12 @@ async function ediProcess(d) {
     if (unknown.length) throw new Error(`Unbekannte EAN: ${unknown.slice(0, 5).join(', ')}${unknown.length > 5 ? ' …' : ''} – erst per PRICAT/Artikel-Import anlegen`);
     const po = EK.pos.find(x => x.no === p.bestellung) || (p.bestellung ? await invoke('po_by_no', {no: p.bestellung}).then(id => id ? {id} : null).catch(() => null) : null);   // die Liste kennt nur die letzten 300 Bestellungen
     // dasselbe Avis (gleiche EDI-Nachricht oder gleiche Avis-Nummer desselben Lieferanten) nicht noch einmal anlegen und buchen
-    const vorh = (await docLoad('avis').catch(() => [])).find(x => x.data?.edi === d.no || (p.nr && x.partner === sup.id && x.ref === p.nr));
+    const vorh = (await docLoad('avis').catch(() => [])).find(x => x.status !== 'storniert' && (x.data?.edi === d.no || (p.nr && x.partner === sup.id && x.ref === p.nr)));
     const a = vorh ? null : await invoke('doc_save', {doc: {kind: 'avis', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), data: {lines, order_id: po?.id || null, spedition: '', edi: d.no}}, user: S.user.name});
     info = vorh ? `Avis ${vorh.no} gibt es schon – nicht noch einmal angelegt` : `Avis ${a.no}`;
     // Lieferant: „DESADV automatisch verbuchen“ (nicht bei Gegenscannen – dort bucht erst der Scanner-Wareneingang; nicht bei Positionen ohne Menge)
-    if (!a) { /* schon vorhanden: nichts weiter */ }
-    else if (sup.profile?.desadv_auto && ohneMenge) info += ` – nicht automatisch eingebucht: ${ohneMenge} Position${ohneMenge === 1 ? '' : 'en'} ohne Menge`;
+    if (a && ohneMenge) info += ` – ACHTUNG: ${ohneMenge} Position${ohneMenge === 1 ? '' : 'en'} ohne Menge (als 1 Stück angelegt), bitte im Avis prüfen${sup.profile?.desadv_auto ? ' – nicht automatisch eingebucht' : ''}`;
+    if (!a || ohneMenge) { /* schon vorhanden bzw. Menge unklar: nicht automatisch buchen */ }
     else if (sup.profile?.desadv_auto && !sup.profile?.gegenscannen) {
       try { const r = await invoke('doc_action', {id: a.id, action: 'buchen', payload: {}, user: S.user.name}); applyStocks(r.stocks); info += ' – eingebucht'; }
       catch (e) { info += ` – Einbuchen nicht möglich: ${String(e.message || e)}`; }
@@ -118,9 +118,9 @@ async function ediProcess(d) {
     const betrag = Math.round((p.summe ?? (p.positionen || []).reduce((s, x) => s + (x.betrag ?? (x.ek || 0) * (x.menge || 0)), 0)) * 100);
     const po = EK.pos.find(x => x.no === p.bestellung) || (p.bestellung ? await invoke('po_by_no', {no: p.bestellung}).then(id => id ? {id} : null).catch(() => null) : null);
     // Fälligkeit und Skonto ab Rechnungsdatum: Valuta/Skonto des Lieferanten, sonst seine Zahlungs-Bed.; ohne beides 30 Tage und kein Skonto
-    const sp = sup.profile || {}, zb = stRows('zahlungsbedingung').find(z => z.id === sp.zahlungsbed), rd = /^\d{4}-\d{2}-\d{2}$/.test(p.datum || '') ? p.datum : today(), plus = n => dIso(new Date(new Date(rd + 'T12:00:00').getTime() + n * 864e5));
-    const valuta = +sp.valuta || +zb?.tage || 30, skonto = +sp.skonto || +zb?.skonto || 0, skTage = +zb?.skonto_tage || 0;
-    const r = await invoke('doc_save', {doc: {kind: 'er', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), due: plus(valuta), data: {rechnungsnr: p.nr, betrag, bestellungen: po ? [po.id] : [], notiz: `aus EDI ${d.no}`, ...(skonto ? {skonto_pct: skonto, skonto_bis: skTage ? plus(skTage) : ''} : {})}}, user: S.user.name});
+    const sp = sup.profile || {}, zb = stRows('zahlungsbedingung').find(z => z.id === sp.zahlungsbed), rd = /^\d{4}-\d{2}-\d{2}$/.test(p.datum || '') && !isNaN(new Date(p.datum + 'T12:00:00')) ? p.datum : today(), plus = n => dIso(new Date(new Date(rd + 'T12:00:00').getTime() + n * 864e5));
+    const valuta = +sp.valuta || (zb ? +zb.tage || 0 : 30), skonto = +sp.skonto || +zb?.skonto || 0, skTage = +zb?.skonto_tage || 0;
+    const r = await invoke('doc_save', {doc: {kind: 'er', partner: sup.id, partner_name: sup.name, ref: p.nr, date: rd, due: plus(valuta), data: {rechnungsnr: p.nr, betrag, bestellungen: po ? [po.id] : [], notiz: `aus EDI ${d.no}`, ...(skonto ? {skonto_pct: skonto, skonto_bis: skTage ? plus(skTage) : ''} : {})}}, user: S.user.name});
     info = `Eingangsrechnung ${r.no}`;
   } else if (p.typ === 'ORDRSP') {
     info = `Bestätigung zu ${p.bestellung || '–'}: ${num((p.positionen || []).reduce((s, x) => s + (x.menge || 0), 0))} Teile`;

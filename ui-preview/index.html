@@ -6990,7 +6990,7 @@ async function openPO(id, preset) {
   /** Bestellwert nach Rabatt (auf Cent gerundet wie im Programmkern) */
   const totalC = () => st.lines.reduce((s, l) => s + Math.round((parseAmt(l.costE) || 0) * 100) * (parseInt(l.qty, 10) || 0), 0);   // in Cent, wie der Programmkern (Preis je Stück gerundet, dann Menge, dann Rabatt)
   const netto = () => Math.round(totalC() * (1 - rabattPct() / 100)) / 100;
-  const sumHTML = () => rabattPct() > 0 ? `<span class="muted" style="font-size:12px;display:block">Zwischensumme ${eur(total())} · Rabatt ${esc(rabattObj().name)} ${num(rabattPct(), 2)} % = −${eur(total() - netto())}</span>` : '';
+  const sumHTML = () => rabattPct() > 0 ? `<span class="muted" style="font-size:12px;display:block">Zwischensumme ${eur(totalC() / 100)} · Rabatt ${esc(rabattObj().name)} ${num(rabattPct(), 2)} % = −${eur(totalC() / 100 - netto())}</span>` : '';
   const supObj = () => SUPPLIERS_ALL.find(x => x.id === st.supplier) || SUPPLIERS.find(x => x.id === st.supplier);
   /** Mindestauftragssumme/-menge des Lieferanten: Hinweis, solange die Bestellung darunter liegt (die Summe nur, wenn alle Positionen einen Preis haben) */
   const mindestHint = () => {
@@ -7014,7 +7014,7 @@ async function openPO(id, preset) {
         <div class="card" style="overflow:hidden">${st.lines.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:14px">Artikel</th><th class="r">Bestand</th><th class="r">${draft ? 'Menge' : 'geliefert / bestellt'}</th><th class="r">EK netto</th><th class="r" style="padding-right:14px">Summe</th>${draft ? '<th></th>' : ''}</tr></thead><tbody>${st.lines.map((l, i) => { const x = varById(l.variant_id); return `<tr><td style="padding-left:14px"><b>${esc(l.name || x?.a.name || '')}</b><div class="muted" style="font-size:12px">${esc(colorName(l.color || x?.v.c))} · ${esc(l.size || x?.v.s)}</div></td><td class="r num">${x ? x.v.q : l.stock ?? '–'}</td>
             <td class="r">${draft ? `<input class="input num" data-lq="${i}" value="${esc(l.qty)}" inputmode="numeric" style="width:70px;height:32px;text-align:right">` : `<span class="num" style="color:${l.received >= l.qty ? 'var(--pos)' : 'inherit'}">${l.received} / ${l.qty}</span>`}</td>
             <td class="r">${draft ? `<input class="input num" data-lc="${i}" value="${esc(l.costE)}" inputmode="decimal" placeholder="0,00" style="width:90px;height:32px;text-align:right">` : eur(parseAmt(l.costE) || 0)}</td>
-            <td class="r num" style="padding-right:14px">${eur((parseAmt(l.costE) || 0) * (parseInt(l.qty, 10) || 0))}</td>${draft ? `<td><button class="btn btn-ghost btn-icon btn-sm" data-rml="${i}" aria-label="Entfernen">${ic('x', 'i-sm')}</button></td>` : ''}</tr>`; }).join('')}</tbody></table>`
+            <td class="r num" style="padding-right:14px">${eur(Math.round((parseAmt(l.costE) || 0) * 100) * (parseInt(l.qty, 10) || 0) / 100)}</td>${draft ? `<td><button class="btn btn-ghost btn-icon btn-sm" data-rml="${i}" aria-label="Entfernen">${ic('x', 'i-sm')}</button></td>` : ''}</tr>`; }).join('')}</tbody></table>`
           : '<div class="empty" style="padding:28px"><p>Noch keine Positionen – oben suchen und hinzufügen.</p></div>'}</div>
         <div class="preview-box"><span>Bestellwert (EK netto${rabattPct() > 0 ? ' nach Rabatt' : ''})<br><span class="muted" style="font-size:12px">${st.lines.reduce((s, l) => s + (parseInt(l.qty, 10) || 0), 0)} Stück</span><span id="poDisc">${sumHTML()}</span></span><b id="poTotal">${eur(netto())}</b></div>
         ${draft ? `<div id="poMin">${mindestHint()}</div>` : ''}
@@ -7329,10 +7329,10 @@ function printInvoice(rec, kind = 'rechnung') {
 function poHTML(head, lines, sup) {
   const s = sup || {};
   const rows = lines.map((l, i) => { const x = varById(l.variant_id); const cost = parseAmt(l.costE ?? (l.cost != null ? num(l.cost / 100, 2) : '')); return `<tr><td>${i + 1}</td><td><b>${esc(l.name || x?.a.name || '')}</b><br><span class="muted">${esc(colorName(l.color || x?.v.c))} · ${esc(l.size || x?.v.s)} · EAN ${esc(l.ean || x?.v.ean || '')}</span></td><td class="r">${esc(l.qty)}</td><td class="r">${isFinite(cost) ? num(cost, 2) : '–'}</td><td class="r">${isFinite(cost) ? num(cost * (parseInt(l.qty, 10) || 0), 2) : '–'}</td></tr>`; }).join('');
-  const total = lines.reduce((t, l) => { const c = parseAmt(l.costE ?? (l.cost != null ? String(l.cost / 100) : '')); return t + (isFinite(c) ? c * (parseInt(l.qty, 10) || 0) : 0); }, 0);
+  const totalC = lines.reduce((t, l) => { const c = parseAmt(l.costE ?? (l.cost != null ? String(l.cost / 100) : '')); return t + (isFinite(c) ? Math.round(c * 100) * (parseInt(l.qty, 10) || 0) : 0); }, 0), total = totalC / 100;   // in Cent, wie der Programmkern
   return letterHead('Bestellung', lfEmpfaenger(s).map(esc).join('<br>'), [['Bestellnummer', head?.no || 'Entwurf'], ['Datum', new Date().toLocaleDateString('de-AT')], ...(s.nr ? [['Lieferanten-Nr.', s.nr]] : []), ...(lfKundenNr(s) ? [['Unsere Kundennr.', lfKundenNr(s)]] : [])])
     + `${(() => { const l = typeof flZusatz === 'function' ? flZusatz('liefer') : null, r = typeof flZusatz === 'function' ? flZusatz('rechnung') : null; return l || r ? `<table class="meta" style="margin:0 0 4mm"><tr>${l ? `<td style="vertical-align:top;padding-right:10mm"><span class="muted">Lieferadresse</span><br>${l.map(esc).join('<br>')}</td>` : ''}${r ? `<td style="vertical-align:top"><span class="muted">Rechnungsadresse</span><br>${r.map(esc).join('<br>')}</td>` : ''}</tr></table>` : ''; })()}<p>Wir bestellen zu den vereinbarten Konditionen:</p><table><thead><tr><th style="width:8mm">#</th><th>Artikel</th><th class="r">Menge</th><th class="r">EK netto €</th><th class="r">Summe €</th></tr></thead><tbody>${rows}</tbody></table>
-    <table class="sum" style="width:70mm;margin:5mm 0 0 auto">${(() => { const pc = +head?.disc_pct || 0; if (!(pc > 0)) return `<tr class="tot"><td>Summe netto EUR</td><td class="r">${num(total, 2)}</td></tr>`; const nach = Math.round(total * 100 * (1 - pc / 100)) / 100; return `<tr><td>Zwischensumme EUR</td><td class="r">${num(total, 2)}</td></tr><tr><td>Rabatt${head.disc_name ? ' ' + esc(head.disc_name) : ''} ${num(pc, 2)} %</td><td class="r">−${num(total - nach, 2)}</td></tr><tr class="tot"><td>Summe netto EUR</td><td class="r">${num(nach, 2)}</td></tr>`; })()}</table>
+    <table class="sum" style="width:70mm;margin:5mm 0 0 auto">${(() => { const pc = +head?.disc_pct || 0; if (!(pc > 0)) return `<tr class="tot"><td>Summe netto EUR</td><td class="r">${num(total, 2)}</td></tr>`; const nach = Math.round(totalC * (1 - pc / 100)) / 100; return `<tr><td>Zwischensumme EUR</td><td class="r">${num(total, 2)}</td></tr><tr><td>Rabatt${head.disc_name ? ' ' + esc(head.disc_name) : ''} ${num(pc, 2)} %</td><td class="r">−${num(total - nach, 2)}</td></tr><tr class="tot"><td>Summe netto EUR</td><td class="r">${num(nach, 2)}</td></tr>`; })()}</table>
     ${(() => { const v = [s.profile?.vereinbarung1, s.profile?.vereinbarung2].map(x => String(x || '').trim()).filter(Boolean); return v.length ? `<p><b>Vereinbarungen:</b><br>${v.map(x => esc(x).replace(/\n/g, '<br>')).join('<br>')}</p>` : ''; })()}${head?.note ? `<p><b>Hinweis:</b> ${esc(head.note)}</p>` : ''}<p>Bitte Lieferschein mit Bestellnummer beilegen. Vielen Dank!</p><div class="foot">${esc(firmLine())}${fussA4() ? '<br>' + esc(fussA4()).replace(/\n/g, '<br>') : ''}</div>`;
 }
 
@@ -9692,7 +9692,7 @@ function openVbSetup(rolle) {
   };
 }
 async function afterSync(r) {
-  try { replaceCatalog(await invoke('catalog_list')); await loadCustomers(); await loadPromos(); await loadSuppliers(); await loadStamm(); } catch { /* */ }   // loadStamm: Stammdaten-Tabellen der Zentrale (z. B. Lieferantenrabatte)
+  try { replaceCatalog(await invoke('catalog_list')); await loadCustomers(); await loadPromos(); await loadSuppliers(); await loadStamm(true); } catch { /* */ }   // loadStamm: Stammdaten-Tabellen der Zentrale (z. B. Lieferantenrabatte)
   await loadVerbund();
   toast('Abgleich abgeschlossen', {t2: `${num(r.gesendet.belege)} Belege gesendet · ${num(r.geholt.artikel)} Artikel, ${num(r.geholt.kunden)} Kunden geholt`, type: 'pos', icon: 'sync'});
 }
@@ -9818,7 +9818,7 @@ function bindVerbund() {
     const s = e.target.closest('[data-tst]'); if (s) transferStatus(s.dataset.tno, s.dataset.tst);
   });
   // regelmäßig Status/Umsätze der Filialen aktualisieren
-  setInterval(() => { if (vbOn() && vbRole() === 'filiale') { loadStamm().catch(() => {}); loadSuppliers().catch(() => {}); }   // der Hintergrund-Abgleich bringt Rabatte, Rabattsperre u. a. – die Anzeige nachziehen
+  setInterval(() => { if (vbOn() && vbRole() === 'filiale') { loadStamm(true).catch(() => {}); loadSuppliers().catch(() => {}); }   // der Hintergrund-Abgleich bringt Rabatte, Rabattsperre u. a. – die Anzeige nachziehen
     if (vbOn()) loadVerbund().then(() => { if (S.view === 'filialen' && VB.tab === 'uebersicht') renderVbBody(); }); }, 60000);
 }
 
@@ -13370,7 +13370,7 @@ registerPage('an-rabatte', {title: 'Feste Rabatte – Auswertung', sub: () => 'G
   for (const s of sales) {
     const d = s.data || {};
     for (const l of d.lines || []) if (l.disc?.pct) { const amt = (l.unit || 0) * (l.qty || 0) * l.disc.pct / 100, k = l.disc.reason || 'ohne Grund'; const x = g[k] ||= {n: 0, amt: 0, by: {}, fix: fixDisc().some(f => f.name === k)}; x.n++; x.amt += amt; x.by[s.cashier || '–'] = (x.by[s.cashier || '–'] || 0) + amt; }
-    if (d.billDisc?.pct) { const base = (d.lines || []).reduce((t, l) => t + (l.unit || 0) * (l.qty || 0) * (1 - (l.disc?.pct || 0) / 100), 0), amt = base * d.billDisc.pct / 100, k = d.billDisc.reason || 'Bonrabatt'; const x = g[k] ||= {n: 0, amt: 0, by: {}, fix: fixDisc().some(f => f.name === k)}; x.n++; x.amt += amt; x.by[s.cashier || '–'] = (x.by[s.cashier || '–'] || 0) + amt; }
+    if (d.billDisc?.pct) { const base = (d.lines || []).reduce((t, l) => t + (l.unit || 0) * (l.qty || 0) * (1 - (l.disc?.pct || 0) / 100), 0), lineD = (d.lines || []).reduce((t, l) => t + (l.disc?.pct ? (l.unit || 0) * (l.qty || 0) * l.disc.pct / 100 : 0), 0), amt = d.t && d.t.disc != null ? Math.max(0, d.t.disc - lineD) : base * d.billDisc.pct / 100, k = d.billDisc.reason || 'Bonrabatt'; const x = g[k] ||= {n: 0, amt: 0, by: {}, fix: fixDisc().some(f => f.name === k)}; x.n++; x.amt += amt; x.by[s.cashier || '–'] = (x.by[s.cashier || '–'] || 0) + amt; }
   }
   const rows = Object.entries(g).sort((a, b) => b[1].amt - a[1].amt), tot = rows.reduce((s, [, x]) => s + x.amt, 0);
   $('[data-frr]', v).innerHTML = `${kpiCards([[eur0(tot), 'Rabatte gesamt'], [num(rows.reduce((s, [, x]) => s + x.n, 0)), 'Rabattierungen'], [num(sales.length), 'Bons im Zeitraum']])}<div class="card">${rows.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Grund</th><th class="r">Anzahl</th><th class="r">Betrag</th><th>nach Person</th></tr></thead><tbody>${rows.map(([k, x]) => `<tr><td style="padding-left:16px"><b>${esc(k)}</b> ${x.fix ? '<span class="pill accent" style="height:20px">fester Rabatt</span>' : ''}</td><td class="r num">${x.n}</td><td class="r num">${eur(x.amt)}</td><td class="muted" style="font-size:12.5px">${Object.entries(x.by).sort((a, b) => b[1] - a[1]).map(([p, a]) => `${esc(p)} ${eur0(a)}`).join(' · ')}</td></tr>`).join('')}</tbody></table>` : '<div class="empty" style="padding:40px 20px"><h3>Keine Rabatte im Zeitraum</h3></div>'}</div>`;
@@ -13561,12 +13561,12 @@ async function ediProcess(d) {
     if (unknown.length) throw new Error(`Unbekannte EAN: ${unknown.slice(0, 5).join(', ')}${unknown.length > 5 ? ' …' : ''} – erst per PRICAT/Artikel-Import anlegen`);
     const po = EK.pos.find(x => x.no === p.bestellung) || (p.bestellung ? await invoke('po_by_no', {no: p.bestellung}).then(id => id ? {id} : null).catch(() => null) : null);   // die Liste kennt nur die letzten 300 Bestellungen
     // dasselbe Avis (gleiche EDI-Nachricht oder gleiche Avis-Nummer desselben Lieferanten) nicht noch einmal anlegen und buchen
-    const vorh = (await docLoad('avis').catch(() => [])).find(x => x.data?.edi === d.no || (p.nr && x.partner === sup.id && x.ref === p.nr));
+    const vorh = (await docLoad('avis').catch(() => [])).find(x => x.status !== 'storniert' && (x.data?.edi === d.no || (p.nr && x.partner === sup.id && x.ref === p.nr)));
     const a = vorh ? null : await invoke('doc_save', {doc: {kind: 'avis', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), data: {lines, order_id: po?.id || null, spedition: '', edi: d.no}}, user: S.user.name});
     info = vorh ? `Avis ${vorh.no} gibt es schon – nicht noch einmal angelegt` : `Avis ${a.no}`;
     // Lieferant: „DESADV automatisch verbuchen“ (nicht bei Gegenscannen – dort bucht erst der Scanner-Wareneingang; nicht bei Positionen ohne Menge)
-    if (!a) { /* schon vorhanden: nichts weiter */ }
-    else if (sup.profile?.desadv_auto && ohneMenge) info += ` – nicht automatisch eingebucht: ${ohneMenge} Position${ohneMenge === 1 ? '' : 'en'} ohne Menge`;
+    if (a && ohneMenge) info += ` – ACHTUNG: ${ohneMenge} Position${ohneMenge === 1 ? '' : 'en'} ohne Menge (als 1 Stück angelegt), bitte im Avis prüfen${sup.profile?.desadv_auto ? ' – nicht automatisch eingebucht' : ''}`;
+    if (!a || ohneMenge) { /* schon vorhanden bzw. Menge unklar: nicht automatisch buchen */ }
     else if (sup.profile?.desadv_auto && !sup.profile?.gegenscannen) {
       try { const r = await invoke('doc_action', {id: a.id, action: 'buchen', payload: {}, user: S.user.name}); applyStocks(r.stocks); info += ' – eingebucht'; }
       catch (e) { info += ` – Einbuchen nicht möglich: ${String(e.message || e)}`; }
@@ -13576,9 +13576,9 @@ async function ediProcess(d) {
     const betrag = Math.round((p.summe ?? (p.positionen || []).reduce((s, x) => s + (x.betrag ?? (x.ek || 0) * (x.menge || 0)), 0)) * 100);
     const po = EK.pos.find(x => x.no === p.bestellung) || (p.bestellung ? await invoke('po_by_no', {no: p.bestellung}).then(id => id ? {id} : null).catch(() => null) : null);
     // Fälligkeit und Skonto ab Rechnungsdatum: Valuta/Skonto des Lieferanten, sonst seine Zahlungs-Bed.; ohne beides 30 Tage und kein Skonto
-    const sp = sup.profile || {}, zb = stRows('zahlungsbedingung').find(z => z.id === sp.zahlungsbed), rd = /^\d{4}-\d{2}-\d{2}$/.test(p.datum || '') ? p.datum : today(), plus = n => dIso(new Date(new Date(rd + 'T12:00:00').getTime() + n * 864e5));
-    const valuta = +sp.valuta || +zb?.tage || 30, skonto = +sp.skonto || +zb?.skonto || 0, skTage = +zb?.skonto_tage || 0;
-    const r = await invoke('doc_save', {doc: {kind: 'er', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), due: plus(valuta), data: {rechnungsnr: p.nr, betrag, bestellungen: po ? [po.id] : [], notiz: `aus EDI ${d.no}`, ...(skonto ? {skonto_pct: skonto, skonto_bis: skTage ? plus(skTage) : ''} : {})}}, user: S.user.name});
+    const sp = sup.profile || {}, zb = stRows('zahlungsbedingung').find(z => z.id === sp.zahlungsbed), rd = /^\d{4}-\d{2}-\d{2}$/.test(p.datum || '') && !isNaN(new Date(p.datum + 'T12:00:00')) ? p.datum : today(), plus = n => dIso(new Date(new Date(rd + 'T12:00:00').getTime() + n * 864e5));
+    const valuta = +sp.valuta || (zb ? +zb.tage || 0 : 30), skonto = +sp.skonto || +zb?.skonto || 0, skTage = +zb?.skonto_tage || 0;
+    const r = await invoke('doc_save', {doc: {kind: 'er', partner: sup.id, partner_name: sup.name, ref: p.nr, date: rd, due: plus(valuta), data: {rechnungsnr: p.nr, betrag, bestellungen: po ? [po.id] : [], notiz: `aus EDI ${d.no}`, ...(skonto ? {skonto_pct: skonto, skonto_bis: skTage ? plus(skTage) : ''} : {})}}, user: S.user.name});
     info = `Eingangsrechnung ${r.no}`;
   } else if (p.typ === 'ORDRSP') {
     info = `Bestätigung zu ${p.bestellung || '–'}: ${num((p.positionen || []).reduce((s, x) => s + (x.menge || 0), 0))} Teile`;
@@ -18726,7 +18726,7 @@ function lfAllg() {
       ${K.sw(`${P}order_vorschlag`, 'Order-Vorschläge nutzen', 'Aus = Artikel dieses Lieferanten erscheinen nicht im Bestellvorschlag und in der KI-Nachbestellung.')}
       ${K.in('lead_days', 'Lief.-Term. 1 Offset (Tage)', {num: true, inputmode: 'numeric', hint: 'Lieferzeit – Grundlage der KI-Nachbestellung und „Liefertermin 1“ der Bestellung (Bestelldatum + Tage).'})}
       ${K.in(`${P}term2`, 'Lief.-Term. 2 Offset (Tage)', {num: true, inputmode: 'numeric', hint: '„Liefertermin 2“ der Bestellung (Bestelldatum + Tage), z. B. spätester Liefertermin; leer = keiner. Überfällige Bestellungen sind in der Liste markiert.'})}`)}
-      ${K.card('EDI und Kalkulation', `${K.sw(`${P}desadv_auto`, 'DESADV automatisch verbuchen', 'Ein Lieferavis (DESADV) dieses Lieferanten wird beim Verarbeiten gleich als Wareneingang eingebucht – das Verarbeiten geschieht automatisch, wenn der Lieferant unter Stammdaten › EDI-Lieferanten mit „automatisch verarbeiten“ angebunden ist, sonst von Hand in der EDI-Liste. Nicht bei „Gegenscannen“ (das Avis bleibt zum Scannen offen) und nicht bei Positionen ohne Menge.')}
+      ${K.card('EDI und Kalkulation', `${K.sw(`${P}desadv_auto`, 'DESADV automatisch verbuchen', 'Ein Lieferavis (DESADV) dieses Lieferanten wird beim Verarbeiten gleich als Wareneingang eingebucht – das Verarbeiten geschieht automatisch, wenn der Lieferant unter EDI › EDI-Einstellungen › Lieferanten EDI-Einstellungen mit „automatisch verarbeiten“ angebunden ist und der Hintergrundjob „EDI-Import“ läuft, sonst von Hand in der EDI-Liste. Nicht bei „Gegenscannen“ (das Avis bleibt zum Scannen offen) und nicht bei Positionen ohne Menge.')}
         ${K.sw(`${P}pricat_ek`, 'EK-Preise aus PRICAT übernehmen', 'Wird ein Preiskatalog (PRICAT) dieses Lieferanten verarbeitet, bekommen vorhandene Artikel den neuen Einkaufspreis (der Verkaufspreis bleibt).')}
         ${K.sel(`${P}wg_schema`, 'Warengruppen-Schema', [['fedas', 'FEDAS']], {leer: '–', hint: 'FEDAS: Die Warengruppe in den PRICAT-Artikeln gilt als FEDAS-Schlüssel (6 Ziffern) und wird bei neuen Artikeln als FEDAS-Schlüssel eingetragen.'})}
         ${K.in(`${P}kalk_faktor`, 'Kalkulationsfaktor (EK → VK)', {num: true, inputmode: 'decimal', hint: 'Verkaufspreis-Vorschlag für neue PRICAT-Artikel ohne Verkaufspreis: EK × Faktor (leer = 2,2), gerundet nach Stammdaten › Preisrundung.'})}`)}</div>
@@ -18750,7 +18750,7 @@ function lfAllg() {
 /* ── Haupt-Adresse und Rechnungsadresse ── */
 /** Druck-Ansicht des Empfängers (Name + Anschrift) – wird beim Tippen nachgeführt */
 function lfPrevHTML(a) {
-  const D = LE.d, v = D.profile[a], bill = a === 'rechnung', lines = lfAdrLines(v, v.land || D.country), nm = bill ? (String(v.name || '').trim() || D.name) : D.name;
+  const D = LE.d, v = D.profile[a], bill = a === 'rechnung', lines = lfAdrLines(v, bill ? (v.land || D.country) : D.country), nm = bill ? (String(v.name || '').trim() || D.name) : D.name;
   return lines.length || nm ? [`<b>${esc(nm)}</b>`, ...lines.map(esc)].join('<br>') : '<span class="muted">Noch keine Adresse</span>';
 }
 function lfPrevAktual(el) { const a = LE.tab === 'haupt' ? 'adresse' : LE.tab === 'rechn' ? 'rechnung' : null, f = a && $('.fl-prev', el); if (f) f.innerHTML = lfPrevHTML(a); }
@@ -18859,7 +18859,7 @@ const lfRabattNorm = t => mkNorm(t);
 function lfRabattFehler(sid, id, name, pctText) {
   if (!sid) return 'Rabatt: Lieferant fehlt';
   const n = String(name || '').trim(); if (!n || n.length > 80) return 'Rabatt: Bezeichnung angeben (höchstens 80 Zeichen)';
-  const p = parseFloat(String(pctText ?? '').trim().replace(',', '.')); if (!isFinite(p) || Math.round(p * 100) / 100 <= 0 || p > 100) return 'Rabatt: Prozentsatz von 0,01 bis 100';
+  const p = parseFloat(String(pctText ?? '').trim().replace(',', '.')); if (!isFinite(p) || Math.round(p * 100) / 100 <= 0 || Math.round(p * 100) / 100 > 100) return 'Rabatt: Prozentsatz von 0,01 bis 100';
   if (lfRabatteVon(sid).some(r => r.id !== id && lfRabattNorm(r.name) === lfRabattNorm(n))) return `Rabatt: den Namen „${n}“ gibt es für diesen Lieferanten schon`;
   return '';
 }
@@ -19057,7 +19057,7 @@ async function lfRemove(ids, fromMask) {
       else { if (r._artikel) throw `Zum Lieferanten „${lfName(r)}“ gehören ${r._artikel} Artikel – er lässt sich nicht löschen, aber deaktivieren (Schalter „Aktiv“)`; persist.set('lieferanten', persist.get('lieferanten', []).filter(x => x.id !== r.id)); }
     } catch (e) { fehler.push(String(e.message || e)); }
   }
-  await Promise.all([lfLoad(true), loadSuppliers(), loadStamm()]);   // loadStamm: seine Rabatte sind mit ihm gelöscht – nicht im Zwischenspeicher stehen lassen
+  await Promise.all([lfLoad(true), loadSuppliers(), loadStamm(true)]);   // loadStamm: seine Rabatte sind mit ihm gelöscht – nicht im Zwischenspeicher stehen lassen
   if (fehler.length) { toast('Nicht alles gelöscht', {t2: fehler.join(' · '), type: 'warn', dur: 9000}); if (fehler.length === rs.length) abort(); return; }
   toast(rs.length === 1 ? 'Lieferant gelöscht' : `${rs.length} Lieferanten gelöscht`, {t2: rs.map(lfName).join(', '), icon: 'building', dur: 2400});
   if (fromMask) { LE.dirty = false; LE.d = null; go('lieferanten'); }

@@ -171,7 +171,8 @@ pub fn commit_return(tx: &Transaction, orig_no: &str, lines: &[ReturnLine], stor
     if all_back {
         let exact = o.total - refunded;
         let diff = exact - refund;
-        if diff != 0 && diff.abs() <= take.len() as i64 * 2 {
+        // Storno gleicht immer auf den bezahlten Betrag aus (auch bei Belegen ohne Sperr-Kennzeichen aus 0.44.0 bis 0.45.0); Retoure nur bei Rundungscent
+        if diff != 0 && (storno || diff.abs() <= take.len() as i64 * 2) {
             refund = exact;
             if let Some(nl) = out_lines.last_mut() {
                 let r = nl["refund"].as_i64().unwrap_or(0) + diff;
@@ -512,6 +513,27 @@ mod tests {
         assert_eq!(s["revenue"], json!(0));
         assert_eq!(s["sold"], json!(3));
         assert_eq!(s["returned"], json!(3));
+    }
+
+    #[test]
+    fn storno_gleicht_auf_den_bezahlten_betrag_aus_auch_ohne_sperrkennzeichen() {
+        let mut c = setup();
+        // Bon-Rabatt 10 % erfasste die gesperrte Jacke nicht: bezahlt 100 + 90 = 190 €; der Beleg trägt (wie in 0.44.0) kein „nodisc“
+        let data = json!({
+            "billDisc": { "pct": 10.0 }, "customer": { "id": "K-1" }, "t": { "total": 190.0 },
+            "lines": [
+                { "name": "Jacke", "sku": "A1", "c": "moos", "s": "M", "qty": 1, "unit": 100.0, "vat": 20 },
+                { "name": "Hose", "qty": 1, "unit": 100.0, "vat": 20 }
+            ]
+        });
+        let tx = c.transaction().unwrap();
+        let r = catalog::commit_sale(&tx, &[catalog::SaleLine { ean: Some("2000000000015".into()), qty: 1 }], 19000, "Test", Some("K-1"), &data).unwrap();
+        tx.commit().unwrap();
+        let no = r["no"].as_str().unwrap().to_string();
+        let tx = c.transaction().unwrap();
+        let st = commit_return(&tx, &no, &[], true, "Test", &json!({ "m": "bar", "label": "Bar" }), "Test").unwrap();
+        tx.commit().unwrap();
+        assert_eq!(st["total"], json!(-19000));
     }
 
     #[test]
