@@ -1,3 +1,16 @@
+## Neu in 0.44.0
+
+- **Stammdaten › Lieferanten › Rabatte** und weitere Einstellungen des Lieferanten mit Wirkung in Bestellung, Kasse und EDI.
+  - **Reiter „Rabatte“:** Liste der Rabatte des Lieferanten (Bezeichnung, Rabatt %) mit Neu und Löschen; ein Doppelklick öffnet die Maske „Rabatt“ mit Lieferant, Bezeichnung, Prozentsatz und den Knöpfen Aktualisieren, Sichern, Neu, Änderungen zurücknehmen und Löschen (gesichert wird sofort, unabhängig vom Sichern des Lieferanten). Bezeichnung je Lieferant eindeutig, Prozentsatz größer 0 bis 100, nur die Zentrale pflegt sie (Filialkassen bekommen sie beim Abgleich); sie entfallen mit dem Lieferanten.
+  - **Wirkung:** In der Bestellung wählen Sie einen Rabatt des Lieferanten. Er mindert den **Bestellwert** (Bestellsumme im Dialog und in der Liste, dort mit „nach x % Rabatt“), steht auf dem **A4-Beleg** (Zwischensumme, Rabatt, Summe netto) und im **CSV** (Spalten „Rabatt %“ und „EK nach Rabatt“). Die **Rechnungsprüfung** der Eingangsrechnung erwartet den Betrag nach Rabatt, das **Einkaufsvolumen für den Lieferantenbonus** rechnet netto, und das **Avis aus der Bestellung** trägt die Preise nach Rabatt. Bezeichnung und Prozentsatz werden mit der Bestellung festgehalten – ein späteres Ändern oder Löschen des Rabatts betrifft nur neue Bestellungen. Die Mindestauftragssumme gilt vor Rabatt. In der EDI-Bestellung (ORDERS) steht der Rabatt nicht.
+  - **Rabattsperre (Kasse):** Für Artikel eines Lieferanten mit Rabattsperre gibt es an der Kasse keinen Rabatt: nicht auf die Position, der Bon-Rabatt erfasst sie nicht, und Rabatt-Regeln (auch Bon-Regeln) lassen sie aus; Aktionspreise bleiben. Die Position trägt den Hinweis „ohne Rabatt“. In der Liste ist „Rabattsperre“ eine zuschaltbare Spalte.
+  - **Lief.-Term. 2 Offset:** Die Bestellliste zeigt für offene Bestellungen „Liefertermin 1“ (Bestelldatum + Lief.-Term. 1 Offset) und „Liefertermin 2“ (Bestelldatum + Lief.-Term. 2 Offset); überfällige sind rot markiert.
+  - **DESADV automatisch verbuchen:** Ein eingelesenes Lieferavis des Lieferanten wird sofort als Wareneingang eingebucht (nicht bei „Gegenscannen“ – dann bleibt das Avis zum Scannen offen; scheitert das Einbuchen, bleibt das Avis offen und die Meldung nennt den Grund). **EK-Preise aus PRICAT übernehmen:** Beim Verarbeiten eines Preiskatalogs bekommen vorhandene Artikel des Lieferanten (oder ohne Lieferant) den neuen Einkaufspreis; der Verkaufspreis bleibt.
+  - **Kalkulationsfaktor (EK → VK)** und **Warengruppen-Schema:** Neue Artikel aus dem EDI-Artikel-Import ohne Verkaufspreis bekommen EK × Faktor (leer = 2,2) als Vorschlag; mit Schema „FEDAS“ gilt die Warengruppe der Nachricht als FEDAS-Schlüssel (6 Ziffern) und wird beim neuen Artikel eingetragen.
+  - **Maske:** Die Karte „EDI und Kalkulation“ ist neu; Kontaktdaten und Zusatzinformationen stehen in einer eigenen Zeile unter den Karten.
+  - **Noch nicht enthalten:** Art.-Farb-Trennzeichen, Konsignation, Dienstleister (DSFinV-K), Artikel-Service, Standard-Art.-Merkmal, Zusätzliche Adresse(n), Statistik-Größen, FiBu und Kataloge des Lieferanten – sie erscheinen, sobald sie wirken.
+  - **Bestellung:** Eine in der Bestellmaske getippte Notiz ging verloren, wenn man danach im Suchfeld einen Artikel suchte – behoben.
+
 ## Neu in 0.43.1
 
 - **Lieferanten – Nachbesserungen nach unabhängiger Prüfung der Fassung 0.43.0:**

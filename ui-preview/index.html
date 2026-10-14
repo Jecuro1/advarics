@@ -1736,7 +1736,7 @@ button.ge-caret:hover{background:var(--surface-3);color:var(--text)}
 .fl-grid.fl-2{grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),520px))}
 .fl-grid.fl-3{grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))}
 .fl-stack{display:grid;gap:16px;align-content:start;min-width:0}
-.lf-allg>.lf-wide{grid-column:1/-1;max-width:none}.lf-zus{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px 18px;align-items:start}.lf-zus>*{min-width:0}
+.lf-allg>.lf-wide,.lf-allg>.lf-row2{grid-column:1/-1;max-width:none}.lf-row2{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}.lf-row2>.ea-card{max-width:none;min-width:0}.lf-row2>.ea-card:first-child{flex:1 1 320px}.lf-row2>.ea-card:last-child{flex:2 1 520px}.lf-zus{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px 18px;align-items:start}.lf-zus>*{min-width:0}
 .fl-colorrow{display:flex;align-items:center;gap:10px;min-height:38px}
 .fl-color{width:46px;height:34px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer}
 .fl-color.none{opacity:.45}
@@ -2181,7 +2181,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.43.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.44.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -3630,10 +3630,10 @@ const cartCount = () => POS.cart.reduce((s, l) => s + l.qty, 0);
 const discOf = a => a.sale ? Math.round((1 - a.sale / a.price) * 100) : 0;
 
 function totals() {
-  let sub = 0, ldisc = 0; const byRate = {};
-  POS.cart.forEach(l => { const g = r2(l.unit * l.qty), d = l.disc ? r2(g * l.disc.pct / 100) : 0; sub += g; ldisc += d; byRate[l.vat] = (byRate[l.vat] || 0) + g - d; });
+  let sub = 0, ldisc = 0; const byRate = {}, gesperrt = {};   // gesperrt: Positionen von Lieferanten mit Rabattsperre – der Bon-Rabatt erfasst sie nicht
+  POS.cart.forEach(l => { const g = r2(l.unit * l.qty), d = l.disc ? r2(g * l.disc.pct / 100) : 0; sub += g; ldisc += d; byRate[l.vat] = (byRate[l.vat] || 0) + g - d; if (lfRabattGesperrt(l.art)) gesperrt[l.vat] = (gesperrt[l.vat] || 0) + g - d; });
   let bdisc = 0;
-  if (POS.billDisc) Object.keys(byRate).forEach(k => { if (+k > 0) { const d = r2(byRate[k] * POS.billDisc.pct / 100); byRate[k] -= d; bdisc += d; } });
+  if (POS.billDisc) Object.keys(byRate).forEach(k => { if (+k > 0) { const d = r2((byRate[k] - (gesperrt[k] || 0)) * POS.billDisc.pct / 100); byRate[k] -= d; bdisc += d; } });
   const total = r2(sub - ldisc - bdisc);
   const vat = Object.entries(byRate).filter(([k, g]) => +k > 0 && g > 0).map(([k, g]) => ({rate: +k, gross: r2(g), net: r2(g / (1 + k / 100)), tax: r2(g - g / (1 + k / 100))}));
   return {sub: r2(sub), disc: r2(ldisc + bdisc), total, vat, zero: r2(byRate[0] || 0), points: Math.floor(total / 10)};
@@ -3716,7 +3716,7 @@ function lineHTML(l) {
   const c = l.c ? COLORS[l.c][1] : 'var(--text-3)';
   const g = r2(l.unit * l.qty), d = l.disc ? r2(g * l.disc.pct / 100) : 0;
   const varTxt = l.service ? esc(l.meta || 'Dienstleistung') : `<i class="sw" style="background:${c}"></i>${COLORS[l.c][0]}${l.s !== 'Einheitsgröße' ? ` · Gr. ${esc(l.s)}` : ''}`;
-  const extra = [l.disc ? `<span class="disc-tag">−${num(l.disc.pct, Number.isInteger(+l.disc.pct) ? 0 : 1)} %${l.disc.auto ? ` · ${esc(l.disc.reason)}` : ''}</span>` : '', l.was && !l.disc ? `<span class="disc-tag">Aktion</span>` : '',
+  const extra = [l.disc ? `<span class="disc-tag">−${num(l.disc.pct, Number.isInteger(+l.disc.pct) ? 0 : 1)} %${l.disc.auto ? ` · ${esc(l.disc.reason)}` : ''}</span>` : '', l.was && !l.disc ? `<span class="disc-tag">Aktion</span>` : '', lfRabattGesperrt(l.art) ? `<span class="disc-tag" title="Rabattsperre des Lieferanten">${ic('lock', 'i-xs')}ohne Rabatt</span>` : '',
     l.vals ? Object.entries(l.vals).filter(([, v]) => v).map(([k, v]) => `<span class="pill" style="height:18px;font-size:10.5px;padding:0 6px">${esc((SKI_PROMPTS.find(p => p.key === k) || {label: k}).label.split(' ')[0])} ${esc(v)}</span>`).join('') : '',
     l.seller ? `<span class="pill" style="height:18px;font-size:10.5px;padding:0 6px">${ic('user')}${esc(l.seller.split(' ')[0])}</span>` : ''].join('');
   const cls = ['line', POS.sel === l.key ? 'sel' : '', POS.lastKey === l.key ? (POS.lastNew ? 'new' : 'flash') : ''].join(' ');
@@ -3955,7 +3955,8 @@ function detachCustomer() {
 const fixDisc = () => (typeof stActive === 'function' ? stActive('festerrabatt') : []).filter(r => typeof kkRabattOk !== 'function' || kkRabattOk(r.id));
 function openDiscount() {
   if (!POS.cart.length) return toast('Warenkorb ist leer', {type: 'warn', icon: 'percent'});
-  const line = POS.cart.find(l => l.key === POS.sel);
+  let line = POS.cart.find(l => l.key === POS.sel);
+  if (line && lfRabattGesperrt(line.art)) { toast('Rabattsperre', {t2: `${line.name}: Artikel von ${supName(line.art.supplierId)} sind vom Rabatt ausgeschlossen – ein Bon-Rabatt gilt nicht für diese Position`, icon: 'lock', type: 'warn', dur: 5000}); line = null; }
   const st = {target: line ? 'line' : 'bill', pct: (line ? line.disc?.pct : POS.billDisc?.pct) || 10, reason: line?.disc?.reason || 'Kulanz'};
   const limit = POS.flow.approval ? POS.flow.approvalPct : 100;
   const el = openLayer(`<div class="modal" style="width:min(540px,100%)" role="dialog" aria-modal="true" aria-label="Rabatt gewähren"><div id="dBody"></div></div>`);
@@ -6261,7 +6262,7 @@ async function renderEinkauf() {
 function renderEkBody() {
   const b = $('#ekBody'); if (!b) return;
   if (EK.tab === 'bestellungen') {
-    b.innerHTML = `<div class="card">${EK.pos.length ? `<table class="tbl art-tbl"><thead><tr><th style="padding-left:16px">Bestellung</th><th>Typ</th><th>Lieferant</th><th>Status</th><th class="r">Positionen</th><th class="r">Geliefert</th><th class="r">Wert (EK)</th><th>Datum</th><th></th></tr></thead><tbody>${EK.pos.map(p => `<tr data-po="${p.id}"><td style="padding-left:16px"><b>${esc(p.no)}</b>${p.note ? `<div class="muted" style="font-size:12px">${esc(p.note)}</div>` : ''}</td><td>${p.order_type ? `<span class="pill" style="height:20px">${esc(p.order_type)}</span>` : '<span class="muted">–</span>'}</td><td>${esc(p.supplier)}</td><td><span class="pill ${PO_ST[p.status]?.[1] || ''}" style="height:20px">${PO_ST[p.status]?.[0] || p.status}</span></td><td class="r num">${p.lines}</td><td class="r num">${num(p.received)} / ${num(p.qty)}</td><td class="r"><b>${eur(p.value / 100)}</b></td><td class="muted">${esc(fmtTs(p.ordered_at || p.created_at))}</td><td class="r" style="padding-right:14px;color:var(--text-3)">${ic('chevron-right', 'i-sm')}</td></tr>`).join('')}</tbody></table>`
+    b.innerHTML = `<div class="card">${EK.pos.length ? `<table class="tbl art-tbl"><thead><tr><th style="padding-left:16px">Bestellung</th><th>Typ</th><th>Lieferant</th><th>Status</th><th class="r">Positionen</th><th class="r">Geliefert</th><th class="r">Wert (EK)</th><th>Datum</th><th>Liefertermin 1</th><th>Liefertermin 2</th><th></th></tr></thead><tbody>${EK.pos.map(p => { const lt = lfTermine(p), heute = today(), tc = d => d ? `<span style="color:${d < heute ? 'var(--neg)' : 'inherit'}" ${d < heute ? 'title="überfällig"' : ''}>${esc(dDate(d))}</span>` : '<span class="muted">–</span>'; return `<tr data-po="${p.id}"><td style="padding-left:16px"><b>${esc(p.no)}</b>${p.note ? `<div class="muted" style="font-size:12px">${esc(p.note)}</div>` : ''}</td><td>${p.order_type ? `<span class="pill" style="height:20px">${esc(p.order_type)}</span>` : '<span class="muted">–</span>'}</td><td>${esc(p.supplier)}</td><td><span class="pill ${PO_ST[p.status]?.[1] || ''}" style="height:20px">${PO_ST[p.status]?.[0] || p.status}</span></td><td class="r num">${p.lines}</td><td class="r num">${num(p.received)} / ${num(p.qty)}</td><td class="r"><b>${eur(p.value / 100)}</b>${p.disc_pct > 0 ? `<div class="muted" style="font-size:12px">nach ${num(p.disc_pct, 2)} % Rabatt</div>` : ''}</td><td class="muted">${esc(fmtTs(p.ordered_at || p.created_at))}</td><td>${tc(lt[0])}</td><td>${tc(lt[1])}</td><td class="r" style="padding-right:14px;color:var(--text-3)">${ic('chevron-right', 'i-sm')}</td></tr>`; }).join('')}</tbody></table>`
       : `<div class="empty" style="padding:56px 20px"><div class="empty-icon">${ic('truck')}</div><h3>Noch keine Bestellungen</h3><p>Neue Bestellung anlegen oder aus dem Bestellvorschlag übernehmen.</p></div>`}</div>`;
   } else if (EK.tab === 'vorschlag') {
     const groups = {}; EK.sug.forEach(s => (groups[s.supplier_id || ''] ||= []).push(s));
@@ -10991,7 +10992,7 @@ function applyAutoRules() {
   const best = new Map();   // Zeile → {pct, name}
   const put = (l, pct, name) => { if (l.disc || pct <= 0) return; const b = best.get(l); if (!b || pct > b.pct) best.set(l, {pct: Math.min(100, r2(pct)), name}); };
   for (const r of rules) {
-    const ls = POS.cart.filter(l => !l.service && !l.voucher && rrMatch(r, l.art));
+    const ls = POS.cart.filter(l => !l.service && !l.voucher && !lfRabattGesperrt(l.art) && rrMatch(r, l.art));
     const n = ls.reduce((s, l) => s + l.qty, 0);
     if (r.typ === 'prozent') ls.forEach(l => put(l, +r.pct, r.name));
     if (r.typ === 'menge' && n >= (+r.ab || 2)) ls.forEach(l => put(l, +r.pct, r.name));
@@ -11004,7 +11005,7 @@ function applyAutoRules() {
   }
   best.forEach((b, l) => { l.disc = {pct: b.pct, reason: b.name, auto: true}; });
   if (!POS.billDisc) {
-    const base = POS.cart.filter(l => !l.voucher).reduce((s, l) => s + l.unit * l.qty * (1 - (l.disc?.pct || 0) / 100), 0);
+    const base = POS.cart.filter(l => !l.voucher && !lfRabattGesperrt(l.art)).reduce((s, l) => s + l.unit * l.qty * (1 - (l.disc?.pct || 0) / 100), 0);
     const bon = rules.filter(r => r.typ === 'bon' && base >= (+r.ab_betrag || 0)).sort((a, b) => b.pct - a.pct)[0];
     if (bon) POS.billDisc = {pct: +bon.pct, reason: bon.name, auto: true};
   }
@@ -12860,6 +12861,11 @@ async function ediProcess(d) {
     const po = EK.pos.find(x => x.no === p.bestellung);
     const a = await invoke('doc_save', {doc: {kind: 'avis', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), data: {lines, order_id: po?.id || null, spedition: '', edi: d.no}}, user: S.user.name});
     info = `Avis ${a.no}`;
+    // Lieferant: „DESADV automatisch verbuchen“ (nicht bei Gegenscannen – dort bucht erst der Scanner-Wareneingang)
+    if (sup.profile?.desadv_auto && !sup.profile?.gegenscannen) {
+      try { const r = await invoke('doc_action', {id: a.id, action: 'buchen', payload: {}, user: S.user.name}); applyStocks(r.stocks); info += ' – eingebucht'; }
+      catch (e) { info += ` – Einbuchen nicht möglich: ${String(e.message || e)}`; }
+    }
   } else if (p.typ === 'INVOIC') {
     if (!sup) throw new Error('Lieferant unbekannt – Haupt-GLN im Lieferanten (Stammdaten › Lieferanten) hinterlegen');
     const betrag = Math.round((p.summe ?? (p.positionen || []).reduce((s, x) => s + (x.betrag ?? (x.ek || 0) * (x.menge || 0)), 0)) * 100);
@@ -12872,7 +12878,18 @@ async function ediProcess(d) {
   } else if (p.typ === 'ORDRSP') {
     info = `Bestätigung zu ${p.bestellung || '–'}: ${num((p.positionen || []).reduce((s, x) => s + (x.menge || 0), 0))} Teile`;
   } else if (p.typ === 'PRICAT') {
-    info = `${(p.positionen || []).length} Katalogartikel – Übernahme unter „EDI Artikel-Import“`;
+    // Lieferant: „EK-Preise aus PRICAT übernehmen“ – vorhandene Artikel des Lieferanten (oder ohne Lieferant) bekommen den EK, der Verkaufspreis bleibt
+    const gesehen = new Set(); let upd = 0;
+    if (sup?.profile?.pricat_ek) {
+      for (const x of p.positionen || []) {
+        const f = x.ek > 0 ? findEan(x.ean) : null;
+        if (!f || gesehen.has(f.a.id) || (f.a.supplierId && f.a.supplierId !== sup.id)) continue;
+        gesehen.add(f.a.id);
+        if (Math.abs((f.a.cost ?? -1) - x.ek) > 0.004) { f.a.cost = x.ek; await invoke('article_save', {article: artToDb(f.a), user: S.user.name}); upd++; }
+      }
+      if (upd) await reloadArt();
+    }
+    info = `${(p.positionen || []).length} Katalogartikel${upd ? ` – EK von ${upd} Artikeln aktualisiert` : ''} – Übernahme neuer Artikel unter „EDI Artikel-Import“`;
   } else throw new Error(`Nachrichtentyp ${p.typ} wird nicht eingelesen`);
   await invoke('doc_action', {id: d.id, action: 'verarbeitet', payload: {ergebnis: info}, user: S.user.name});
   Hooks.emit('edi.verarbeitet', {no: d.no, typ: p.typ, ergebnis: info});
@@ -12946,7 +12963,9 @@ async function ediArticleImport(items, updatePrices) {
       if (!colors.includes(ck)) colors.push(ck); if (!sizes.includes(sz)) sizes.push(sz);
       return {c: ck, s: sz, ean: x.ean, q: 0, other: null};
     });
-    const a = {id: nextArtId(), name: x0.name || x0.artikelnr || 'EDI-Artikel', brand: x0.marke || x0.sup || '', cat: ediMapWg(x0.sid, x0.wg) || (CATS.find(c => c.id !== 'alle')?.id || 'acc'), g: 'shirt', price: x0.vk || (x0.ek ? roundPrice(x0.ek * 2.2) : 0), vat: 20, pop: 40, colors, sizes, fields: {'Lieferanten-Art.-Nr.': x0.artikelnr || '', Quelle: `EDI ${x0.doc}`}, cost: x0.ek ?? null, supplierId: x0.sid || '', minStock: 1, variants};
+    const a = {id: nextArtId(), name: x0.name || x0.artikelnr || 'EDI-Artikel', brand: x0.marke || x0.sup || '', cat: ediMapWg(x0.sid, x0.wg) || (CATS.find(c => c.id !== 'alle')?.id || 'acc'), g: 'shirt', price: x0.vk || (x0.ek ? roundPrice(x0.ek * (+lfSup(x0.sid)?.profile?.kalk_faktor || 2.2)) : 0), vat: 20, pop: 40, colors, sizes, fields: {'Lieferanten-Art.-Nr.': x0.artikelnr || '', Quelle: `EDI ${x0.doc}`}, cost: x0.ek ?? null, supplierId: x0.sid || '', minStock: 1, variants,
+      // Warengruppen-Schema „FEDAS“ des Lieferanten: der Code in der Nachricht ist der FEDAS-Schlüssel
+      details: lfSup(x0.sid)?.profile?.wg_schema === 'fedas' && /^\d{6}$/.test(String(x0.wg || '').trim()) ? {fedas_code: String(x0.wg).trim()} : {}};
     finishArt(a);
     await invoke('article_save', {article: artToDb(a), user: S.user.name}); ART.push(a); neu++; log.push({art: a.id, aktion: 'neu', varianten: variants.length});
   }
@@ -17858,7 +17877,7 @@ function lfListRows() {
   return LF.rows.map(r => {
     const p = r.profile || {}, a = p.adresse || {};
     return {id: r.id, nr: +r.nr || 0, name: r.name || '', marken: (r.marken || []).map(m => m.name).filter(Boolean).join(', '), land: lfLandX(r.country), strasse: a.strasse || '', hausnr: a.hausnr || '', plz: a.plz || '', ort: a.ort || '',
-      tel: r.phone || '', gln: p.gln || '', email: r.email || '', egln: p.empfaenger_gln || '', aktiv: r._aktiv !== false, kundennr: r.customer_no || '', bundesland: a.bundesland || '', web: p.web || '', uid: p.uid || '', kontakte: r.contact || '',
+      tel: r.phone || '', gln: p.gln || '', email: r.email || '', egln: p.empfaenger_gln || '', aktiv: r._aktiv !== false, rabattsperre: !!p.rabattsperre, kundennr: r.customer_no || '', bundesland: a.bundesland || '', web: p.web || '', uid: p.uid || '', kontakte: r.contact || '',
       geaendert: r._geaendert ? fmtTs(r._geaendert) : '', waehrung: 'EUR', artikel: r._artikel || 0, offen: r._offen || 0, dateien: r._dateien || 0};
   });
 }
@@ -17867,7 +17886,7 @@ agridPage('lieferanten', {
   toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}],
   cols: [{k: 'nr', l: 'Nr.', t: 'num', w: 70}, {k: 'name', l: 'Name', w: 230}, {k: 'marken', l: 'Marken', w: 200}, {k: 'land', l: 'Land', w: 120}, {k: 'strasse', l: 'Str.', w: 160}, {k: 'hausnr', l: 'Haus-Nr.', w: 80}, {k: 'plz', l: 'PLZ', w: 80}, {k: 'ort', l: 'Ort', w: 130},
     {k: 'tel', l: 'Tel.', w: 130}, {k: 'gln', l: 'GLN', w: 130}, {k: 'email', l: 'E-Mail', w: 200}, {k: 'egln', l: 'Empfänger-GLN', w: 130},
-    {k: 'aktiv', l: 'Aktiv', t: 'check', w: 70, show: false}, {k: 'kundennr', l: 'Kunden-Nr.', w: 110}, {k: 'bundesland', l: 'Bundesland/Kanton/Provinz', w: 150, show: false}, {k: 'web', l: 'Webseite', w: 160, show: false}, {k: 'uid', l: 'USt-IdNr.', w: 130, show: false},
+    {k: 'aktiv', l: 'Aktiv', t: 'check', w: 70, show: false}, {k: 'rabattsperre', l: 'Rabattsperre', t: 'check', w: 100, show: false}, {k: 'kundennr', l: 'Kunden-Nr.', w: 110}, {k: 'bundesland', l: 'Bundesland/Kanton/Provinz', w: 150, show: false}, {k: 'web', l: 'Webseite', w: 160, show: false}, {k: 'uid', l: 'USt-IdNr.', w: 130, show: false},
     {k: 'kontakte', l: 'Kontakte', w: 150, show: false}, {k: 'geaendert', l: 'Geändert am', w: 140, show: false}, {k: 'waehrung', l: 'Währung', w: 80, show: false},
     {k: 'artikel', l: 'Artikel', t: 'num', w: 80, show: false}, {k: 'offen', l: 'Offene Bestellungen', t: 'num', w: 110, show: false}, {k: 'dateien', l: 'Dokumente', t: 'num', w: 90, show: false}],
   remove: ids => lfRemove(ids),
@@ -17883,23 +17902,23 @@ function lfNeu() {
 
 /* ── Entwurf ── */
 const lfAdrBlank = (land = 'AT') => ({name: '', ...Object.fromEntries(LF_ADR.map(k => [k, ''])), land});
-const lfProfileBlank = () => ({fax: '', web: '', steuernr: '', uid: '', gln: '', empfaenger_gln: '', info2: '', vereinbarung1: '', vereinbarung2: '', rma_ablauf: '', rma_pflicht: false, gegenscannen: false, order_vorschlag: true,
+const lfProfileBlank = () => ({fax: '', web: '', steuernr: '', uid: '', gln: '', empfaenger_gln: '', info2: '', vereinbarung1: '', vereinbarung2: '', rma_ablauf: '', rma_pflicht: false, gegenscannen: false, order_vorschlag: true, rabattsperre: false, desadv_auto: false, pricat_ek: false, kalk_faktor: 0, term2: 0, wg_schema: '',
   min_summe: 0, min_menge: 0, skonto: 0, valuta: 0, zahlungsbed: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank(''), filial_kunden: {}});
 const lfBlank = () => ({id: '', nr: String(LF.nr), name: '', _aktiv: true, country: 'AT', contact: '', email: '', phone: '', customer_no: '', lead_days: '7', note: '', iban: '', bic: '', fields: {}, marken: [],
-  profile: {...lfProfileBlank(), min_summe: '', min_menge: '', skonto: '', valuta: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank('')}});
+  profile: {...lfProfileBlank(), min_summe: '', min_menge: '', skonto: '', valuta: '', kalk_faktor: '', term2: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank('')}});
 function lfDraft(id) {
   const r = id ? lfRow(id) : null; if (!r) return lfBlank();
   const p = {...lfProfileBlank(), ...mclone(r.profile || {})};
   const adr = (a, land) => ({...lfAdrBlank(land), ...Object.fromEntries(Object.entries(a || {}).map(([k, v]) => [k, String(v ?? '')]))});
   p.adresse = adr(p.adresse, 'AT'); p.rechnung = adr(p.rechnung, ''); p.adresse.land ||= r.country; p.filial_kunden = {...(p.filial_kunden || {})};
-  p.min_summe = lfEuroText(p.min_summe); p.min_menge = p.min_menge ? String(p.min_menge) : ''; p.skonto = p.skonto ? String(p.skonto).replace('.', ',') : ''; p.valuta = p.valuta ? String(p.valuta) : '';
+  p.min_summe = lfEuroText(p.min_summe); p.min_menge = p.min_menge ? String(p.min_menge) : ''; p.skonto = p.skonto ? String(p.skonto).replace('.', ',') : ''; p.valuta = p.valuta ? String(p.valuta) : ''; p.kalk_faktor = p.kalk_faktor ? String(p.kalk_faktor).replace('.', ',') : ''; p.term2 = p.term2 ? String(p.term2) : '';
   for (const k of ['fax', 'web', 'steuernr', 'uid', 'gln', 'empfaenger_gln', 'info2', 'vereinbarung1', 'vereinbarung2', 'rma_ablauf', 'zahlungsbed']) p[k] = String(p[k] ?? '');
   return {id: r.id, nr: String(r.nr ?? ''), name: String(r.name ?? ''), _aktiv: r._aktiv !== false, country: r.country || 'AT', contact: String(r.contact ?? ''), email: String(r.email ?? ''), phone: String(r.phone ?? ''), customer_no: String(r.customer_no ?? ''),
     lead_days: String(r.lead_days ?? ''), note: String(r.note ?? ''), iban: flFormatIban(r.iban), bic: String(r.bic ?? ''), fields: mclone(r.fields || {}), marken: (r.marken || []).map(m => ({brand_id: m.brand_id, ext_name: m.ext_name || '', gln_src: m.gln_src || '', gln: m.gln || '', edi_nr: m.edi_nr || '', edi_name: m.edi_name || '', comment: m.comment || ''})), profile: p};
 }
 function lfToRow(d) {
   const t = v => String(v ?? '').trim(), p = d.profile, adr = a => Object.fromEntries(Object.entries(a).map(([k, v]) => [k, t(v)]));
-  const prof = {...p, min_summe: lfCent(p.min_summe), min_menge: p.min_menge === '' ? 0 : +p.min_menge, skonto: lfPct(p.skonto), valuta: p.valuta === '' ? 0 : +p.valuta, adresse: adr(p.adresse), rechnung: adr(p.rechnung), filial_kunden: {...p.filial_kunden}};
+  const prof = {...p, min_summe: lfCent(p.min_summe), min_menge: p.min_menge === '' ? 0 : +p.min_menge, skonto: lfPct(p.skonto), valuta: p.valuta === '' ? 0 : +p.valuta, kalk_faktor: lfPct(p.kalk_faktor), term2: p.term2 === '' ? 0 : +p.term2, adresse: adr(p.adresse), rechnung: adr(p.rechnung), filial_kunden: {...p.filial_kunden}};
   prof.adresse.land = t(d.country).toUpperCase(); prof.rechnung.land = t(prof.rechnung.land).toUpperCase();
   for (const k of ['fax', 'web', 'steuernr', 'info2', 'vereinbarung1', 'vereinbarung2', 'rma_ablauf', 'zahlungsbed']) prof[k] = t(prof[k]);
   prof.uid = t(prof.uid).replace(/\s+/g, '').toUpperCase(); prof.gln = t(prof.gln).replace(/\s+/g, ''); prof.empfaenger_gln = t(prof.empfaenger_gln).replace(/\s+/g, '');
@@ -17927,6 +17946,8 @@ function lfErrors(d) {
   if (t(p.zahlungsbed) && !stRows('zahlungsbedingung').some(z => z.id === p.zahlungsbed)) add('profile.zahlungsbed', 'Zahlungs-Bed.: diese Zahlungsbedingung gibt es nicht mehr – bitte neu wählen');
   if (t(p.skonto) !== '' && !(isFinite(lfPct(p.skonto)) && lfPct(p.skonto) >= 0 && lfPct(p.skonto) <= 100)) add('profile.skonto', 'Skonto: Prozentwert von 0 bis 100');
   if (t(p.valuta) !== '' && !(/^\d+$/.test(t(p.valuta)) && +p.valuta <= 365)) add('profile.valuta', 'Valuta: Tage von 0 bis 365');
+  if (t(p.kalk_faktor) !== '' && !(isFinite(lfPct(p.kalk_faktor)) && (lfPct(p.kalk_faktor) === 0 || (lfPct(p.kalk_faktor) >= 1 && lfPct(p.kalk_faktor) <= 20)))) add('profile.kalk_faktor', 'Kalkulationsfaktor: Zahl von 1 bis 20 (leer = 2,2)');
+  if (t(p.term2) !== '' && !(/^\d+$/.test(t(p.term2)) && +p.term2 <= 365)) add('profile.term2', 'Lief.-Term. 2 Offset: Tage von 0 bis 365');
   for (const [a, wo] of [['adresse', 'Haupt-Adresse'], ['rechnung', 'Rechnungsadresse']]) {
     const v = p[a]; for (const k of LF_ADR) if (t(v[k]).length > 80) add(`profile.${a}.${k}`, 'Höchstens 80 Zeichen');
     if (a === 'rechnung') { if (t(v.name).length > 120) add('profile.rechnung.name', 'Höchstens 120 Zeichen'); const land = t(v.land); if (land && !/^[A-Za-z]{2}$/.test(land)) add('profile.rechnung.land', 'Land als zweistelliger ISO-Code'); }
@@ -17994,17 +18015,23 @@ function lfAllg() {
       ${K.in('nr', 'Nr. *', {inputmode: 'numeric', hint: 'Lieferantennummer – eindeutig. Die interne Kennung der Belege ändert sich nicht.'})}${K.in('name', 'Name *')}${K.landSel('country', 'Land *', {leer: undefined, hint: 'Versendungsland für die Intrastat-Meldung und Land der Haupt-Adresse.'})}
       ${K.in(`${P}gln`, 'Haupt-GLN', {mono: true, inputmode: 'numeric', max: 13, hint: '13-stellige GLN: erkennt Lieferungen aus EDI-Nachrichten und steht in der Bestellung.'})}${K.in(`${P}empfaenger_gln`, 'Empfänger-GLN', {mono: true, inputmode: 'numeric', max: 13, hint: 'Nur wenn Nachrichten an einen anderen Empfänger gehen (z. B. Clearingstelle); leer = Haupt-GLN.'})}
       ${K.in('customer_no', 'Kunden-Nr.', {hint: 'Unsere Kundennummer beim Lieferanten – steht auf der Bestellung. Je Filiale anders: Reiter „Filial-Kunden-Nummern“.'})}
-      ${K.sw(`${P}rma_pflicht`, 'RMA Code Pflicht', 'Retouren an diesen Lieferanten lassen sich nur mit RMA-/Rücksendenummer versenden.')}`)}
+      ${K.sw(`${P}rma_pflicht`, 'RMA Code Pflicht', 'Retouren an diesen Lieferanten lassen sich nur mit RMA-/Rücksendenummer versenden.')}
+      ${K.sw(`${P}rabattsperre`, 'Rabattsperre', 'An der Kasse sind für Artikel dieses Lieferanten keine Rabatte möglich: weder Position noch Bon-Rabatt noch Rabatt-Regeln (Aktionspreise bleiben).')}`)}
     <div class="fl-stack">${K.card('Liefereinstellungen', `${K.sw(`${P}gegenscannen`, 'Gegenscannen bei WE-Avis erforderlich', 'Das Avis lässt sich erst einbuchen, nachdem die Ware im Scanner-Wareneingang gezählt wurde.')}
       ${K.sw(`${P}order_vorschlag`, 'Order-Vorschläge nutzen', 'Aus = Artikel dieses Lieferanten erscheinen nicht im Bestellvorschlag und in der KI-Nachbestellung.')}
-      ${K.in('lead_days', 'Lief.-Term. 1 Offset (Tage)', {num: true, inputmode: 'numeric', hint: 'Lieferzeit – Grundlage der KI-Nachbestellung.'})}`)}
-      ${K.card('Kontaktdaten', `${K.in('contact', 'Ansprechperson', {hint: 'Steht auf der Bestellung als „z. H.“.'})}${K.in('email', 'E-Mail', {type: 'email', hint: 'Empfänger der Bestellung per E-Mail.'})}${K.in(`${P}web`, 'Webseite')}${K.in('phone', 'Telefon')}${K.in(`${P}fax`, 'Fax')}`)}</div>
+      ${K.in('lead_days', 'Lief.-Term. 1 Offset (Tage)', {num: true, inputmode: 'numeric', hint: 'Lieferzeit – Grundlage der KI-Nachbestellung und „Liefertermin 1“ der Bestellung (Bestelldatum + Tage).'})}
+      ${K.in(`${P}term2`, 'Lief.-Term. 2 Offset (Tage)', {num: true, inputmode: 'numeric', hint: '„Liefertermin 2“ der Bestellung (Bestelldatum + Tage), z. B. spätester Liefertermin; leer = keiner. Überfällige Bestellungen sind in der Liste markiert.'})}`)}
+      ${K.card('EDI und Kalkulation', `${K.sw(`${P}desadv_auto`, 'DESADV automatisch verbuchen', 'Ein eingelesenes Lieferavis (DESADV) dieses Lieferanten wird sofort als Wareneingang eingebucht. Nicht bei „Gegenscannen“: dann bleibt das Avis zum Scannen offen.')}
+        ${K.sw(`${P}pricat_ek`, 'EK-Preise aus PRICAT übernehmen', 'Wird ein Preiskatalog (PRICAT) dieses Lieferanten verarbeitet, bekommen vorhandene Artikel den neuen Einkaufspreis (der Verkaufspreis bleibt).')}
+        ${K.sel(`${P}wg_schema`, 'Warengruppen-Schema', [['fedas', 'FEDAS']], {leer: '–', hint: 'FEDAS: Die Warengruppe in den PRICAT-Artikeln gilt als FEDAS-Schlüssel (6 Ziffern) und wird bei neuen Artikeln als FEDAS-Schlüssel eingetragen.'})}
+        ${K.in(`${P}kalk_faktor`, 'Kalkulationsfaktor (EK → VK)', {num: true, inputmode: 'decimal', hint: 'Verkaufspreis-Vorschlag für neue PRICAT-Artikel ohne Verkaufspreis: EK × Faktor (leer = 2,2).'})}`)}</div>
     <div class="fl-stack">${K.card('Finanzeinstellungen', `${K.in(`${P}uid`, 'USt-IdNr.', {mono: true, ph: 'ATU12345678', hint: 'Erscheint auf der Eingangsrechnung.'})}${K.in(`${P}steuernr`, 'Steuernummer')}
       ${K.in(`${P}min_summe`, 'Min. Auftragssumme (€)', {num: true, inputmode: 'decimal', hint: 'Beim Bestellen fragt Kontor nach, wenn die Bestellung darunter liegt.'})}${K.in(`${P}min_menge`, 'Min. Auftragsmenge', {num: true, inputmode: 'numeric', hint: 'Stückzahl der ganzen Bestellung.'})}
       <label class="field"><span>Währung</span><select class="input select" disabled><option>EUR – Euro</option></select><small class="ea-hint">Alle Beträge in Kontor sind in Euro.</small></label>
       <div class="zp-pair">${K.in(`${P}skonto`, 'Skonto (%)', {num: true, inputmode: 'decimal'})}${K.in(`${P}valuta`, 'Valuta (Tage)', {num: true, inputmode: 'numeric'})}</div>${zbSel}
       ${K.in('iban', 'IBAN', {mono: true, ph: 'AT61 1904 3002 3457 3201', hint: 'Für die SEPA-Zahlungsdatei. Änderungen verlangen die Freigabe eines Administrators.'})}${K.in('bic', 'BIC', {mono: true, ph: 'BKAUATWW'})}`)}</div>
-    ${K.card('Zusatzinformationen', `<div class="lf-zus">${K.area('note', 'Info', 3, 'Interner Hinweis – erscheint beim Bestellen.')}${K.area(`${P}info2`, 'Info 2', 3, 'Zweiter interner Hinweis.')}${K.area(`${P}vereinbarung1`, 'Vereinbarung 1', 3, 'Erscheint beim Bestellen und auf der Bestellung.')}${K.area(`${P}vereinbarung2`, 'Vereinbarung 2', 3, 'Erscheint beim Bestellen und auf der Bestellung.')}${K.area(`${P}rma_ablauf`, 'RMA Ablauf', 3, 'Hinweis zum Ablauf einer Rücksendung – erscheint in der Retoure an diesen Lieferanten.')}</div>`, 'lf-wide')}
+    <div class="lf-row2">${K.card('Kontaktdaten', `${K.in('contact', 'Ansprechperson', {hint: 'Steht auf der Bestellung als „z. H.“.'})}${K.in('email', 'E-Mail', {type: 'email', hint: 'Empfänger der Bestellung per E-Mail.'})}${K.in(`${P}web`, 'Webseite')}${K.in('phone', 'Telefon')}${K.in(`${P}fax`, 'Fax')}`)}
+    ${K.card('Zusatzinformationen', `<div class="lf-zus">${K.area('note', 'Info', 3, 'Interner Hinweis – erscheint beim Bestellen.')}${K.area(`${P}info2`, 'Info 2', 3, 'Zweiter interner Hinweis.')}${K.area(`${P}vereinbarung1`, 'Vereinbarung 1', 3, 'Erscheint beim Bestellen und auf der Bestellung.')}${K.area(`${P}vereinbarung2`, 'Vereinbarung 2', 3, 'Erscheint beim Bestellen und auf der Bestellung.')}${K.area(`${P}rma_ablauf`, 'RMA Ablauf', 3, 'Hinweis zum Ablauf einer Rücksendung – erscheint in der Retoure an diesen Lieferanten.')}</div>`)}</div>
     ${cf}
   </div>`, mount: el => {
       const box = $('[data-lf-cf]', el); if (!box) return;
@@ -18329,6 +18356,14 @@ async function lfRemove(ids, fromMask) {
 
 /* ── Wirkung in den Belegen ── */
 const lfSup = id => SUPPLIERS_ALL.find(x => x.id === id) || SUPPLIERS.find(x => x.id === id);
+/** Liefertermine einer offenen Bestellung: Bestelldatum + „Lief.-Term. 1 / 2 Offset“ des Lieferanten (leer ohne Offset oder wenn nichts mehr offen ist) */
+function lfTermine(p) {
+  if (!p.ordered_at || !['bestellt', 'teilgeliefert'].includes(p.status)) return [null, null];
+  const s = lfSup(p.supplier_id), base = new Date(p.ordered_at), add = n => n > 0 && isFinite(base) ? dIso(new Date(base.getTime() + n * 864e5)) : null;
+  return [add(+s?.lead_days || 0), add(+s?.profile?.term2 || 0)];
+}
+/** Rabattsperre des Lieferanten (Stammdaten › Lieferanten): Artikel dieses Lieferanten sind an der Kasse vom Rabatt ausgenommen (Position, Bon-Rabatt, Regeln) */
+const lfRabattGesperrt = art => !!(art && art.supplierId && lfSup(art.supplierId)?.profile?.rabattsperre);
 /** Lieferanten für Auswahllisten: die aktiven, dazu der aktuell gewählte – auch wenn er inzwischen inaktiv ist („(inaktiv)“), damit er beim Sichern nicht verloren geht */
 function lfOptionen(sel) {
   const l = SUPPLIERS.map(s => [s.id, s.name]);
@@ -18356,7 +18391,7 @@ DOC_EXTRA.avis = st => { const s = lfSup(st.partner); return s?.profile?.gegensc
 DOC_EXTRA.er = st => { const s = lfSup(st.partner), ids = s ? [['USt-IdNr.', s.profile?.uid], ['Steuernummer', s.profile?.steuernr]].filter(x => String(x[1] || '').trim()) : []; return s ? `${lfHinweis(s)}${ids.length ? `<div class="muted" style="font-size:12.5px">${ids.map(([l, v]) => `${l} des Lieferanten: ${esc(v)}`).join(' · ')}</div>` : ''}` : ''; };
 
 // nur lesend – für Prüfungen: Empfängerblock und Hinweise zu einem Lieferanten, Kunden-Nr. je Filiale
-if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {lfEmpfaenger: (id, art) => lfEmpfaenger(lfRow(id), art), lfKundenNr: (id, st) => lfKundenNr(lfRow(id), st), lfGlnOk, lfSichtbar: name => ({alle: SUPPLIERS_ALL.some(s => s.name === name), aktiv: SUPPLIERS.some(s => s.name === name)}), lfMarkeSync, lfMarkeEigen, lfOptionen: sel => lfOptionen(sel).map(x => x[1]), poHTML: (head, lines, sid) => poHTML(head, lines, lfSup(sid))});
+if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {lfEmpfaenger: (id, art) => lfEmpfaenger(lfRow(id), art), lfKundenNr: (id, st) => lfKundenNr(lfRow(id), st), lfGlnOk, lfSichtbar: name => ({alle: SUPPLIERS_ALL.some(s => s.name === name), aktiv: SUPPLIERS.some(s => s.name === name)}), lfMarkeSync, lfMarkeEigen, lfOptionen: sel => lfOptionen(sel).map(x => x[1]), poHTML: (head, lines, sid) => poHTML(head, lines, lfSup(sid)), lfTermine, posTotals: (cart, billPct) => { const sc = POS.cart, sb = POS.billDisc; POS.cart = cart; POS.billDisc = billPct ? {pct: billPct} : null; try { return totals(); } finally { POS.cart = sc; POS.billDisc = sb; } }});
 /* ═════════════════════════════════════════════════════════════════
    56 · MENÜPUNKTE UND RECHTE
    Wer ein Recht nicht hat – weder über seine Rolle noch über seine Benutzergruppe – sieht die zugehörigen Menüpunkte nicht

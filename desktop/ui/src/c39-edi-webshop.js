@@ -103,6 +103,11 @@ async function ediProcess(d) {
     const po = EK.pos.find(x => x.no === p.bestellung);
     const a = await invoke('doc_save', {doc: {kind: 'avis', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), data: {lines, order_id: po?.id || null, spedition: '', edi: d.no}}, user: S.user.name});
     info = `Avis ${a.no}`;
+    // Lieferant: „DESADV automatisch verbuchen“ (nicht bei Gegenscannen – dort bucht erst der Scanner-Wareneingang)
+    if (sup.profile?.desadv_auto && !sup.profile?.gegenscannen) {
+      try { const r = await invoke('doc_action', {id: a.id, action: 'buchen', payload: {}, user: S.user.name}); applyStocks(r.stocks); info += ' – eingebucht'; }
+      catch (e) { info += ` – Einbuchen nicht möglich: ${String(e.message || e)}`; }
+    }
   } else if (p.typ === 'INVOIC') {
     if (!sup) throw new Error('Lieferant unbekannt – Haupt-GLN im Lieferanten (Stammdaten › Lieferanten) hinterlegen');
     const betrag = Math.round((p.summe ?? (p.positionen || []).reduce((s, x) => s + (x.betrag ?? (x.ek || 0) * (x.menge || 0)), 0)) * 100);
@@ -115,7 +120,18 @@ async function ediProcess(d) {
   } else if (p.typ === 'ORDRSP') {
     info = `Bestätigung zu ${p.bestellung || '–'}: ${num((p.positionen || []).reduce((s, x) => s + (x.menge || 0), 0))} Teile`;
   } else if (p.typ === 'PRICAT') {
-    info = `${(p.positionen || []).length} Katalogartikel – Übernahme unter „EDI Artikel-Import“`;
+    // Lieferant: „EK-Preise aus PRICAT übernehmen“ – vorhandene Artikel des Lieferanten (oder ohne Lieferant) bekommen den EK, der Verkaufspreis bleibt
+    const gesehen = new Set(); let upd = 0;
+    if (sup?.profile?.pricat_ek) {
+      for (const x of p.positionen || []) {
+        const f = x.ek > 0 ? findEan(x.ean) : null;
+        if (!f || gesehen.has(f.a.id) || (f.a.supplierId && f.a.supplierId !== sup.id)) continue;
+        gesehen.add(f.a.id);
+        if (Math.abs((f.a.cost ?? -1) - x.ek) > 0.004) { f.a.cost = x.ek; await invoke('article_save', {article: artToDb(f.a), user: S.user.name}); upd++; }
+      }
+      if (upd) await reloadArt();
+    }
+    info = `${(p.positionen || []).length} Katalogartikel${upd ? ` – EK von ${upd} Artikeln aktualisiert` : ''} – Übernahme neuer Artikel unter „EDI Artikel-Import“`;
   } else throw new Error(`Nachrichtentyp ${p.typ} wird nicht eingelesen`);
   await invoke('doc_action', {id: d.id, action: 'verarbeitet', payload: {ergebnis: info}, user: S.user.name});
   Hooks.emit('edi.verarbeitet', {no: d.no, typ: p.typ, ergebnis: info});
@@ -189,7 +205,9 @@ async function ediArticleImport(items, updatePrices) {
       if (!colors.includes(ck)) colors.push(ck); if (!sizes.includes(sz)) sizes.push(sz);
       return {c: ck, s: sz, ean: x.ean, q: 0, other: null};
     });
-    const a = {id: nextArtId(), name: x0.name || x0.artikelnr || 'EDI-Artikel', brand: x0.marke || x0.sup || '', cat: ediMapWg(x0.sid, x0.wg) || (CATS.find(c => c.id !== 'alle')?.id || 'acc'), g: 'shirt', price: x0.vk || (x0.ek ? roundPrice(x0.ek * 2.2) : 0), vat: 20, pop: 40, colors, sizes, fields: {'Lieferanten-Art.-Nr.': x0.artikelnr || '', Quelle: `EDI ${x0.doc}`}, cost: x0.ek ?? null, supplierId: x0.sid || '', minStock: 1, variants};
+    const a = {id: nextArtId(), name: x0.name || x0.artikelnr || 'EDI-Artikel', brand: x0.marke || x0.sup || '', cat: ediMapWg(x0.sid, x0.wg) || (CATS.find(c => c.id !== 'alle')?.id || 'acc'), g: 'shirt', price: x0.vk || (x0.ek ? roundPrice(x0.ek * (+lfSup(x0.sid)?.profile?.kalk_faktor || 2.2)) : 0), vat: 20, pop: 40, colors, sizes, fields: {'Lieferanten-Art.-Nr.': x0.artikelnr || '', Quelle: `EDI ${x0.doc}`}, cost: x0.ek ?? null, supplierId: x0.sid || '', minStock: 1, variants,
+      // Warengruppen-Schema „FEDAS“ des Lieferanten: der Code in der Nachricht ist der FEDAS-Schlüssel
+      details: lfSup(x0.sid)?.profile?.wg_schema === 'fedas' && /^\d{6}$/.test(String(x0.wg || '').trim()) ? {fedas_code: String(x0.wg).trim()} : {}};
     finishArt(a);
     await invoke('article_save', {article: artToDb(a), user: S.user.name}); ART.push(a); neu++; log.push({art: a.id, aktion: 'neu', varianten: variants.length});
   }

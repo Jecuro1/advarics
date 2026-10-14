@@ -114,6 +114,20 @@ pub fn profil_pruefen(c: &Connection, p: &Value) -> Result<Value, String> {
     o.insert("skonto".into(), json!((skonto * 100.0).round() / 100.0));
     let valuta = if p["valuta"].is_null() || p["valuta"].is_string() && s(&p["valuta"]).is_empty() { 0 } else { ganz(&p["valuta"]).filter(|n| (0..=365).contains(n)).ok_or("Valuta: Tage von 0 bis 365")? };
     o.insert("valuta".into(), json!(valuta));
+    // Kasse, EDI und Bestellvorschläge: Rabattsperre, DESADV automatisch verbuchen, EK-Preise aus PRICAT, Kalkulationsfaktor, 2. Liefertermin, Warengruppen-Schema
+    for k in ["rabattsperre", "desadv_auto", "pricat_ek"] {
+        o.insert(k.into(), json!(p[k].as_bool().unwrap_or(false)));
+    }
+    let leer = |v: &Value| v.is_null() || v.is_string() && s(v).is_empty();
+    let kalk = if leer(&p["kalk_faktor"]) { 0.0 } else { zahl(&p["kalk_faktor"]).filter(|x| *x == 0.0 || (1.0..=20.0).contains(x)).ok_or("Kalkulationsfaktor: Zahl von 1 bis 20 (leer = 2,2)")? };
+    o.insert("kalk_faktor".into(), json!((kalk * 100.0).round() / 100.0));
+    let term2 = if leer(&p["term2"]) { 0 } else { ganz(&p["term2"]).filter(|n| (0..=365).contains(n)).ok_or("Lief.-Term. 2 Offset: Tage von 0 bis 365")? };
+    o.insert("term2".into(), json!(term2));
+    let schema = s(&p["wg_schema"]);
+    if !schema.is_empty() && schema != "fedas" {
+        return Err("Warengruppen-Schema: leer oder FEDAS".into());
+    }
+    o.insert("wg_schema".into(), json!(schema));
     o.insert("adresse".into(), adresse(&p["adresse"], "Haupt-Adresse", false)?);
     o.insert("rechnung".into(), adresse(&p["rechnung"], "Rechnungsadresse", true)?);
     // Filial-Kundennummern: je Filiale eine Nummer
@@ -1202,5 +1216,25 @@ mod tests {
         c.execute("INSERT INTO docs(kind, no, status, partner, partner_name, date, total, open, data, created_at, updated_at, user) VALUES ('rechnung','R1','offen',NULL,'x','2026-01-01',0,0,'kaputt{','t','t','u')", []).unwrap();
         assert_eq!(verweise(&c, &sid).1, 2, "ungültiges JSON in einem anderen Beleg stört die Zählung nicht");
         assert!(delete(&c, &sid, "T").unwrap_err().contains("2 Belege"));
+    }
+
+    #[test]
+    fn einstellungen_fuer_kasse_edi_und_termine_werden_geprueft_und_gespeichert() {
+        let c = db();
+        let mut r = zeile("Nordwand", 5);
+        r["profile"] = json!({ "rabattsperre": true, "desadv_auto": true, "pricat_ek": true, "kalk_faktor": "2,5", "term2": "14", "wg_schema": "fedas" });
+        let g = save(&c, &r, "T").unwrap();
+        let p = &g["profile"];
+        assert_eq!((p["rabattsperre"].as_bool(), p["desadv_auto"].as_bool(), p["pricat_ek"].as_bool(), p["kalk_faktor"].as_f64(), p["term2"].as_i64(), p["wg_schema"].as_str()), (Some(true), Some(true), Some(true), Some(2.5), Some(14), Some("fedas")));
+        for (k, v, teil) in [("kalk_faktor", json!("0,5"), "Kalkulationsfaktor"), ("kalk_faktor", json!(21), "Kalkulationsfaktor"), ("term2", json!(400), "Term. 2"), ("term2", json!("x"), "Term. 2"), ("wg_schema", json!("gs1"), "Warengruppen-Schema")] {
+            let mut x = zeile("Firn", 6);
+            x["profile"] = json!({ k: v });
+            assert!(save(&c, &x, "T").unwrap_err().contains(teil), "{k}");
+        }
+        // leer = Standard (Faktor 0 = 2,2 in der Oberfläche), alles aus
+        let mut y = zeile("Talwind", 7);
+        y["profile"] = json!({ "kalk_faktor": "", "term2": "" });
+        let g = save(&c, &y, "T").unwrap();
+        assert_eq!((g["profile"]["kalk_faktor"].as_f64(), g["profile"]["term2"].as_i64(), g["profile"]["rabattsperre"].as_bool(), g["profile"]["wg_schema"].as_str()), (Some(0.0), Some(0), Some(false), Some("")));
     }
 }

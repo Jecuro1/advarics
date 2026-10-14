@@ -110,7 +110,7 @@ function lfListRows() {
   return LF.rows.map(r => {
     const p = r.profile || {}, a = p.adresse || {};
     return {id: r.id, nr: +r.nr || 0, name: r.name || '', marken: (r.marken || []).map(m => m.name).filter(Boolean).join(', '), land: lfLandX(r.country), strasse: a.strasse || '', hausnr: a.hausnr || '', plz: a.plz || '', ort: a.ort || '',
-      tel: r.phone || '', gln: p.gln || '', email: r.email || '', egln: p.empfaenger_gln || '', aktiv: r._aktiv !== false, kundennr: r.customer_no || '', bundesland: a.bundesland || '', web: p.web || '', uid: p.uid || '', kontakte: r.contact || '',
+      tel: r.phone || '', gln: p.gln || '', email: r.email || '', egln: p.empfaenger_gln || '', aktiv: r._aktiv !== false, rabattsperre: !!p.rabattsperre, kundennr: r.customer_no || '', bundesland: a.bundesland || '', web: p.web || '', uid: p.uid || '', kontakte: r.contact || '',
       geaendert: r._geaendert ? fmtTs(r._geaendert) : '', waehrung: 'EUR', artikel: r._artikel || 0, offen: r._offen || 0, dateien: r._dateien || 0};
   });
 }
@@ -119,7 +119,7 @@ agridPage('lieferanten', {
   toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}],
   cols: [{k: 'nr', l: 'Nr.', t: 'num', w: 70}, {k: 'name', l: 'Name', w: 230}, {k: 'marken', l: 'Marken', w: 200}, {k: 'land', l: 'Land', w: 120}, {k: 'strasse', l: 'Str.', w: 160}, {k: 'hausnr', l: 'Haus-Nr.', w: 80}, {k: 'plz', l: 'PLZ', w: 80}, {k: 'ort', l: 'Ort', w: 130},
     {k: 'tel', l: 'Tel.', w: 130}, {k: 'gln', l: 'GLN', w: 130}, {k: 'email', l: 'E-Mail', w: 200}, {k: 'egln', l: 'Empfänger-GLN', w: 130},
-    {k: 'aktiv', l: 'Aktiv', t: 'check', w: 70, show: false}, {k: 'kundennr', l: 'Kunden-Nr.', w: 110}, {k: 'bundesland', l: 'Bundesland/Kanton/Provinz', w: 150, show: false}, {k: 'web', l: 'Webseite', w: 160, show: false}, {k: 'uid', l: 'USt-IdNr.', w: 130, show: false},
+    {k: 'aktiv', l: 'Aktiv', t: 'check', w: 70, show: false}, {k: 'rabattsperre', l: 'Rabattsperre', t: 'check', w: 100, show: false}, {k: 'kundennr', l: 'Kunden-Nr.', w: 110}, {k: 'bundesland', l: 'Bundesland/Kanton/Provinz', w: 150, show: false}, {k: 'web', l: 'Webseite', w: 160, show: false}, {k: 'uid', l: 'USt-IdNr.', w: 130, show: false},
     {k: 'kontakte', l: 'Kontakte', w: 150, show: false}, {k: 'geaendert', l: 'Geändert am', w: 140, show: false}, {k: 'waehrung', l: 'Währung', w: 80, show: false},
     {k: 'artikel', l: 'Artikel', t: 'num', w: 80, show: false}, {k: 'offen', l: 'Offene Bestellungen', t: 'num', w: 110, show: false}, {k: 'dateien', l: 'Dokumente', t: 'num', w: 90, show: false}],
   remove: ids => lfRemove(ids),
@@ -135,23 +135,23 @@ function lfNeu() {
 
 /* ── Entwurf ── */
 const lfAdrBlank = (land = 'AT') => ({name: '', ...Object.fromEntries(LF_ADR.map(k => [k, ''])), land});
-const lfProfileBlank = () => ({fax: '', web: '', steuernr: '', uid: '', gln: '', empfaenger_gln: '', info2: '', vereinbarung1: '', vereinbarung2: '', rma_ablauf: '', rma_pflicht: false, gegenscannen: false, order_vorschlag: true,
+const lfProfileBlank = () => ({fax: '', web: '', steuernr: '', uid: '', gln: '', empfaenger_gln: '', info2: '', vereinbarung1: '', vereinbarung2: '', rma_ablauf: '', rma_pflicht: false, gegenscannen: false, order_vorschlag: true, rabattsperre: false, desadv_auto: false, pricat_ek: false, kalk_faktor: 0, term2: 0, wg_schema: '',
   min_summe: 0, min_menge: 0, skonto: 0, valuta: 0, zahlungsbed: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank(''), filial_kunden: {}});
 const lfBlank = () => ({id: '', nr: String(LF.nr), name: '', _aktiv: true, country: 'AT', contact: '', email: '', phone: '', customer_no: '', lead_days: '7', note: '', iban: '', bic: '', fields: {}, marken: [],
-  profile: {...lfProfileBlank(), min_summe: '', min_menge: '', skonto: '', valuta: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank('')}});
+  profile: {...lfProfileBlank(), min_summe: '', min_menge: '', skonto: '', valuta: '', kalk_faktor: '', term2: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank('')}});
 function lfDraft(id) {
   const r = id ? lfRow(id) : null; if (!r) return lfBlank();
   const p = {...lfProfileBlank(), ...mclone(r.profile || {})};
   const adr = (a, land) => ({...lfAdrBlank(land), ...Object.fromEntries(Object.entries(a || {}).map(([k, v]) => [k, String(v ?? '')]))});
   p.adresse = adr(p.adresse, 'AT'); p.rechnung = adr(p.rechnung, ''); p.adresse.land ||= r.country; p.filial_kunden = {...(p.filial_kunden || {})};
-  p.min_summe = lfEuroText(p.min_summe); p.min_menge = p.min_menge ? String(p.min_menge) : ''; p.skonto = p.skonto ? String(p.skonto).replace('.', ',') : ''; p.valuta = p.valuta ? String(p.valuta) : '';
+  p.min_summe = lfEuroText(p.min_summe); p.min_menge = p.min_menge ? String(p.min_menge) : ''; p.skonto = p.skonto ? String(p.skonto).replace('.', ',') : ''; p.valuta = p.valuta ? String(p.valuta) : ''; p.kalk_faktor = p.kalk_faktor ? String(p.kalk_faktor).replace('.', ',') : ''; p.term2 = p.term2 ? String(p.term2) : '';
   for (const k of ['fax', 'web', 'steuernr', 'uid', 'gln', 'empfaenger_gln', 'info2', 'vereinbarung1', 'vereinbarung2', 'rma_ablauf', 'zahlungsbed']) p[k] = String(p[k] ?? '');
   return {id: r.id, nr: String(r.nr ?? ''), name: String(r.name ?? ''), _aktiv: r._aktiv !== false, country: r.country || 'AT', contact: String(r.contact ?? ''), email: String(r.email ?? ''), phone: String(r.phone ?? ''), customer_no: String(r.customer_no ?? ''),
     lead_days: String(r.lead_days ?? ''), note: String(r.note ?? ''), iban: flFormatIban(r.iban), bic: String(r.bic ?? ''), fields: mclone(r.fields || {}), marken: (r.marken || []).map(m => ({brand_id: m.brand_id, ext_name: m.ext_name || '', gln_src: m.gln_src || '', gln: m.gln || '', edi_nr: m.edi_nr || '', edi_name: m.edi_name || '', comment: m.comment || ''})), profile: p};
 }
 function lfToRow(d) {
   const t = v => String(v ?? '').trim(), p = d.profile, adr = a => Object.fromEntries(Object.entries(a).map(([k, v]) => [k, t(v)]));
-  const prof = {...p, min_summe: lfCent(p.min_summe), min_menge: p.min_menge === '' ? 0 : +p.min_menge, skonto: lfPct(p.skonto), valuta: p.valuta === '' ? 0 : +p.valuta, adresse: adr(p.adresse), rechnung: adr(p.rechnung), filial_kunden: {...p.filial_kunden}};
+  const prof = {...p, min_summe: lfCent(p.min_summe), min_menge: p.min_menge === '' ? 0 : +p.min_menge, skonto: lfPct(p.skonto), valuta: p.valuta === '' ? 0 : +p.valuta, kalk_faktor: lfPct(p.kalk_faktor), term2: p.term2 === '' ? 0 : +p.term2, adresse: adr(p.adresse), rechnung: adr(p.rechnung), filial_kunden: {...p.filial_kunden}};
   prof.adresse.land = t(d.country).toUpperCase(); prof.rechnung.land = t(prof.rechnung.land).toUpperCase();
   for (const k of ['fax', 'web', 'steuernr', 'info2', 'vereinbarung1', 'vereinbarung2', 'rma_ablauf', 'zahlungsbed']) prof[k] = t(prof[k]);
   prof.uid = t(prof.uid).replace(/\s+/g, '').toUpperCase(); prof.gln = t(prof.gln).replace(/\s+/g, ''); prof.empfaenger_gln = t(prof.empfaenger_gln).replace(/\s+/g, '');
@@ -179,6 +179,8 @@ function lfErrors(d) {
   if (t(p.zahlungsbed) && !stRows('zahlungsbedingung').some(z => z.id === p.zahlungsbed)) add('profile.zahlungsbed', 'Zahlungs-Bed.: diese Zahlungsbedingung gibt es nicht mehr – bitte neu wählen');
   if (t(p.skonto) !== '' && !(isFinite(lfPct(p.skonto)) && lfPct(p.skonto) >= 0 && lfPct(p.skonto) <= 100)) add('profile.skonto', 'Skonto: Prozentwert von 0 bis 100');
   if (t(p.valuta) !== '' && !(/^\d+$/.test(t(p.valuta)) && +p.valuta <= 365)) add('profile.valuta', 'Valuta: Tage von 0 bis 365');
+  if (t(p.kalk_faktor) !== '' && !(isFinite(lfPct(p.kalk_faktor)) && (lfPct(p.kalk_faktor) === 0 || (lfPct(p.kalk_faktor) >= 1 && lfPct(p.kalk_faktor) <= 20)))) add('profile.kalk_faktor', 'Kalkulationsfaktor: Zahl von 1 bis 20 (leer = 2,2)');
+  if (t(p.term2) !== '' && !(/^\d+$/.test(t(p.term2)) && +p.term2 <= 365)) add('profile.term2', 'Lief.-Term. 2 Offset: Tage von 0 bis 365');
   for (const [a, wo] of [['adresse', 'Haupt-Adresse'], ['rechnung', 'Rechnungsadresse']]) {
     const v = p[a]; for (const k of LF_ADR) if (t(v[k]).length > 80) add(`profile.${a}.${k}`, 'Höchstens 80 Zeichen');
     if (a === 'rechnung') { if (t(v.name).length > 120) add('profile.rechnung.name', 'Höchstens 120 Zeichen'); const land = t(v.land); if (land && !/^[A-Za-z]{2}$/.test(land)) add('profile.rechnung.land', 'Land als zweistelliger ISO-Code'); }
@@ -246,17 +248,23 @@ function lfAllg() {
       ${K.in('nr', 'Nr. *', {inputmode: 'numeric', hint: 'Lieferantennummer – eindeutig. Die interne Kennung der Belege ändert sich nicht.'})}${K.in('name', 'Name *')}${K.landSel('country', 'Land *', {leer: undefined, hint: 'Versendungsland für die Intrastat-Meldung und Land der Haupt-Adresse.'})}
       ${K.in(`${P}gln`, 'Haupt-GLN', {mono: true, inputmode: 'numeric', max: 13, hint: '13-stellige GLN: erkennt Lieferungen aus EDI-Nachrichten und steht in der Bestellung.'})}${K.in(`${P}empfaenger_gln`, 'Empfänger-GLN', {mono: true, inputmode: 'numeric', max: 13, hint: 'Nur wenn Nachrichten an einen anderen Empfänger gehen (z. B. Clearingstelle); leer = Haupt-GLN.'})}
       ${K.in('customer_no', 'Kunden-Nr.', {hint: 'Unsere Kundennummer beim Lieferanten – steht auf der Bestellung. Je Filiale anders: Reiter „Filial-Kunden-Nummern“.'})}
-      ${K.sw(`${P}rma_pflicht`, 'RMA Code Pflicht', 'Retouren an diesen Lieferanten lassen sich nur mit RMA-/Rücksendenummer versenden.')}`)}
+      ${K.sw(`${P}rma_pflicht`, 'RMA Code Pflicht', 'Retouren an diesen Lieferanten lassen sich nur mit RMA-/Rücksendenummer versenden.')}
+      ${K.sw(`${P}rabattsperre`, 'Rabattsperre', 'An der Kasse sind für Artikel dieses Lieferanten keine Rabatte möglich: weder Position noch Bon-Rabatt noch Rabatt-Regeln (Aktionspreise bleiben).')}`)}
     <div class="fl-stack">${K.card('Liefereinstellungen', `${K.sw(`${P}gegenscannen`, 'Gegenscannen bei WE-Avis erforderlich', 'Das Avis lässt sich erst einbuchen, nachdem die Ware im Scanner-Wareneingang gezählt wurde.')}
       ${K.sw(`${P}order_vorschlag`, 'Order-Vorschläge nutzen', 'Aus = Artikel dieses Lieferanten erscheinen nicht im Bestellvorschlag und in der KI-Nachbestellung.')}
-      ${K.in('lead_days', 'Lief.-Term. 1 Offset (Tage)', {num: true, inputmode: 'numeric', hint: 'Lieferzeit – Grundlage der KI-Nachbestellung.'})}`)}
-      ${K.card('Kontaktdaten', `${K.in('contact', 'Ansprechperson', {hint: 'Steht auf der Bestellung als „z. H.“.'})}${K.in('email', 'E-Mail', {type: 'email', hint: 'Empfänger der Bestellung per E-Mail.'})}${K.in(`${P}web`, 'Webseite')}${K.in('phone', 'Telefon')}${K.in(`${P}fax`, 'Fax')}`)}</div>
+      ${K.in('lead_days', 'Lief.-Term. 1 Offset (Tage)', {num: true, inputmode: 'numeric', hint: 'Lieferzeit – Grundlage der KI-Nachbestellung und „Liefertermin 1“ der Bestellung (Bestelldatum + Tage).'})}
+      ${K.in(`${P}term2`, 'Lief.-Term. 2 Offset (Tage)', {num: true, inputmode: 'numeric', hint: '„Liefertermin 2“ der Bestellung (Bestelldatum + Tage), z. B. spätester Liefertermin; leer = keiner. Überfällige Bestellungen sind in der Liste markiert.'})}`)}
+      ${K.card('EDI und Kalkulation', `${K.sw(`${P}desadv_auto`, 'DESADV automatisch verbuchen', 'Ein eingelesenes Lieferavis (DESADV) dieses Lieferanten wird sofort als Wareneingang eingebucht. Nicht bei „Gegenscannen“: dann bleibt das Avis zum Scannen offen.')}
+        ${K.sw(`${P}pricat_ek`, 'EK-Preise aus PRICAT übernehmen', 'Wird ein Preiskatalog (PRICAT) dieses Lieferanten verarbeitet, bekommen vorhandene Artikel den neuen Einkaufspreis (der Verkaufspreis bleibt).')}
+        ${K.sel(`${P}wg_schema`, 'Warengruppen-Schema', [['fedas', 'FEDAS']], {leer: '–', hint: 'FEDAS: Die Warengruppe in den PRICAT-Artikeln gilt als FEDAS-Schlüssel (6 Ziffern) und wird bei neuen Artikeln als FEDAS-Schlüssel eingetragen.'})}
+        ${K.in(`${P}kalk_faktor`, 'Kalkulationsfaktor (EK → VK)', {num: true, inputmode: 'decimal', hint: 'Verkaufspreis-Vorschlag für neue PRICAT-Artikel ohne Verkaufspreis: EK × Faktor (leer = 2,2).'})}`)}</div>
     <div class="fl-stack">${K.card('Finanzeinstellungen', `${K.in(`${P}uid`, 'USt-IdNr.', {mono: true, ph: 'ATU12345678', hint: 'Erscheint auf der Eingangsrechnung.'})}${K.in(`${P}steuernr`, 'Steuernummer')}
       ${K.in(`${P}min_summe`, 'Min. Auftragssumme (€)', {num: true, inputmode: 'decimal', hint: 'Beim Bestellen fragt Kontor nach, wenn die Bestellung darunter liegt.'})}${K.in(`${P}min_menge`, 'Min. Auftragsmenge', {num: true, inputmode: 'numeric', hint: 'Stückzahl der ganzen Bestellung.'})}
       <label class="field"><span>Währung</span><select class="input select" disabled><option>EUR – Euro</option></select><small class="ea-hint">Alle Beträge in Kontor sind in Euro.</small></label>
       <div class="zp-pair">${K.in(`${P}skonto`, 'Skonto (%)', {num: true, inputmode: 'decimal'})}${K.in(`${P}valuta`, 'Valuta (Tage)', {num: true, inputmode: 'numeric'})}</div>${zbSel}
       ${K.in('iban', 'IBAN', {mono: true, ph: 'AT61 1904 3002 3457 3201', hint: 'Für die SEPA-Zahlungsdatei. Änderungen verlangen die Freigabe eines Administrators.'})}${K.in('bic', 'BIC', {mono: true, ph: 'BKAUATWW'})}`)}</div>
-    ${K.card('Zusatzinformationen', `<div class="lf-zus">${K.area('note', 'Info', 3, 'Interner Hinweis – erscheint beim Bestellen.')}${K.area(`${P}info2`, 'Info 2', 3, 'Zweiter interner Hinweis.')}${K.area(`${P}vereinbarung1`, 'Vereinbarung 1', 3, 'Erscheint beim Bestellen und auf der Bestellung.')}${K.area(`${P}vereinbarung2`, 'Vereinbarung 2', 3, 'Erscheint beim Bestellen und auf der Bestellung.')}${K.area(`${P}rma_ablauf`, 'RMA Ablauf', 3, 'Hinweis zum Ablauf einer Rücksendung – erscheint in der Retoure an diesen Lieferanten.')}</div>`, 'lf-wide')}
+    <div class="lf-row2">${K.card('Kontaktdaten', `${K.in('contact', 'Ansprechperson', {hint: 'Steht auf der Bestellung als „z. H.“.'})}${K.in('email', 'E-Mail', {type: 'email', hint: 'Empfänger der Bestellung per E-Mail.'})}${K.in(`${P}web`, 'Webseite')}${K.in('phone', 'Telefon')}${K.in(`${P}fax`, 'Fax')}`)}
+    ${K.card('Zusatzinformationen', `<div class="lf-zus">${K.area('note', 'Info', 3, 'Interner Hinweis – erscheint beim Bestellen.')}${K.area(`${P}info2`, 'Info 2', 3, 'Zweiter interner Hinweis.')}${K.area(`${P}vereinbarung1`, 'Vereinbarung 1', 3, 'Erscheint beim Bestellen und auf der Bestellung.')}${K.area(`${P}vereinbarung2`, 'Vereinbarung 2', 3, 'Erscheint beim Bestellen und auf der Bestellung.')}${K.area(`${P}rma_ablauf`, 'RMA Ablauf', 3, 'Hinweis zum Ablauf einer Rücksendung – erscheint in der Retoure an diesen Lieferanten.')}</div>`)}</div>
     ${cf}
   </div>`, mount: el => {
       const box = $('[data-lf-cf]', el); if (!box) return;
@@ -581,6 +589,14 @@ async function lfRemove(ids, fromMask) {
 
 /* ── Wirkung in den Belegen ── */
 const lfSup = id => SUPPLIERS_ALL.find(x => x.id === id) || SUPPLIERS.find(x => x.id === id);
+/** Liefertermine einer offenen Bestellung: Bestelldatum + „Lief.-Term. 1 / 2 Offset“ des Lieferanten (leer ohne Offset oder wenn nichts mehr offen ist) */
+function lfTermine(p) {
+  if (!p.ordered_at || !['bestellt', 'teilgeliefert'].includes(p.status)) return [null, null];
+  const s = lfSup(p.supplier_id), base = new Date(p.ordered_at), add = n => n > 0 && isFinite(base) ? dIso(new Date(base.getTime() + n * 864e5)) : null;
+  return [add(+s?.lead_days || 0), add(+s?.profile?.term2 || 0)];
+}
+/** Rabattsperre des Lieferanten (Stammdaten › Lieferanten): Artikel dieses Lieferanten sind an der Kasse vom Rabatt ausgenommen (Position, Bon-Rabatt, Regeln) */
+const lfRabattGesperrt = art => !!(art && art.supplierId && lfSup(art.supplierId)?.profile?.rabattsperre);
 /** Lieferanten für Auswahllisten: die aktiven, dazu der aktuell gewählte – auch wenn er inzwischen inaktiv ist („(inaktiv)“), damit er beim Sichern nicht verloren geht */
 function lfOptionen(sel) {
   const l = SUPPLIERS.map(s => [s.id, s.name]);
@@ -608,4 +624,4 @@ DOC_EXTRA.avis = st => { const s = lfSup(st.partner); return s?.profile?.gegensc
 DOC_EXTRA.er = st => { const s = lfSup(st.partner), ids = s ? [['USt-IdNr.', s.profile?.uid], ['Steuernummer', s.profile?.steuernr]].filter(x => String(x[1] || '').trim()) : []; return s ? `${lfHinweis(s)}${ids.length ? `<div class="muted" style="font-size:12.5px">${ids.map(([l, v]) => `${l} des Lieferanten: ${esc(v)}`).join(' · ')}</div>` : ''}` : ''; };
 
 // nur lesend – für Prüfungen: Empfängerblock und Hinweise zu einem Lieferanten, Kunden-Nr. je Filiale
-if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {lfEmpfaenger: (id, art) => lfEmpfaenger(lfRow(id), art), lfKundenNr: (id, st) => lfKundenNr(lfRow(id), st), lfGlnOk, lfSichtbar: name => ({alle: SUPPLIERS_ALL.some(s => s.name === name), aktiv: SUPPLIERS.some(s => s.name === name)}), lfMarkeSync, lfMarkeEigen, lfOptionen: sel => lfOptionen(sel).map(x => x[1]), poHTML: (head, lines, sid) => poHTML(head, lines, lfSup(sid))});
+if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {lfEmpfaenger: (id, art) => lfEmpfaenger(lfRow(id), art), lfKundenNr: (id, st) => lfKundenNr(lfRow(id), st), lfGlnOk, lfSichtbar: name => ({alle: SUPPLIERS_ALL.some(s => s.name === name), aktiv: SUPPLIERS.some(s => s.name === name)}), lfMarkeSync, lfMarkeEigen, lfOptionen: sel => lfOptionen(sel).map(x => x[1]), poHTML: (head, lines, sid) => poHTML(head, lines, lfSup(sid)), lfTermine, posTotals: (cart, billPct) => { const sc = POS.cart, sb = POS.billDisc; POS.cart = cart; POS.billDisc = billPct ? {pct: billPct} : null; try { return totals(); } finally { POS.cart = sc; POS.billDisc = sb; } }});
