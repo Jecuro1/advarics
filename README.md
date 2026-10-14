@@ -19,6 +19,8 @@ Scanner“ hinzufügen; Kontor listet sie dann unter Einstellungen › Drucker &
 **Updates:** direkt im Programm. Kontor sucht beim Start und alle 6 Stunden nach neuen Versionen
 (Einstellungen → Updates). Installiert wird nur nach Freigabe mit PIN – sofort, um 20:00 oder beim
 nächsten Start. Vorher wird automatisch gesichert. Updates sind signiert; manipulierte Pakete werden abgelehnt.
+Das Update läuft in einer eigenen Vollbild-Ansicht im Kontor-Design (Fortschritt, Live-Protokoll, Animationen; unter Windows übernimmt
+ein Hilfsfenster die Installation) und endet mit einer Willkommen-Seite. Vorschau: Einstellungen → Updates → „Installer-Ansicht ansehen“.
 
 **Neue Version veröffentlichen (Entwicklung):** Version in `desktop/src-tauri/tauri.conf.json`,
 `desktop/src-tauri/Cargo.toml`, `desktop/package.json` und `desktop/ui/src/c1-core.js` (appVersion) erhöhen,
