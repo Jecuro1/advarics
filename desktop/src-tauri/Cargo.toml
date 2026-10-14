@@ -49,8 +49,9 @@ zip = { version = "4", default-features = false, features = ["deflate"] }
 windows = { version = "0.58", features = ["Win32_Foundation", "Win32_Graphics_Printing", "Win32_Graphics_Gdi", "Win32_Security", "Foundation", "Security_Credentials_UI", "Win32_System_WinRT"] }
 
 [profile.release]
-codegen-units = 1
-lto = true
+# schnelle Installer-Builds (GitHub): „thin“-LTO und 16 Codeeinheiten bauen mehrfach schneller als volles LTO mit einer Einheit; die Laufzeit unterscheidet sich für Kontor nicht spürbar
+codegen-units = 16
+lto = "thin"
 opt-level = "s"
 panic = "abort"
 strip = true
