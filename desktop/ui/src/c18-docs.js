@@ -174,7 +174,7 @@ function mailReceiptHTML(rec) {
     ${rec.rksv?.qr ? `<div style="text-align:center;margin-top:16px"><img src="cid:qr" width="160" height="160" alt="RKSV-QR-Code"><div style="color:#666;font-size:11px">RKSV · Testmodus</div></div>` : ''}
     <p style="color:#666;font-size:12px;margin-top:18px;white-space:pre-line">${esc(fussBon())}</p></div>`;
 }
-function mailReceiptText(rec) { return `${CFG['firma.marke']} – Beleg ${rec.no} vom ${rec.date.toLocaleString('de-AT')}\n\n${rec.lines.map(l => `${l.qty} x ${l.name}`).join('\n')}\n\nSumme EUR ${num(rec.t.total, 2)}\n\n${CFG['firma.name']} · ${CFG['firma.adresse']}`; }
+function mailReceiptText(rec) { return `${CFG['firma.marke']} – Beleg ${rec.no} vom ${rec.date.toLocaleString('de-AT')}\n\n${rec.lines.map(l => `${l.qty} x ${l.name}`).join('\n')}\n\nSumme EUR ${num(rec.t.total, 2)}${fussBon() ? `\n\n${fussBon()}` : ''}\n\n${CFG['firma.name']} · ${CFG['firma.adresse']}`; }
 function askEmail(prefill, title) {
   return new Promise(resolve => {
     const el = openLayer(`<div class="modal" style="width:min(460px,100%)" role="dialog" aria-modal="true" aria-label="${esc(title)}">

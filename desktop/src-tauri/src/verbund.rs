@@ -82,6 +82,21 @@ pub fn stores(c: &Connection) -> rusqlite::Result<Vec<Value>> {
     rows.collect()
 }
 
+/// Übersicht für die Filialkassen: je Filiale nur Umsatz, Abgleichzeit und Programmversion (kein „info“ mit Firmen-, Bank- und Steuerangaben, keine IP)
+pub fn umsatz_fuer_filiale(umsatz: &Value) -> Value {
+    let mut u = umsatz.clone();
+    if let Some(a) = u.as_array_mut() {
+        for x in a.iter_mut() {
+            let version = x["info"]["version"].clone();
+            x["info"] = if version.is_null() { json!({}) } else { json!({ "version": version }) };
+            if let Some(o) = x.as_object_mut() {
+                o.remove("last_ip");
+            }
+        }
+    }
+    u
+}
+
 /// Übersicht für Zentrale: eigene Filiale + alle angeschlossenen (Umsatz heute/Monat aus Belegen)
 pub fn overview(c: &Connection) -> Result<Value, String> {
     let today = chrono::Local::now().format("%Y-%m-%d").to_string();
@@ -353,9 +368,11 @@ pub fn handle(c: &Connection, method: &str, path: &str, key: &str, body: &Value,
                     *x = json!({ "id": x["id"], "name": x["name"], "addr": x["addr"], "active": x["active"] });
                 }
             }
+            // Die Filialkasse sieht von den anderen Filialen nur Umsatzzahlen und Programmversion – Bank-, Steuer- und Firmenangaben aus „info“ und die IP-Adressen bleiben in der Zentrale
+            let umsatz_pub = umsatz_fuer_filiale(&umsatz);
             Ok(json!({ "now": db::now(), "articles": arts, "inactive": gone, "customers": custs, "promotions": promos, "suppliers": suppliers,
                 "stores": stores_list, "stock": stock_matrix(c).map_err(e5)?, "transfers": transfers(c, Some(&store)).map_err(|e| e5(e.to_string()))?,
-                "firma": { "name": s(c, "firma.name") }, "umsatz": umsatz,
+                "firma": { "name": s(c, "firma.name") }, "umsatz": umsatz_pub,
                 "einstellungen": SHARED.iter().filter_map(|k| db::setting_get(c, k).map(|v| (k.to_string(), v))).collect::<serde_json::Map<String, Value>>(),
                 "stammdaten": crate::filiale::all_for(c, &store).map_err(e5)? }))
         }

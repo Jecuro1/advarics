@@ -46,7 +46,7 @@ pub fn naechste(c: &Connection, art: &str) -> Result<i64, String> {
     let cur: i64 = c.query_row("SELECT value FROM counters WHERE name = ?1", [name], |r| r.get(0)).map_err(|e| e.to_string())?;
     let n = cur.max(start - 1) + 1;
     if ende > 0 && n > ende {
-        return Err(format!("Nummernkreis {label} erschöpft (Ende {ende}). Bitte unter Stammdaten › Filialen › Nummernkreise einen neuen Bereich eintragen."));
+        return Err(format!("Nummernkreis {label} erschöpft (Ende {ende}). Bitte unter Stammdaten › Filialen › Filialen (Reiter Nummernkreise) einen neuen Bereich eintragen."));
     }
     c.execute("UPDATE counters SET value = ?2 WHERE name = ?1", rusqlite::params![name, n]).map_err(|e| e.to_string())?;
     Ok(n)

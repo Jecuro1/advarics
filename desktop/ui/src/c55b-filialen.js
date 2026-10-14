@@ -83,7 +83,7 @@ function flWithDraft(d, fn) {
 }
 /** Wurden die Einstellungen am Arbeitsplatz durch den Abgleich verändert (Filialkasse)? Dann neu einlesen. */
 async function flSyncCfg() {
-  const r = flRow(FIL.eigene); if (!r || !DESKTOP || r.vorlaeufig) return;
+  const r = flRow(FIL.eigene); if (!r || !DESKTOP || r.vorlaeufig || FIL.rolle !== 'filiale') return;   // nur die Filialkasse bekommt ihre Einstellungen vom Abgleich überschrieben
   const map = {'firma.name': 'name', 'firma.adrzeile1': 'adrzeile1', 'firma.adrzeile2': 'adrzeile2', 'firma.postfach': 'postfach', 'firma.land': 'land', 'firma.uid': 'uid', 'firma.steuernr': 'steuernr', 'firma.telefon': 'tel', 'firma.fax': 'fax', 'firma.mobil': 'mobil', 'firma.email': 'email', 'firma.web': 'web', 'firma.inhaber': 'inhaber', 'zahlung.iban': 'iban', 'zahlung.bic': 'bic', 'zahlung.bank': 'bank'};
   const adr = flAdrZeile(r);
   if (String(CFG['firma.adresse'] ?? '') !== adr || Object.entries(map).some(([k, f]) => String(CFG[k] ?? '') !== String(r[f] ?? ''))) { await loadSettings(); if ($('.brand-tenant')) $('.brand-tenant').textContent = CFG['firma.name']; }
@@ -133,8 +133,9 @@ function flErrors(d) {
     else if (!ok(e)) add(`n.${a}.ende`, `${l}: End-Nr. als ganze Zahl`);
     else if (e !== '' && (s === '' || +s === 0)) add(`n.${a}.start`, `${l}: Start-Nr. fehlt`);
     else if (e !== '' && +e > 0 && +e < +s) add(`n.${a}.ende`, `${l}: End-Nr. liegt vor der Start-Nr.`);
-    else if (s !== '' && +s > 0 && e !== '' && +e > 0) { const o = FIL.rows.find(r => !flSame(r.id, FE.id || d.id) && r.nummern?.[a]?.start && +r.nummern[a].start <= +e && +s <= (+r.nummern[a].ende || Infinity)); if (o) add(`n.${a}.ende`, `${l}: überschneidet sich mit der Filiale „${flName(o)}“`); }
+    else if (s !== '' && +s > 0) { const ee = +e > 0 ? +e : Infinity, o = FIL.rows.find(r => !flSame(r.id, FE.id || d.id) && r.nummern?.[a]?.start && +r.nummern[a].start <= ee && +s <= (+r.nummern[a].ende || Infinity)); if (o) add(e !== '' && +e > 0 ? `n.${a}.ende` : `n.${a}.start`, `${l}: überschneidet sich mit der Filiale „${flName(o)}“`); }
   }
+  if (FIL.rolle === 'zentrale' && !flIstEigene(FE.id || d.id)) for (const [a, l] of FL_KREISE) if (+String(d.nummern[a].start).trim() > 0 && !+flRow(FIL.eigene)?.nummern?.[a]?.start) { add(`n.${a}.start`, `${l}: Die Zentrale hat für diese Art noch keinen Bereich – bitte zuerst für die Zentrale einen Bereich eintragen (z. B. 1–19999)`); break; }
   (d.zusatz || []).forEach((z, i) => {
     if (!z.ort.trim()) add(`z${i}.ort`, 'Ort angeben');
     if (!z.strasse.trim() && !z.postfach.trim()) add(`z${i}.strasse`, 'Straße (oder Postfach) angeben');
@@ -167,7 +168,7 @@ function flToRow(d) {
 }
 const flLocked = () => flRO();
 /** Hinweisleiste oben in der Maske: nur lesbar (Filialkasse) bzw. vorläufig übernommene Zeile */
-const flNote = () => `${flRO() ? `<div class="zp-note">${ic('lock', 'i-sm')}<span><b>Filialen pflegt die Zentrale.</b> Diese Kasse bekommt die Angaben beim Abgleich; hier sind sie nur lesbar.</span></div>` : ''}${FE.d?._vorl && !flRO() ? `<div class="zp-note">${ic('info', 'i-sm')}<span><b>Aus dem Filialverbund übernommen, noch nicht bestätigt.</b> Die Filialkasse verwendet bis zum Sichern weiter ihre eigenen Angaben. Mit „Sichern“ gelten diese Angaben dort.</span></div>` : ''}`;
+const flNote = () => `${flRO() ? `<div class="zp-note">${ic('lock', 'i-sm')}<span><b>Filialen pflegt die Zentrale.</b> Diese Kasse bekommt die Angaben beim Abgleich; hier sind sie nur lesbar.</span></div>` : ''}${FE.d?._vorl && !flRO() ? `<div class="zp-note">${ic('info', 'i-sm')}<span><b>Aus dem Filialverbund übernommen, noch nicht bestätigt.</b> Die Filialkasse verwendet bis zum Sichern weiter ihre eigenen Angaben. Mit „Sichern“ gelten diese Angaben dort – leere Felder löschen dort die bisherigen Angaben.</span></div>` : ''}`;
 
 /* ── Liste ── */
 function flListRows() {
@@ -246,7 +247,7 @@ function flAllg() {
   const D = FE.d, gr = stRows('filialgruppe'), typen = [...new Set(FIL.rows.map(r => flS(r.haustyp)).filter(Boolean))];
   const own = FE.id && flIstEigene(FE.id), iso = FL_ISO3[String(D.land).toUpperCase()] || '–';
   const note = flNote();
-  const grp = `<label class="field"><span>Filial-Gruppe</span><div class="ea-cmb-row"><select class="input select" data-fl="gruppe" style="flex:1;min-width:0" ${flLocked() ? 'disabled' : ''}><option value="">Standard</option>${gr.map(g => `<option value="${esc(g.id)}" ${g.id === D.gruppe ? 'selected' : ''}>${esc(g.name || g.id)}</option>`).join('')}</select><button type="button" class="ea-ib" data-fl-a="gruppen" title="Filialgruppen bearbeiten oder neu anlegen" aria-label="Filialgruppen bearbeiten">${ic('edit', 'i-sm')}</button></div><small class="ea-hint">Für Analysen (Dimension „Filialgruppe“) und die Filialauswahl. Gruppen legen Sie unter Filialen › Filialengruppe an.</small></label>`;
+  const grp = `<label class="field"><span>Filial-Gruppe</span><div class="ea-cmb-row"><select class="input select" data-fl="gruppe" style="flex:1;min-width:0" ${flLocked() ? 'disabled' : ''}><option value="">Standard</option>${gr.map(g => `<option value="${esc(g.id)}" ${g.id === D.gruppe ? 'selected' : ''}>${esc(g.name || g.id)}</option>`).join('')}</select><button type="button" class="ea-ib" data-fl-a="gruppen" title="Filialgruppen bearbeiten oder neu anlegen" aria-label="Filialgruppen bearbeiten">${ic('edit', 'i-sm')}</button></div><small class="ea-hint">Für Analysen (Dimension „Filialgruppe“) und die Filialauswahl. Gruppen legen Sie über den Stift neben dem Feld an.</small></label>`;
   const color = `<label class="field ${flErr('farbe') && FE.show ? 'zp-bad' : ''}"><span>Filial-Farbe</span><div class="fl-colorrow"><input type="color" class="fl-color ${D.farbe ? '' : 'none'}" data-fl="farbe" value="${esc(D.farbe || '#888888')}" ${flLocked() ? 'disabled' : ''} aria-label="Filial-Farbe"><span class="muted">${D.farbe ? esc(D.farbe.toUpperCase()) : 'keine Farbe'}</span>${D.farbe && !flLocked() ? `<button type="button" class="ea-ib" data-fl-a="farbex" title="Farbe entfernen" aria-label="Farbe entfernen">${ic('x', 'i-sm')}</button>` : ''}</div><small class="ea-hint">Erscheint in der Filialauswahl, in der Artikelinfo und im Filialvergleich.</small></label>`;
   return {html: `${note}<div class="fl-grid">
     ${flCard('Profil', `${flSw('_aktiv', 'Aktiv', own ? 'Die eigene Filiale ist immer aktiv.' : 'Abgeschaltete Filialen erscheinen nicht mehr in Filialauswahl, Umlagerung und Verteilung; ihr Abgleich wird abgelehnt.', own)}
@@ -266,7 +267,7 @@ function flReport() {
   const D = FE.d, zentrale = FIL.rolle === 'zentrale' && !flLocked();
   const ta = (k, l, rows, hint) => { const er = FE.show && flErr(k); return `<label class="field ${er ? 'zp-bad' : ''}"><span>${esc(l)}</span><textarea class="input" rows="${rows}" data-fl="${k}" style="height:auto;padding:9px 12px;resize:vertical" ${flLocked() ? 'disabled' : ''}>${esc(D[k] ?? '')}</textarea>${er ? `<small class="zp-err" role="alert">${esc(er.t)}</small>` : `<small class="ea-hint">${esc(hint)}</small>`}</label>`; };
   return {html: `${flNote()}<div class="fl-grid fl-rep">
-    ${flCard('Fußzeilen', `${ta('fuss_a4', 'Fußzeile A4-Belege', 5, 'Rechnung, Lieferschein, Angebot, Bestellung. Klartext, mehrere Zeilen möglich, z. B. Bankverbindung, Firmenbuchnummer, Gerichtsstand. Leer = Standard dieser Kasse (Einstellungen › Bon & Belege). Dahinter steht immer der Firmenkopf mit Kontakt und UID.')}
+    ${flCard('Fußzeilen', `${ta('fuss_a4', 'Fußzeile A4-Belege', 5, 'Rechnung, Lieferschein, Angebot, Bestellung. Klartext, mehrere Zeilen möglich, z. B. Bankverbindung, Firmenbuchnummer, Gerichtsstand. Leer = Standard dieser Kasse (Einstellungen › Bon & Belege). Davor steht immer die Firmenzeile mit Kontakt und UID.')}
       ${ta('fuss_bon', 'Text am Bonende', 4, 'Steht am Ende des Kassenbons (Bildschirm, Thermodruck, E-Mail-Beleg). Leer = Standard dieser Kasse.')}
       ${zentrale ? `<button type="button" class="btn btn-secondary" data-fl-a="fussalle">${ic('store', 'i-sm')}Fußzeilen für alle Filialen übernehmen</button>` : ''}`)}
     ${flCard('Vorschau', `<div class="fl-rp"><div><div class="eyebrow">A4-Beleg (Rechnung)</div><div class="fl-a4" data-fl-a4></div></div><div><div class="eyebrow">Kassenbon</div><div class="receipt-wrap" data-fl-bon style="padding:0"></div></div></div><small class="ea-hint">Beispielbeleg mit den Angaben dieser Filiale. Das Logo gehört zur Kasse (Einstellungen › Bon & Belege).</small>`)}
@@ -294,7 +295,7 @@ function flNummern() {
     return `<div class="ge-facts"><div class="ge-fact"><span>Nächste Nummer</span><b>${num(k.naechste)}</b></div><div class="ge-fact"><span>Noch frei</span><b>${k.rest == null ? 'unbegrenzt' : `${num(k.rest)}${knapp ? ` <span class="pill ${k.rest === 0 ? 'neg' : 'warn'}" style="height:20px">${k.rest === 0 ? 'erschöpft' : 'wird knapp'}</span>` : ''}`}</b></div></div>`;
   };
   const card = ([a, l]) => flCard(l, `${flIn('start', 'Start-Nr.', {n: a, inputmode: 'numeric', ph: 'fortlaufend'})}${flIn('ende', 'End-Nr.', {n: a, inputmode: 'numeric', ph: 'unbegrenzt'})}${info(a)}`);
-  return {html: `${flNote()}<p class="ea-hint ue-note">Jede Filiale hat ihre eigene Datenbank – damit sich zwei Filialen nie dieselbe Nummer geben, bekommt jede einen eigenen Bereich. Leer = fortlaufend ohne Grenze. Liegt der Zähler unter der Start-Nr., springt die nächste Nummer auf die Start-Nr.; der Zähler wird nie zurückgesetzt. Ist die End-Nr. erreicht, lässt sich kein Beleg dieser Art mehr anlegen, bis ein neuer Bereich eingetragen ist. Die Zentrale prüft beim Sichern, dass sich Bereiche verschiedener Filialen nicht überschneiden.</p>
+  return {html: `${flNote()}<p class="ea-hint ue-note">Jede Filiale hat ihre eigene Datenbank – damit sich zwei Filialen nie dieselbe Nummer geben, bekommt jede einen eigenen Bereich. Leer = fortlaufend ohne Grenze. Liegt der Zähler unter der Start-Nr., springt die nächste Nummer auf die Start-Nr.; der Zähler wird nie zurückgesetzt. Ist die End-Nr. erreicht, lässt sich kein Beleg dieser Art mehr anlegen, bis ein neuer Bereich eingetragen ist. Die Zentrale prüft beim Sichern, dass sich Bereiche verschiedener Filialen nicht überschneiden – dafür braucht auch die Zentrale selbst einen Bereich (z. B. 1–19999), sonst zählt sie unbegrenzt weiter. Filialen ohne Bereich kann die Zentrale nicht prüfen: ihr Zähler liegt in deren Datenbank.</p>
     <div class="fl-grid fl-3">${FL_KREISE.map(card).join('')}
     ${flCard('Kassenbons', `<p class="ea-hint" style="margin:0">Bons, Retouren und Stornos an der Kasse laufen je Kasse fortlaufend in der RKSV-Signaturkette – hier gibt es keinen Bereich.${st ? ` Nächste Bon-Nr. dieser Kasse: <b>${jahr}-${String(st.bon).padStart(6, '0')}</b>.` : ''}</p><p class="ea-hint" style="margin:0">Gutschein-Codes sind Zufallswerte und haben keinen Nummernkreis.</p>`)}</div>`};
 }
@@ -324,7 +325,7 @@ function flRender() {
   const errs = flErrors(D), cnt = k => errs.filter(e => flTabOf(e.k) === k).length;
   const tab = ([k, l]) => { const n = cnt(k); return `<button type="button" class="ed-tab" role="tab" data-fl-tab="${k}" aria-selected="${FE.tab === k}">${esc(l)}${k === 'zusatz' && D.zusatz.length ? ` <span class="ed-badge" style="background:var(--surface-3);color:var(--text-2)">${D.zusatz.length}</span>` : ''}${n ? ` <span class="ed-badge">${n}</span>` : ''}</button>`; };
   const body = (FE.tab === 'zusatz' ? flZusatzHTML : FE.tab === 'adresse' ? flAdresse : FE.tab === 'nummern' ? flNummern : FE.tab === 'report' ? flReport : flAllg)();
-  el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', 'Übersicht: Filialen')}${btn('refresh', 'sync', 'Aktualisieren', !FE.id)}${btn('save', 'check', 'Sichern', lock || !FE.dirty)}${btn('new', 'plus', 'Neu', !zentrale)}${btn('undo', 'undo', 'Änderungen zurücknehmen', lock || !FE.dirty)}${btn('del', 'trash', 'Löschen', !FE.id || !zentrale || own)}${btn('code', 'link', 'Filial-Code erzeugen', !FE.id || !zentrale || own || lock, true, 'Filial-Code')}
+  el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', 'Übersicht: Filialen')}${btn('refresh', 'sync', 'Aktualisieren', !FE.id)}${btn('save', 'check', 'Sichern', lock || (!FE.dirty && !D._vorl))}${btn('new', 'plus', 'Neu', !zentrale)}${btn('undo', 'undo', 'Änderungen zurücknehmen', lock || !FE.dirty)}${btn('del', 'trash', 'Löschen', !FE.id || !zentrale || own)}${btn('code', 'link', 'Filial-Code erzeugen', !FE.id || !zentrale || own || lock, true, 'Filial-Code')}
       <span class="sp"></span>${FE.id && FE.ids.length > 1 ? `${btn('prev', 'chevron-left', 'Vorherige Filiale', pos <= 0, false)}<span class="ae-nr">${pos + 1}/${FE.ids.length}</span>${btn('next', 'chevron-right', 'Nächste Filiale', pos >= FE.ids.length - 1, false)}` : ''}</div>
     <div class="ae-tabsw"><div class="ed-tabs" role="tablist">${FL_TABS.map(tab).join('')}</div></div>
     <div class="ae-body"><div id="edBody">${body.html}</div></div>`;
@@ -394,7 +395,7 @@ async function flSave() {
   if (flLocked()) return;
   if (errs.length) { FE.tab = flTabOf(errs[0].k); FE.show = true; flRender(); return toast(errs[0].t, {t2: 'Angabe prüfen', type: 'warn'}); }
   const row = flToRow(D), name = flName(row);
-  const sens = isNew || ['_aktiv', 'nr', 'uid', 'steuernr', 'iban', 'bic', 'name'].some(k => String(D[k]).replace(/\s+/g, '') !== String(O[k]).replace(/\s+/g, '')) || JSON.stringify(D.nummern) !== JSON.stringify(O.nummern);
+  const sens = isNew || D._vorl || ['_aktiv', 'nr', 'uid', 'steuernr', 'iban', 'bic', 'name'].some(k => String(D[k]).replace(/\s+/g, '') !== String(O[k]).replace(/\s+/g, '')) || JSON.stringify(D.nummern) !== JSON.stringify(O.nummern);
   if (sens && DESKTOP) { try { await stepUp({title: 'Administrator-Freigabe', text: isNew ? `Neue Filiale „${name}“ anlegen` : `Filiale „${name}“ ändern (Name, Nummer, Steuer- oder Bankdaten, Nummernkreise, Aktiv)`, admin: true}); } catch { return; } }
   let res;
   try {
@@ -420,7 +421,8 @@ async function flFussAlle() {
     if (DESKTOP) await invoke('filiale_fuss_alle', {a4, bon, by: S.user.name});
     else { FIL.rows = FIL.rows.map(r => ({...r, fuss_a4: a4, fuss_bon: bon})); persist.set('filialen', FIL.rows); }
   } catch (e) { return toast('Nicht möglich', {t2: String(e.message || e), type: 'warn', dur: 7000}); }
-  await filLoad(true); FE.orig.fuss_a4 = D.fuss_a4; FE.orig.fuss_bon = D.fuss_bon;
+  await filLoad(true); D.fuss_a4 = a4; D.fuss_bon = bon; FE.orig.fuss_a4 = a4; FE.orig.fuss_bon = bon;
+  if (JSON.stringify(D) === JSON.stringify(FE.orig)) FE.dirty = false;
   toast('Für alle Filialen übernommen', {t2: `${FIL.rows.length} Filialen`, type: 'pos', icon: 'store', dur: 2400}); flRender();
 }
 /** Verbindungscode der Filialkasse anzeigen (mit QR) */

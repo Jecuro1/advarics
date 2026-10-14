@@ -166,7 +166,7 @@ function renderSettings() {
         ${field('ziel.tag', 'Umsatzziel je Verkaufstag (€)', 'Grundlage für Tages-, Wochen- und Monatsziel im Dashboard', 'number', 'min="0" step="100" style="max-width:140px"')}
         ${field('kasse.vereinsregel', 'Vereinsrabatt automatisch', 'Regel greift beim Zuordnen von Vereinsmitgliedern', 'switch')}
         ${field('kasse.pflichtfelder', 'Pflichtfelder je Warengruppe', 'z. B. Z-Wert und Seriennummer beim Skiverkauf', 'switch')}
-        ${field('kasse.bonFuss', 'Text am Bonende', '', 'textarea')}
+        ${field('kasse.bonFuss', 'Text am Bonende', 'Gilt, solange die Filiale unter Stammdaten › Filialen keinen eigenen Text hat', 'textarea')}
       </div></section>
       ${usersSectionHTML()}${bonSectionHTML()}${printerSectionHTML()}${labelSectionHTML()}${mailSectionHTML()}${rksvSectionHTML()}
       <section class="set-sec" id="sec-anzeige"><h2>Darstellung</h2><p>Gilt für den angemeldeten Benutzer. Anzeigegröße auch mit <span class="kbd">Strg</span> <span class="kbd">+</span> / <span class="kbd">−</span> / <span class="kbd">0</span>.</p><div class="card">

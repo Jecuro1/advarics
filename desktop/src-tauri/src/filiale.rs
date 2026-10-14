@@ -337,8 +337,13 @@ pub fn ensure_stores(c: &Connection) -> Result<(), String> {
                 let mut ch = false;
                 for (k, v) in &extra {
                     if s(&r[k.as_str()]).is_empty() || (k == "name" && s(&r["name"]) == name) {
-                        r[k.as_str()] = v.clone();
-                        ch = true;
+                        // jedes Feld einzeln prüfen: ein ungültiger Wert (z. B. IBAN mit falscher Prüfziffer) lässt nur dieses Feld weg
+                        let mut t = r.clone();
+                        t[k.as_str()] = v.clone();
+                        if pruefen(&t).is_ok() {
+                            r = t;
+                            ch = true;
+                        }
                     }
                 }
                 if ch {
@@ -352,13 +357,19 @@ pub fn ensure_stores(c: &Connection) -> Result<(), String> {
         }
         nr += 1;
         let (strasse, hausnr, plz, ort) = adresse_lesen(&addr);
-        let mut r = json!({ "id": id, "nr": nr, "name": name, "kurz": name, "strasse": strasse, "hausnr": hausnr, "plz": plz, "ort": ort, "land": "AT", "zusatz": [], "_aktiv": aktiv });
+        let basis = json!({ "id": id, "nr": nr, "name": name, "kurz": name, "strasse": strasse, "hausnr": hausnr, "plz": plz, "ort": ort, "land": "AT", "zusatz": [], "_aktiv": aktiv });
+        let mut r = basis.clone();
         for (k, v) in &extra {
-            r[k.as_str()] = v.clone();
+            // Angaben der Filialkasse feldweise übernehmen: ein ungültiger Wert lässt nur dieses Feld weg
+            let mut t = r.clone();
+            t[k.as_str()] = v.clone();
+            if pruefen(&t).is_ok() {
+                r = t;
+            }
         }
         let mut r = match pruefen(&r) {
             Ok(v) => v,
-            Err(_) => match pruefen(&json!({ "id": id, "nr": nr, "name": name, "kurz": name, "strasse": strasse, "hausnr": hausnr, "plz": plz, "ort": ort, "land": "AT", "_aktiv": aktiv })) {
+            Err(_) => match pruefen(&basis) {
                 Ok(v) => v,
                 Err(_) => pruefen(&json!({ "id": id, "nr": nr, "name": if name.trim().is_empty() { id.clone() } else { name }, "land": "AT", "_aktiv": aktiv }))?,
             },
@@ -458,7 +469,11 @@ pub fn save(c: &Connection, row: &Value, by: &str) -> Result<(Value, Option<Stri
     let id = s(&r["id"]);
     let own = verbund::own_store(c);
     let is_own = id.eq_ignore_ascii_case(&own);
-    let all = rows(c)?;
+    let mut all = rows(c)?;
+    if rolle == "einzel" {
+        // Einzelplatz: Zeilen einer früheren Zentrale sind verborgen (filiale_list) und zählen auch bei den Prüfungen nicht mit
+        all.retain(|x| s(&x["id"]).eq_ignore_ascii_case(&own));
+    }
     let alt = all.iter().find(|x| s(&x["id"]).eq_ignore_ascii_case(&id));
     if alt.is_none() && !is_own && rolle != "zentrale" {
         return Err("Weitere Filialen legt die Zentrale an – dafür unter Einstellungen › Filialverbund diese Installation als Zentrale einrichten".into());
@@ -470,6 +485,19 @@ pub fn save(c: &Connection, row: &Value, by: &str) -> Result<(Value, Option<Stri
         return Err("Die eigene Filiale lässt sich nicht deaktivieren".into());
     }
     crate::nummern::auf_ueberschneidung(&r["nummern"], &id, &all)?;
+    // Die Zentrale zählt ohne eigenen Bereich unbegrenzt weiter (und hat vielleicht schon viele Nummern vergeben): Bereiche der Filialen gibt es erst,
+    // wenn die Zentrale selbst einen Bereich hat – sonst könnte sie in deren Bereich laufen
+    if rolle == "zentrale" && !is_own && alt.map(|a| a["nummern"] != r["nummern"]).unwrap_or(true) {
+        if let Some(eig) = all.iter().find(|x| s(&x["id"]).eq_ignore_ascii_case(&own)) {
+            let stand = crate::nummern::stand(c);
+            for (art, label, _) in crate::nummern::ARTEN {
+                if r["nummern"][art]["start"].as_i64().unwrap_or(0) > 0 && eig["nummern"][art]["start"].as_i64().unwrap_or(0) == 0 {
+                    let n = stand["kreise"][art]["naechste"].as_i64().unwrap_or(1);
+                    return Err(format!("Nummernkreis {label}: Die Zentrale vergibt diese Nummern noch ohne Bereich fortlaufend (nächste Nr. {n}) und könnte in den Bereich der Filiale laufen – bitte zuerst für die Zentrale einen Bereich eintragen (z. B. 1–19999)"));
+                }
+            }
+        }
+    }
     let mut key = None;
     let tx = c.unchecked_transaction().map_err(|e| e.to_string())?;
     schreiben(&tx, &r)?;
@@ -939,5 +967,97 @@ mod tests {
         let v = all_for(&c, "SBG").unwrap();
         let inn = v["filiale"].as_array().unwrap().iter().find(|r| r["id"] == "INN").unwrap().clone();
         assert!(inn["fuss_a4"].is_null());
+    }
+
+    #[test]
+    fn zentrale_braucht_zuerst_einen_eigenen_bereich() {
+        let c = db();
+        zentrale(&c);
+        ensure_own(&c, &json!({ "name": "Zentrale GmbH" })).unwrap();
+        c.execute("INSERT INTO counters(name, value) VALUES ('doc.rechnung', 1500)", []).unwrap();
+        let mut sbg = zeile("sbg", 2, "Salzburg");
+        sbg["nummern"] = json!({ "rechnung": { "start": 1000, "ende": 1999 } });
+        let e = save(&c, &sbg, "T").unwrap_err();
+        assert!(e.contains("Rechnung") && e.contains("1501") && e.contains("Zentrale"), "{e}");
+        // Zentrale bekommt einen eigenen Bereich → danach geht der Bereich der Filiale
+        let mut me = rows(&c).unwrap().remove(0);
+        me["nummern"] = json!({ "rechnung": { "start": 1, "ende": 999 } });
+        save(&c, &me, "T").unwrap();
+        sbg["nummern"] = json!({ "rechnung": { "start": 1000, "ende": 1999 } });
+        save(&c, &sbg, "T").unwrap();
+        // Bereich der Filiale verändern, der sich mit dem der Zentrale überschneidet, bleibt abgelehnt
+        sbg["nummern"] = json!({ "rechnung": { "start": 900, "ende": 1999 } });
+        assert!(save(&c, &sbg, "T").unwrap_err().contains("überschneidet"));
+        // Filiale ohne Bereiche braucht keinen Bereich der Zentrale
+        assert!(save(&c, &zeile("lz", 3, "Lienz"), "T").is_ok());
+        // spätere Änderungen an anderen Feldern der Filiale scheitern nicht, auch wenn die Zentrale ihren Bereich wieder entfernt
+        let mut me = rows(&c).unwrap().into_iter().find(|r| r["id"] == "INN").unwrap();
+        me["nummern"] = json!({});
+        save(&c, &me, "T").unwrap();
+        let mut sbg = rows(&c).unwrap().into_iter().find(|r| r["id"] == "SBG").unwrap();
+        sbg["tel"] = json!("0662 1");
+        assert!(save(&c, &sbg, "T").is_ok(), "Bereiche unverändert: keine neue Prüfung");
+    }
+
+    #[test]
+    fn einzelplatz_ignoriert_verborgene_zeilen_einer_fruheren_zentrale() {
+        let c = db();
+        zentrale(&c);
+        ensure_own(&c, &json!({ "name": "Zentrale GmbH" })).unwrap();
+        let mut me = rows(&c).unwrap().remove(0);
+        me["nummern"] = json!({ "rechnung": { "start": 1, "ende": 19999 } });
+        save(&c, &me, "T").unwrap();
+        let mut sbg = zeile("sbg", 2, "Salzburg");
+        sbg["nummern"] = json!({ "rechnung": { "start": 20000, "ende": 39999 } });
+        save(&c, &sbg, "T").unwrap();
+        // zurück zum Einzelplatz (eigenes Kürzel wird ZENTRALE)
+        db::setting_set(&c, "verbund.rolle", &json!("einzel")).unwrap();
+        db::setting_set(&c, "verbund.filiale", &json!("")).unwrap();
+        rekey_own(&c, "INN", "ZENTRALE").unwrap();
+        let mut me = rows(&c).unwrap().into_iter().find(|r| r["id"] == "ZENTRALE").unwrap();
+        me["nr"] = json!(2);
+        me["nummern"] = json!({ "rechnung": { "start": 25000, "ende": 26000 } });
+        assert!(save(&c, &me, "T").is_ok(), "verborgene Filiale Salzburg blockiert weder Nr. noch Nummernkreis");
+    }
+
+    #[test]
+    fn vorlaeufige_zeile_uebernimmt_gueltige_angaben_trotz_einer_ungueltigen() {
+        let c = db();
+        zentrale(&c);
+        verbund::store_create(&c, "sbg", "Salzburg", "Getreidegasse 31, 5020 Salzburg").unwrap();
+        let info = json!({ "firma": { "name": "Alpenlicht Salzburg GmbH", "iban": "AT00 0000 0000 0000 0000", "uid": "ATU12345678", "telefon": "0662 123", "steuernr": "12-345/6789" } });
+        c.execute("UPDATE stores SET info = ?1 WHERE id = 'SBG'", [info.to_string()]).unwrap();
+        ensure_all(&c, &json!({ "name": "Zentrale GmbH" })).unwrap();
+        let sbg = rows(&c).unwrap().into_iter().find(|r| r["id"] == "SBG").unwrap();
+        assert_eq!(sbg["vorlaeufig"], true);
+        assert_eq!(sbg["iban"], "", "die ungültige IBAN fällt weg");
+        assert_eq!((sbg["name"].as_str(), sbg["uid"].as_str(), sbg["tel"].as_str(), sbg["steuernr"].as_str()), (Some("Alpenlicht Salzburg GmbH"), Some("ATU12345678"), Some("0662 123"), Some("12-345/6789")), "alle gültigen Angaben bleiben");
+        // nachträglich: Name der Filialkasse erscheint erst später, die IBAN ist weiter ungültig
+        c.execute("UPDATE stores SET info = ?1 WHERE id = 'SBG'", [json!({ "firma": { "iban": "AT00 0000", "bic": "BKAUATWW", "email": "sbg@alpenlicht.at" } }).to_string()]).unwrap();
+        ensure_all(&c, &json!({})).unwrap();
+        let sbg = rows(&c).unwrap().into_iter().find(|r| r["id"] == "SBG").unwrap();
+        assert_eq!((sbg["bic"].as_str(), sbg["email"].as_str(), sbg["iban"].as_str()), (Some("BKAUATWW"), Some("sbg@alpenlicht.at"), Some("")));
+    }
+
+    #[test]
+    fn filialkasse_sieht_von_anderen_nur_umsatz_und_version() {
+        let z = db();
+        zentrale(&z);
+        ensure_own(&z, &json!({ "name": "Zentrale GmbH" })).unwrap();
+        let (_, k_sbg) = save(&z, &zeile("sbg", 2, "Salzburg"), "T").unwrap();
+        let (_, k_kit) = save(&z, &zeile("kit", 3, "Kitzbühel"), "T").unwrap();
+        let push = json!({ "info": { "version": "0.41.0", "kasse": "SBG-K01", "firma": { "name": "Alpenlicht Salzburg", "iban": "AT611904300234573201", "uid": "ATU22222222", "steuernr": "12-345", "inhaber": "Max Muster", "bank": "Sparkasse" } } });
+        verbund::handle(&z, "POST", "/sync/v1/push", &k_sbg.unwrap(), &push, "10.0.0.5").unwrap();
+        let pull = verbund::handle(&z, "POST", "/sync/v1/pull", &k_kit.unwrap(), &json!({ "since": "" }), "10.0.0.6").unwrap();
+        let t = pull["umsatz"].to_string();
+        for geheim in ["AT611904300234573201", "ATU22222222", "12-345", "Max Muster", "Sparkasse", "10.0.0.5", "SBG-K01"] {
+            assert!(!t.contains(geheim), "„{geheim}“ darf nicht an andere Filialkassen gehen: {t}");
+        }
+        let sbg = pull["umsatz"].as_array().unwrap().iter().find(|x| x["id"] == "SBG").unwrap();
+        assert_eq!(sbg["info"]["version"], "0.41.0", "die Version bleibt sichtbar");
+        assert!(sbg["revenue_today"].is_number());
+        // die Zentrale selbst sieht weiter alles
+        let eig = verbund::overview(&z).unwrap();
+        assert!(eig["stores"].to_string().contains("AT611904300234573201"));
     }
 }

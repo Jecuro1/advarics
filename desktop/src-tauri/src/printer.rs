@@ -86,6 +86,35 @@ fn fit(s: &str, w: usize) -> String {
     s.chars().take(w).collect()
 }
 
+/// Zeile wortweise auf die Papierbreite umbrechen (überlange Wörter werden hart getrennt) – damit z. B. der Text am Bonende nicht abgeschnitten wird
+fn wrap(line: &str, w: usize) -> Vec<String> {
+    let w = w.max(1);
+    let mut out: Vec<String> = vec![];
+    let mut cur = String::new();
+    for word in line.split_whitespace() {
+        let mut word: Vec<char> = word.chars().collect();
+        while word.len() > w {
+            if !cur.is_empty() {
+                out.push(std::mem::take(&mut cur));
+            }
+            out.push(word.drain(..w).collect());
+        }
+        let word: String = word.into_iter().collect();
+        if cur.is_empty() {
+            cur = word;
+        } else if width_of(&cur) + 1 + width_of(&word) <= w {
+            cur.push(' ');
+            cur.push_str(&word);
+        } else {
+            out.push(std::mem::replace(&mut cur, word));
+        }
+    }
+    if !cur.is_empty() || out.is_empty() {
+        out.push(cur);
+    }
+    out
+}
+
 #[cfg_attr(not(test), allow(dead_code))]
 pub fn encode(ops: &[Op], width: usize) -> Vec<u8> {
     encode_with(ops, width, None)
@@ -104,8 +133,13 @@ pub fn encode_with(ops: &[Op], width: usize, logo: Option<&[u8]>) -> Vec<u8> {
                 };
                 out.extend([0x1B, 0x61, al, 0x1B, 0x45, *b as u8, 0x1D, 0x21, if *big { 0x11 } else { 0 }]);
                 for line in s.split('\n') {
-                    out.extend(cp858(&fit(line, if *big { w / 2 } else { w })));
-                    out.push(b'\n');
+                    // führende Leerzeichen (Einrückung) bleiben, wenn die Zeile ohne Umbruch passt
+                    let breite = if *big { w / 2 } else { w };
+                    let teile = if width_of(line) <= breite { vec![line.to_string()] } else { wrap(line, breite) };
+                    for t in teile {
+                        out.extend(cp858(&fit(&t, breite)));
+                        out.push(b'\n');
+                    }
                 }
                 out.extend([0x1B, 0x45, 0, 0x1D, 0x21, 0, 0x1B, 0x61, 0]);
             }
@@ -289,6 +323,18 @@ mod win {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn text_wird_umbrochen_statt_abgeschnitten() {
+        assert_eq!(wrap("Danke für Ihren Einkauf! Umtausch innerhalb von 30 Tagen mit Beleg.", 32), vec!["Danke für Ihren Einkauf!", "Umtausch innerhalb von 30 Tagen", "mit Beleg."]);
+        assert_eq!(wrap("Unglaublichlangeswortohnepause", 10), vec!["Unglaublic", "hlangeswor", "tohnepause"]);
+        assert_eq!(wrap("", 10), vec![""]);
+        let ops = [Op::Text { s: "Danke für Ihren Einkauf! Umtausch innerhalb von 30 Tagen mit Beleg.".into(), a: None, b: false, big: false }];
+        let bytes = encode(&ops, 32);
+        let zeilen = bytes.iter().filter(|b| **b == b'\n').count();
+        assert_eq!(zeilen, 3, "drei Zeilen auf 58 mm");
+        assert!(encode(&ops, 48).iter().filter(|b| **b == b'\n').count() == 2, "zwei Zeilen auf 80 mm");
+    }
 
     #[cfg(unix)]
     #[test]

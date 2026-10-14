@@ -513,7 +513,7 @@ function openPresetMenu(anchor) {
   });
 }
 function openStoreMenu(anchor, align) {
-  const el = openPopover(anchor, `<div class="pop-h">Filiale</div>${STORES.map(s => `<button class="pop-i" data-store="${s.id}">${ic(s.id === S.store ? 'check' : 'store')}<span style="flex:1">${flDot(s.id)}${s.name}</span><span class="muted" style="font-size:11.5px">${s.addr}</span></button>`).join('')}<div class="pop-sep"></div><button class="pop-i" data-store="ALL">${ic(S.store === 'ALL' ? 'check' : 'layers')}Alle Filialen<span class="r muted" style="font-size:11.5px">konsolidiert</span></button>`, {align, width: 320});
+  const el = openPopover(anchor, `<div class="pop-h">Filiale</div>${STORES.map(s => `<button class="pop-i" data-store="${s.id}">${ic(s.id === S.store ? 'check' : 'store')}<span style="flex:1">${flDot(s.id)}${esc(s.name)}</span><span class="muted" style="font-size:11.5px">${esc(s.addr)}</span></button>`).join('')}<div class="pop-sep"></div><button class="pop-i" data-store="ALL">${ic(S.store === 'ALL' ? 'check' : 'layers')}Alle Filialen<span class="r muted" style="font-size:11.5px">konsolidiert</span></button>`, {align, width: 320});
   if (!el) return;
   el.addEventListener('click', e => {
     const b = e.target.closest('[data-store]'); if (!b) return;

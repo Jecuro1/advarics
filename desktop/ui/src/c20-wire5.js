@@ -23,8 +23,8 @@ function renderBonBox() {
     + field('bon.ersparnis', '„Sie sparen …“ anzeigen', 'Summe aus Aktionen und Rabatten am Bonende', 'switch')
     + field('bon.artikelnr', 'Artikelnummern auf dem Bon', '', 'switch')
     + field('bon.kopf', 'Zusatzzeile oben', 'z. B. Öffnungszeiten oder Webadresse', 'text')
-    + field('kasse.bonFuss', 'Text am Bonende', '', 'textarea')
-    + field('bon.fussA4', 'Fußzeile Rechnung/Lieferschein', 'z. B. Bankverbindung, Firmenbuchnummer, Gerichtsstand', 'textarea');
+    + field('kasse.bonFuss', 'Text am Bonende', 'Gilt, solange die Filiale unter Stammdaten › Filialen keinen eigenen Text hat', 'textarea')
+    + field('bon.fussA4', 'Fußzeile Rechnung/Lieferschein', 'z. B. Bankverbindung, Firmenbuchnummer, Gerichtsstand · gilt, solange die Filiale unter Stammdaten › Filialen keinen eigenen Text hat', 'textarea');
   initSeg($('#bonTpl', box), b => { prefs.tpl = b.dataset.v; persist.set('prefs', prefs); renderBonPrev(); });
   renderBonPrev();
 }
