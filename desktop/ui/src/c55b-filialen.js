@@ -9,8 +9,9 @@
    Die Prüfungen stehen hier und in filiale.rs gleich (das Backend entscheidet).
    ═════════════════════════════════════════════════════════════════ */
 const FIL = {rows: [], eigene: 'ZENTRALE', rolle: 'einzel', loaded: false};
-const FE = {id: null, ids: [], d: null, orig: null, tab: 'allg', dirty: false, show: false};
-const FL_TABS = [['allg', 'Allgemein'], ['adresse', 'Haupt-Adresse'], ['zusatz', 'Zusätzliche Adresse(n)']];
+const FE = {id: null, ids: [], d: null, orig: null, tab: 'allg', dirty: false, show: false, stand: null};
+const FL_TABS = [['allg', 'Allgemein'], ['report', 'Report-Vorschau'], ['nummern', 'Nummernkreise'], ['adresse', 'Haupt-Adresse'], ['zusatz', 'Zusätzliche Adresse(n)']];
+const FL_KREISE = [['order', 'Order'], ['rechnung', 'Rechnung'], ['lieferschein', 'Lieferschein'], ['angebot', 'Angebot'], ['auftrag', 'Auftrag'], ['lretoure', 'Lieferanten-Retoure']];
 const FL_ISO3 = {AT: 'AUT', DE: 'DEU', CH: 'CHE', IT: 'ITA', LI: 'LIE', FR: 'FRA', SI: 'SVN', HU: 'HUN', CZ: 'CZE', SK: 'SVK', PL: 'POL', NL: 'NLD', BE: 'BEL', LU: 'LUX', ES: 'ESP', PT: 'PRT', DK: 'DNK', SE: 'SWE', NO: 'NOR', FI: 'FIN', IE: 'IRL', GB: 'GBR', HR: 'HRV', RO: 'ROU', BG: 'BGR', GR: 'GRC', US: 'USA'};
 const FL_ART = [['rechnung', 'Rechnungsadresse'], ['liefer', 'Lieferadresse'], ['beide', 'Rechnungs- und Lieferadresse']];
 const FL_ADR = ['adrzeile1', 'adrzeile2', 'strasse', 'hausnr', 'plz', 'ort', 'postfach', 'land'];
@@ -22,6 +23,11 @@ const flRow = id => FIL.rows.find(r => flSame(r.id, id));
 const flNr = id => flRow(id)?.nr ?? '';
 const flRO = () => FIL.rolle === 'filiale';
 const flIstEigene = id => flSame(id, FIL.eigene);
+/** Fußzeilen der Belege: Text der eigenen Filiale (Report-Vorschau), sonst der Standard dieser Kasse (Einstellungen › Bon & Belege) */
+let FL_PREV = null;   // nur während der Vorschau in der Maske: Entwurf statt gespeicherter Zeile
+const flFussRow = () => FL_PREV || flRow(FIL.eigene);
+const fussA4 = () => flS(flFussRow()?.fuss_a4) || CFG['bon.fussA4'] || '';
+const fussBon = () => flS(flFussRow()?.fuss_bon) || CFG['kasse.bonFuss'] || '';
 const flFarbe = id => { const f = flRow(id)?.farbe; return /^#[0-9a-f]{6}$/i.test(f || '') ? f : ''; };
 const flDot = id => flFarbe(id) ? `<span class="fl-dot" style="background:${flFarbe(id)}"></span>` : '';
 const flBg = id => flFarbe(id) ? `background:${flFarbe(id)}` : '';
@@ -37,6 +43,8 @@ function flSplitAdresse(a) {
 /** Bisherige Firmendaten – daraus entsteht die eigene Zeile beim ersten Öffnen */
 const flSeed = () => ({name: CFG['firma.name'], kurz: (typeof VB !== 'undefined' && VB.info?.name) || '', ...flSplitAdresse(CFG['firma.adresse']), uid: CFG['firma.uid'], tel: CFG['firma.telefon'], iban: CFG['zahlung.iban'], bic: CFG['zahlung.bic'], bank: CFG['zahlung.bank']});
 
+/** Stand der Nummernkreise dieser Kasse (nur Desktop) */
+async function flLadeStand() { FE.stand = null; if (!DESKTOP) return; try { FE.stand = await invoke('nummern_stand'); } catch { /* */ } }
 /** Zeilen laden (Desktop: aus der Datenbank; Vorschau: Browser-Speicher mit den Beispiel-Filialen) */
 async function filLoad(force) {
   if (FIL.loaded && !force) return;
@@ -65,8 +73,13 @@ function flDecorate(list) {
   return out;
 }
 /** Vorschau (ohne Datenbank): die eigene Zeile in die Einstellungen spiegeln, wie filiale.rs es in der Desktop-App tut */
-function flMirrorCfg(r) {
-  Object.assign(CFG, {'firma.name': r.name, 'firma.adresse': flAdrZeile(r), 'firma.adrzeile1': r.adrzeile1, 'firma.adrzeile2': r.adrzeile2, 'firma.postfach': r.postfach, 'firma.land': r.land, 'firma.uid': r.uid, 'firma.steuernr': r.steuernr, 'firma.telefon': r.tel, 'firma.fax': r.fax, 'firma.mobil': r.mobil, 'firma.email': r.email, 'firma.web': r.web, 'firma.inhaber': r.inhaber, 'zahlung.iban': r.iban, 'zahlung.bic': r.bic, 'zahlung.bank': r.bank});
+const flCfgMap = r => ({'firma.name': r.name, 'firma.adresse': flAdrZeile(r), 'firma.adrzeile1': r.adrzeile1, 'firma.adrzeile2': r.adrzeile2, 'firma.postfach': r.postfach, 'firma.land': r.land, 'firma.uid': r.uid, 'firma.steuernr': r.steuernr, 'firma.telefon': r.tel, 'firma.fax': r.fax, 'firma.mobil': r.mobil, 'firma.email': r.email, 'firma.web': r.web, 'firma.inhaber': r.inhaber, 'zahlung.iban': String(r.iban ?? '').replace(/\s+/g, ''), 'zahlung.bic': r.bic, 'zahlung.bank': r.bank});
+function flMirrorCfg(r) { Object.assign(CFG, flCfgMap(r)); }
+/** Vorschau mit den Angaben des Entwurfs (Einstellungen und Fußzeilen werden nur für diesen Aufruf ersetzt) */
+function flWithDraft(d, fn) {
+  const m = flCfgMap(d), old = {}; for (const k of Object.keys(m)) old[k] = CFG[k];
+  Object.assign(CFG, m); FL_PREV = {fuss_a4: d.fuss_a4, fuss_bon: d.fuss_bon};
+  try { return fn(); } finally { Object.assign(CFG, old); FL_PREV = null; }
 }
 /** Wurden die Einstellungen am Arbeitsplatz durch den Abgleich verändert (Filialkasse)? Dann neu einlesen. */
 async function flSyncCfg() {
@@ -108,27 +121,37 @@ function flErrors(d) {
   const em = flS(d.email); if (em && (!em.includes('@') || em.startsWith('@') || em.endsWith('@') || /\s/.test(em))) add('email', 'E-Mail-Adresse wie name@firma.at');
   for (const [k, l] of [['name', 'Name'], ['kurz', 'Kurz-Name'], ['haustyp', 'Haus-Typ'], ['tel', 'Telefon'], ['fax', 'Fax'], ['mobil', 'Mobiltelefon'], ['email', 'E-Mail'], ['web', 'Website'], ['inhaber', 'Inhabername'], ['steuernr', 'Steuernummer'], ['bank', 'Bank']]) if (String(d[k] ?? '').trim().length > 120) add(k, `${l}: höchstens 120 Zeichen`);
   for (const k of FL_ADR) if (String(d[k] ?? '').trim().length > 80) add(k, 'Höchstens 80 Zeichen');
+  for (const [k, l] of [['fuss_a4', 'Fußzeile A4-Belege'], ['fuss_bon', 'Text am Bonende']]) if (String(d[k] ?? '').trim().length > 600) add(k, `${l}: höchstens 600 Zeichen`);
   if ((d.zusatz || []).length > 10) add('z0.ort', 'Höchstens 10 zusätzliche Adressen');
   const uid = flS(d.uid).replace(/\s+/g, ''); if (uid && !/^[A-Za-z]{2}[A-Za-z0-9]{2,12}$/.test(uid)) add('uid', 'USt-IdNr.: Länderkennung und Nummer (z. B. ATU12345678)');
   if (!flIbanOk(d.iban)) add('iban', 'IBAN: Prüfziffer stimmt nicht – bitte Eingabe kontrollieren');
   const bic = flS(d.bic).replace(/\s+/g, ''); if (bic && !/^[A-Za-z0-9]{8}([A-Za-z0-9]{3})?$/.test(bic)) add('bic', 'BIC: 8 oder 11 Zeichen (z. B. BKAUATWW)');
   if (d.land && !/^[A-Za-z]{2}$/.test(d.land)) add('land', 'Land als zweistelliger ISO-Code');
+  for (const [a, l] of FL_KREISE) {
+    const s = String(d.nummern[a].start).trim(), e = String(d.nummern[a].ende).trim(), ok = v => v === '' || /^\d{1,9}$/.test(v);
+    if (!ok(s)) add(`n.${a}.start`, `${l}: Start-Nr. als ganze Zahl`);
+    else if (!ok(e)) add(`n.${a}.ende`, `${l}: End-Nr. als ganze Zahl`);
+    else if (e !== '' && (s === '' || +s === 0)) add(`n.${a}.start`, `${l}: Start-Nr. fehlt`);
+    else if (e !== '' && +e > 0 && +e < +s) add(`n.${a}.ende`, `${l}: End-Nr. liegt vor der Start-Nr.`);
+    else if (s !== '' && +s > 0 && e !== '' && +e > 0) { const o = FIL.rows.find(r => !flSame(r.id, FE.id || d.id) && r.nummern?.[a]?.start && +r.nummern[a].start <= +e && +s <= (+r.nummern[a].ende || Infinity)); if (o) add(`n.${a}.ende`, `${l}: überschneidet sich mit der Filiale „${flName(o)}“`); }
+  }
   (d.zusatz || []).forEach((z, i) => {
     if (!z.ort.trim()) add(`z${i}.ort`, 'Ort angeben');
     if (!z.strasse.trim() && !z.postfach.trim()) add(`z${i}.strasse`, 'Straße (oder Postfach) angeben');
   });
   return m;
 }
-const flTabOf = k => /^z\d+\./.test(k) ? 'zusatz' : ['adrzeile1', 'adrzeile2', 'strasse', 'hausnr', 'plz', 'ort', 'postfach', 'land'].includes(k) ? 'adresse' : 'allg';
+const flTabOf = k => k === 'fuss_a4' || k === 'fuss_bon' ? 'report' : /^n\./.test(k) ? 'nummern' : /^z\d+\./.test(k) ? 'zusatz' : ['adrzeile1', 'adrzeile2', 'strasse', 'hausnr', 'plz', 'ort', 'postfach', 'land'].includes(k) ? 'adresse' : 'allg';
 
 /* ── Zustand ── */
 const flBlank = () => ({id: '', nr: String(Math.max(0, ...FIL.rows.map(r => +r.nr || 0)) + 1), name: '', kurz: '', gruppe: '', farbe: '', haustyp: '', tel: '', fax: '', mobil: '', email: '', web: '', inhaber: '', uid: '', steuernr: '', iban: '', bic: '', bank: '',
-  adrzeile1: '', adrzeile2: '', strasse: '', hausnr: '', plz: '', ort: '', postfach: '', land: 'AT', zusatz: [], _aktiv: true, _vorl: false});
+  adrzeile1: '', adrzeile2: '', strasse: '', hausnr: '', plz: '', ort: '', postfach: '', land: 'AT', fuss_a4: '', fuss_bon: '', zusatz: [], nummern: Object.fromEntries(FL_KREISE.map(([a]) => [a, {start: '', ende: ''}])), _aktiv: true, _vorl: false});
 function flDraft(id) {
   const r = id ? flRow(id) : null; if (!r) return flBlank();
-  const b = flBlank(), d = {...b};
-  for (const k of Object.keys(b)) if (k !== 'zusatz' && k !== 'gruppe' && k !== 'nr' && r[k] != null) d[k] = String(r[k]);
+  const b = flBlank(), d = {...b, nummern: flBlank().nummern};
+  for (const k of Object.keys(b)) if (!['zusatz', 'gruppe', 'nr', 'nummern', '_vorl'].includes(k) && r[k] != null) d[k] = String(r[k]);
   d.nr = String(r.nr ?? ''); d.iban = flFormatIban(r.iban); d._aktiv = r._aktiv !== false; d._vorl = r.vorlaeufig === true; d.gruppe = flGruppe(r.id)?.id || '';
+  FL_KREISE.forEach(([a]) => { const n = r.nummern?.[a]; d.nummern[a] = {start: n?.start ? String(n.start) : '', ende: n?.ende ? String(n.ende) : ''}; });
   d.zusatz = (r.zusatz || []).map(z => ({uid: flUid(), typ: z.typ || 'liefer', ...Object.fromEntries(FL_ADR.map(k => [k, String(z[k] ?? '')]))}));
   return d;
 }
@@ -136,8 +159,9 @@ const flClone = d => JSON.parse(JSON.stringify(d));
 /** Arbeitsstand → Zeile für das Backend */
 function flToRow(d) {
   const t = k => String(d[k] ?? '').trim();
-  const r = {id: FE.id || t('id').toUpperCase(), nr: parseInt(d.nr, 10), _aktiv: d._aktiv !== false, zusatz: d.zusatz.map(z => ({typ: z.typ, ...Object.fromEntries(FL_ADR.map(k => [k, String(z[k] ?? '').trim()]))}))};
+  const r = {id: FE.id || t('id').toUpperCase(), nr: parseInt(d.nr, 10), _aktiv: d._aktiv !== false, nummern: Object.fromEntries(FL_KREISE.map(([a]) => [a, {start: String(d.nummern[a].start).trim(), ende: String(d.nummern[a].ende).trim()}])), zusatz: d.zusatz.map(z => ({typ: z.typ, ...Object.fromEntries(FL_ADR.map(k => [k, String(z[k] ?? '').trim()]))}))};
   for (const k of ['name', 'kurz', 'farbe', 'haustyp', 'tel', 'fax', 'mobil', 'email', 'web', 'inhaber', 'uid', 'steuernr', 'iban', 'bic', 'bank', ...FL_ADR]) r[k] = t(k);
+  r.fuss_a4 = String(d.fuss_a4 ?? '').trim(); r.fuss_bon = String(d.fuss_bon ?? '').trim();
   r.iban = r.iban.replace(/\s+/g, '').toUpperCase(); r.uid = r.uid.replace(/\s+/g, '').toUpperCase(); r.bic = r.bic.replace(/\s+/g, '').toUpperCase(); r.land = (r.land || 'AT').toUpperCase();
   return r;
 }
@@ -181,7 +205,7 @@ function flOpen(id, ids) {
 registerPage('filiale-edit', {title: 'Filialen', sub: () => FE.d ? (FE.id ? `${FE.d.nr} ${flName(flRow(FE.id)) || FE.d.name}` : 'neue Filiale') : '', render: async () => {
   if (!FE.d) { setTimeout(() => go('st-filiale'), 0); return; }
   $('#view-filiale-edit').innerHTML = '<div class="muted" style="padding:24px">Lade …</div>';
-  await Promise.all([filLoad(), loadStamm()]); flRender(); renderTopbar();
+  await Promise.all([filLoad(), loadStamm(), flLadeStand()]); flRender(); renderTopbar();
 }});
 VIEW_PERM['filiale-edit'] = 'system';
 NAV_CHILD['filiale-edit'] = 'st-filiale';
@@ -190,7 +214,7 @@ leaveGuard('filiale-edit', () => FE.dirty, () => { FE.dirty = false; FE.d = flDr
 const flErr = k => flErrors(FE.d).find(e => e.k === k);
 /** Eingabefeld; o.dis sperrt, o.mono/ph/hint/type/list/num wie üblich, o.k2 = Schlüssel in der Zusatzadresse z{i} */
 const flIn = (k, l, o = {}) => {
-  const key = o.z != null ? `z${o.z}.${k}` : k, val = o.z != null ? FE.d.zusatz[o.z][k] : FE.d[k];
+  const key = o.z != null ? `z${o.z}.${k}` : o.n ? `n.${o.n}.${k}` : k, val = o.z != null ? FE.d.zusatz[o.z][k] : o.n ? FE.d.nummern[o.n][k] : FE.d[k];
   const er = FE.show && flErr(key), dis = flLocked() || o.dis;
   return `<label class="field ${er ? 'zp-bad' : ''}"><span>${esc(l)}</span><input class="input ${o.mono ? 'mono' : ''}" ${o.type ? `type="${o.type}"` : ''} data-fl="${key}" value="${esc(val ?? '')}" ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.inputmode ? `inputmode="${o.inputmode}"` : ''} ${o.list ? `list="${o.list}"` : ''} autocomplete="off" ${dis ? 'disabled' : ''} ${er ? `aria-invalid="true"` : ''}>${er ? `<small class="zp-err" role="alert">${esc(er.t)}</small>` : o.hint ? `<small class="ea-hint">${esc(o.hint)}</small>` : ''}</label>`;
 };
@@ -237,6 +261,43 @@ function flAllg() {
     ${flCard('Beleg-Kopf', `${flPreviewHTML(D)}<small class="ea-hint">So erscheint die Filiale im Kopf der A4-Belege (Rechnung, Lieferschein, Bestellung).</small>`)}
   </div>`};
 }
+/** Report-Vorschau: Fußzeilen der Belege dieser Filiale mit Vorschau (A4-Beleg und Kassenbon) */
+function flReport() {
+  const D = FE.d, zentrale = FIL.rolle === 'zentrale' && !flLocked();
+  const ta = (k, l, rows, hint) => { const er = FE.show && flErr(k); return `<label class="field ${er ? 'zp-bad' : ''}"><span>${esc(l)}</span><textarea class="input" rows="${rows}" data-fl="${k}" style="height:auto;padding:9px 12px;resize:vertical" ${flLocked() ? 'disabled' : ''}>${esc(D[k] ?? '')}</textarea>${er ? `<small class="zp-err" role="alert">${esc(er.t)}</small>` : `<small class="ea-hint">${esc(hint)}</small>`}</label>`; };
+  return {html: `${flNote()}<div class="fl-grid fl-rep">
+    ${flCard('Fußzeilen', `${ta('fuss_a4', 'Fußzeile A4-Belege', 5, 'Rechnung, Lieferschein, Angebot, Bestellung. Klartext, mehrere Zeilen möglich, z. B. Bankverbindung, Firmenbuchnummer, Gerichtsstand. Leer = Standard dieser Kasse (Einstellungen › Bon & Belege). Dahinter steht immer der Firmenkopf mit Kontakt und UID.')}
+      ${ta('fuss_bon', 'Text am Bonende', 4, 'Steht am Ende des Kassenbons (Bildschirm, Thermodruck, E-Mail-Beleg). Leer = Standard dieser Kasse.')}
+      ${zentrale ? `<button type="button" class="btn btn-secondary" data-fl-a="fussalle">${ic('store', 'i-sm')}Fußzeilen für alle Filialen übernehmen</button>` : ''}`)}
+    ${flCard('Vorschau', `<div class="fl-rp"><div><div class="eyebrow">A4-Beleg (Rechnung)</div><div class="fl-a4" data-fl-a4></div></div><div><div class="eyebrow">Kassenbon</div><div class="receipt-wrap" data-fl-bon style="padding:0"></div></div></div><small class="ea-hint">Beispielbeleg mit den Angaben dieser Filiale. Das Logo gehört zur Kasse (Einstellungen › Bon & Belege).</small>`)}
+  </div>`, mount: el => flPrevRefresh(el)};
+}
+/** Vorschau neu zeichnen (A4 in einem Rahmen, auf Kartenbreite verkleinert) */
+function flPrevRefresh(el) {
+  const a4 = $('[data-fl-a4]', el), bon = $('[data-fl-bon]', el); if (!a4 && !bon) return;
+  flWithDraft(FE.d, () => {
+    try { if (bon) bon.innerHTML = receiptHTML(sampleRec(), prefs.tpl || 'classic'); } catch (e) { if (bon) bon.textContent = 'Vorschau nicht möglich'; }
+    if (a4) {
+      let f = $('iframe', a4); if (!f) { f = document.createElement('iframe'); f.title = 'Vorschau A4-Beleg'; f.tabIndex = -1; a4.append(f); }
+      let html = ''; try { html = invoiceHTML(sampleRec(), 'rechnung'); } catch (e) { html = '<p>Vorschau nicht möglich</p>'; }
+      f.srcdoc = `<!doctype html><html lang="de"><head><meta charset="utf-8"><style>${PRINT_BASE_CSS.replace(/@page\{[^}]*\}/, '')}body{padding:16mm;width:794px}</style></head><body>${html}</body></html>`;
+    }
+  });
+  if (a4) { const s = Math.max(.2, a4.clientWidth / 794); a4.style.height = Math.round(1123 * s) + 'px'; const f = $('iframe', a4); if (f) f.style.transform = `scale(${s})`; }
+}
+/** Nummernkreise: Start-/End-Nr. je Art; für die eigene Filiale mit nächster Nummer und Rest */
+function flNummern() {
+  const D = FE.d, own = FE.id && flIstEigene(FE.id), st = own ? FE.stand : null, jahr = new Date().getFullYear();
+  const info = a => {
+    const k = st?.kreise?.[a]; if (!k) return '';
+    const sz = k.ende > 0 && k.start > 0 ? k.ende - k.start + 1 : 0, knapp = k.rest != null && (k.rest === 0 || (sz > 0 && k.rest / sz < 0.1));
+    return `<div class="ge-facts"><div class="ge-fact"><span>Nächste Nummer</span><b>${num(k.naechste)}</b></div><div class="ge-fact"><span>Noch frei</span><b>${k.rest == null ? 'unbegrenzt' : `${num(k.rest)}${knapp ? ` <span class="pill ${k.rest === 0 ? 'neg' : 'warn'}" style="height:20px">${k.rest === 0 ? 'erschöpft' : 'wird knapp'}</span>` : ''}`}</b></div></div>`;
+  };
+  const card = ([a, l]) => flCard(l, `${flIn('start', 'Start-Nr.', {n: a, inputmode: 'numeric', ph: 'fortlaufend'})}${flIn('ende', 'End-Nr.', {n: a, inputmode: 'numeric', ph: 'unbegrenzt'})}${info(a)}`);
+  return {html: `${flNote()}<p class="ea-hint ue-note">Jede Filiale hat ihre eigene Datenbank – damit sich zwei Filialen nie dieselbe Nummer geben, bekommt jede einen eigenen Bereich. Leer = fortlaufend ohne Grenze. Liegt der Zähler unter der Start-Nr., springt die nächste Nummer auf die Start-Nr.; der Zähler wird nie zurückgesetzt. Ist die End-Nr. erreicht, lässt sich kein Beleg dieser Art mehr anlegen, bis ein neuer Bereich eingetragen ist. Die Zentrale prüft beim Sichern, dass sich Bereiche verschiedener Filialen nicht überschneiden.</p>
+    <div class="fl-grid fl-3">${FL_KREISE.map(card).join('')}
+    ${flCard('Kassenbons', `<p class="ea-hint" style="margin:0">Bons, Retouren und Stornos an der Kasse laufen je Kasse fortlaufend in der RKSV-Signaturkette – hier gibt es keinen Bereich.${st ? ` Nächste Bon-Nr. dieser Kasse: <b>${jahr}-${String(st.bon).padStart(6, '0')}</b>.` : ''}</p><p class="ea-hint" style="margin:0">Gutschein-Codes sind Zufallswerte und haben keinen Nummernkreis.</p>`)}</div>`};
+}
 function flAdresse() {
   const D = FE.d, zeilen = flAdrLines(D);
   return {html: `${flNote()}<div class="fl-grid fl-2">
@@ -259,11 +320,11 @@ function flRender() {
   const host = $('#view-filiale-edit'); if (!host || !FE.d) return;
   const D = FE.d, lock = flLocked(), pos = FE.ids.indexOf(FE.id), el = document.createElement('div'); el.className = 'ae ue ge fl'; host.replaceChildren(el);
   const own = FE.id && flIstEigene(FE.id), zentrale = FIL.rolle === 'zentrale';
-  const btn = (a, icon, l, dis, text = true) => `<button class="ag-btn" data-fl-a="${a}" title="${esc(l)}" aria-label="${esc(l)}" ${dis ? 'disabled' : ''}>${ic(icon, 'i-sm')}${text ? `<span>${l}</span>` : ''}</button>`;
+  const btn = (a, icon, l, dis, text = true, kurz) => `<button class="ag-btn" data-fl-a="${a}" title="${esc(l)}" aria-label="${esc(l)}" ${dis ? 'disabled' : ''}>${ic(icon, 'i-sm')}${text ? `<span>${kurz || l}</span>` : ''}</button>`;
   const errs = flErrors(D), cnt = k => errs.filter(e => flTabOf(e.k) === k).length;
   const tab = ([k, l]) => { const n = cnt(k); return `<button type="button" class="ed-tab" role="tab" data-fl-tab="${k}" aria-selected="${FE.tab === k}">${esc(l)}${k === 'zusatz' && D.zusatz.length ? ` <span class="ed-badge" style="background:var(--surface-3);color:var(--text-2)">${D.zusatz.length}</span>` : ''}${n ? ` <span class="ed-badge">${n}</span>` : ''}</button>`; };
-  const body = (FE.tab === 'zusatz' ? flZusatzHTML : FE.tab === 'adresse' ? flAdresse : flAllg)();
-  el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', 'Übersicht: Filialen')}${btn('refresh', 'sync', 'Aktualisieren', !FE.id)}${btn('save', 'check', 'Sichern', lock || !FE.dirty)}${btn('new', 'plus', 'Neu', !zentrale)}${btn('undo', 'undo', 'Änderungen zurücknehmen', lock || !FE.dirty)}${btn('del', 'trash', 'Löschen', !FE.id || !zentrale || own)}${btn('code', 'link', 'Filial-Code erzeugen', !FE.id || !zentrale || own || lock)}
+  const body = (FE.tab === 'zusatz' ? flZusatzHTML : FE.tab === 'adresse' ? flAdresse : FE.tab === 'nummern' ? flNummern : FE.tab === 'report' ? flReport : flAllg)();
+  el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', 'Übersicht: Filialen')}${btn('refresh', 'sync', 'Aktualisieren', !FE.id)}${btn('save', 'check', 'Sichern', lock || !FE.dirty)}${btn('new', 'plus', 'Neu', !zentrale)}${btn('undo', 'undo', 'Änderungen zurücknehmen', lock || !FE.dirty)}${btn('del', 'trash', 'Löschen', !FE.id || !zentrale || own)}${btn('code', 'link', 'Filial-Code erzeugen', !FE.id || !zentrale || own || lock, true, 'Filial-Code')}
       <span class="sp"></span>${FE.id && FE.ids.length > 1 ? `${btn('prev', 'chevron-left', 'Vorherige Filiale', pos <= 0, false)}<span class="ae-nr">${pos + 1}/${FE.ids.length}</span>${btn('next', 'chevron-right', 'Nächste Filiale', pos >= FE.ids.length - 1, false)}` : ''}</div>
     <div class="ae-tabsw"><div class="ed-tabs" role="tablist">${FL_TABS.map(tab).join('')}</div></div>
     <div class="ae-body"><div id="edBody">${body.html}</div></div>`;
@@ -277,7 +338,7 @@ function flRender() {
     if (!b || b.disabled) return;
     const a = b.dataset.flA, ask = async () => !FE.dirty || await confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen');
     if (a === 'back') { if (!await ask()) return; FE.dirty = false; return go('st-filiale'); }
-    if (a === 'refresh' || a === 'undo') { if (a === 'refresh' && !await ask()) return; await Promise.all([filLoad(true), loadStamm(true)]); FE.d = flDraft(FE.id); FE.orig = flClone(FE.d); FE.dirty = false; FE.show = false; return flRender(); }
+    if (a === 'refresh' || a === 'undo') { if (a === 'refresh' && !await ask()) return; await Promise.all([filLoad(true), loadStamm(true), flLadeStand()]); FE.d = flDraft(FE.id); FE.orig = flClone(FE.d); FE.dirty = false; FE.show = false; return flRender(); }
     if (a === 'new') { if (!await ask()) return; return flOpen(null, FE.ids); }
     if (a === 'prev' || a === 'next') { if (!await ask()) return; const id = FE.ids[pos + (a === 'next' ? 1 : -1)]; if (id) flOpen(id); return; }
     if (a === 'del') return flRemove([FE.id], true);
@@ -285,6 +346,7 @@ function flRender() {
     if (a === 'farbex') { FE.d.farbe = ''; flDirty(el); return flRender(); }
     if (a === 'gruppen') { if (!await ask()) return; FE.dirty = false; return go('st-filialgruppe'); }
     if (a === 'code') return flCode(FE.id);
+    if (a === 'fussalle') return flFussAlle();
     if (a === 'zadd') { FE.d.zusatz.push({uid: flUid(), typ: FE.d.zusatz.some(z => z.typ === 'liefer' || z.typ === 'beide') ? 'rechnung' : 'liefer', adrzeile1: '', adrzeile2: '', strasse: '', hausnr: '', plz: '', ort: '', postfach: '', land: FE.d.land || 'AT'}); flDirty(el); return flRender(); }
     if (a === 'zdel') { FE.d.zusatz.splice(+b.dataset.zi, 1); flDirty(el); return flRender(); }
   });
@@ -292,12 +354,13 @@ function flRender() {
 }
 function flDirty(el) { FE.dirty = true; $$('[data-fl-a="save"],[data-fl-a="undo"]', el).forEach(b => { b.disabled = flLocked(); }); }
 function flSet(t, el) {
-  const k = t.dataset.fl, m = /^z(\d+)\.(.+)$/.exec(k);
-  if (m) FE.d.zusatz[+m[1]][m[2]] = t.value; else FE.d[k] = t.value;
+  const k = t.dataset.fl, m = /^z(\d+)\.(.+)$/.exec(k), nn = /^n\.(\w+)\.(start|ende)$/.exec(k);
+  if (m) FE.d.zusatz[+m[1]][m[2]] = t.value; else if (nn) FE.d.nummern[nn[1]][nn[2]] = t.value; else FE.d[k] = t.value;
   flDirty(el);
   if (k === 'name' || k === 'kurz' || k === 'nr') renderTopbar();
   flBadges(el);
   const pv = $('.fl-prev', el); if (pv && FE.tab === 'allg') pv.outerHTML = flPreviewHTML(FE.d);
+  if (FE.tab === 'report') flPrevRefresh(el);
   if (FE.tab === 'adresse') { const dr = $$('.fl-prev', el)[0]; if (dr) { const z = flAdrLines(FE.d); dr.innerHTML = z.length ? [flS(FE.d.name), ...z].filter(Boolean).map(esc).join('<br>') : '<span class="muted">Noch keine Adresse</span>'; } }
 }
 /** Zähler an den Reitern */
@@ -331,8 +394,8 @@ async function flSave() {
   if (flLocked()) return;
   if (errs.length) { FE.tab = flTabOf(errs[0].k); FE.show = true; flRender(); return toast(errs[0].t, {t2: 'Angabe prüfen', type: 'warn'}); }
   const row = flToRow(D), name = flName(row);
-  const sens = isNew || ['_aktiv', 'nr', 'uid', 'steuernr', 'iban', 'bic', 'name'].some(k => String(D[k]).replace(/\s+/g, '') !== String(O[k]).replace(/\s+/g, ''));
-  if (sens && DESKTOP) { try { await stepUp({title: 'Administrator-Freigabe', text: isNew ? `Neue Filiale „${name}“ anlegen` : `Filiale „${name}“ ändern (Name, Nummer, Steuer- oder Bankdaten, Aktiv)`, admin: true}); } catch { return; } }
+  const sens = isNew || ['_aktiv', 'nr', 'uid', 'steuernr', 'iban', 'bic', 'name'].some(k => String(D[k]).replace(/\s+/g, '') !== String(O[k]).replace(/\s+/g, '')) || JSON.stringify(D.nummern) !== JSON.stringify(O.nummern);
+  if (sens && DESKTOP) { try { await stepUp({title: 'Administrator-Freigabe', text: isNew ? `Neue Filiale „${name}“ anlegen` : `Filiale „${name}“ ändern (Name, Nummer, Steuer- oder Bankdaten, Nummernkreise, Aktiv)`, admin: true}); } catch { return; } }
   let res;
   try {
     if (DESKTOP) res = await invoke('filiale_save', {row, by: S.user.name});
@@ -341,12 +404,24 @@ async function flSave() {
   const id = res.row.id;
   if (isNew || D.gruppe !== O.gruppe) try { await flSetGroup(id, D.gruppe); } catch (err) { toast('Gruppe nicht gespeichert', {t2: String(err.message || err), type: 'warn'}); }
   if (DESKTOP) await loadSettings();
-  await filLoad(true); await loadVerbund();
+  await filLoad(true); await loadVerbund(); await flLadeStand();
   FE.id = id; FE.d = flDraft(id); FE.orig = flClone(FE.d); FE.dirty = false; FE.show = false; if (isNew) FE.ids = [...FE.ids, id];
   Hooks.emit('filiale.saved', {filiale: id, name, neu: isNew});
   toast(isNew ? 'Filiale angelegt' : 'Gespeichert', {t2: `${row.nr} · ${name}`, type: 'pos', icon: 'store', dur: 2200});
   flRender(); renderTopbar();
   if (res.code) flShowCode(res.code, name);
+}
+/** Fußzeilen dieser Maske für alle Filialen übernehmen (Zentrale) */
+async function flFussAlle() {
+  const D = FE.d, a4 = String(D.fuss_a4 ?? '').trim(), bon = String(D.fuss_bon ?? '').trim();
+  if (!await confirmBox(`Fußzeile A4 und Text am Bonende bei allen ${FIL.rows.length} Filialen auf diese Texte setzen? Vorhandene Texte der anderen Filialen werden überschrieben – auch wenn hier ein Feld leer ist.`, 'Für alle übernehmen')) return;
+  if (DESKTOP) { try { await stepUp({title: 'Administrator-Freigabe', text: 'Fußzeilen für alle Filialen übernehmen', admin: true}); } catch { return; } }
+  try {
+    if (DESKTOP) await invoke('filiale_fuss_alle', {a4, bon, by: S.user.name});
+    else { FIL.rows = FIL.rows.map(r => ({...r, fuss_a4: a4, fuss_bon: bon})); persist.set('filialen', FIL.rows); }
+  } catch (e) { return toast('Nicht möglich', {t2: String(e.message || e), type: 'warn', dur: 7000}); }
+  await filLoad(true); FE.orig.fuss_a4 = D.fuss_a4; FE.orig.fuss_bon = D.fuss_bon;
+  toast('Für alle Filialen übernommen', {t2: `${FIL.rows.length} Filialen`, type: 'pos', icon: 'store', dur: 2400}); flRender();
 }
 /** Verbindungscode der Filialkasse anzeigen (mit QR) */
 async function flShowCode(c, name) {

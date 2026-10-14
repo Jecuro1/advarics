@@ -38,6 +38,7 @@ mod fedas;
 mod demo;
 mod advarics;
 mod filiale;
+mod nummern;
 mod msg;
 
 use base64::Engine as _;
@@ -1510,6 +1511,11 @@ fn filiale_list(db: State<db::Db>, seed: Option<Value>) -> Res<Value> {
     }
     Ok(json!({ "rolle": rolle, "eigene": eigene, "zeilen": rows, "warnung": warnung }))
 }
+/// Stand der Nummernkreise dieser Kasse (nächste Nummer, Rest) für die Maske „Filialen › Nummernkreise“
+#[tauri::command]
+fn nummern_stand(db: State<db::Db>) -> Value {
+    nummern::stand(&db.conn.lock().unwrap())
+}
 /// Filiale sichern (neu oder ändern). Neue Filialen in der Zentrale liefern den Verbindungscode mit.
 #[tauri::command]
 fn filiale_save(db: State<db::Db>, row: Value, by: Option<String>) -> Res<Value> {
@@ -1521,6 +1527,11 @@ fn filiale_save(db: State<db::Db>, row: Value, by: Option<String>) -> Res<Value>
 #[tauri::command]
 fn filiale_delete(db: State<db::Db>, id: String, by: Option<String>) -> Res<()> {
     filiale::delete(&db.conn.lock().unwrap(), &id, by.as_deref().unwrap_or("")).map_err(err)
+}
+/// Fußzeile(n) der Belege für alle Filialen übernehmen (nur Zentrale)
+#[tauri::command]
+fn filiale_fuss_alle(db: State<db::Db>, a4: Option<String>, bon: Option<String>, by: Option<String>) -> Res<usize> {
+    filiale::fuss_fuer_alle(&db.conn.lock().unwrap(), a4.as_deref(), bon.as_deref(), by.as_deref().unwrap_or("")).map_err(err)
 }
 /// Neuer Verbindungscode für eine vorhandene Filiale (der bisherige wird ungültig)
 #[tauri::command]
@@ -2218,9 +2229,11 @@ fn main() {
             verbund_sync,
             verbund_store_create,
             filiale_list,
+            nummern_stand,
             filiale_save,
             filiale_delete,
             filiale_code,
+            filiale_fuss_alle,
             verbund_store_toggle,
             verbund_stock,
             verbund_transfers,

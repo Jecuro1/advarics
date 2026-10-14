@@ -15,6 +15,12 @@ function artVisual(a, color, cls = '') {
 }
 
 /* ── Druck über den Systemdialog (A4, Etikettenbögen, PDF) ── */
+/** Grundformat der A4-Belege (Druck und Vorschau in Stammdaten › Filialen › Report-Vorschau) */
+const PRINT_BASE_CSS = `    @page{size:A4;margin:16mm 16mm 18mm}*{box-sizing:border-box}html{background:#fff;color-scheme:light}body{background:#fff;font:10.5pt/1.45 "Inter","Segoe UI",system-ui,sans-serif;color:#111;margin:0}
+    h1{font-size:20pt;margin:0 0 4mm;letter-spacing:-.01em}table{width:100%;border-collapse:collapse}th{font-size:8.5pt;text-transform:uppercase;letter-spacing:.04em;color:#666;text-align:left;border-bottom:1px solid #999;padding:2mm 1.5mm}
+    td{padding:1.8mm 1.5mm;border-bottom:1px solid #e3e3e3;vertical-align:top}.r{text-align:right}.muted{color:#666}.sum td{border:0;padding:1mm 1.5mm}.sum .tot td{font-weight:700;font-size:12pt;border-top:1.5px solid #111;padding-top:2mm}
+    .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10mm;margin-bottom:12mm}.addr{font-size:10pt;line-height:1.5}.sender{font-size:7.5pt;color:#666;border-bottom:1px solid #999;margin-bottom:2mm;padding-bottom:.5mm}
+    .meta td{border:0;padding:.6mm 0 .6mm 6mm;font-size:9.5pt}.foot{margin-top:12mm;font-size:8.5pt;color:#555;border-top:1px solid #ccc;padding-top:3mm}.logo{max-height:22mm;max-width:70mm}`;
 function printHTML(body, title, css = '') {
   const f = document.createElement('iframe');
   f.setAttribute('aria-hidden', 'true');
@@ -23,11 +29,7 @@ function printHTML(body, title, css = '') {
   const doc = f.contentDocument;
   doc.open();
   doc.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${esc(title)}</title><style>
-    @page{size:A4;margin:16mm 16mm 18mm}*{box-sizing:border-box}html{background:#fff;color-scheme:light}body{background:#fff;font:10.5pt/1.45 "Inter","Segoe UI",system-ui,sans-serif;color:#111;margin:0}
-    h1{font-size:20pt;margin:0 0 4mm;letter-spacing:-.01em}table{width:100%;border-collapse:collapse}th{font-size:8.5pt;text-transform:uppercase;letter-spacing:.04em;color:#666;text-align:left;border-bottom:1px solid #999;padding:2mm 1.5mm}
-    td{padding:1.8mm 1.5mm;border-bottom:1px solid #e3e3e3;vertical-align:top}.r{text-align:right}.muted{color:#666}.sum td{border:0;padding:1mm 1.5mm}.sum .tot td{font-weight:700;font-size:12pt;border-top:1.5px solid #111;padding-top:2mm}
-    .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10mm;margin-bottom:12mm}.addr{font-size:10pt;line-height:1.5}.sender{font-size:7.5pt;color:#666;border-bottom:1px solid #999;margin-bottom:2mm;padding-bottom:.5mm}
-    .meta td{border:0;padding:.6mm 0 .6mm 6mm;font-size:9.5pt}.foot{margin-top:12mm;font-size:8.5pt;color:#555;border-top:1px solid #ccc;padding-top:3mm}.logo{max-height:22mm;max-width:70mm}
+    ${PRINT_BASE_CSS}
     ${css}</style></head><body>${body}</body></html>`);
   doc.close();
   const go2 = () => { f.contentWindow.focus(); f.contentWindow.print(); setTimeout(() => f.remove(), 60000); };
@@ -70,7 +72,7 @@ function invoiceHTML(rec, kind) {
       ${rec.parts.map(p => `<tr><td class="muted">bezahlt: ${esc(p.label)}</td><td class="r">${num(p.amount, 2)}</td></tr>`).join('')}</table>
       <p style="margin-top:8mm">Der Betrag wurde am ${dt} bezahlt. Leistungsdatum = Rechnungsdatum.${rec.rksv ? ' Der zugehörige Kassenbeleg ist RKSV-signiert.' : ''}</p>`
       : `<p style="margin-top:10mm">Ware vollständig erhalten:</p><p style="margin-top:14mm">______________________________<br><span class="muted">Datum, Unterschrift</span></p>`)
-    + `<div class="foot">${esc(firmLine())}${CFG['bon.fussA4'] ? '<br>' + esc(CFG['bon.fussA4']) : ''}</div>`;
+    + `<div class="foot">${esc(firmLine())}${fussA4() ? '<br>' + esc(fussA4()).replace(/\n/g, '<br>') : ''}</div>`;
 }
 function printInvoice(rec, kind = 'rechnung') {
   if (kind === 'rechnung' && !rec.customer) toast('Rechnung ohne Kundenadresse', {t2: 'Für eine Rechnung mit Anschrift den Kunden am Bon zuordnen', icon: 'info'});
@@ -84,7 +86,7 @@ function poHTML(head, lines, sup) {
   return letterHead('Bestellung', [s.name, s.contact ? 'z. H. ' + s.contact : '', s.email].filter(Boolean).map(esc).join('<br>'), [['Bestellnummer', head?.no || 'Entwurf'], ['Datum', new Date().toLocaleDateString('de-AT')], ...(s.customer_no ? [['Unsere Kundennr.', s.customer_no]] : [])])
     + `${(() => { const l = typeof flZusatz === 'function' ? flZusatz('liefer') : null, r = typeof flZusatz === 'function' ? flZusatz('rechnung') : null; return l || r ? `<table class="meta" style="margin:0 0 4mm"><tr>${l ? `<td style="vertical-align:top;padding-right:10mm"><span class="muted">Lieferadresse</span><br>${l.map(esc).join('<br>')}</td>` : ''}${r ? `<td style="vertical-align:top"><span class="muted">Rechnungsadresse</span><br>${r.map(esc).join('<br>')}</td>` : ''}</tr></table>` : ''; })()}<p>Wir bestellen zu den vereinbarten Konditionen:</p><table><thead><tr><th style="width:8mm">#</th><th>Artikel</th><th class="r">Menge</th><th class="r">EK netto €</th><th class="r">Summe €</th></tr></thead><tbody>${rows}</tbody></table>
     <table class="sum" style="width:70mm;margin:5mm 0 0 auto"><tr class="tot"><td>Summe netto EUR</td><td class="r">${num(total, 2)}</td></tr></table>
-    ${head?.note ? `<p><b>Hinweis:</b> ${esc(head.note)}</p>` : ''}<p>Bitte Lieferschein mit Bestellnummer beilegen. Vielen Dank!</p><div class="foot">${esc(firmLine())}</div>`;
+    ${head?.note ? `<p><b>Hinweis:</b> ${esc(head.note)}</p>` : ''}<p>Bitte Lieferschein mit Bestellnummer beilegen. Vielen Dank!</p><div class="foot">${esc(firmLine())}${fussA4() ? '<br>' + esc(fussA4()).replace(/\n/g, '<br>') : ''}</div>`;
 }
 
 /* ── EAN-13 als SVG ── */
@@ -170,7 +172,7 @@ function mailReceiptHTML(rec) {
       ${row(neg ? 'Erstattung EUR' : 'Summe EUR', m(rec.t.total), true)}${rec.parts.map(p => row(esc(p.label), m(p.amount))).join('')}${rec.change > 0 ? row('Rückgeld', m(rec.change)) : ''}
       ${rec.t.vat.map(v => row(`<span style="color:#666;font-size:12px">MwSt ${v.rate} % (netto ${m(v.net)})</span>`, `<span style="color:#666;font-size:12px">${m(v.tax)}</span>`)).join('')}</table>
     ${rec.rksv?.qr ? `<div style="text-align:center;margin-top:16px"><img src="cid:qr" width="160" height="160" alt="RKSV-QR-Code"><div style="color:#666;font-size:11px">RKSV · Testmodus</div></div>` : ''}
-    <p style="color:#666;font-size:12px;margin-top:18px;white-space:pre-line">${esc(CFG['kasse.bonFuss'] || '')}</p></div>`;
+    <p style="color:#666;font-size:12px;margin-top:18px;white-space:pre-line">${esc(fussBon())}</p></div>`;
 }
 function mailReceiptText(rec) { return `${CFG['firma.marke']} – Beleg ${rec.no} vom ${rec.date.toLocaleString('de-AT')}\n\n${rec.lines.map(l => `${l.qty} x ${l.name}`).join('\n')}\n\nSumme EUR ${num(rec.t.total, 2)}\n\n${CFG['firma.name']} · ${CFG['firma.adresse']}`; }
 function askEmail(prefill, title) {

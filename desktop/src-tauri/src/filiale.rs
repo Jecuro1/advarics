@@ -175,6 +175,15 @@ pub fn pruefen(row: &Value) -> Result<Value, String> {
         return Err("Höchstens 10 zusätzliche Adressen".into());
     }
     o.insert("zusatz".into(), json!(zusatz));
+    o.insert("nummern".into(), crate::nummern::pruefen(&row["nummern"])?);
+    // Fußzeilen der Belege (Klartext, mehrzeilig); leer = Standard der Kasse (Einstellungen › Bon & Belege)
+    for (k, l) in [("fuss_a4", "Fußzeile A4-Belege"), ("fuss_bon", "Text am Bonende")] {
+        let t = row[k].as_str().unwrap_or("").replace('\r', "").trim().to_string();
+        if t.chars().count() > 600 {
+            return Err(format!("{l}: höchstens 600 Zeichen"));
+        }
+        o.insert(k.into(), json!(t));
+    }
     o.insert("_aktiv".into(), json!(row["_aktiv"].as_bool().unwrap_or(true)));
     Ok(Value::Object(o))
 }
@@ -460,6 +469,7 @@ pub fn save(c: &Connection, row: &Value, by: &str) -> Result<(Value, Option<Stri
     if is_own && !r["_aktiv"].as_bool().unwrap_or(true) {
         return Err("Die eigene Filiale lässt sich nicht deaktivieren".into());
     }
+    crate::nummern::auf_ueberschneidung(&r["nummern"], &id, &all)?;
     let mut key = None;
     let tx = c.unchecked_transaction().map_err(|e| e.to_string())?;
     schreiben(&tx, &r)?;
@@ -478,6 +488,31 @@ pub fn save(c: &Connection, row: &Value, by: &str) -> Result<(Value, Option<Stri
     db::audit_append(&tx, "filiale.saved", &json!({ "filiale": id, "name": s(&r["name"]), "neu": alt.is_none(), "aktiv": r["_aktiv"], "durch": by })).map_err(|e| e.to_string())?;
     tx.commit().map_err(|e| e.to_string())?;
     Ok((r, key))
+}
+
+/// Fußzeile(n) für alle Filialen übernehmen (nur Zentrale). `None` lässt das jeweilige Feld unverändert.
+pub fn fuss_fuer_alle(c: &Connection, a4: Option<&str>, bon: Option<&str>, by: &str) -> Result<usize, String> {
+    if verbund::rolle(c) != "zentrale" {
+        return Err("Fußzeilen für alle Filialen setzt die Zentrale".into());
+    }
+    let tx = c.unchecked_transaction().map_err(|e| e.to_string())?;
+    let all = rows(&tx)?;
+    for mut r in all.clone() {
+        for (k, v) in [("fuss_a4", a4), ("fuss_bon", bon)] {
+            if let Some(t) = v {
+                let t = t.replace('\r', "").trim().to_string();
+                if t.chars().count() > 600 {
+                    return Err("Höchstens 600 Zeichen".into());
+                }
+                r[k] = json!(t);
+            }
+        }
+        schreiben(&tx, &r)?;
+    }
+    apply_own(&tx)?;
+    db::audit_append(&tx, "filiale.fuss", &json!({ "filialen": all.len(), "a4": a4.is_some(), "bon": bon.is_some(), "durch": by })).map_err(|e| e.to_string())?;
+    tx.commit().map_err(|e| e.to_string())?;
+    Ok(all.len())
 }
 
 /// Löschen (nur Zentrale, nicht die eigene, nur ohne Belege und Umlagerungen – sonst deaktivieren)
@@ -881,5 +916,28 @@ mod tests {
         ensure_all(&c, &json!({ "name": "Zentrale GmbH", "email": "kein-at", "iban": "falsch", "uid": "ÄÖ" })).unwrap();
         let me = rows(&c).unwrap().remove(0);
         assert_eq!((me["id"].as_str(), me["name"].as_str(), me["email"].as_str()), (Some("INN"), Some("Zentrale GmbH"), Some("")));
+    }
+
+    #[test]
+    fn fusszeilen_je_filiale_und_fuer_alle() {
+        let c = db();
+        zentrale(&c);
+        ensure_all(&c, &json!({ "name": "Zentrale GmbH" })).unwrap();
+        save(&c, &zeile("sbg", 2, "Salzburg"), "T").unwrap();
+        let mut me = rows(&c).unwrap().remove(0);
+        me["fuss_a4"] = json!("  Bank: UniCredit\r\nFN 12345a  ");
+        let (p, _) = save(&c, &me, "T").unwrap();
+        assert_eq!(p["fuss_a4"], "Bank: UniCredit\nFN 12345a", "mehrzeilig, ohne Randleerzeichen");
+        me["fuss_bon"] = json!("x".repeat(601));
+        assert!(save(&c, &me, "T").unwrap_err().contains("600"));
+        assert_eq!(fuss_fuer_alle(&c, Some("Gerichtsstand Innsbruck"), None, "T").unwrap(), 2);
+        let l = rows(&c).unwrap();
+        assert!(l.iter().all(|r| r["fuss_a4"] == "Gerichtsstand Innsbruck"), "alle Filialen");
+        assert!(l.iter().all(|r| r["fuss_bon"].as_str().unwrap_or("").is_empty()), "Bon-Text unverändert");
+        assert!(fuss_fuer_alle(&db(), Some("x"), None, "T").is_err(), "nur die Zentrale");
+        // andere Filialen sehen die Fußzeile der Nachbarn nicht
+        let v = all_for(&c, "SBG").unwrap();
+        let inn = v["filiale"].as_array().unwrap().iter().find(|r| r["id"] == "INN").unwrap().clone();
+        assert!(inn["fuss_a4"].is_null());
     }
 }

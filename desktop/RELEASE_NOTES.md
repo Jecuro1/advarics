@@ -1,3 +1,12 @@
+## Neu in 0.41.0
+
+- **Stammdaten › Filialen › Filialen: Reiter „Nummernkreise“ und „Report-Vorschau“.**
+  - **Nummernkreise:** Start- und End-Nr. je Filiale für Order, Rechnung, Lieferschein, Angebot, Auftrag und Lieferanten-Retoure. Jede Filiale hat eine eigene Datenbank – mit eigenen Bereichen geben sich zwei Filialen nie dieselbe Rechnungs- oder Bestellnummer. Die Vergabe läuft zentral im Programm: Liegt der Zähler unter der Start-Nr., springt die nächste Nummer auf die Start-Nr.; der Zähler wird nie zurückgesetzt. Ist die End-Nr. erreicht, lässt sich kein Beleg dieser Art mehr anlegen („Nummernkreis erschöpft“), und es entsteht keine Lücke. Leer = fortlaufend wie bisher. Für die eigene Kasse zeigt die Maske nächste Nummer, wie viel noch frei ist und „wird knapp“ unter 10 %. Die Zentrale prüft beim Sichern, dass sich Bereiche verschiedener Filialen nicht überschneiden. Kassenbons (RKSV-Kette) und Gutscheincodes (Zufallswerte) haben bewusst keinen Bereich.
+  - **Report-Vorschau:** Fußzeile der A4-Belege (mehrzeilig) und Text am Bonende je Filiale – sie stehen auf Rechnung, Lieferschein, Angebot und Bestellung bzw. am Bonende (Bildschirm, Thermodruck, E-Mail-Beleg); leer = Standard der Kasse aus Einstellungen › Bon & Belege. Daneben eine Live-Vorschau von A4-Beleg und Kassenbon mit den Angaben der Filiale; „Fußzeilen für alle Filialen übernehmen“ setzt die Texte bei allen Filialen. Bestellungen tragen jetzt ebenfalls die Fußzeile.
+  - **Filial-Code** steht auch in der Leiste der Maske (wie in der Vorlage); Änderungen an den Nummernkreisen verlangen die Freigabe eines Administrators.
+- **Menü Stammdaten › Filialen** zeigt nur noch „Filialen“. Filial-Übersicht, Filialengruppe, Formulareinstellungen und Verkaufsabteilung sind aus dem Menü genommen; ihre Daten bleiben erhalten (Filialgruppen legen Sie über den Stift am Feld „Filial-Gruppe“ an, die Übersicht öffnet die Statusleiste „Verbund“).
+- **Fehler behoben:** Beim Öffnen einer Filiale mit gespeicherten Nummernkreisen konnte die Maske abbrechen.
+
 ## Neu in 0.40.1
 
 - **Filialen – Nachbesserungen nach unabhängiger Prüfung der Fassung 0.40.0:**

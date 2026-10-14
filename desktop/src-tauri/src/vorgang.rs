@@ -147,9 +147,14 @@ pub fn log_list(c: &Connection, kinds: &[String], limit: i64) -> Result<Vec<Valu
 }
 
 fn next_no(tx: &Connection, k: &Kind) -> Result<String, String> {
-    let key = format!("doc.{}", k.id);
-    tx.execute("INSERT OR IGNORE INTO counters(name, value) VALUES (?1, 0)", [&key]).map_err(|e| e.to_string())?;
-    let n: i64 = tx.query_row("UPDATE counters SET value = value + 1 WHERE name = ?1 RETURNING value", [&key], |r| r.get(0)).map_err(|e| e.to_string())?;
+    // Rechnung, Lieferschein, Angebot, Auftrag und Lieferantenretoure laufen über den Nummernkreis der eigenen Filiale (Start/Ende)
+    let n: i64 = if crate::nummern::art_zu_vorgang(k.id).is_some() {
+        crate::nummern::naechste(tx, k.id)?
+    } else {
+        let key = format!("doc.{}", k.id);
+        tx.execute("INSERT OR IGNORE INTO counters(name, value) VALUES (?1, 0)", [&key]).map_err(|e| e.to_string())?;
+        tx.query_row("UPDATE counters SET value = value + 1 WHERE name = ?1 RETURNING value", [&key], |r| r.get(0)).map_err(|e| e.to_string())?
+    };
     Ok(format!("{}-{}-{n:05}", k.prefix, chrono::Local::now().format("%Y")))
 }
 

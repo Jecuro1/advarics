@@ -746,7 +746,7 @@ function receiptHTML(rec, tpl) {
     ${rec.t.zero ? `<div class="r sm"><span>0 %</span><span>${money(rec.t.zero)} · 0,00 · ${money(rec.t.zero)}</span></div>` : ''}
     ${rec.customer ? `<hr><div class="sm c">Kunde ${esc(rec.customer.id)} · +${rec.pointsEarned ?? rec.t.points} Gipfel-Punkte</div>` : ''}${rec.copy ? '<div class="c" style="font-weight:700;margin-top:6px">*** KOPIE ***</div>' : ''}
     ${rksvBlockHTML(rec)}<hr>
-    <div class="c" style="font-size:${tpl === 'minimal' ? '11px' : '12px'};white-space:pre-line">${esc(CFG['kasse.bonFuss'])}</div></div>`;
+    <div class="c" style="font-size:${tpl === 'minimal' ? '11px' : '12px'};white-space:pre-line">${esc(fussBon())}</div></div>`;
 }
 
 function bindPOS() {

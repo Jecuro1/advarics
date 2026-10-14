@@ -113,9 +113,7 @@ pub fn po_save(tx: &Transaction, id: Option<i64>, supplier: &str, note: &str, li
             id
         }
         None => {
-            let n: i64 = tx
-                .query_row("UPDATE counters SET value = value + 1 WHERE name = 'bestellung' RETURNING value", [], |r| r.get(0))
-                .map_err(|e| e.to_string())?;
+            let n: i64 = crate::nummern::naechste(tx, "order")?;
             let no = format!("B-{}-{n:04}", chrono::Local::now().format("%Y"));
             tx.execute(
                 "INSERT INTO purchase_orders(no, supplier_id, status, note, created_at, user) VALUES (?1,?2,'entwurf',?3,?4,?5)",

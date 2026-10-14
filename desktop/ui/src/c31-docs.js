@@ -335,7 +335,7 @@ function docHTML(st) {
   return letterHead(title, rcpt, meta) + (st.data.text ? `<p>${esc(st.data.text).replace(/\n/g, '<br>')}</p>` : '')
     + `<table><thead><tr><th style="width:8mm">#</th><th>Position</th><th class="r">Menge</th>${priced ? `<th class="r">${vk ? 'Einzel €' : 'EK €'}</th>${vk ? '<th class="r">USt</th>' : ''}<th class="r">Gesamt €</th>` : ''}</tr></thead><tbody>${rows}</tbody></table>`
     + (priced ? `<table class="sum" style="width:78mm;margin:5mm 0 0 auto">${vk ? Object.entries(byVat).filter(([r]) => +r > 0).map(([r, g]) => `<tr><td class="muted">Netto ${r} %</td><td class="r">${num(g / (1 + r / 100) / 100, 2)}</td></tr><tr><td class="muted">USt ${r} %</td><td class="r">${num((g - g / (1 + r / 100)) / 100, 2)}</td></tr>`).join('') : ''}<tr class="tot"><td>${vk ? 'Gesamt EUR' : 'Summe netto EUR'}</td><td class="r">${num(st.total / 100, 2)}</td></tr></table>` : '')
-    + tail + `<div class="foot">${esc(firmLine())}${CFG['bon.fussA4'] ? '<br>' + esc(CFG['bon.fussA4']) : ''}</div>`;
+    + tail + `<div class="foot">${esc(firmLine())}${fussA4() ? '<br>' + esc(fussA4()).replace(/\n/g, '<br>') : ''}</div>`;
 }
 function docPrint(st, mahnung = false) {
   const c = /^#[0-9a-f]{6}$/i.test(CFG['a4.farbe'] || '') ? CFG['a4.farbe'] : '#111111';

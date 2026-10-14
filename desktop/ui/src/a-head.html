@@ -1734,7 +1734,7 @@ button.ge-caret:hover{background:var(--surface-3);color:var(--text)}
 /* ── Filialen (Stammdaten › Filialen) ── */
 .fl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px;align-items:start}
 .fl-grid.fl-2{grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),520px))}
-.fl-grid.fl-3{grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),460px))}
+.fl-grid.fl-3{grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))}
 .fl-stack{display:grid;gap:16px;align-content:start;min-width:0}
 .fl-colorrow{display:flex;align-items:center;gap:10px;min-height:38px}
 .fl-color{width:46px;height:34px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer}
@@ -1746,6 +1746,14 @@ button.ge-caret:hover{background:var(--surface-3);color:var(--text)}
 .fl-add{display:flex;align-items:center;justify-content:center;gap:8px;min-height:120px;border:1.5px dashed var(--line-2,var(--line));border-radius:var(--r-lg,14px);background:transparent;color:var(--text-2);font-size:13.5px;font-weight:550;cursor:pointer;transition:border-color var(--d-1),color var(--d-1),background var(--d-1)}
 .fl-add:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
 .fl-zadr>h4 .ea-ib{margin:-4px 0 -4px auto}
+.fl-grid.fl-rep{grid-template-columns:minmax(300px,520px) minmax(0,1fr)}
+.fl-grid.fl-rep>.ea-card:last-child{max-width:none}
+.fl-rp{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.fl-rp>div:first-child{flex:1 1 260px;min-width:220px;max-width:310px}
+.fl-rp>div:last-child{flex:0 1 290px;min-width:0;max-width:100%}
+.fl-a4{position:relative;width:100%;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.fl-a4 iframe{position:absolute;left:0;top:0;width:794px;height:1123px;border:0;transform-origin:0 0;background:#fff;pointer-events:none}
+@media (max-width:900px){.fl-grid.fl-rep{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:760px){.ae-two{flex-direction:column}.ae-two [data-aeg]{min-height:320px}}   /* Zuordnungslisten (Zugeordnet / Nicht zugeordnet) auf schmalen Bildschirmen untereinander */
 /* Dialoge: Titel oben und Schaltflächen unten bleiben sichtbar – gescrollt wird nur der Inhalt (z. B. Hinweise beim Update) */
 .modal .m-head{position:sticky;top:0;z-index:4;background:var(--surface)}

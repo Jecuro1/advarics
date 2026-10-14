@@ -51,7 +51,7 @@ function receiptOps(rec) {
   if (rec.customer) ops.push({t: 'line'}, {t: 'text', s: `Kunde ${rec.customer.id}${neg ? '' : ` · +${rec.pointsEarned ?? rec.t.points} Punkte`}`, a: 'c'});
   if (rec.rksv?.qr) ops.push({t: 'feed', n: 1}, {t: 'qr', d: rec.rksv.qr}, {t: 'text', s: 'RKSV Testmodus (nicht registriert)', a: 'c'});
   if (neg) ops.push({t: 'feed', n: 2}, {t: 'text', s: 'Unterschrift: ______________________', a: 'c'});
-  else if (kind === 'verkauf') ops.push({t: 'line'}, {t: 'text', s: CFG['kasse.bonFuss'], a: 'c'});
+  else if (kind === 'verkauf') ops.push({t: 'line'}, {t: 'text', s: fussBon(), a: 'c'});
   ops.push({t: 'feed', n: 4}, {t: 'cut'});
   return ops;
 }
