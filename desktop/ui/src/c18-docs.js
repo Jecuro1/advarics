@@ -35,11 +35,17 @@ function printHTML(body, title, css = '') {
   else Promise.all(imgs.map(i => i.complete ? 1 : new Promise(r => { i.onload = i.onerror = r; }))).then(() => setTimeout(go2, 50));
 }
 const logoTag = (cls = 'logo') => { const u = imgUrl(CFG['bon.logo']); return u ? `<img class="${cls}" src="${esc(u)}" alt="">` : ''; };
-const firmLine = () => [CFG['firma.name'], CFG['firma.adresse'], CFG['firma.uid'] ? 'UID ' + CFG['firma.uid'] : '', CFG['firma.telefon'] ? 'Tel. ' + CFG['firma.telefon'] : ''].filter(Boolean).join(' · ');
+const firmLine = () => [CFG['firma.name'], CFG['firma.adresse'], CFG['firma.uid'] ? 'UID ' + CFG['firma.uid'] : '', CFG['firma.telefon'] ? 'Tel. ' + CFG['firma.telefon'] : '', CFG['firma.email'], CFG['firma.web']].filter(Boolean).join(' · ');
+/** Absender-Block der A4-Belege aus den Angaben der Filiale (Stammdaten › Filialen); src = Einstellungen oder ein Entwurf */
+function firmaBlockHTML(src = CFG) {
+  const g = k => String(src[k] ?? '').trim(), land = g('firma.land').toUpperCase();
+  const kontakt = [g('firma.telefon') && 'Tel. ' + g('firma.telefon'), g('firma.fax') && 'Fax ' + g('firma.fax'), g('firma.mobil') && 'Mobil ' + g('firma.mobil')].filter(Boolean).join(' · ');
+  return [g('firma.name'), g('firma.adrzeile1'), g('firma.adrzeile2'), g('firma.adresse'), g('firma.postfach') && 'Postfach ' + g('firma.postfach'), land && land !== 'AT' ? land : '', kontakt, g('firma.email'), g('firma.web'), g('firma.inhaber') && 'Inhaber: ' + g('firma.inhaber'), g('firma.uid') && 'UID ' + g('firma.uid'), g('firma.steuernr') && 'St.-Nr. ' + g('firma.steuernr')].filter(Boolean).map(esc).join('<br>');
+}
 function letterHead(title, recipientHTML, meta) {
   return `<div class="hd"><div style="min-width:0">${logoTag() || `<div style="font-size:16pt;font-weight:700">${esc(CFG['firma.marke'])}</div>`}
       <div style="margin-top:14mm"><div class="sender">${esc(CFG['firma.name'])} · ${esc(CFG['firma.adresse'])}</div><div class="addr">${recipientHTML || '&nbsp;'}</div></div></div>
-    <div style="text-align:right"><div style="font-size:9pt" class="muted">${esc(CFG['firma.name'])}<br>${esc(CFG['firma.adresse'])}<br>${CFG['firma.telefon'] ? 'Tel. ' + esc(CFG['firma.telefon']) + '<br>' : ''}${CFG['firma.uid'] ? 'UID ' + esc(CFG['firma.uid']) : ''}</div>
+    <div style="text-align:right"><div style="font-size:9pt" class="muted">${firmaBlockHTML()}</div>
       <table class="meta" style="width:auto;margin-left:auto;margin-top:8mm">${meta.map(([k, v]) => `<tr><td class="muted">${esc(k)}</td><td class="r"><b>${esc(v)}</b></td></tr>`).join('')}</table></div></div>
     <h1>${esc(title)}</h1>`;
 }
@@ -76,7 +82,7 @@ function poHTML(head, lines, sup) {
   const rows = lines.map((l, i) => { const x = varById(l.variant_id); const cost = parseAmt(l.costE ?? (l.cost != null ? num(l.cost / 100, 2) : '')); return `<tr><td>${i + 1}</td><td><b>${esc(l.name || x?.a.name || '')}</b><br><span class="muted">${esc(colorName(l.color || x?.v.c))} · ${esc(l.size || x?.v.s)} · EAN ${esc(l.ean || x?.v.ean || '')}</span></td><td class="r">${esc(l.qty)}</td><td class="r">${isFinite(cost) ? num(cost, 2) : '–'}</td><td class="r">${isFinite(cost) ? num(cost * (parseInt(l.qty, 10) || 0), 2) : '–'}</td></tr>`; }).join('');
   const total = lines.reduce((t, l) => { const c = parseAmt(l.costE ?? (l.cost != null ? String(l.cost / 100) : '')); return t + (isFinite(c) ? c * (parseInt(l.qty, 10) || 0) : 0); }, 0);
   return letterHead('Bestellung', [s.name, s.contact ? 'z. H. ' + s.contact : '', s.email].filter(Boolean).map(esc).join('<br>'), [['Bestellnummer', head?.no || 'Entwurf'], ['Datum', new Date().toLocaleDateString('de-AT')], ...(s.customer_no ? [['Unsere Kundennr.', s.customer_no]] : [])])
-    + `<p>Wir bestellen zu den vereinbarten Konditionen:</p><table><thead><tr><th style="width:8mm">#</th><th>Artikel</th><th class="r">Menge</th><th class="r">EK netto €</th><th class="r">Summe €</th></tr></thead><tbody>${rows}</tbody></table>
+    + `${(() => { const l = typeof flZusatz === 'function' ? flZusatz('liefer') : null, r = typeof flZusatz === 'function' ? flZusatz('rechnung') : null; return l || r ? `<table class="meta" style="margin:0 0 4mm"><tr>${l ? `<td style="vertical-align:top;padding-right:10mm"><span class="muted">Lieferadresse</span><br>${l.map(esc).join('<br>')}</td>` : ''}${r ? `<td style="vertical-align:top"><span class="muted">Rechnungsadresse</span><br>${r.map(esc).join('<br>')}</td>` : ''}</tr></table>` : ''; })()}<p>Wir bestellen zu den vereinbarten Konditionen:</p><table><thead><tr><th style="width:8mm">#</th><th>Artikel</th><th class="r">Menge</th><th class="r">EK netto €</th><th class="r">Summe €</th></tr></thead><tbody>${rows}</tbody></table>
     <table class="sum" style="width:70mm;margin:5mm 0 0 auto"><tr class="tot"><td>Summe netto EUR</td><td class="r">${num(total, 2)}</td></tr></table>
     ${head?.note ? `<p><b>Hinweis:</b> ${esc(head.note)}</p>` : ''}<p>Bitte Lieferschein mit Bestellnummer beilegen. Vielen Dank!</p><div class="foot">${esc(firmLine())}</div>`;
 }

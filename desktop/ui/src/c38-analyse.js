@@ -8,7 +8,7 @@
    Altersbewertung, Flächenproduktivität) und Power-BI-Anbindung.
    ════════════════════════════════════════════════════════════════════ */
 const AN_DIMS = [['warengruppe', 'Warengruppe'], ['marke', 'Marke'], ['artikel', 'Artikel'], ['farbe', 'Farbe'], ['groesse', 'Größe'], ['preislage', 'Preislage'], ['lieferant', 'Lieferant'], ['saison', 'Saison'],
-  ['verkaeufer', 'Verkäufer:in'], ['kassier', 'Kassier:in'], ['kunde', 'Kunde'], ['filiale', 'Filiale'], ['jahr', 'Jahr'], ['monat', 'Monat'], ['tag', 'Tag'], ['wochentag', 'Wochentag'], ['stunde', 'Stunde']];
+  ['verkaeufer', 'Verkäufer:in'], ['kassier', 'Kassier:in'], ['kunde', 'Kunde'], ['filiale', 'Filiale'], ['filialgruppe', 'Filialgruppe'], ['haustyp', 'Haus-Typ'], ['jahr', 'Jahr'], ['monat', 'Monat'], ['tag', 'Tag'], ['wochentag', 'Wochentag'], ['stunde', 'Stunde']];
 const AN_MEAS = [['menge', 'Menge', 'n'], ['umsatz', 'Umsatz brutto', 'e'], ['rabatt', 'Rabatt', 'e'], ['netto', 'Umsatz netto', 'e'], ['ek', 'Wareneinsatz EK', 'e'], ['rohertrag', 'Rohertrag', 'e'], ['bons', 'Bons', 'n']];
 Object.assign(DEFAULTS, {'analyse.zeitraum': 'monat', 'analyse.dims': ['warengruppe'], 'analyse.kennzahlen': ['menge', 'umsatz', 'rohertrag'], 'analyse.anteil': true, 'intrastat.laender': {}, 'intrastat.ware_kg': 0.5});
 Object.keys(DEFAULTS).forEach(k => { if (!(k in CFG)) CFG[k] = DEFAULTS[k]; });

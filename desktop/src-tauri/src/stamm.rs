@@ -134,6 +134,8 @@ fn dim_value(dim: &str, ts: &str, line: &Value, row: &HashMap<&str, String>) -> 
         "lieferant" => row["supplier"].clone(),
         "saison" => row["saison"].clone(),
         "filiale" => row["store"].clone(),
+        "filialgruppe" => row["fgruppe"].clone(),
+        "haustyp" => row["haustyp"].clone(),
         "monat" => ts.get(0..7).unwrap_or("").to_string(),
         "jahr" => ts.get(0..4).unwrap_or("").to_string(),
         "tag" => ts.get(0..10).unwrap_or("").to_string(),
@@ -174,6 +176,25 @@ pub fn analyse(c: &Connection, p: &Value) -> Result<Value, String> {
         let r = st.query_map([], |r| Ok((r.get(0)?, r.get(1)?))).map_err(|e| e.to_string())?;
         r.filter_map(Result::ok).collect()
     };
+    // je Filiale: Filialgruppe und Haus-Typ aus Stammdaten › Filialen
+    let own_id = crate::verbund::own_store(c);
+    let fmeta: HashMap<String, (String, String)> = {
+        let gr = list(c, "filialgruppe").unwrap_or_default();
+        list(c, "filiale")
+            .unwrap_or_default()
+            .iter()
+            .map(|r| {
+                let id = r["id"].as_str().unwrap_or("").to_string();
+                let g = gr
+                    .iter()
+                    .find(|g| g["filialen"].as_array().map(|a| a.iter().any(|x| x.as_str().map(|t| t.eq_ignore_ascii_case(&id)).unwrap_or(false))).unwrap_or(false))
+                    .and_then(|g| g["name"].as_str())
+                    .unwrap_or("Standard")
+                    .to_string();
+                (id, (g, r["haustyp"].as_str().unwrap_or("").to_string()))
+            })
+            .collect()
+    };
     let mut src: Vec<(String, String, Option<String>, String, String)> = vec![];
     {
         let mut st = c.prepare("SELECT beleg_no, ts, cashier, data FROM sales WHERE substr(ts,1,10) BETWEEN ?1 AND ?2").map_err(|e| e.to_string())?;
@@ -209,6 +230,9 @@ pub fn analyse(c: &Connection, p: &Value) -> Result<Value, String> {
             row.insert("seller", d["seller"].as_str().map(str::to_string).or(cashier.clone()).unwrap_or_default());
             row.insert("customer", d["customer"]["name"].as_str().unwrap_or("ohne Kunde").to_string());
             row.insert("store", store.clone());
+            let (fg, ht) = fmeta.get(if store == "HIER" { own_id.as_str() } else { store.as_str() }).cloned().unwrap_or_else(|| ("Standard".to_string(), String::new()));
+            row.insert("fgruppe", fg);
+            row.insert("haustyp", ht);
             if filt.iter().any(|(k, v)| &dim_value(k, &ts, &l, &row) != v) {
                 continue;
             }
@@ -261,5 +285,11 @@ mod tests {
         assert_eq!(r["rows"][0]["menge"], 1.0);
         assert_eq!(r["rows"][0]["umsatz"], 60.0);
         assert_eq!(r["rows"][0]["rohertrag"], 0.0);
+        // Filialgruppe und Haus-Typ aus Stammdaten › Filialen
+        let own = crate::verbund::own_store(&c);
+        save(&c, "filiale", &[json!({ "id": own, "name": "Zentrale", "haustyp": "Fachgeschäft" })]).unwrap();
+        save(&c, "filialgruppe", &[json!({ "id": "G1", "name": "West", "filialen": [own] })]).unwrap();
+        let r = analyse(&c, &json!({ "dims": ["filialgruppe", "haustyp"], "von": "2026-10-01", "bis": "2026-10-31" })).unwrap();
+        assert_eq!((r["rows"][0]["keys"][0].as_str(), r["rows"][0]["keys"][1].as_str()), (Some("West"), Some("Fachgeschäft")));
     }
 }

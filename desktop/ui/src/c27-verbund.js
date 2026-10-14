@@ -13,11 +13,12 @@ const TR_STATE = {angefordert: ['angefordert', 'warn'], versendet: ['unterwegs',
 async function loadVerbund() {
   if (!DESKTOP) return;
   try { VB.info = await invoke('verbund_info'); } catch (e) { console.error(e); return; }
-  // Filialen im Kopf, in der Filialauswahl und an der Kasse (Verfügbarkeit in anderen Filialen)
+  // Filialen im Kopf, in der Filialauswahl und an der Kasse (Verfügbarkeit in anderen Filialen) – Name, Nr., Farbe, Gruppe aus Stammdaten › Filialen; abgeschaltete Filialen entfallen
+  await filLoad(true); await flSyncCfg();
   const own = {id: vbOwn(), name: VB.info.name || CFG['firma.name'], addr: CFG['firma.adresse'] || '', f: 1};
   STORES.length = 0; OTHER_STORES.length = 0;
-  STORES.push(own);
-  if (vbOn()) (VB.info.stores || []).filter(s => s.id !== own.id).forEach(s => { const x = {id: s.id, name: s.name, addr: s.addr || '', f: 1}; STORES.push(x); OTHER_STORES.push(x); });
+  const alle = [own, ...(vbOn() ? (VB.info.stores || []).filter(s => s.id !== own.id && s.active !== false).map(s => ({id: s.id, name: s.name, addr: s.addr || '', f: 1})) : [])];
+  flDecorate(alle).forEach((x, i) => { STORES.push(x); if (i) OTHER_STORES.push(x); });
   S.store = own.id;
   if (vbOn()) { try { VB.stock = await invoke('verbund_stock'); } catch { VB.stock = null; } }
   ART.forEach(a => a.variants.forEach(v => { v.other = vbOn() && OTHER_STORES.length ? OTHER_STORES.map(s => VB.stock?.[s.id]?.[v.ean] ?? 0) : null; }));
@@ -66,13 +67,13 @@ async function renderVbBox() {
   const i = VB.info || {}, r = i.rolle || 'einzel', st = i.status || {};
   box.innerHTML = `<div class="set-row"><div><div class="set-l">Rolle dieser Installation</div><div class="set-h">${r === 'einzel' ? 'Einzelplatz – keine Verbindung zu anderen Kassen' : r === 'zentrale' ? `Zentrale · Filialkennung ${esc(i.filiale)}` : `Filiale ${esc(i.filiale)} · verbunden mit ${esc(i.url || '')}`}</div></div><div class="set-c"><div class="seg" id="vbSeg">${[['einzel', 'Einzelplatz'], ['zentrale', 'Zentrale'], ['filiale', 'Filiale']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${r === k}">${l}</button>`).join('')}</div></div></div>
     ${r === 'filiale' ? `<div class="set-row" style="border-bottom:0"><div><div class="set-l">Abgleich ${st.ok ? '<span class="pill pos" style="height:20px">verbunden</span>' : st.fehler ? '<span class="pill neg" style="height:20px">Fehler</span>' : '<span class="pill" style="height:20px">wartet</span>'}</div><div class="set-h">${st.zeit ? `Zuletzt ${esc(fmtTs(st.zeit))} · gesendet ${num(st.gesendet?.belege || 0)} Belege, ${num(st.gesendet?.bestaende || 0)} Bestände · geholt ${num(st.geholt?.artikel || 0)} Artikel, ${num(st.geholt?.kunden || 0)} Kunden` : 'Noch kein Abgleich'}${st.fehler && !st.ok ? `<br><span style="color:var(--neg)">${esc(st.fehler)}</span>` : ''}</div></div><div class="set-c" style="gap:6px"><button class="btn btn-secondary btn-sm" data-vb="test">${ic('wifi', 'i-sm')}Verbindung testen</button><button class="btn btn-primary btn-sm" data-vb="sync">${ic('sync', 'i-sm')}Jetzt abgleichen</button></div></div>` : ''}
-    ${r === 'zentrale' ? `<div class="set-row" style="border-bottom:0"><div><div class="set-l">Filialen</div><div class="set-h">${num((i.stores || []).length - 1)} Filialen angebunden · Verwaltung unter Filialen</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-goto="filialen">${ic('building', 'i-sm')}Filialen</button></div></div>` : ''}`;
+    ${r === 'zentrale' ? `<div class="set-row" style="border-bottom:0"><div><div class="set-l">Filialen</div><div class="set-h">${num((i.stores || []).length - 1)} Filialen angebunden · Verwaltung unter Filialen</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-goto="st-filiale">${ic('building', 'i-sm')}Filialen</button></div></div>` : ''}`;
   initSeg($('#vbSeg', box), b => openVbSetup(b.dataset.v));
 }
 function openVbSetup(rolle) {
   const i = VB.info || {};
   const el = openLayer(`<div class="modal" style="width:min(560px,100%)" role="dialog" aria-modal="true" aria-label="Filialverbund"><div class="m-head"><div class="m-ic">${ic('building')}</div><div><h2>${rolle === 'zentrale' ? 'Als Zentrale einrichten' : rolle === 'filiale' ? 'Mit der Zentrale verbinden' : 'Einzelplatz'}</h2><p>${rolle === 'zentrale' ? 'Diese Installation führt Artikel, Preise und Kunden für alle Filialen' : rolle === 'filiale' ? 'Verbindungscode aus der Zentrale (Filialen → Filiale anlegen) einfügen' : 'Abgleich mit anderen Kassen beenden – lokale Daten bleiben erhalten'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
-    <div class="m-body" style="display:grid;gap:12px">${rolle === 'einzel' ? '' : `<div class="ed-grid"><label class="field"><span>Filialkennung</span><input class="input" id="vbFil" value="${esc(i.rolle === rolle ? i.filiale : (rolle === 'zentrale' ? 'ZEN' : ''))}" placeholder="z. B. INN" style="text-transform:uppercase"></label><label class="field"><span>Name</span><input class="input" id="vbName" value="${esc(i.name || CFG['firma.name'])}"></label></div>`}
+    <div class="m-body" style="display:grid;gap:12px">${rolle === 'einzel' ? '' : `<div class="ed-grid"><label class="field"><span>Filialkennung</span><input class="input" id="vbFil" value="${esc(i.rolle === rolle ? i.filiale : (rolle === 'zentrale' ? 'ZEN' : ''))}" placeholder="z. B. INN" style="text-transform:uppercase"></label>${rolle === 'filiale' ? '' : `<label class="field"><span>Kurz-Name</span><input class="input" id="vbName" value="${esc(i.name || CFG['firma.name'])}"><small class="ea-hint">Weitere Angaben später unter Stammdaten › Filialen › Filialen.</small></label>`}</div>`}
       ${rolle === 'filiale' ? `<label class="field"><span>Verbindungscode</span><textarea class="input mono" id="vbCode" rows="3" style="height:auto;padding-top:9px;font-size:12px" placeholder="eyJ1cmwiOi…"></textarea></label><div class="prompt-hint blk">${ic('info', 'i-xs')}Die Filiale übernimmt danach Artikel, Preise, Aktionen und Kunden der Zentrale. Belege dieser Kasse bleiben hier und werden zusätzlich an die Zentrale gemeldet.</div>` : ''}
       ${rolle === 'zentrale' ? `<div class="prompt-hint blk">${ic('info', 'i-xs')}Der eingebaute Server wird im Firmennetz erreichbar (Port ${esc(CFG['api.port'] || 8787)}). Für Filialen an anderen Standorten: VPN oder Portfreigabe einrichten. Jede Filiale bekommt einen eigenen Schlüssel.</div>` : ''}</div>
     <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="vbGo">${ic('check', 'i-sm')}Übernehmen</button></div></div>`, {focus: '#vbFil', onClose: () => renderVbBox()});
@@ -99,11 +100,11 @@ async function afterSync(r) {
 /* ── Seiten: Filialen, Umlagerungen ── */
 function renderNavVerbund() {
   // Filialen stehen unter Stammdaten › Filialen, Umlagerungen unter Artikel › Umlagerungen
-  const walk = l => l.forEach(n => { if (n.id === 'filialen') n.label = vbRole() === 'filiale' ? 'Filialverbund' : 'Filialen'; if (n.kids) walk(n.kids); });
+  const walk = l => l.forEach(n => { if (n.id === 'filialen') n.label = 'Filial-Übersicht'; if (n.kids) walk(n.kids); });
   walk(NAV);
   if ($('#nav')) { renderNav(); permNav(); $$('.nav-item').forEach(n => n.dataset.view === S.view ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current')); loadVerbund(); }
 }
-registerPage('filialen', {title: 'Filialen', sub: () => vbRole() === 'einzel' ? 'Einzelplatz' : vbRole() === 'zentrale' ? 'Zentrale' : `Filiale ${vbOwn()}`, render: renderFilialen});
+registerPage('filialen', {title: 'Filial-Übersicht', sub: () => vbRole() === 'einzel' ? 'Einzelplatz' : vbRole() === 'zentrale' ? 'Zentrale' : `Filiale ${vbOwn()}`, render: renderFilialen});
 registerPage('umlagerungen', {title: 'Umlagerungen', sub: () => 'Ware zwischen Filialen verschieben', render: renderUmlagerungen});
 async function renderFilialen() {
   const v = $('#view-filialen');
@@ -113,7 +114,7 @@ async function renderFilialen() {
   const z = vbRole() === 'zentrale', list = VB.info.stores || [];
   const online = s => s.id === vbOwn() || (s.last_sync && Date.now() - new Date(s.last_sync) < 3 * 6e4);
   if (z) { try { VB.sug = await invoke('verbund_suggestions'); } catch { VB.sug = []; } }
-  v.innerHTML = `<div class="cv">${pageHead(z ? 'Filialen' : 'Filialverbund', z ? 'Zentrale · Artikel, Preise, Aktionen und Kunden werden an alle Filialen verteilt' : `Filiale ${esc(vbOwn())} · Stammdaten kommen aus der Zentrale`, z ? `<button class="btn btn-primary" data-vb="neu">${ic('plus', 'i-sm')}Filiale anlegen</button>` : `<button class="btn btn-secondary" data-vb="sync">${ic('sync', 'i-sm')}Jetzt abgleichen</button>`)}
+  v.innerHTML = `<div class="cv">${pageHead('Filial-Übersicht', z ? 'Zentrale · Artikel, Preise, Aktionen und Kunden werden an alle Filialen verteilt' : `Filiale ${esc(vbOwn())} · Stammdaten kommen aus der Zentrale`, z ? `<button class="btn btn-primary" data-vb="neu">${ic('plus', 'i-sm')}Filiale anlegen</button>` : `<button class="btn btn-secondary" data-vb="sync">${ic('sync', 'i-sm')}Jetzt abgleichen</button>`)}
     ${kpiCards([[num(list.length), 'Standorte'], [num(list.filter(online).length), 'online'], [eur(list.reduce((a, s) => a + (s.revenue_today || 0), 0) / 100), 'Umsatz heute (alle)'], [eur0(list.reduce((a, s) => a + (s.revenue_month || 0), 0) / 100), 'Umsatz Monat (alle)']])}
     <div class="seg" id="vbTab" style="margin-bottom:12px">${[['uebersicht', 'Übersicht'], ['bestand', 'Bestand je Filiale'], ...(z ? [['vorschlag', `Umlagerungsvorschläge${VB.sug.length ? ` (${VB.sug.length})` : ''}`]] : [])].map(([k, l]) => `<button data-v="${k}" aria-pressed="${VB.tab === k}">${l}</button>`).join('')}</div>
     <div id="vbBody"></div></div>`;
@@ -125,7 +126,7 @@ function renderVbBody() {
   const list = VB.info.stores || [], z = vbRole() === 'zentrale';
   if (VB.tab === 'uebersicht') {
     const max = Math.max(1, ...list.map(s => s.revenue_today || 0));
-    box.innerHTML = `<div class="card"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Filiale</th><th>Status</th><th class="r">Bons heute</th><th>Umsatz heute</th><th class="r" style="padding-right:16px">Umsatz Monat</th></tr></thead><tbody>${list.map(s => { const on = s.id === vbOwn() || (s.last_sync && Date.now() - new Date(s.last_sync) < 3 * 6e4); return `<tr><td style="padding-left:16px"><b>${esc(s.name)}</b><div class="muted" style="font-size:11.5px">${esc(s.id)}${s.id === vbOwn() ? ' · diese Kasse' : ''}${s.info?.version ? ' · v' + esc(s.info.version) : ''}</div></td><td>${s.own ? '<span class="pill accent">Zentrale</span>' : `<span class="pill ${on ? 'pos' : 'warn'}">${on ? 'online' : 'zuletzt ' + (s.last_sync ? esc(fmtTs(s.last_sync)) : 'nie')}</span>`}</td><td class="r num">${num(s.sales_today || 0)}</td><td style="min-width:200px"><div style="display:flex;align-items:center;gap:10px"><div class="meter" style="flex:1"><i style="width:${(s.revenue_today || 0) / max * 100}%"></i></div><b class="num" style="min-width:90px;text-align:right">${eur((s.revenue_today || 0) / 100)}</b></div></td><td class="r num" style="padding-right:16px">${eur0((s.revenue_month || 0) / 100)}</td></tr>`; }).join('')}</tbody></table></div>
+    box.innerHTML = `<div class="card"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Filiale</th><th>Status</th><th class="r">Bons heute</th><th>Umsatz heute</th><th class="r" style="padding-right:16px">Umsatz Monat</th></tr></thead><tbody>${list.map(s => { const on = s.id === vbOwn() || (s.last_sync && Date.now() - new Date(s.last_sync) < 3 * 6e4); return `<tr><td style="padding-left:16px">${flDot(s.id)}<b>${esc(s.name)}</b><div class="muted" style="font-size:11.5px">${esc(s.id)}${s.id === vbOwn() ? ' · diese Kasse' : ''}${s.info?.version ? ' · v' + esc(s.info.version) : ''}</div></td><td>${s.own ? '<span class="pill accent">Zentrale</span>' : `<span class="pill ${on ? 'pos' : 'warn'}">${on ? 'online' : 'zuletzt ' + (s.last_sync ? esc(fmtTs(s.last_sync)) : 'nie')}</span>`}</td><td class="r num">${num(s.sales_today || 0)}</td><td style="min-width:200px"><div style="display:flex;align-items:center;gap:10px"><div class="meter" style="flex:1"><i style="width:${(s.revenue_today || 0) / max * 100}%;${flBg(s.id)}"></i></div><b class="num" style="min-width:90px;text-align:right">${eur((s.revenue_today || 0) / 100)}</b></div></td><td class="r num" style="padding-right:16px">${eur0((s.revenue_month || 0) / 100)}</td></tr>`; }).join('')}</tbody></table></div>
       ${z ? '' : `<div class="prompt-hint blk" style="margin-top:10px">${ic('info', 'i-xs')}Umsätze der anderen Filialen kommen mit jedem Abgleich aus der Zentrale.</div>`}`;
   } else if (VB.tab === 'bestand') {
     const n = norm(VB.q), arts = (n ? ART.filter(a => a.hay.includes(n)) : ART).slice(0, 6), stores = STORES;
@@ -134,23 +135,6 @@ function renderVbBody() {
     box.innerHTML = VB.sug.length ? `<div class="card"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Artikel</th><th>Von → Nach</th><th class="r">Menge</th><th>Begründung</th><th></th></tr></thead><tbody>${VB.sug.slice(0, 50).map((x, i) => `<tr><td style="padding-left:16px"><b>${esc(x.name)}</b><div class="muted" style="font-size:11.5px">${esc(colorName(x.color))} · ${esc(x.size)}</div></td><td>${esc(storeName(x.from))} → <b>${esc(storeName(x.to))}</b></td><td class="r num">${x.qty}</td><td style="font-size:12px;color:var(--text-2);max-width:420px">${esc(x.reason)}</td><td class="r" style="padding-right:12px"><button class="btn btn-secondary btn-sm" data-vbsug="${i}">Anlegen</button></td></tr>`).join('')}</tbody></table></div>`
       : `<div class="card"><div class="empty" style="padding:48px"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><h3>Keine Umlagerung nötig</h3><p>Vorschläge entstehen, wenn eine Filiale einen gut laufenden Artikel nicht mehr hat und eine andere genug davon.</p></div></div>`;
   }
-}
-function openStoreCreate() {
-  const el = openLayer(`<div class="modal" style="width:min(560px,100%)" role="dialog" aria-modal="true" aria-label="Filiale anlegen"><div id="scBox"></div></div>`, {focus: '#scId'});
-  const box = $('#scBox', el);
-  box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('building')}</div><div><h2>Filiale anlegen</h2><p>Danach den Verbindungscode an der Filialkasse eingeben</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
-    <div class="m-body"><div class="ed-grid"><label class="field"><span>Kennung</span><input class="input" id="scId" placeholder="z. B. SBG" style="text-transform:uppercase"></label><label class="field"><span>Name</span><input class="input" id="scName" placeholder="z. B. Salzburg"></label><label class="field full"><span>Adresse</span><input class="input" id="scAddr"></label></div></div>
-    <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="scGo">${ic('check', 'i-sm')}Anlegen</button></div>`;
-  $('#scGo', el).onclick = async () => {
-    try { await stepUp({title: 'Filiale anlegen', text: 'Neuer Zugang zur Zentrale', admin: true}); } catch { return; }
-    let r; try { r = await invoke('verbund_store_create', {id: $('#scId', el).value, name: $('#scName', el).value, addr: $('#scAddr', el).value}); } catch (e) { return toast('Nicht angelegt', {t2: String(e), type: 'warn'}); }
-    let qr = ''; try { qr = await invoke('qr_svg', {text: r.code}); } catch { /* */ }
-    box.innerHTML = `<div class="m-head"><div class="m-ic" style="color:var(--pos)">${ic('check')}</div><div><h2>Filiale angelegt</h2><p>An der Filialkasse: Einstellungen → Filialverbund → Filiale → Code einfügen</p></div></div>
-      <div class="m-body" style="display:grid;gap:12px"><textarea class="input mono" readonly rows="4" id="scCode" style="height:auto;font-size:11.5px">${esc(r.code)}</textarea><div style="display:flex;gap:14px;align-items:center"><div class="qr-box">${qr.replace('<svg', '<svg width="130" height="130"')}</div><div class="muted" style="font-size:12.5px">Zentrale erreichbar unter <b class="mono">${esc(r.url)}</b>. Der Code enthält den Schlüssel dieser Filiale – vertraulich behandeln. Er wird nur jetzt angezeigt.</div></div></div>
-      <div class="m-foot"><button class="btn btn-secondary" id="scCopy">${ic('copy', 'i-sm')}Code kopieren</button><span class="sp"></span><button class="btn btn-primary" data-close>Fertig</button></div>`;
-    $('#scCopy', el).onclick = () => navigator.clipboard?.writeText(r.code).then(() => toast('Kopiert', {type: 'pos', icon: 'copy', dur: 1500}));
-    await loadVerbund(); if (S.view === 'filialen') renderFilialen();
-  };
 }
 async function renderUmlagerungen() {
   const v = $('#view-umlagerungen');
@@ -209,7 +193,7 @@ if (DESKTOP && W['sales.stores']) {
     const list = vbOn() ? (VB.info?.stores || []) : [];
     if (!list.length) return `<div class="empty" style="flex:1"><div class="empty-icon">${ic('building')}</div><h3>Einzelplatz</h3><p>Im Filialverbund erscheinen hier die Umsätze aller Filialen.</p></div>`;
     const max = Math.max(1, ...list.map(s => s.revenue_today || 0));
-    return `<div class="wl">${list.slice().sort((a, b) => (b.revenue_today || 0) - (a.revenue_today || 0)).map(s => `<div class="wl-row"><div class="wl-main"><div class="wl-t">${esc(s.name)}${s.id === vbOwn() ? ' <span class="muted" style="font-weight:400">· hier</span>' : ''}</div><div class="meter" style="margin-top:6px"><i style="width:${(s.revenue_today || 0) / max * 100}%"></i></div></div><b class="num">${eur0((s.revenue_today || 0) / 100)}</b></div>`).join('')}</div>`;
+    return `<div class="wl">${list.slice().sort((a, b) => (b.revenue_today || 0) - (a.revenue_today || 0)).map(s => `<div class="wl-row"><div class="wl-main"><div class="wl-t">${flDot(s.id)}${esc(s.name)}${s.id === vbOwn() ? ' <span class="muted" style="font-weight:400">· hier</span>' : ''}</div><div class="meter" style="margin-top:6px"><i style="width:${(s.revenue_today || 0) / max * 100}%;${flBg(s.id)}"></i></div></div><b class="num">${eur0((s.revenue_today || 0) / 100)}</b></div>`).join('')}</div>`;
   };
 }
 
@@ -223,7 +207,7 @@ function bindVerbund() {
   on('filialen', async e => {
     if (e.target.closest('[data-vbset]')) return setGo('verbund');
     const b = e.target.closest('[data-vb]');
-    if (b?.dataset.vb === 'neu') return openStoreCreate();
+    if (b?.dataset.vb === 'neu') return flNeu();
     if (b?.dataset.vb === 'sync') { try { await afterSync(await invoke('verbund_sync')); } catch (err) { toast('Abgleich fehlgeschlagen', {t2: String(err), type: 'warn', dur: 8000}); } return renderFilialen(); }
     const sg = e.target.closest('[data-vbsug]'); if (sg) { const x = VB.sug[+sg.dataset.vbsug]; return openTransferNew({from: x.from, to: x.to, lines: [{ean: x.ean, qty: x.qty, name: `${x.name} · ${colorName(x.color)} · ${x.size}`}]}); }
   });

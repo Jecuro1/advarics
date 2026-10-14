@@ -37,6 +37,7 @@ mod media;
 mod fedas;
 mod demo;
 mod advarics;
+mod filiale;
 mod msg;
 
 use base64::Engine as _;
@@ -1409,9 +1410,17 @@ fn verbund_setup(app: AppHandle, rolle: String, filiale: String, name: String, c
         if rolle != "einzel" && (fil.len() < 2 || fil.len() > 12) {
             return Err("Filialkennung: 2–12 Zeichen (z. B. INN)".into());
         }
+        let alt_fil = verbund::own_store(&c);
         db::setting_set(&c, "verbund.rolle", &json!(rolle)).map_err(err)?;
         db::setting_set(&c, "verbund.filiale", &json!(fil)).map_err(err)?;
-        db::setting_set(&c, "verbund.name", &json!(name.trim())).map_err(err)?;
+        if !name.trim().is_empty() || rolle == "filiale" {
+            db::setting_set(&c, "verbund.name", &json!(name.trim())).map_err(err)?;
+        }
+        if rolle != "filiale" {
+            // die eigene Filial-Zeile zieht mit dem neuen Kürzel um
+            filiale::rekey_own(&c, &alt_fil, &verbund::own_store(&c)).map_err(err)?;
+            filiale::kurz_setzen(&c, &name).map_err(err)?;
+        }
         if rolle == "filiale" {
             // Verbindungscode der Zentrale: Base64(JSON {url, schluessel, filiale})
             let raw = code.unwrap_or_default();
@@ -1465,12 +1474,55 @@ fn verbund_store_create(db: State<db::Db>, id: String, name: String, addr: Strin
         return Err("Filialen legt die Zentrale an".into());
     }
     let key = verbund::store_create(&c, &id, &name, &addr)?;
-    let port = db::setting_get(&c, "api.port").and_then(|v| v.as_u64()).unwrap_or(8787);
+    let _ = db::audit_append(&c, "verbund.store.created", &json!({ "filiale": id.trim().to_uppercase(), "name": name }));
+    Ok(verbund_code(&c, &id, &key))
+}
+/// Verbindungscode für die Filialkasse: Base64(JSON {url, schluessel, filiale})
+fn verbund_code(c: &rusqlite::Connection, id: &str, key: &str) -> Value {
+    let port = db::setting_get(c, "api.port").and_then(|v| v.as_u64()).unwrap_or(8787);
     let ip = mobile::local_ips().into_iter().next().unwrap_or_else(|| "127.0.0.1".into());
     let url = format!("http://{ip}:{port}");
     let code = base64::engine::general_purpose::STANDARD.encode(json!({ "url": url, "schluessel": key, "filiale": id.trim().to_uppercase() }).to_string());
-    let _ = db::audit_append(&c, "verbund.store.created", &json!({ "filiale": id.trim().to_uppercase(), "name": name }));
-    Ok(json!({ "code": code, "url": url }))
+    json!({ "code": code, "url": url })
+}
+/// Filialen für die Liste und Maske; die eigene Zeile wird bei Bedarf aus den bisherigen Angaben angelegt (`seed`)
+#[tauri::command]
+fn filiale_list(db: State<db::Db>, seed: Option<Value>) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    filiale::ensure_all(&c, &seed.unwrap_or(Value::Null)).map_err(err)?;
+    let angebunden: std::collections::HashMap<String, (Option<String>, bool)> = {
+        let mut st = c.prepare("SELECT id, last_sync, active FROM stores").map_err(err)?;
+        let r = st.query_map([], |r| Ok((r.get::<_, String>(0)?, (r.get::<_, Option<String>>(1)?, r.get::<_, i64>(2)? != 0)))).map_err(err)?.filter_map(Result::ok).collect();
+        r
+    };
+    let mut rows = stamm::list(&c, filiale::KIND).map_err(err)?;
+    for r in rows.iter_mut() {
+        let id = r["id"].as_str().unwrap_or("").to_string();
+        if let Some((sync, _)) = angebunden.get(&id) {
+            r["_angebunden"] = json!(true);
+            r["_sync"] = json!(sync);
+        }
+    }
+    Ok(json!({ "rolle": verbund::rolle(&c), "eigene": verbund::own_store(&c), "zeilen": rows }))
+}
+/// Filiale sichern (neu oder ändern). Neue Filialen in der Zentrale liefern den Verbindungscode mit.
+#[tauri::command]
+fn filiale_save(db: State<db::Db>, row: Value, by: Option<String>) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    let (r, key) = filiale::save(&c, &row, by.as_deref().unwrap_or("")).map_err(err)?;
+    let code = key.map(|k| verbund_code(&c, r["id"].as_str().unwrap_or(""), &k));
+    Ok(json!({ "row": r, "code": code }))
+}
+#[tauri::command]
+fn filiale_delete(db: State<db::Db>, id: String, by: Option<String>) -> Res<()> {
+    filiale::delete(&db.conn.lock().unwrap(), &id, by.as_deref().unwrap_or("")).map_err(err)
+}
+/// Neuer Verbindungscode für eine vorhandene Filiale (der bisherige wird ungültig)
+#[tauri::command]
+fn filiale_code(db: State<db::Db>, id: String, by: Option<String>) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    let key = filiale::neuer_schluessel(&c, &id, by.as_deref().unwrap_or("")).map_err(err)?;
+    Ok(verbund_code(&c, &id, &key))
 }
 #[tauri::command]
 fn verbund_store_toggle(db: State<db::Db>, id: String, active: bool) -> Res<()> {
@@ -1658,6 +1710,9 @@ fn stamm_all(db: State<db::Db>) -> Res<Value> {
 }
 #[tauri::command]
 fn stamm_save(db: State<db::Db>, kind: String, rows: Vec<Value>, user: String) -> Res<usize> {
+    if kind == filiale::KIND {
+        return Err("Filialen werden unter Stammdaten › Filialen › Filialen gepflegt".into());
+    }
     let c = db.conn.lock().unwrap();
     let n = stamm::save(&c, &kind, &rows)?;
     let _ = db::audit_append(&c, "stamm.saved", &json!({ "tabelle": kind, "zeilen": n, "benutzer": user }));
@@ -2157,6 +2212,10 @@ fn main() {
             verbund_test,
             verbund_sync,
             verbund_store_create,
+            filiale_list,
+            filiale_save,
+            filiale_delete,
+            filiale_code,
             verbund_store_toggle,
             verbund_stock,
             verbund_transfers,

@@ -90,9 +90,9 @@ const AE_GRIDS = {
     card: true,
     cfg: ctx => ({embed: true, title: 'Bestand', cols: [{k: 'filiale', l: 'Filial-Kurzname', w: 130}, {k: 'filnr', l: 'Fil.-Nr.', t: 'num', w: 70}, {k: 'size', l: 'Größe', w: 80}, {k: 'gsort', l: 'Größensort.-Nr.', t: 'num', w: 120}, {k: 'g1', l: 'Größe 1', w: 80}, {k: 'g2', l: 'Größe 2', w: 80}, {k: 'stock', l: 'Lagerbestand', t: 'num', w: 110, sum: true}, {k: 'trans', l: 'Transport-Me.', t: 'num', w: 110}, {k: 'order', l: 'allzeit Order-Me.', t: 'num', w: 120}, {k: 'ordrs', l: 'Order-Me. mit Rückstd.', t: 'num', w: 150}, {k: 'rck', l: 'Rck.-Me.', t: 'num', w: 90}, {k: 'ld1', l: '1. Liefer-Datum von', w: 130}, {k: 'ld2', l: '1. Liefer-Datum bis', w: 130}, {k: 'pick', l: 'Picklist.-Von-Me ungeb.', t: 'num', w: 150}],
       rows: () => {
-        const own = aeVariantRows(ctx).map(r => ({id: 'o' + r.ean, filiale: aeStoreName(), filnr: 1, size: r.size, gsort: r.gsort, g1: r.g1, g2: '', stock: r.stock, trans: 0, order: 0, ordrs: 0, rck: 0, ld1: '', ld2: '', pick: 0}));
+        const own = aeVariantRows(ctx).map(r => ({id: 'o' + r.ean, filiale: aeStoreName(), filnr: flNr(vbOwn()) || 1, size: r.size, gsort: r.gsort, g1: r.g1, g2: '', stock: r.stock, trans: 0, order: 0, ordrs: 0, rck: 0, ld1: '', ld2: '', pick: 0}));
         const ord = new Map(); (ctx.card?.stores || []).forEach(s => ord.set(s.store, (ord.get(s.store) || 0) + 1));
-        const nr = new Map([...ord.keys()].map((k, i) => [k, i + 2]));
+        const nr = new Map([...ord.keys()].map((k, i) => [k, flNr(k) || i + 2]));
         const others = (ctx.card?.stores || []).map(s => ({id: s.store + s.ean, filiale: s.name, filnr: nr.get(s.store), size: s.size, gsort: '', g1: s.size, g2: '', stock: s.stock, trans: 0, order: 0, ordrs: 0, rck: 0, ld1: '', ld2: '', pick: 0}));
         return [...own, ...others];
       }}),

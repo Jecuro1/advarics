@@ -92,7 +92,7 @@ pub fn overview(c: &Connection) -> Result<Value, String> {
             |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
         )
         .map_err(|e| e.to_string())?;
-    let mut list = vec![json!({ "id": own_store(c), "name": s(c, "verbund.name").trim().to_string().chars().take(60).collect::<String>(), "own": true, "last_sync": db::now(),
+    let mut list = vec![json!({ "id": own_store(c), "name": s(c, "verbund.name").trim().to_string().chars().take(60).collect::<String>(), "own": true, "active": true, "last_sync": db::now(),
         "revenue_today": own.0, "sales_today": own.1, "revenue_month": own.2 })];
     if list[0]["name"].as_str().unwrap_or("").is_empty() {
         list[0]["name"] = json!("Zentrale");
@@ -243,7 +243,13 @@ pub fn handle(c: &Connection, method: &str, path: &str, key: &str, body: &Value,
     if rolle(c) != "zentrale" {
         return Err((404, "Diese Installation ist keine Zentrale".into()));
     }
-    let store = auth_store(c, key).ok_or((401, "Filial-Schlüssel ungültig".to_string()))?;
+    let store = match auth_store(c, key) {
+        Some(x) => x,
+        None => {
+            let aus: bool = c.query_row("SELECT 1 FROM stores WHERE key_hash = ?1 AND active = 0", [hash(key.trim())], |_| Ok(())).optional().map(|x| x.is_some()).unwrap_or(false);
+            return Err((if aus { 403 } else { 401 }, if aus { "Diese Filiale ist in der Zentrale deaktiviert" } else { "Filial-Schlüssel ungültig" }.to_string()));
+        }
+    };
     let e5 = |e: String| (500u16, e);
     let _ = c.execute("UPDATE stores SET last_sync = ?2, last_ip = ?3 WHERE id = ?1", params![store, db::now(), ip]);
     match (method, path) {
@@ -324,14 +330,14 @@ pub fn handle(c: &Connection, method: &str, path: &str, key: &str, body: &Value,
             let mut stores_list = umsatz.clone();
             if let Some(a) = stores_list.as_array_mut() {
                 for x in a.iter_mut() {
-                    *x = json!({ "id": x["id"], "name": x["name"], "addr": x["addr"] });
+                    *x = json!({ "id": x["id"], "name": x["name"], "addr": x["addr"], "active": x["active"] });
                 }
             }
             Ok(json!({ "now": db::now(), "articles": arts, "inactive": gone, "customers": custs, "promotions": promos, "suppliers": suppliers,
                 "stores": stores_list, "stock": stock_matrix(c).map_err(e5)?, "transfers": transfers(c, Some(&store)).map_err(|e| e5(e.to_string()))?,
                 "firma": { "name": s(c, "firma.name") }, "umsatz": umsatz,
                 "einstellungen": SHARED.iter().filter_map(|k| db::setting_get(c, k).map(|v| (k.to_string(), v))).collect::<serde_json::Map<String, Value>>(),
-                "stammdaten": crate::stamm::all(c).map_err(e5)? }))
+                "stammdaten": crate::filiale::all_for(c, &store).map_err(e5)? }))
         }
         ("POST", "/sync/v1/umlagerung") => {
             let t = transfer_create(c, body["from"].as_str().unwrap_or(""), body["to"].as_str().unwrap_or(&store), &body["lines"], body["note"].as_str().unwrap_or(""), body["user"].as_str().unwrap_or(&store)).map_err(|e| (400, e))?;
@@ -477,6 +483,8 @@ pub fn sync_once(c: &Connection) -> Result<Value, String> {
             crate::stamm::write_rows(&tx, k, rows.as_array().map(|a| a.as_slice()).unwrap_or(&[]))?;
         }
     }
+    // die eigene Filial-Zeile (Name, Adresse, UID, Bank …) gilt ab jetzt für Belege, Bon und Anzeige dieser Kasse
+    crate::filiale::apply_own(&tx)?;
     if let Some(sp) = p["suppliers"].as_array() {
         for x in sp {
             if let Ok(su) = serde_json::from_value::<crate::purchasing::Supplier>(x.clone()) {

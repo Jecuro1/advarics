@@ -135,6 +135,11 @@ function field(key, label, help, type = 'text', extra = '') {
   else ctl = `<input class="input" data-key="${key}" type="${type}" value="${esc(v)}" ${extra}>`;
   return `<div class="set-row"><div><div class="set-l">${esc(label)}</div>${help ? `<div class="set-h">${esc(help)}</div>` : ''}</div><div class="set-c">${ctl}</div></div>`;
 }
+/** Angaben, die Stammdaten › Filialen pflegt (Name, Adresse, UID, Telefon): nur lesbar, solange die eigene Filial-Zeile existiert */
+function fieldFil(key, label, help) {
+  if (typeof flRow !== 'function' || !flRow(FIL.eigene)) return field(key, label, help);
+  return `<div class="set-row"><div><div class="set-l">${esc(label)}</div><div class="set-h">${esc(help || 'Wird unter Stammdaten › Filialen › Filialen gepflegt')}</div></div><div class="set-c"><input class="input" value="${esc(CFG[key])}" readonly tabindex="-1" aria-label="${esc(label)}"><button class="btn btn-secondary btn-sm" data-goto="st-filiale">${ic('store', 'i-sm')}In den Filialen ändern</button></div></div>`;
+}
 function renderSettings() {
   const v = $('#view-einstellungen');
   const zoomAuto = CFG['anzeige.zoom.auto'] !== false, zoomMul = clamp(+CFG['anzeige.zoom.mul'] || 1, .6, 1.6);
@@ -144,12 +149,12 @@ function renderSettings() {
       <div class="set-note">${DESKTOP ? `${ic('database', 'i-xs')}Gespeichert in der lokalen Datenbank` : `${ic('info', 'i-xs')}Vorschau im Browser – Werte nur in diesem Browser`}</div></nav>
     <div class="set-main">
       <section class="set-sec" id="sec-allgemein"><h2>Firma & Filiale</h2><p>Erscheint auf Belegen, in der Seitenleiste und in Exporten.</p><div class="card">
-        ${field('firma.name', 'Firmenname', 'Rechtlicher Name des Unternehmens')}
+        ${fieldFil('firma.name', 'Firmenname', 'Rechtlicher Name des Unternehmens')}
         ${field('firma.marke', 'Markenname auf dem Bon', 'Kurzform für Bonkopf und Kundendisplay')}
         ${field('firma.zusatz', 'Zusatz', 'z. B. „Sport & Mode“')}
-        ${field('firma.adresse', 'Adresse der Filiale', '')}
-        ${field('firma.uid', 'UID-Nummer', 'Pflichtangabe auf Belegen ab € 400')}
-        ${field('firma.telefon', 'Telefon', '')}
+        ${fieldFil('firma.adresse', 'Adresse der Filiale', '')}
+        ${fieldFil('firma.uid', 'UID-Nummer', 'Pflichtangabe auf Belegen ab € 400')}
+        ${fieldFil('firma.telefon', 'Telefon', '')}
       </div></section>
       ${eaSectionHTML()}
       <section class="set-sec" id="sec-kasse"><h2>Kasse</h2><p>Gilt für diese Kasse. Änderungen wirken sofort und werden protokolliert.</p><div class="card">
