@@ -18,6 +18,8 @@ struct Sess {
     user: String,
     name: String,
     role: String,
+    /// Adresse des Geräts bei der Anmeldung (für die erneute Prüfung des Zugangsprofils)
+    ip: Vec<u32>,
     at: Instant,
 }
 fn sessions() -> &'static Mutex<HashMap<String, Sess>> {
@@ -112,6 +114,7 @@ fn search(c: &Connection, q: &str) -> Result<Vec<Value>, String> {
 pub fn handle(c: &Connection, mut req: Request, path: &str) {
     let method = req.method().clone();
     let peer = crate::access::peer_ip(req.remote_addr().map(|a| a.ip()));
+    let adresse = peer.first().map(|n| std::net::Ipv4Addr::from(*n).to_string()).unwrap_or_else(|| req.remote_addr().map(|a| a.ip().to_string()).unwrap_or_default());
     if path == "/mobil" || path == "/mobil/index.html" {
         let r = Response::from_string(PAGE).with_header(Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..]).unwrap());
         let _ = req.respond(r);
@@ -142,8 +145,8 @@ pub fn handle(c: &Connection, mut req: Request, path: &str) {
                 }
                 Ok(u) => {
                     // Zugangsprofil: Anmeldung nur aus dem erlaubten IP-Bereich und zu den erlaubten Zeiten
-                    if let Err(grund) = crate::access::check(c, &u.name, &u.role, &peer, chrono::Local::now().naive_local()) {
-                        let _ = db::audit_append(c, "auth.login.failed", &json!({ "benutzer": u.name, "methode": "PIN · Handy", "grund": grund }));
+                    if let Err(grund) = crate::access::check(c, &u.name, &u.role, Some(&peer), chrono::Local::now().naive_local()) {
+                        let _ = db::audit_append(c, "auth.login.failed", &json!({ "benutzer": u.name, "methode": "PIN · Handy", "grund": grund, "adresse": adresse }));
                         return json_reply(req, 403, json!({ "fehler": grund }));
                     }
                     let mut b = [0u8; 24];
@@ -151,14 +154,14 @@ pub fn handle(c: &Connection, mut req: Request, path: &str) {
                     let tok: String = b.iter().map(|x| format!("{x:02x}")).collect();
                     let mut m = sessions().lock().unwrap();
                     m.retain(|_, v| v.at.elapsed() < TTL);
-                    m.insert(tok.clone(), Sess { user: u.id.clone(), name: u.name.clone(), role: u.role.clone(), at: Instant::now() });
-                    let _ = db::audit_append(c, "auth.login", &json!({ "benutzer": u.name, "methode": "PIN · Handy" }));
+                    m.insert(tok.clone(), Sess { user: u.id.clone(), name: u.name.clone(), role: u.role.clone(), ip: peer.clone(), at: Instant::now() });
+                    let _ = db::audit_append(c, "auth.login", &json!({ "benutzer": u.name, "methode": "PIN · Handy", "adresse": adresse }));
                     json_reply(req, 200, json!({ "token": tok, "name": u.name, "rolle": u.role,
                         "rechte": { "buchen": security::allowed_for(c, &u.id, &u.role, "bestand.buchen") } }))
                 }
                 Err(e) if e == "TOTP" => json_reply(req, 401, json!({ "fehler": "Code aus der Authenticator-App eingeben", "totp": true })),
                 Err(e) => {
-                    let _ = db::audit_append(c, "auth.login.failed", &json!({ "benutzer": s("user"), "methode": "PIN · Handy" }));
+                    let _ = db::audit_append(c, "auth.login.failed", &json!({ "benutzer": s("user"), "methode": "PIN · Handy", "adresse": adresse }));
                     json_reply(req, 401, json!({ "fehler": e }))
                 }
             };
@@ -173,12 +176,18 @@ pub fn handle(c: &Connection, mut req: Request, path: &str) {
         match m.get_mut(&tok) {
             Some(x) if x.at.elapsed() < TTL => {
                 x.at = Instant::now();
-                Some((x.user.clone(), x.name.clone(), x.role.clone()))
+                Some((x.user.clone(), x.name.clone(), x.role.clone(), x.ip.clone()))
             }
             _ => None,
         }
     };
-    let Some((uid, name, role)) = sess else { return json_reply(req, 401, json!({ "fehler": "Bitte neu anmelden" })) };
+    let Some((uid, name, role, ip)) = sess else { return json_reply(req, 401, json!({ "fehler": "Bitte neu anmelden" })) };
+    // Zugangsprofil gilt für die ganze Sitzung: Zeit, Adresse und Zuordnung werden bei jeder Anfrage erneut geprüft
+    if let Err(grund) = crate::access::check(c, &name, &role, Some(&ip), chrono::Local::now().naive_local()) {
+        sessions().lock().unwrap().remove(&tok);
+        let _ = db::audit_append(c, "auth.session.ended", &json!({ "benutzer": name, "methode": "PIN · Handy", "grund": grund, "adresse": adresse }));
+        return json_reply(req, 401, json!({ "fehler": format!("Bitte neu anmelden – {grund}") }));
+    }
 
     let res: Result<Value, (u16, String)> = (|| match (method.clone(), path) {
         (Method::Get, "/mobil/api/suche") => Ok(json!(search(c, q.get("q").map(|s| s.as_str()).unwrap_or("")).map_err(|e| (500, e))?)),

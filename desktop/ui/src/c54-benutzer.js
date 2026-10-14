@@ -45,7 +45,7 @@ function usrRec(u) {
     tel: p.tel || '', handy: p.handy || '', email: p.email || '', telPriv: p.telPriv || '', handyPriv: p.handyPriv || '', emailPriv: p.emailPriv || '',
     strasse: p.strasse || '', hausnr: p.hausnr || '', zusatz: p.zusatz || '', plz: p.plz || '', ort: p.ort || '', bundesland: p.bundesland || '', land: p.land || 'AT',
     filialen: [...(p.filialen || [])],
-    gruppe: stRows('benutzergruppe').find(g => (g.mitglieder || []).some(same))?.id || '', zugang: stRows('zugangsprofil').find(z => (z.benutzer || []).some(same))?.id || '',
+    gruppe: stRows('benutzergruppe').find(g => (g.mitglieder || []).some(same))?.id || '', zugang: stRows('zugangsprofil').find(z => z.id !== 'STANDARD' && (z.benutzer || []).some(same))?.id || '',
     meldungen: stRows('meldung').filter(m => m.empfaenger === u.name).map(m => ({id: m.id, ereignis: m.ereignis, kanal: m.kanal || 'hinweis', email: m.email || ''})),
     geaendert: u.updated || '', _name: u.name};
 }
@@ -133,7 +133,7 @@ const usrMiss = d => { const m = []; if (!String(d.nachname).trim()) m.push(['al
 const ueSelf = () => !!UE.id && UE.id === S.user?.id;
 
 function usrAllg() {
-  const D = UE.d, gr = stRows('benutzergruppe'), zp = stRows('zugangsprofil'), g = gr.find(x => x.id === D.gruppe);
+  const D = UE.d, gr = stRows('benutzergruppe'), zp = stRows('zugangsprofil').filter(x => x.id !== 'STANDARD'), g = gr.find(x => x.id === D.gruppe);
   const photo = `<div class="ue-photo-col"><div class="ue-photo" data-ue-photo tabindex="0" title="Bild hierher ziehen, mit Strg+V einfügen oder anklicken">${D.foto ? `<img src="${D.foto}" alt="Foto ${esc(usrName(D))}">` : `<div class="ue-ph">${ic('image')}<span>Bild ziehen, einfügen oder anklicken</span></div>`}</div>
       <div class="ue-photo-act"><button type="button" class="ea-ib" data-ue-a="foto" title="Bild wählen" aria-label="Bild wählen">${ic('upload', 'i-sm')}</button><button type="button" class="ea-ib" data-ue-a="fotoz" title="Vergrößern" aria-label="Bild vergrößern" ${D.foto ? '' : 'disabled'}>${ic('eye', 'i-sm')}</button><button type="button" class="ea-ib" data-ue-a="fotox" title="Bild entfernen" aria-label="Bild entfernen" ${D.foto ? '' : 'disabled'}>${ic('trash', 'i-sm')}</button></div>
       <input type="file" accept="image/*" hidden data-ue-file></div>`;
@@ -150,7 +150,7 @@ function usrAllg() {
       ${ueSw('verkaeufer', 'Verkäufer:in', {hint: 'Kann an der Kasse je Position und bei der Bon-Zuordnung als Verkäufer:in gewählt werden.'})}
       ${ueSw('mobil', 'Kontor mobil', {hint: 'Darf sich am Handy/Tablet anmelden (Einstellungen › Handy & Tablet).'})}</div>`, 'ue-one')}
     ${ueCard('Profil', `${ueSel('gruppe', 'Benutzergruppe', gr.map(x => [x.id, x.name || x.id]), {leer: '– keine –', go: 'st-benutzergruppe', hint: 'Beim Zuordnen wird die Rolle der Gruppe vorgeschlagen.'})}
-      ${ueSel('zugang', 'Zugangsprofil', zp.map(x => [x.id, x.name || x.id]), {leer: '– jederzeit –', go: 'st-zugangsprofil', hint: 'Legt fest, zu welchen Zeiten (Arbeitstag, Wochenende) und von welchen IP-Adressen die Anmeldung möglich ist (Administratoren ausgenommen).'})}`, 'ue-one')}
+      ${ueSel('zugang', 'Zugangsprofil', zp.map(x => [x.id, x.name || x.id]), {leer: 'Standard', go: 'st-zugangsprofil', hint: 'Legt fest, an welchen Tagen und zu welchen Zeiten sich die Person anmelden darf und von welchen IP-Adressen. „Standard“ = jederzeit und von überall. Administratoren sind ausgenommen.'})}`, 'ue-one')}
     </div>
     ${ueCard('Kontaktdaten', `<div class="ue-pair">${kontakt(ueIn('tel', 'Telefon Firma'), ueIn('handy', 'Mobil Firma'), ueIn('email', 'E-Mail Firma', {type: 'email', hint: 'Empfängt E-Mail-Meldungen (Reiter „Benachrichtigungen“).'}))}${kontakt(ueIn('telPriv', 'Telefon privat'), ueIn('handyPriv', 'Mobil privat'), ueIn('emailPriv', 'E-Mail privat', {type: 'email'}))}</div>`, 'ue-kontakt ue-one')}
   </div>`};
@@ -328,7 +328,7 @@ async function usrZuordnen(alt, neu, D) {
   if (D.gruppe) { const g = gr.find(x => x.id === D.gruppe); if (g) { g.mitglieder = [...(g.mitglieder || []), neu]; chG = true; } }
   const zp = clone('zugangsprofil'); let chZ = false;
   zp.forEach(z => { const l = (z.benutzer || []); const n = l.filter(weg); if (n.length !== l.length) { z.benutzer = n; chZ = true; } });
-  if (D.zugang) { const z = zp.find(x => x.id === D.zugang); if (z) { z.benutzer = [...(z.benutzer || []), neu]; chZ = true; } }
+  if (D.zugang && D.zugang !== 'STANDARD') { const z = zp.find(x => x.id === D.zugang); if (z) { z.benutzer = [...(z.benutzer || []), neu]; chZ = true; } }
   const ml = clone('meldung').filter(m => !is(alt)(m.empfaenger) && !is(neu)(m.empfaenger));
   const hatte = stRows('meldung').length !== ml.length;
   D.meldungen.forEach(m => ml.push({id: m.id || 'ml-' + aeUid(), _aktiv: true, ereignis: m.ereignis, empfaenger: neu, kanal: m.kanal, email: m.kanal === 'hinweis' ? '' : String(m.email || '').trim()}));

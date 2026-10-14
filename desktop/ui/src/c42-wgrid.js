@@ -33,7 +33,7 @@ function agMount(key, v) {
 function agridPage(page, cfg) {
   AG[page] = agNew(cfg);
   const render = async () => { await loadStamm(); AG[page] ||= agNew(cfg); agMount(page, $('#view-' + page)); };
-  registerPage(page, {title: cfg.title, sub: () => `${num(cfg.count ? cfg.count() : AG[page].rows.length)} Einträge`, render});
+  registerPage(page, {title: cfg.title, sub: () => { const n = cfg.count ? cfg.count() : AG[page].rows.length; return `${num(n)} ${n === 1 ? 'Eintrag' : 'Einträge'}`; }, render});
   VIEW_PERM[page] ||= 'einstellungen';
 }
 

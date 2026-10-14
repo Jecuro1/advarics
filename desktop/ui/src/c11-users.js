@@ -83,7 +83,7 @@ function lock() {
   const dots = () => $$('#lockDots i', el).forEach((d, i) => d.classList.toggle('on', i < pin.length));
   const unlock = method => {
     const zg = typeof accessCheck === 'function' ? accessCheck(user.name, user.roleKey) : {ok: true};
-    if (!zg.ok) { busy = false; Hooks.emit('auth.denied', {benutzer: user.name, grund: 'Zugangsprofil'}); pin = ''; renderCard(zg.grund || 'Anmeldung nicht erlaubt (Zugangsprofil)'); return; }
+    if (!zg.ok) { busy = false; Hooks.emit('auth.denied', {benutzer: user.name, grund: 'Zugangsprofil', detail: zg.grund || ''}); pin = ''; renderCard(zg.grund || 'Anmeldung nicht erlaubt (Zugangsprofil)'); return; }
     if (!userAtThisFiliale(user)) { busy = false; Hooks.emit('auth.denied', {benutzer: user.name, grund: 'Filiale'}); pin = ''; renderCard('Keine Anmeldung an dieser Filiale (Zuordnung unter Benutzer › Zugeordnete Filialen)'); return; }
     busy = true; S.user = user; S.locked = false; S.started = true;
     Hooks.emit('auth.login', {benutzer: user.name, rolle: user.role, methode: method, kasse: CFG['kasse.id']});

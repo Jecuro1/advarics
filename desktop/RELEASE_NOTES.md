@@ -1,3 +1,19 @@
+## Neu in 0.39.1
+
+- **Zugangsprofil nach der Advarics-Beschreibung ausgerichtet.** Wochentage, Start-/End-Zeit und Standardprofil verhalten sich wie dort erklärt:
+  - **Wochentage einzeln:** In der Maske lassen sich Mo bis Fr (Arbeitstag) und Sa, So (Wochenende) einzeln erlauben. Die frühere Schaltfläche „Anmeldung erlaubt“ je Tagesart entfällt, ein Profil braucht mindestens einen erlaubten Tag.
+  - **Start-Zeit gilt, End-Zeit nicht mehr:** Ab der Start-Zeit ist die Anmeldung möglich, ab der End-Zeit nicht mehr (bisher war die End-Minute noch erlaubt). Start gleich Ende (00:00 – 00:00) heißt ganztägig; liegt das Ende vor dem Start, gilt das Fenster über Mitternacht und gehört zum Tag, an dem es beginnt.
+  - **Standardprofil:** Es gibt immer ein Profil „Standard“ (jederzeit, von überall). Es lässt sich weder ändern noch löschen. Wer keinem anderen Profil zugeordnet ist, gehört dazu; in der Maske „Benutzer“ steht dafür „Standard“ im Feld Zugangsprofil.
+  - **Profil abschalten:** Ein abgeschaltetes Profil gilt nicht mehr, seine Personen gehören dann zum Standardprofil (Schalter „Aktiv“).
+  - **Hinweise aus der Beschreibung:** einzelne feste Adresse = „von“ und „bis“ gleich; maßgeblich ist die Uhr des Kassen-PCs; Vorsicht bei wechselnden Adressen (mehrere Internetanschlüsse, WLAN und Mobilfunk).
+- **Fehler behoben (Fassung 0.39.0):**
+  - Ältere Profile mit einzelnen Wochentagen (z. B. nur Samstag) hätten sich plötzlich an allen Tagen anmelden lassen. Sie gelten wieder genau wie zuvor.
+  - Namen werden am Sperrbildschirm und am Handy gleich verglichen (Groß-/Kleinschreibung und Leerzeichen am Rand zählen nicht).
+  - Abgeschaltete Profile wurden beim Sichern wieder eingeschaltet.
+  - Am Handy wird das Profil jetzt bei jeder Anfrage geprüft, nicht nur bei der Anmeldung: Ändert sich das Profil oder läuft das Zeitfenster ab, endet die Sitzung mit einem Hinweis zur neuen Anmeldung. Das Protokoll nennt dazu die Adresse des Geräts.
+  - Die Anzeige „Jetzt“ und die Prüfbox in der Maske berücksichtigen die gewählten Wochentage.
+  - „1 Einträge“ in der Seitenkopfzeile heißt jetzt „1 Eintrag“.
+
 ## Neu in 0.39.0
 
 - **Stammdaten › Benutzer › Zugangsprofil – Liste und Maske nach dem Advarics-Vorbild.** Die Liste hat Zurück, Aktualisieren, Neu, Gruppierleiste, Suche, Spalten-Auswahl, automatische Spaltenbreite, Export und Filter. Die Maske „Zugangsprofil“ hat die Leisten Übersicht, Aktualisieren, Sichern, Neu, Änderungen zurücknehmen und Löschen und die Reiter **Allgemein** und **Zugeordnete User**.
