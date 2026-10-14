@@ -1,3 +1,7 @@
+## Neu in 0.44.1
+
+- **Windows: die Anzeige zuckte (wechselte ständig minimal die Größe).** Die automatische Anzeigegröße rechnete die Fenstergröße aus der Seitengröße und dem eingestellten Zoom zurück. Unter Windows (Skalierung 125 %/150 %, Seitengröße in ganzen Pixeln) landete diese Rechnung bei manchen Fenstergrößen genau auf der Grenze zwischen zwei Stufen: die Anzeige sprang dann dauernd zwischen zwei Größen hin und her. Jetzt liefert das Programm die tatsächliche Fenstergröße (Pixel ÷ Windows-Skalierung) – sie hängt nicht vom Zoom ab, eine Rückkopplung ist nicht mehr möglich. Zusätzlich bleibt die Größe stehen, wenn sie sich trotz gleichem Fenster mehrfach in wenigen Sekunden ändern wollte. Die Stufen und die Einstellung „Anzeigegröße“ bleiben unverändert.
+
 ## Neu in 0.44.0
 
 - **Stammdaten › Lieferanten › Rabatte** und weitere Einstellungen des Lieferanten mit Wirkung in Bestellung, Kasse und EDI.

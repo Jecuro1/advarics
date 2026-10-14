@@ -2280,6 +2280,18 @@ fn set_zoom(window: tauri::WebviewWindow, factor: f64) -> Res<f64> {
     Ok(f)
 }
 
+/// Größe des Fensterinhalts bei Zoom 1 (logische Pixel = tatsächliche Pixel ÷ Windows-/Mac-Skalierung). Sie hängt NICHT vom eingestellten Zoom ab –
+/// Grundlage der Auto-Anpassung der Anzeige (aus dem Zoom und der Seitengröße zurückgerechnet schwankte sie unter Windows und ließ die Anzeige zucken).
+#[tauri::command]
+fn window_base(window: tauri::WebviewWindow) -> Res<Vec<f64>> {
+    let s = window.inner_size().map_err(err)?;
+    let f = window.scale_factor().map_err(err)?;
+    if !(f > 0.0) || s.width == 0 || s.height == 0 {
+        return Err("Fenstergröße nicht verfügbar".into());
+    }
+    Ok(vec![(s.width as f64 / f).round(), (s.height as f64 / f).round()])
+}
+
 fn main() {
     // Portabler Betrieb / mehrere Kassen auf einem Rechner (z. B. Schulung, Test): eigener Datenordner
     let portable = std::env::var("KONTOR_DATA_DIR").ok().filter(|d| !d.trim().is_empty());
@@ -2518,6 +2530,7 @@ fn main() {
             open_folder,
             set_fullscreen,
             set_zoom,
+            window_base,
             catalog_list,
             catalog_seed,
             article_save,

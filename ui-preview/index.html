@@ -2181,7 +2181,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.44.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.44.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -4502,15 +4502,27 @@ function uiDevice(lw, lh) {
   const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
   return lw < 720 ? 'phone' : (lw < 1100 || (touch && lw < 1400)) ? 'tablet' : lw < 1500 ? 'laptop' : lw < 2000 ? 'desktop' : 'wide';
 }
+/** Desktop-App: Fenstergröße bei Zoom 1 vom Programmkern (unabhängig vom Zoom – ohne Rückkopplung); null, wenn nicht verfügbar */
+async function uiNative() {
+  try { const r = await invoke('window_base'); return Array.isArray(r) && r[0] > 0 && r[1] > 0 ? [r[0], r[1]] : null; } catch { return null; }
+}
 function uiRefit(force) {
   const emu = window.__UI_EMU;                                                       // Testhaken: „tu so, als wäre das Fenster w × h physisch groß“
+  if (DESKTOP && !emu) { uiNative().then(b => uiApply(b || [innerWidth * UI.zoom, innerHeight * UI.zoom], force)); return; }
+  uiApply(emu ? [emu.w, emu.h] : [innerWidth, innerHeight], force);
+}
+function uiApply(base, force) {
+  const emu = window.__UI_EMU;
   const desktopLike = DESKTOP || !!emu;
-  const base = emu ? [emu.w, emu.h] : DESKTOP ? [innerWidth * UI.zoom, innerHeight * UI.zoom] : [innerWidth, innerHeight];
   const manual = CFG['anzeige.zoom.auto'] === false;
   const mul = clamp(+CFG['anzeige.zoom.mul'] || 1, .6, 1.6);
   const f = manual ? clamp(+CFG['anzeige.zoom'] || 1.25, .6, 2.6) : uiFit(base[0], base[1], mul);
   const eff = desktopLike ? f : 1;                                                   // im Browser skaliert der Browser selbst (Strg +/−)
-  if (force || Math.abs(eff - UI.zoom) > .004) applyZoom(eff);
+  // Sicherung gegen Flackern: ändert sich die Größe ständig, obwohl das Fenster gleich bleibt (Rückkopplung), bleibt die zuletzt gewählte Stufe stehen
+  const jetzt = Date.now(), gleich = UI.base[0] && Math.abs(base[0] - UI.base[0]) < 3 && Math.abs(base[1] - UI.base[1]) < 3;
+  UI.t = (UI.t || []).filter(x => jetzt - x < 5000);
+  if (!force && gleich && Math.abs(eff - UI.zoom) > .004 && UI.t.length >= 4) { UI.base = base; return; }
+  if (force || Math.abs(eff - UI.zoom) > .004) { UI.t.push(jetzt); applyZoom(eff); }
   UI.base = base; UI.lw = Math.round(base[0] / eff); UI.lh = Math.round(base[1] / eff);
   const dev = uiDevice(UI.lw, UI.lh);
   const r = document.documentElement;
