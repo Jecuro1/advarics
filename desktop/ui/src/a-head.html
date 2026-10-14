@@ -1806,13 +1806,13 @@ tr[data-dnd-item],.set-row[data-dnd-item]{cursor:grab}
 @property --uh{syntax:'<number>';inherits:true;initial-value:0}
 @property --ang{syntax:'<angle>';inherits:false;initial-value:0deg}
 .upx{--uhue:calc(var(--ah) + var(--uh));--ua:hsl(var(--uhue) 92% 62%);--ub:hsl(calc(var(--uhue) + 28) 96% 66%);--uc:hsl(calc(var(--uhue) + 200) 85% 68%);
-  --ut:#F3F5FB;--ut2:rgba(224,230,246,.76);--ut3:rgba(196,205,228,.52);--uline:rgba(255,255,255,.11);--rs:clamp(190px,min(40vh,64vw),350px);--px:0;--py:0;
+  --ut:#F3F5FB;--ut2:rgba(224,230,246,.76);--ut3:rgba(196,205,228,.52);--uline:rgba(255,255,255,.11);--rs:clamp(180px,min(36vh,64vw),350px);--px:0;--py:0;
   position:fixed;inset:0;z-index:2200;display:grid;grid-template-rows:auto 1fr auto auto;isolation:isolate;overflow:hidden;color:var(--ut);background:#05060C;font-family:var(--font-sans);
   transition:--uh 1.4s ease;animation:upxIn .9s var(--ease-out) both;-webkit-font-smoothing:antialiased;cursor:default;user-select:none}
 .upx[data-ph="done"]{--uh:calc(152 - var(--ah))}
 .upx[data-ph="error"]{--uh:calc(6 - var(--ah))}
 .upx.out{animation:upxOut .55s var(--ease-io) forwards}
-.upx.shk{animation:upxShake2 .7s cubic-bezier(.36,.07,.19,.97)}
+.upx.shk .upx-main{animation:upxShake2 .7s cubic-bezier(.36,.07,.19,.97)}
 @keyframes upxIn{from{opacity:0;transform:scale(1.05)}}
 @keyframes upxOut{to{opacity:0;transform:scale(.97);filter:blur(6px)}}
 @keyframes upxShake2{10%,90%{transform:translate(-2px,1px)}20%,80%{transform:translate(4px,-2px)}30%,50%,70%{transform:translate(-7px,3px)}40%,60%{transform:translate(7px,-3px)}}
@@ -1943,7 +1943,7 @@ tr[data-dnd-item],.set-row[data-dnd-item]{cursor:grab}
 .upx-stats small{display:block;font:650 10px/1 var(--font-sans);letter-spacing:.11em;text-transform:uppercase;color:var(--ut3);margin-bottom:7px}
 .upx-stats b{display:block;font:650 14.5px/1.1 var(--font-mono);font-variant-numeric:tabular-nums;color:var(--ut);white-space:nowrap}
 /* Schritte */
-.upx-rail{list-style:none;margin:2px 0 0;padding:0;display:flex;width:min(780px,94vw)}
+.upx-rail{list-style:none;margin:2px 0 0;padding:0;display:flex;width:min(780px,calc(100vw - 40px))}
 .upx-rail li{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;font-size:12px;font-weight:550;color:var(--ut3);transition:color .4s}
 .upx-rail li::before,.upx-rail li::after{content:"";position:absolute;top:13px;right:50%;width:100%;height:2px;border-radius:2px}
 .upx-rail li::before{background:rgba(255,255,255,.1)}
@@ -2005,6 +2005,7 @@ tr[data-dnd-item],.set-row[data-dnd-item]{cursor:grab}
 .upx-btn:active{transform:scale(.98)}
 .upx-btn:focus-visible,.upx-x:focus-visible{outline:2px solid #fff;outline-offset:3px}
 .upx-btn::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.45) 50%,transparent 65%);transform:translateX(-120%);animation:upxShine 3.2s ease-in-out infinite}
+@media (max-height:820px){.upx{--rs:clamp(170px,min(31vh,64vw),350px)}}
 @media (max-height:760px){.upx-news,.upx-stats{display:none}.upx[data-mode="welcome"] .upx-wn{max-height:34vh}}
 @media (max-width:680px){.upx-news .st{height:110px}.upx-badge>span:not(.demo),.upx-badge>.i,.upx-rail .l,.upx-ver .fr,.upx-ver svg,.upx-brand .tag{display:none}.upx-stats .s{min-width:92px;padding:8px 11px}.upx-rail .n{width:24px;height:24px}.upx-rail li::before,.upx-rail li::after{top:11px}}
 /* Schwächere Rechner: schwere Effekte aus (schaltet der Effekt-Motor selbst bei zu niedriger Bildrate) */

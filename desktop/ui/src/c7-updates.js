@@ -3,7 +3,7 @@
    18 · UPDATE-DIENST — signierte Pakete, Freigabe, Zeitfenster,
    Sicherung vor dem Update, Fortschritt, automatischer Neustart.
    ════════════════════════════════════════════════════════════════════ */
-const UPD = {state: 'idle', info: null, error: '', last: null, timer: null};
+const UPD = {state: 'idle', info: null, error: '', last: null, timer: null, installing: false};
 function updLabel() {
   if (!DESKTOP) return S.update === 'pending' ? 'Update 1.8.0 wartet auf Freigabe' : 'Update 1.8.0 geplant · heute 20:00';
   const ap = CFG['update.freigabe'];
@@ -104,18 +104,22 @@ function scheduleApproved(ap) {
   }
 }
 async function runInstall(auto) {
+  if (UPD.installing) return;
   if (auto && POS.cart.length) { UPD.timer = setTimeout(() => runInstall(true), 5 * 60e3); return toast('Update wartet', {t2: 'Offener Verkauf – neuer Versuch in 5 Minuten', icon: 'clock'}); }
+  UPD.installing = true;
   const i = UPD.info || {};
   const ux = upxOpen({mode: 'real', from: S.appVersion, to: i.version, notes: i.notes});   // Vollbild-Installer (c7a-updinstaller.js)
   let unlisten = null;
   try {
+    // zuerst die Freigabe zurücknehmen und „Willkommen“ vormerken: schlägt später etwas fehl, darf checkUpdates nicht dieselbe Installation sofort wieder starten
+    await saveSettings({'update.freigabe': null, 'update.erledigt': {from: S.appVersion, to: i.version, notes: i.notes || '', at: new Date().toISOString()}}, true);
     unlisten = await window.__TAURI__.event.listen('update-progress', ({payload: p}) => {
       if (p.phase === 'download') { ux.go('download'); ux.progress(p.done, p.total); } else ux.go(p.phase);
     });
-    await saveSettings({'update.freigabe': null, 'update.erledigt': {from: S.appVersion, to: i.version, notes: i.notes || '', at: new Date().toISOString()}}, true);   // „Willkommen“ nach dem Neustart
     await invoke('update_install', {user: S.user.name});
   } catch (e) {
     unlisten && unlisten();
+    UPD.installing = false;
     await saveSettings({'update.erledigt': null}, true);
     ux.fail(String(e));
     toast('Update nicht installiert', {t2: String(e), type: 'warn', dur: 10000});

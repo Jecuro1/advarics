@@ -33,8 +33,9 @@ function upxHighlights(md, cur, next) {
   String(txt || '').split(/\r?\n/).forEach(l => {
     const m = l.match(/^[-*]\s+(.*\S)\s*$/); if (!m) return;
     const b = m[1].match(/^\*\*(.+?)\*\*\s*(.*)$/);
-    const clean = s => s.replace(/\*\*/g, '').replace(/`/g, '').replace(/\s+/g, ' ').trim();
+    const clean = s => s.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\*\*/g, '').replace(/`/g, '').replace(/\s+/g, ' ').trim();
     let title = b ? clean(b[1]).replace(/[.:]\s*$/, '') : '', body = clean(b ? b[2] : m[1]);
+    if (title.length > 110) { body = (title.slice(110).trim() + ' ' + body).trim(); title = title.slice(0, 108).replace(/\s+\S*$/, '') + ' …'; }
     if (!title) { title = body.length > 70 ? body.slice(0, 68).replace(/\s+\S*$/, '') + ' …' : body; body = body.length > 70 ? body : ''; }
     if (body.length > 200) body = body.slice(0, 197).replace(/\s+\S*$/, '') + ' …';
     out.push({title, text: body});
@@ -98,7 +99,7 @@ function upxFx(root, ring) {
   const cvG = $('.fxg', root), cvB = $('.fxb', root), cvF = $('.fxf', root);
   if (reduced()) { [cvG, cvB, cvF].forEach(c => c.style.display = 'none'); return {mode() {}, rate() {}, hue() {}, prog() {}, shock() {}, burst() {}, assemble() {}, stop() {}}; }
   const cb = cvB.getContext('2d'), cf = cvF.getContext('2d'), base = +getComputedStyle(document.documentElement).getPropertyValue('--ah') || 26;
-  let W = 0, H = 0, dpr = 1, cx = 0, cy = 0, R = 100, RW = 300, raf = 0, last = 0, t = 0, mode = 'idle', rate = .5, prog = 0, hue = base, hueT = base, dead = false, fr = 0, slow = 16, q = 1, shockT = -9, burstT = -9, flow = 1, flowT = 1, gs = .5, kOn = false, kT = 0, kLit = 0;
+  let W = 0, H = 0, dpr = 1, cx = 0, cy = 0, R = 100, RW = 300, raf = 0, last = 0, t = 0, tt = 0, mode = 'idle', rate = .5, prog = 0, hue = base, hueT = base, dead = false, fr = 0, slow = 16, q = 1, shockT = -9, burstT = -9, flow = 1, flowT = 1, gs = .5, kOn = false, kT = 0, kLit = 0;
   let stars = [], motes = [], orbs = [], sparks = [], hexs = [], conf = [], shocks = [], kp = [], acc = 0, accH = 0, accO = 0;
   const rnd = (a, b) => a + Math.random() * (b - a), hsl = (h, l, a, s = 90) => `hsla(${h},${s}%,${l}%,${a})`, HEX = '0123456789ABCDEF';
   const hexs8 = () => { let s = ''; for (let i = 0; i < 8; i++) s += HEX[Math.random() * 16 | 0]; return s; };
@@ -123,7 +124,7 @@ function upxFx(root, ring) {
     [cvB, cvF].forEach(c => { c.width = Math.max(1, Math.round(W * dpr)); c.height = Math.max(1, Math.round(H * dpr)); });
     cvG.width = Math.max(2, Math.round(W * gs)); cvG.height = Math.max(2, Math.round(H * gs)); if (gl) gl.viewport(0, 0, cvG.width, cvG.height);
   };
-  const geo = () => { const b = ring.getBoundingClientRect(), c = cvB.getBoundingClientRect(); cx = b.left - c.left + b.width / 2; cy = b.top - c.top + b.height / 2; RW = b.width; R = b.width * .5 * .68; };
+  const geo = () => { if (cvB.clientWidth !== W || cvB.clientHeight !== H) size(); const b = ring.getBoundingClientRect(), c = cvB.getBoundingClientRect(); cx = b.left - c.left + b.width / 2; cy = b.top - c.top + b.height / 2; RW = b.width; R = b.width * .5 * .68; };
   const ease = x => 1 - Math.pow(1 - x, 3);
   const spawnStar = (dir, h0) => stars.length < 520 && stars.push({a: rnd(0, 6.2832), u: 0, sp: rnd(.5, 1.1), dir, h: h0 + rnd(-25, 45), w: rnd(.7, 2.1), l: rnd(.35, 1)});
   let level = 0;
@@ -205,7 +206,7 @@ function upxFx(root, ring) {
     }
   };
   const glDraw = () => {
-    gl.uniform2f(loc.uRes, cvG.width, cvG.height); gl.uniform2f(loc.uC, cx / W, 1 - cy / H); gl.uniform1f(loc.uT, t * flow); gl.uniform1f(loc.uHue, ((hue % 360) + 360) % 360 / 360);
+    gl.uniform2f(loc.uRes, cvG.width, cvG.height); gl.uniform2f(loc.uC, cx / W, 1 - cy / H); gl.uniform1f(loc.uT, tt); gl.uniform1f(loc.uHue, ((hue % 360) + 360) % 360 / 360);
     gl.uniform1f(loc.uProg, prog); gl.uniform1f(loc.uShock, Math.min(1, Math.max(0, (t - shockT) / 1.5))); gl.uniform1f(loc.uBurst, Math.max(0, 1 - (t - burstT) / 3.2));
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   };
@@ -214,7 +215,7 @@ function upxFx(root, ring) {
     if (document.hidden || dead) { last = ts; return; }
     const dt = Math.min(.05, (ts - last) / 1000 || .016); last = ts; t += dt; fr++;
     slow = slow * .95 + dt * 1000 * .05; if (fr > 40 && fr % 45 === 0) govern(); if (fr % 20 === 1) geo();
-    hue += (hueT - hue) * Math.min(1, dt * 2.2); flow += (flowT - flow) * Math.min(1, dt * 1.5);
+    hue += (hueT - hue) * Math.min(1, dt * 2.2); flow += (flowT - flow) * Math.min(1, dt * 1.5); tt += dt * flow;   // Tempo aufsummieren: ein Tempowechsel verschiebt das Muster nicht ruckartig
     if (gl) glDraw(); back(dt); front(dt);
   };
   glInit(); size(); geo();
@@ -298,7 +299,7 @@ function upxOpen(o = {}) {
   const fx = upxFx(el, ringEl);
   const stopNews = welcome ? () => {} : upxNews($('.upx-news', el), hl, o.to);
   const T0 = performance.now();
-  let ph = welcome ? 'done' : 'prep', errAt = '', want = ph, stepAt = T0, dlFullAt = 0, closed = false, total = 0, samples = [], speed = 0, lastStat = 0, pctNow = 0, tmr = null, mile = 0, tiltT = 0;
+  let ph = welcome ? 'done' : 'prep', errAt = '', stalled = false, lastProg = performance.now(), want = ph, stepAt = T0, dlFullAt = 0, closed = false, total = 0, samples = [], speed = 0, lastStat = 0, pctNow = 0, tmr = null, mile = 0, tiltT = 0;
   const txt = (key, sub) => { const [a, b] = UPX_TXT[key] || ['', '']; return [a.replace('%v', o.to || ''), (sub != null ? sub : mode === 'demo' && key === 'done' ? 'So sieht ein Update aus. Das war eine Vorschau – es wurde nichts installiert.' : b).replace('%v', o.to || '')]; };
   const swap = (e, v) => { if (e.textContent === v) return; e.textContent = v; e.classList.remove('sw'); void e.offsetWidth; e.classList.add('sw'); };
   const dur = ms => { const s = Math.max(0, Math.round(ms / 1000)); return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} min` : `${s} s`; };
@@ -336,11 +337,12 @@ function upxOpen(o = {}) {
   const apply = p => {
     if (p === 'error') errAt = ph;
     ph = p; stepAt = performance.now(); el.dataset.ph = p;
-    const foot = $('#' + uid + 'f', el); if (foot) foot.textContent = p === 'error' ? (mode === 'helper' ? 'Die bisherige Version wird gleich wieder gestartet. Ihre Daten sind unverändert.' : 'Es wurde nichts verändert – Kontor läuft mit der bisherigen Version weiter.') : 'Bitte Kontor und den Rechner nicht ausschalten. Ihre Daten bleiben erhalten.';
+    const foot = $('#' + uid + 'f', el); if (foot) foot.textContent = p === 'error' ? (mode === 'helper' ? (/nicht automatisch gestartet/.test(o.err || '') ? 'Kontor ist installiert – bitte über das Startmenü öffnen.' : 'Die bisherige Version wird gleich wieder gestartet. Ihre Daten sind unverändert.') : 'Es wurde nichts verändert – Kontor läuft mit der bisherigen Version weiter.') : 'Bitte Kontor und den Rechner nicht ausschalten. Ihre Daten bleiben erhalten.';
     const [a, b] = txt(p, p === 'error' ? o.err : undefined);
-    upxDecode($t, a, p === 'prep' ? 900 : 650); $a.textContent = a; swap($s, b);
+    upxDecode($t, a, p === 'prep' ? 900 : 650); setTimeout(() => { $a.textContent = p === 'error' ? `${a}. ${b}` : a; }, 60); swap($s, b);
+    el.setAttribute('aria-label', p === 'error' ? 'Update nicht installiert' : p === 'done' && !welcome ? 'Update installiert' : welcome ? 'Update installiert' : 'Update wird installiert');
     $$('.g', core).forEach(g => g.classList.toggle('on', g.dataset.g === p));
-    const idx = railIdx(p);
+    const idx = p === 'error' ? railIdx(errAt) : railIdx(p);
     $$('.upx-rail li', el).forEach((li, i) => { const done = p === 'done' || i < idx, act = i === idx; li.classList.toggle('done', done); li.classList.toggle('act', act && p !== 'error'); li.classList.toggle('bad', act && p === 'error'); });
     if (p === 'done') setPct(100);
     if (p !== 'prep') { fx.shock(p === 'done' ? 1.3 : p === 'error' ? .8 : 1); retrig(flare, 'on', 1200); retrig(ringEl, 'pn', 750); retrig(flash, 'on', 900); }
@@ -350,14 +352,14 @@ function upxOpen(o = {}) {
     if (p === 'done') { fx.burst(welcome ? 220 : 170); setTimeout(() => { if (!closed) { fx.shock(1.1); fx.burst(60); } }, 650); retrig(el, 'shk', 700); }
     if (p === 'error') { retrig(el, 'shk', 700); log('✕ ' + String(o.err || 'Fehler').slice(0, 60), 'bad'); }
     else if (LOGS[p]) LOGS[p]().forEach(m => { const [s, k] = m.split('|'); log(s, k); });
-    if (p === 'download') mile = 0;
+    if (p === 'download') { mile = 0; lastProg = performance.now(); stalled = false; }
     stats();
   };
   const pump = () => {
     clearTimeout(tmr);
     if (closed || ph === want || ph === 'error') return;
     const now = performance.now();
-    let wait = ph === 'download' ? (dlFullAt ? dlFullAt + 1100 - now : 250) : (UPX_DWELL[ph] || 0) - (now - stepAt);
+    let wait = ph === 'download' ? (dlFullAt ? Math.max(dlFullAt, stepAt) + 1100 - now : 250) : (UPX_DWELL[ph] || 0) - (now - stepAt);
     if (mode === 'helper') wait = ph === 'prep' ? 0 : Math.min(wait, 500);
     if (wait > 20) { tmr = setTimeout(pump, wait); return; }
     apply(UPX_ORDER[UPX_ORDER.indexOf(ph) + 1]);
@@ -376,7 +378,7 @@ function upxOpen(o = {}) {
     jump(p) { const i = UPX_ORDER.indexOf(p); if (closed || i < 0) return; setPct(100, true); dlFullAt = performance.now() - 5000; for (let k = UPX_ORDER.indexOf(ph) + 1; k <= i; k++) apply(UPX_ORDER[k]); want = p; },
     progress(done, tot) {
       if (closed) return; const now = performance.now();
-      o.done = done; if (tot) total = tot;
+      o.done = done; if (tot) total = tot; lastProg = now; if (stalled) { stalled = false; swap($s, UPX_TXT.download[1]); }
       const pc = tot ? Math.min(100, done / tot * 100) : 0; setPct(pc);
       samples.push([now, done]); while (samples.length > 2 && now - samples[0][0] > 2500) samples.shift();
       if (samples.length > 1) { const [t0, d0] = samples[0], v = (done - d0) / ((now - t0) / 1000); speed = speed ? speed * .7 + v * .3 : v; fx.rate(Math.max(.25, Math.min(1.5, speed / 12e6))); }
@@ -385,7 +387,7 @@ function upxOpen(o = {}) {
       if (now - lastStat > 250 || (tot && done >= tot)) { lastStat = now; stats(); }
     },
     done() { if (closed) return; want = 'done'; if (ph !== 'done' && ph !== 'error') { if (!dlFullAt) { dlFullAt = performance.now(); setPct(100); } apply('done'); } },
-    fail(msg) { if (closed) return; o.err = msg || 'Unbekannter Fehler'; apply('error'); $s.textContent = o.err; if (mode !== 'helper') { $('.upx-act', el)?.remove(); $('.upx-main', el).insertAdjacentHTML('beforeend', `<div class="upx-act"><button class="upx-btn" data-upx="close">Schließen</button></div>`); $('[data-upx="close"].upx-btn', el)?.focus(); } },
+    fail(msg) { if (closed || ph === 'error' || (ph === 'done' && !welcome)) return; o.err = msg || 'Unbekannter Fehler'; apply('error'); $s.textContent = o.err; if (mode !== 'helper') { $('.upx-act', el)?.remove(); $('.upx-main', el).insertAdjacentHTML('beforeend', `<div class="upx-act"><button class="upx-btn" data-upx="close">Schließen</button></div>`); $('[data-upx="close"].upx-btn', el)?.focus(); } },
     close(quick) {
       if (closed) return; closed = true; clearTimeout(tmr); stopNews(); clearInterval(clock); fx.stop();
       document.removeEventListener('keydown', onKey, true); removeEventListener('pointermove', onMove); if (UPX_OPEN === api) UPX_OPEN = null;
@@ -395,15 +397,18 @@ function upxOpen(o = {}) {
   };
   const onKey = e => {
     if (e.key === 'Escape' && (closable || ph === 'error') && mode !== 'helper') { e.preventDefault(); e.stopPropagation(); api.close(); return; }
-    if (!closable) e.stopPropagation();   // während der Installation keine Eingaben an die Kasse durchlassen (z. B. Scanner)
+    if (!closable) { if (!el.contains(e.target)) e.preventDefault(); e.stopPropagation(); }   // während der Installation keine Eingaben an die Kasse durchlassen (z. B. Scanner); Tab/Enter erreichen den Hintergrund nicht
   };
   const onMove = e => { const n = performance.now(); if (n - tiltT < 24) return; tiltT = n; el.style.setProperty('--px', (e.clientX / innerWidth * 2 - 1).toFixed(3)); el.style.setProperty('--py', (e.clientY / innerHeight * 2 - 1).toFixed(3)); };
   document.addEventListener('keydown', onKey, true); addEventListener('pointermove', onMove, {passive: true});
   el.addEventListener('click', e => { if (e.target.closest('[data-upx="close"]')) api.close(); });
-  const clock = setInterval(() => { if (ph !== 'download' && ph !== 'done' && ph !== 'error') stats(); }, 1000);
+  const clock = setInterval(() => {
+    if (ph !== 'download' && ph !== 'done' && ph !== 'error') stats();
+    if (ph === 'download' && mode === 'real' && !stalled && performance.now() - lastProg > 45e3) { stalled = true; swap($s, 'Die Verbindung scheint zu stocken – bitte die Internetverbindung prüfen. Kontor wartet weiter.'); }
+  }, 1000);
   if (welcome) { setPct(100, true); apply('done'); swap($s, o.from ? `Aktualisiert von Version ${o.from} – das ist neu:` : 'Das ist neu:'); upxDecode($t, `Willkommen in Kontor ${o.to || ''}`, 900); $a.textContent = `Willkommen in Kontor ${o.to || ''}`; }
   else { setPct(0, true); apply('prep'); }
-  el.focus({preventScroll: true});
+  (welcome ? $('.upx-btn', el) : null || el).focus({preventScroll: true});
   UPX_OPEN = api;
   return api;
 }
