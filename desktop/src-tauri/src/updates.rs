@@ -155,7 +155,12 @@ async fn pause() {
 }
 
 /// Das (neu gestartete) Programm ist oben: ein eventuell wartendes Installer-Fenster darf sich schließen.
+/// Das Protokoll des Hilfsprozesses kommt ins Audit-Log (sonst ginge die Ursache eines Problems verloren).
 #[tauri::command]
-pub fn update_ready() {
-    crate::uphelper::started();
+pub fn update_ready(app: AppHandle) {
+    if let Some(log) = crate::uphelper::started() {
+        if let Ok(c) = app.state::<db::Db>().conn.lock() {
+            let _ = db::audit_append(&c, "update.installer.protokoll", &json!({ "protokoll": log }));
+        }
+    }
 }

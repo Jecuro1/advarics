@@ -14,17 +14,26 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 use tauri::{Manager, State};
 
 /// Aufrufmarke des Hilfsprozesses: `kontor --kontor-updater <Ordner>`
 pub const FLAG: &str = "--kontor-updater";
 const DIR_NAME: &str = "kontor-update";
-/// Längste Wartezeit auf das Beenden des alten Programms / auf den Installer / auf den Start des neuen Programms
+/// Längste Wartezeit auf das Hilfsfenster (kalter Start von WebView2, Virenprüfung der frisch kopierten Datei) / auf das Beenden des alten Programms / auf den Installer / auf den Start des neuen Programms
+const WAIT_READY: Duration = Duration::from_secs(25);
 const WAIT_EXIT: Duration = Duration::from_secs(40);
 const WAIT_INSTALL: Duration = Duration::from_secs(600);
 const WAIT_START: Duration = Duration::from_secs(30);
+
+/// Sperrdatei des alten Programms: bleibt bis zum Prozessende belegt (auch bei einem zweiten Übergabeversuch im selben Prozess)
+static LOCK: OnceLock<std::fs::File> = OnceLock::new();
+/// Eine Übergabe läuft/lief in diesem Prozess – der Aufräum-Thread von `started()` darf dann nichts löschen
+static HANDOVER: AtomicBool = AtomicBool::new(false);
+/// 0 = Installer noch nicht gestartet, 1 = Installer läuft, 2 = fertig (für den Notfall-Neustart bei einem Absturz des Hilfsprozesses)
+static PHASE: AtomicU8 = AtomicU8::new(0);
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 struct Info {
@@ -58,14 +67,19 @@ fn hex(b: &[u8]) -> String {
     b.iter().map(|x| format!("{x:02x}")).collect()
 }
 
-fn temp_dir() -> PathBuf {
+/// Arbeitsordner der Übergabe: unter Windows im Datenordner des Benutzers (nicht im Temp-Ordner, der bei manchen Einrichtungen von mehreren Benutzern beschreibbar ist)
+fn update_dir() -> PathBuf {
+    #[cfg(windows)]
+    if let Some(l) = std::env::var_os("LOCALAPPDATA").filter(|l| !l.is_empty()) {
+        return PathBuf::from(l).join("at.kontor.desktop").join("update");
+    }
     std::env::temp_dir().join(DIR_NAME)
 }
 
 /// Ordner aus der Kommandozeile – nur wenn der Hilfsprozess gemeint ist
 pub fn argument() -> Option<PathBuf> {
-    let mut a = std::env::args().skip(1);
-    if a.next().as_deref() != Some(FLAG) {
+    let mut a = std::env::args_os().skip(1);
+    if a.next().as_deref() != Some(std::ffi::OsStr::new(FLAG)) {
         return None;
     }
     a.next().map(PathBuf::from)
@@ -73,7 +87,7 @@ pub fn argument() -> Option<PathBuf> {
 
 /// Der Ordner muss der Update-Ordner des Benutzers sein (Entwicklungs-Builds dürfen abweichen, damit sich der Ablauf testen lässt)
 fn dir_ok(dir: &Path) -> bool {
-    cfg!(debug_assertions) || dir == temp_dir()
+    cfg!(debug_assertions) || dir == update_dir()
 }
 
 fn log(dir: &Path, msg: &str) {
@@ -91,19 +105,28 @@ fn log(dir: &Path, msg: &str) {
 pub fn handover(app: &tauri::AppHandle, bytes: &[u8], from: &str, to: &str, notes: &str) -> Result<(), String> {
     let e = |x: std::io::Error| x.to_string();
 
-    let dir = temp_dir();
+    HANDOVER.store(true, Ordering::SeqCst);
+    let dir = update_dir();
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).map_err(e)?;
+    // Reste eines früheren Versuchs dürfen nie „bereit“ vortäuschen
+    for f in ["ready", "started", "info.json", "updater.log"] {
+        let _ = std::fs::remove_file(dir.join(f));
+    }
+    if dir.join("ready").exists() || dir.join("started").exists() {
+        return Err("Alter Update-Ordner lässt sich nicht bereinigen".into());
+    }
     let exe = std::env::current_exe().map_err(e)?;
     let setup = dir.join(format!("Kontor-{to}-setup.exe"));
     std::fs::write(&setup, bytes).map_err(e)?;
-    let helper = dir.join("KontorUpdater.exe");
+    let helper = dir.join("KontorSwitch.exe");   // neutraler Name: Namen mit „update“/„setup“ lösen bei manchen Windows-Fassungen eine Rechteabfrage aus
     std::fs::copy(&exe, &helper).map_err(e)?;
 
+    // das Hilfsfenster bedeckt die Fläche des bisherigen Fensters (ohne Titelleiste und Rahmen)
     let rect = app
         .get_webview_window("main")
         .filter(|w| !w.is_minimized().unwrap_or(true))
-        .and_then(|w| Some((w.outer_position().ok()?, w.outer_size().ok()?)))
+        .and_then(|w| Some((w.inner_position().ok()?, w.inner_size().ok()?)))
         .filter(|(p, s)| s.width > 200 && s.height > 200 && p.x > -10000 && p.y > -10000)
         .map(|(p, s)| vec![p.x as i64, p.y as i64, s.width as i64, s.height as i64])
         .unwrap_or_default();
@@ -111,14 +134,16 @@ pub fn handover(app: &tauri::AppHandle, bytes: &[u8], from: &str, to: &str, note
     std::fs::write(dir.join("info.json"), serde_json::to_vec(&info).map_err(|x| x.to_string())?).map_err(e)?;
 
     // Sperrdatei: solange dieses Programm läuft, bleibt sie belegt – der Hilfsprozess wartet damit auf unser Ende
-    let mut lock = std::fs::OpenOptions::new();
-    lock.write(true).create(true);
-    #[cfg(windows)]
-    {
-        use std::os::windows::fs::OpenOptionsExt;
-        lock.share_mode(0);
+    if LOCK.get().is_none() {
+        let mut lock = std::fs::OpenOptions::new();
+        lock.write(true).create(true);
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::OpenOptionsExt;
+            lock.share_mode(0);
+        }
+        let _ = LOCK.set(lock.open(dir.join("app.lock")).map_err(e)?);
     }
-    std::mem::forget(lock.open(dir.join("app.lock")).map_err(e)?);
 
     let mut cmd = Command::new(&helper);
     cmd.arg(FLAG).arg(&dir);
@@ -129,7 +154,7 @@ pub fn handover(app: &tauri::AppHandle, bytes: &[u8], from: &str, to: &str, note
     }
     let mut child = cmd.spawn().map_err(|x| format!("Hilfsfenster nicht gestartet: {x}"))?;
     let t0 = Instant::now();
-    while t0.elapsed() < Duration::from_secs(12) {
+    while t0.elapsed() < WAIT_READY {
         if dir.join("ready").exists() {
             return Ok(());
         }
@@ -139,20 +164,26 @@ pub fn handover(app: &tauri::AppHandle, bytes: &[u8], from: &str, to: &str, note
         std::thread::sleep(Duration::from_millis(80));
     }
     let _ = child.kill();
+    let _ = child.wait();
     Err("Hilfsfenster wurde nicht rechtzeitig bereit".into())
 }
 
-/// Das neu gestartete Programm meldet sich: der Hilfsprozess darf sein Fenster schließen. Räumt den Ordner später auf.
-pub fn started() {
-    let dir = temp_dir();
+/// Das neu gestartete Programm meldet sich: der Hilfsprozess darf sein Fenster schließen. Gibt das Protokoll des Hilfsprozesses zurück
+/// (für das Audit-Log) und räumt den Ordner später auf.
+pub fn started() -> Option<String> {
+    let dir = update_dir();
     if !dir.join("info.json").exists() {
-        return;
+        return None;
     }
+    let log = std::fs::read_to_string(dir.join("updater.log")).ok().map(|t| t.chars().rev().take(1500).collect::<Vec<_>>().into_iter().rev().collect::<String>());
     let _ = std::fs::write(dir.join("started"), b"1");
     std::thread::spawn(move || {
         std::thread::sleep(Duration::from_secs(45));
-        let _ = std::fs::remove_dir_all(&dir);
+        if !HANDOVER.load(Ordering::SeqCst) {
+            let _ = std::fs::remove_dir_all(&dir);
+        }
     });
+    log
 }
 
 // ───────────────────────── Hilfsprozess ─────────────────────────
@@ -174,6 +205,7 @@ fn helper_state(sh: State<'_, Arc<Shared>>) -> HState {
 /// Die Oberfläche steht → Fenster an die Stelle des bisherigen Programms setzen und zeigen; meldet dem alten Programm „bereit“
 #[tauri::command]
 fn helper_ready(app: tauri::AppHandle, sh: State<'_, Arc<Shared>>) {
+    let mut shown = false;
     if let Some(w) = app.get_webview_window("updater") {
         let rect: Vec<i64> = std::fs::read(sh.dir.join("info.json")).ok().and_then(|b| serde_json::from_slice::<Info>(&b).ok()).map(|i| i.rect).unwrap_or_default();
         if rect.len() == 4 {
@@ -182,11 +214,34 @@ fn helper_ready(app: tauri::AppHandle, sh: State<'_, Arc<Shared>>) {
         } else {
             let _ = w.maximize();
         }
-        let _ = w.show();
+        shown = w.show().is_ok();
         let _ = w.set_focus();
     }
-    let _ = std::fs::write(sh.dir.join("ready"), b"1");
-    log(&sh.dir, "ready");
+    // „bereit“ nur, wenn das Fenster wirklich da ist – sonst bleibt das alte Programm beim eigenen Installieren
+    if shown {
+        let _ = std::fs::write(sh.dir.join("ready"), b"1");
+    }
+    log(&sh.dir, if shown { "ready" } else { "Fenster nicht angezeigt" });
+}
+
+/// Installationsordner laut Registry (das Setup-Programm legt ihn unter HKCU\\Software\\Kontor\\Kontor ab) – dort liegt nach dem Update das neue Programm
+#[cfg(windows)]
+fn install_dir() -> Option<PathBuf> {
+    use std::os::windows::process::CommandExt;
+    let out = Command::new("reg").args(["query", "HKCU\\Software\\Kontor\\Kontor", "/ve"]).creation_flags(0x0800_0000).output().ok()?;
+    String::from_utf8_lossy(&out.stdout).lines().find_map(|l| l.split("REG_SZ").nth(1)).map(|p| PathBuf::from(p.trim())).filter(|p| p.is_dir())
+}
+
+/// Programm, das nach dem Update (oder nach einem Fehler) gestartet wird: das im Installationsordner, sonst das bisherige
+fn app_path(info: &Info) -> String {
+    #[cfg(windows)]
+    if let (Some(d), Some(n)) = (install_dir(), Path::new(&info.app).file_name()) {
+        let p = d.join(n);
+        if p.is_file() {
+            return p.to_string_lossy().into();
+        }
+    }
+    info.app.clone()
 }
 
 fn spawn_app(path: &str) -> std::io::Result<std::process::Child> {
@@ -237,6 +292,7 @@ fn worker(app: tauri::AppHandle, sh: Arc<Shared>, info: Info) {
     set(&sh, "install", "");
     wait_old_app(&dir);
     let started = Instant::now();
+    PHASE.store(1, Ordering::SeqCst);
 
     let result: Result<(), String> = (|| {
         let bytes = std::fs::read(&info.setup).map_err(|e| format!("Installer nicht lesbar: {e}"))?;
@@ -266,12 +322,14 @@ fn worker(app: tauri::AppHandle, sh: Arc<Shared>, info: Info) {
         }
     })();
 
+    PHASE.store(2, Ordering::SeqCst);
     match result {
         Ok(()) => {
             min_show(started, 3200);
             let _ = std::fs::remove_file(&info.setup);
             set(&sh, "restart", "");
-            match spawn_app(&info.app) {
+            let _ = std::fs::remove_file(dir.join("started"));   // nur das jetzt gestartete Programm darf „gestartet“ melden
+            match spawn_app(&app_path(&info)) {
                 Ok(_) => {
                     let t = Instant::now();
                     while !dir.join("started").exists() && t.elapsed() < WAIT_START {
@@ -290,7 +348,7 @@ fn worker(app: tauri::AppHandle, sh: Arc<Shared>, info: Info) {
             min_show(started, 1500);
             set(&sh, "error", &msg);
             std::thread::sleep(Duration::from_secs(9));
-            let _ = spawn_app(&info.app);
+            let _ = spawn_app(&app_path(&info));
             std::thread::sleep(Duration::from_millis(1200));
         }
     }
@@ -314,14 +372,30 @@ pub fn run(dir: PathBuf, mut context: tauri::Context) {
         dir: dir.clone(),
     });
     let sh2 = sh.clone();
-    let res = tauri::Builder::default()
+    // Stürzt der Hilfsprozess ab, bevor der Installer lief, soll die bisherige Version wieder starten (das Programm selbst ist ja beendet)
+    let notfall = app_path(&info);
+    std::panic::set_hook(Box::new(move |_| {
+        if PHASE.load(Ordering::SeqCst) == 0 {
+            let _ = spawn_app(&notfall);
+        }
+        std::process::exit(1);
+    }));
+    let app = tauri::Builder::default()
         .manage(sh)
+        // das Fenster lässt sich nicht schließen (Alt+F4, Taskleiste) – sonst endete der Hilfsprozess mitten in der Installation
+        .on_window_event(|_w, e| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = e {
+                api.prevent_close();
+            }
+        })
         .setup(move |app| {
             tauri::WebviewWindowBuilder::new(app, "updater", tauri::WebviewUrl::App("index.html".into()))
                 .title("Kontor – Update")
                 .initialization_script("window.__KONTOR_UPDATER__ = true;")
                 .decorations(false)
                 .resizable(false)
+                .closable(false)
+                .skip_taskbar(true)
                 .always_on_top(true)
                 .visible(false)
                 .inner_size(960.0, 640.0)
@@ -335,9 +409,15 @@ pub fn run(dir: PathBuf, mut context: tauri::Context) {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![helper_state, helper_ready])
-        .run(context);
-    if let Err(e) = res {
-        log(&dir, &format!("Fenster-Fehler: {e}"));
+        .build(context);
+    match app {
+        // beendet wird nur ausdrücklich (`app.exit(0)` im Worker), nie weil das letzte Fenster zugeht
+        Ok(app) => app.run(|_, e| {
+            if let tauri::RunEvent::ExitRequested { api, code: None, .. } = e {
+                api.prevent_exit();
+            }
+        }),
+        Err(e) => log(&dir, &format!("Fenster-Fehler: {e}")),
     }
 }
 
@@ -360,14 +440,16 @@ mod tests {
 
     #[test]
     fn nur_der_update_ordner_ist_erlaubt() {
-        assert!(dir_ok(&temp_dir()));
+        assert!(dir_ok(&update_dir()));
         assert_eq!(dir_ok(Path::new("/irgendwo")), cfg!(debug_assertions));
     }
 
     #[test]
     fn started_ohne_ordner_tut_nichts() {
-        let _ = std::fs::remove_dir_all(temp_dir());
-        started();
-        assert!(!temp_dir().join("started").exists());
+        // den echten Ordner eines laufenden Updates nicht anfassen
+        if !update_dir().join("info.json").exists() {
+            assert!(started().is_none());
+            assert!(!update_dir().join("started").exists());
+        }
     }
 }
