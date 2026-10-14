@@ -32,7 +32,7 @@ function applyAutoRules() {
   const best = new Map();   // Zeile → {pct, name}
   const put = (l, pct, name) => { if (l.disc || pct <= 0) return; const b = best.get(l); if (!b || pct > b.pct) best.set(l, {pct: Math.min(100, r2(pct)), name}); };
   for (const r of rules) {
-    const ls = POS.cart.filter(l => !l.service && !l.voucher && !lfRabattGesperrt(l.art) && rrMatch(r, l.art));
+    const ls = POS.cart.filter(l => !l.service && !l.voucher && !rabattGesperrt(l.art) && rrMatch(r, l.art));
     const n = ls.reduce((s, l) => s + l.qty, 0);
     if (r.typ === 'prozent') ls.forEach(l => put(l, +r.pct, r.name));
     if (r.typ === 'menge' && n >= (+r.ab || 2)) ls.forEach(l => put(l, +r.pct, r.name));
@@ -45,7 +45,7 @@ function applyAutoRules() {
   }
   best.forEach((b, l) => { l.disc = {pct: b.pct, reason: b.name, auto: true}; });
   if (!POS.billDisc) {
-    const base = POS.cart.filter(l => !l.voucher && !lfRabattGesperrt(l.art)).reduce((s, l) => s + l.unit * l.qty * (1 - (l.disc?.pct || 0) / 100), 0);
+    const base = POS.cart.filter(l => !l.voucher && !rabattGesperrt(l.art)).reduce((s, l) => s + l.unit * l.qty * (1 - (l.disc?.pct || 0) / 100), 0);
     const bon = rules.filter(r => r.typ === 'bon' && base >= (+r.ab_betrag || 0)).sort((a, b) => b.pct - a.pct)[0];
     if (bon) POS.billDisc = {pct: +bon.pct, reason: bon.name, auto: true};
   }

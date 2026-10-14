@@ -41,6 +41,7 @@ mod advarics;
 mod filiale;
 mod lieferant;
 mod marke;
+mod warengruppe;
 mod nummern;
 mod msg;
 
@@ -1665,6 +1666,20 @@ fn marke_save(db: State<db::Db>, row: Value, by: Option<String>) -> Res<Value> {
 fn marke_delete(db: State<db::Db>, id: String, by: Option<String>) -> Res<()> {
     marke::delete(&db.conn.lock().unwrap(), &id, by.as_deref().unwrap_or("")).map_err(err)
 }
+#[tauri::command]
+fn warengruppe_save(db: State<db::Db>, row: Value, by: Option<String>) -> Res<Value> {
+    warengruppe::save(&db.conn.lock().unwrap(), &row, by.as_deref().unwrap_or("")).map_err(err)
+}
+#[tauri::command]
+fn warengruppe_delete(db: State<db::Db>, ids: Vec<String>, by: Option<String>) -> Res<usize> {
+    warengruppe::delete(&db.conn.lock().unwrap(), &ids, by.as_deref().unwrap_or("")).map_err(err)
+}
+/// Artikelzahlen je Warengruppe und die nächste freie Nr.
+#[tauri::command]
+fn warengruppe_zaehler(db: State<db::Db>) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    Ok(json!({ "artikel": warengruppe::zaehler(&c), "naechste_nr": warengruppe::naechste_nr(&c), "rolle": verbund::rolle(&c) }))
+}
 /// Stand der Nummernkreise dieser Kasse (nächste Nummer, Rest) für die Maske „Filialen › Nummernkreise“
 #[tauri::command]
 fn nummern_stand(db: State<db::Db>) -> Value {
@@ -1885,6 +1900,9 @@ fn stamm_save(db: State<db::Db>, kind: String, rows: Vec<Value>, user: String) -
     }
     if kind == marke::KIND {
         return Err("Marken werden unter Stammdaten › Marken gepflegt".into());
+    }
+    if kind == warengruppe::KIND {
+        return Err("Warengruppen werden unter Stammdaten › Warengruppen › Warengruppen gepflegt".into());
     }
     if kind == lieferant::RABATT_KIND {
         return Err("Rabatte werden im Lieferanten (Reiter „Rabatte“) gepflegt".into());
@@ -2333,6 +2351,7 @@ fn main() {
             let mut conn = conn;
             if let Err(e) = advarics::wg_seed(&mut conn) { let _ = db::audit_append(&conn, "warengruppen.seed.failed", &json!({ "fehler": e })); }
             let _ = advarics::wg_remap(&conn);
+            let _ = warengruppe::vorbereiten(&conn);
             let _ = advarics::groessenschluessel_seed(&mut conn);
             let _ = advarics::groessenschluessel_zuordnung(&mut conn);
             if let Err(e) = advarics::groessen_seed(&mut conn) { let _ = db::audit_append(&conn, "groessen.seed.failed", &json!({ "fehler": e })); }
@@ -2418,6 +2437,9 @@ fn main() {
             marke_list,
             marke_save,
             marke_delete,
+            warengruppe_save,
+            warengruppe_delete,
+            warengruppe_zaehler,
             nummern_stand,
             filiale_save,
             filiale_delete,

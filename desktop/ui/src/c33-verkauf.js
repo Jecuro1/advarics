@@ -18,7 +18,7 @@ function posLoadLines(lines, customerId, ref) {
       addLine(x.a, x.v.c, x.v.s, q);
       const cl = POS.cart.find(c => c.key === POS.lastKey);
       if (cl && l.price && Math.abs(cl.unit - l.price / 100) > 0.004) { cl.unit = l.price / 100; cl.was = null; }
-      if (cl && l.disc) cl.disc = {pct: +l.disc, reason: ref ? `lt. ${ref}` : 'vereinbart'};
+      if (cl && l.disc && !rabattGesperrt(cl.art)) cl.disc = {pct: +l.disc, reason: ref ? `lt. ${ref}` : 'vereinbart'};
     } else POS.cart.push({key: 'svc|' + uid(), service: true, icon: 'tag', name: l.name || 'Position', unit: (l.price || 0) / 100, vat: l.vat ?? 20, qty: q, meta: ref ? `aus ${ref}` : 'Dienstleistung'});
     n++;
   }

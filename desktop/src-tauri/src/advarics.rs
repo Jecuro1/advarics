@@ -277,6 +277,20 @@ pub fn wg_preview(path: &Path) -> Result<Value, String> {
     }))
 }
 
+/// Etiketten-Typ aus der Liste als Kennung der Tabelle „Etikettentypen“ (unbekannte Namen bleiben im Klartext stehen)
+fn wg_etikett(t: &str) -> String {
+    if t.split_whitespace().collect::<Vec<_>>().join(" ").eq_ignore_ascii_case("Klebe 50x30") { "K50X30".into() } else { t.to_string() }
+}
+
+/// Altersbewertung aus der Liste als Kennung der Tabelle „Altersbewertungs-Schlüssel“
+fn wg_alter(t: &str) -> String {
+    match t.trim().to_lowercase().as_str() {
+        "standard" => "STANDARD".into(),
+        "statistik" => "STATISTIK".into(),
+        _ => t.to_string(),
+    }
+}
+
 fn mwst_satz(t: &str) -> i64 {
     match t.to_lowercase().as_str() {
         "ohne mwst." | "ohne mwst" | "steuerfrei" => 0,
@@ -421,7 +435,12 @@ pub fn wg_apply(c: &mut Connection, rows: &[WgRow]) -> Result<Value, String> {
     let mut put = |kind: &'static str, idx: usize, id: &str, add: Value| -> Result<(), String> {
         let cur: Option<String> = tx.query_row("SELECT data FROM stamm WHERE kind = ?1 AND id = ?2", params![kind, id], |r| r.get(0)).optional().map_err(|e| e.to_string())?;
         let mut v: Value = cur.as_deref().and_then(|d| serde_json::from_str(d).ok()).unwrap_or(json!({}));
+        // Vorhandene Warengruppen: Name, Nr., Abteilung und Gruppe kommen aus der Liste; was in der Maske gepflegt wurde (MwSt.-Typ, Etikett, Inventur, Spanne …) bleibt
+        let ergaenzen = kind == "warengruppe" && cur.is_some();
         for (k, x) in add.as_object().unwrap() {
+            if ergaenzen && !["name", "nr", "abteilung", "gruppe"].contains(&k.as_str()) && v.get(k).map(|y| !y.is_null() && y != "").unwrap_or(false) {
+                continue;
+            }
             v[k] = x.clone();
         }
         if cur.is_some() {
@@ -456,7 +475,8 @@ pub fn wg_apply(c: &mut Connection, rows: &[WgRow]) -> Result<Value, String> {
             }
             parent = id;
         }
-        let mut d = json!({ "name": r.name, "nr": r.nr, "ust": mwst_satz(&r.mwst), "etikett": r.etikett, "inventur": r.inventur, "altersbewertung": r.alter });
+        let satz = mwst_satz(&r.mwst);
+        let mut d = json!({ "name": r.name, "nr": r.nr, "ust": satz, "mwsttyp": match satz { 0 => "F", 10 => "E", _ => "N" }, "etikett": wg_etikett(&r.etikett), "inventur": r.inventur, "altersbewertung": wg_alter(&r.alter) });
         if let Some(s) = r.spanne {
             d["spanne"] = json!(s);
         }

@@ -1733,6 +1733,20 @@ button.ge-caret:hover{background:var(--surface-3);color:var(--text)}
 
 /* ── Filialen (Stammdaten › Filialen) ── */
 .fl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px;align-items:start}
+/* ── Auswahl mit Stift/Plus/Lupe (K.ref), Pflichtpunkt, Einheit; Warengruppen-Maske ── */
+.ea-cmb-row.rf>select{flex:1;min-width:0}
+.ea-cmb-row.rf{gap:4px}
+.ea-cmb-row.rf .ea-ib{width:30px;height:34px;border-radius:8px}
+.ea-cmb-row .ea-unit{flex:none;font-size:13px;color:var(--text-3);min-width:22px}
+.ea-cmb-row>.input{flex:1;min-width:0}
+.field.rq-miss>span::after{content:'';display:inline-block;width:7px;height:7px;margin-left:6px;border-radius:50%;background:var(--neg);vertical-align:middle}
+.wg-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.wg-grid>.ea-card{max-width:none;flex:none;min-width:0;padding:16px 14px;gap:14px}
+.wg-grid .ea-card .ea-fields.ge-one{row-gap:16px}
+.wg-grid .ea-card h4{display:flex;align-items:center;gap:8px}
+.wg-grid .ea-card h4 .ed-badge{margin-left:auto}
+.wg-grid .ea-card h4 .ed-badge[hidden]{display:none}
+.wg-facts{font-size:12.5px;color:var(--text-3);line-height:1.5}
 .fl-grid.fl-2{grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),520px))}
 .fl-grid.fl-3{grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))}
 .fl-stack{display:grid;gap:16px;align-content:start;min-width:0}
@@ -2575,14 +2589,15 @@ const NAV = [
   {id: 'st-inventurort', label: 'Inventurorte', icon: 'grid'},
   {id: 'inventur-einstellungen', label: 'Einstellungen', icon: 'sliders'},
   {id: 'st-altersbewertung', label: 'Altersbewertung Prozentsätze', icon: 'percent'},
+  {id: 'st-altersschluessel', label: 'Altersbewertungs-Schlüssel', icon: 'percent'},
   {g: 'Stammdaten'},
   {label: 'Benutzer', icon: 'users', kids: [{id: 'benutzer', label: 'Benutzer', icon: 'user'}, {id: 'rollen', label: 'Rollen & Rechte', icon: 'shield'}, {id: 'st-benutzergruppe', label: 'Benutzergruppen', icon: 'users'}, {id: 'st-zugangsprofil', label: 'Zugangsprofil', icon: 'lock'}, {id: 'zeiterfassung', label: 'Zeiterfassung', icon: 'clock'}, {id: 'st-meldung', label: 'Zuordnung Meldungen', icon: 'bell'}]},
   {label: 'Filialen', icon: 'store', kids: [{id: 'st-filiale', label: 'Filialen', icon: 'store'}]},
   {id: 'lieferanten', label: 'Lieferanten', icon: 'building'},
   {id: 'st-marke', label: 'Marken', icon: 'star'},
   {id: 'demo-marken', label: 'Marken-Demosortiment', icon: 'star'},
-  {label: 'Warengruppen', icon: 'tag', kids: [{id: 'st-warengruppe', label: 'Warengruppen', icon: 'tag'}, {id: 'st-abteilung', label: 'Abteilungen', icon: 'layers'}, {id: 'st-hauptabteilung', label: 'Hauptabteilungen', icon: 'layers'}, {id: 'st-bereich', label: 'Bereiche', icon: 'layers'}, {id: 'st-hauptbereich', label: 'Hauptbereiche', icon: 'layers'}, {id: 'st-preislage', label: 'Preislagen', icon: 'tag'}, {label: 'FEDAS', icon: 'sync', kids: [{id: 'fedas-sync', label: 'FEDAS-Sync', icon: 'sync'}, {id: 'fedas-verbindung', label: 'Verbindung & Automatik', icon: 'link'}, {id: 'fedas-import', label: 'Datei-Import (CSV/JSON)', icon: 'download'}, {id: 'st-fedasklasse', label: 'FEDAS-Klassifikation', icon: 'list'}, {id: 'fedas-protokoll', label: 'Sync-Protokoll', icon: 'history'}]}]},
-  {label: 'Größen', icon: 'grid', kids: [{id: 'st-groesse', label: 'Größen', icon: 'grid'}, {id: 'st-groessenschluessel', label: 'Größenschlüssel', icon: 'grid'}, {id: 'st-groessenfolge', label: 'Größen sortieren', icon: 'list'}]},
+  {label: 'Warengruppen', icon: 'tag', kids: [{id: 'st-warengruppe', label: 'Warengruppen', icon: 'tag'}, {id: 'st-abteilung', label: 'Abteilungen', icon: 'layers'}, {id: 'st-hauptabteilung', label: 'Hauptabteilungen', icon: 'layers'}, {id: 'st-bereich', label: 'Bereiche', icon: 'layers'}, {id: 'st-hauptbereich', label: 'Hauptbereiche', icon: 'layers'}, {id: 'st-preislage', label: 'Preislagen', icon: 'tag'}, {id: 'st-preislagenschluessel', label: 'Preislagen-Schlüssel', icon: 'tag'}, {id: 'st-wghierarchie', label: 'Warengruppenhierarchie (Etikett)', icon: 'layers'}, {label: 'FEDAS', icon: 'sync', kids: [{id: 'fedas-sync', label: 'FEDAS-Sync', icon: 'sync'}, {id: 'fedas-verbindung', label: 'Verbindung & Automatik', icon: 'link'}, {id: 'fedas-import', label: 'Datei-Import (CSV/JSON)', icon: 'download'}, {id: 'st-fedasklasse', label: 'FEDAS-Klassifikation', icon: 'list'}, {id: 'fedas-protokoll', label: 'Sync-Protokoll', icon: 'history'}]}]},
+  {label: 'Größen', icon: 'grid', kids: [{id: 'st-groesse', label: 'Größen', icon: 'grid'}, {id: 'st-groessenschluessel', label: 'Größenschlüssel', icon: 'grid'}, {id: 'st-groessenfolge', label: 'Größen sortieren', icon: 'list'}, {id: 'st-statgroessenset', label: 'Statistik-Größen-Sets', icon: 'grid'}]},
   {id: 'st-flaeche', label: 'Flächen', icon: 'grid'},
   {label: 'Farben', icon: 'palette', kids: [{id: 'st-hausfarbe', label: 'Hausfarben', icon: 'palette'}, {id: 'st-farbuebersetzung', label: 'Übersetzung', icon: 'globe'}]},
   {label: 'Saisons', icon: 'calendar', kids: [{id: 'st-saison', label: 'Saisons', icon: 'calendar'}, {id: 'st-hauptsaison', label: 'Hauptsaison', icon: 'calendar'}, {id: 'st-saisonkategorie', label: 'Kategorie', icon: 'list'}]},
@@ -3844,7 +3859,7 @@ const discOf = a => a.sale ? Math.round((1 - a.sale / a.price) * 100) : 0;
 
 function totals() {
   let sub = 0, ldisc = 0; const byRate = {}, gesperrt = {};   // gesperrt: Positionen von Lieferanten mit Rabattsperre – der Bon-Rabatt erfasst sie nicht
-  POS.cart.forEach(l => { const g = r2(l.unit * l.qty), d = l.disc ? r2(g * l.disc.pct / 100) : 0; sub += g; ldisc += d; byRate[l.vat] = (byRate[l.vat] || 0) + g - d; if (lfRabattGesperrt(l.art)) gesperrt[l.vat] = (gesperrt[l.vat] || 0) + g - d; });
+  POS.cart.forEach(l => { const g = r2(l.unit * l.qty), d = l.disc ? r2(g * l.disc.pct / 100) : 0; sub += g; ldisc += d; byRate[l.vat] = (byRate[l.vat] || 0) + g - d; if (rabattGesperrt(l.art)) gesperrt[l.vat] = (gesperrt[l.vat] || 0) + g - d; });
   let bdisc = 0;
   if (POS.billDisc) Object.keys(byRate).forEach(k => { if (+k > 0) { const d = r2((byRate[k] - (gesperrt[k] || 0)) * POS.billDisc.pct / 100); byRate[k] -= d; bdisc += d; } });
   const total = r2(sub - ldisc - bdisc);
@@ -3929,7 +3944,7 @@ function lineHTML(l) {
   const c = l.c ? COLORS[l.c][1] : 'var(--text-3)';
   const g = r2(l.unit * l.qty), d = l.disc ? r2(g * l.disc.pct / 100) : 0;
   const varTxt = l.service ? esc(l.meta || 'Dienstleistung') : `<i class="sw" style="background:${c}"></i>${COLORS[l.c][0]}${l.s !== 'Einheitsgröße' ? ` · Gr. ${esc(l.s)}` : ''}`;
-  const extra = [l.disc ? `<span class="disc-tag">−${num(l.disc.pct, Number.isInteger(+l.disc.pct) ? 0 : 1)} %${l.disc.auto ? ` · ${esc(l.disc.reason)}` : ''}</span>` : '', l.was && !l.disc ? `<span class="disc-tag">Aktion</span>` : '', lfRabattGesperrt(l.art) ? `<span class="disc-tag" title="Rabattsperre des Lieferanten">${ic('lock', 'i-xs')}ohne Rabatt</span>` : '',
+  const extra = [l.disc ? `<span class="disc-tag">−${num(l.disc.pct, Number.isInteger(+l.disc.pct) ? 0 : 1)} %${l.disc.auto ? ` · ${esc(l.disc.reason)}` : ''}</span>` : '', l.was && !l.disc ? `<span class="disc-tag">Aktion</span>` : '', rabattGesperrt(l.art) ? `<span class="disc-tag" title="Rabattsperre: ${esc(rabattSperreGrund(l.art))}">${ic('lock', 'i-xs')}ohne Rabatt</span>` : '',
     l.vals ? Object.entries(l.vals).filter(([, v]) => v).map(([k, v]) => `<span class="pill" style="height:18px;font-size:10.5px;padding:0 6px">${esc((SKI_PROMPTS.find(p => p.key === k) || {label: k}).label.split(' ')[0])} ${esc(v)}</span>`).join('') : '',
     l.seller ? `<span class="pill" style="height:18px;font-size:10.5px;padding:0 6px">${ic('user')}${esc(l.seller.split(' ')[0])}</span>` : ''].join('');
   const cls = ['line', POS.sel === l.key ? 'sel' : '', POS.lastKey === l.key ? (POS.lastNew ? 'new' : 'flash') : ''].join(' ');
@@ -4169,8 +4184,8 @@ const fixDisc = () => (typeof stActive === 'function' ? stActive('festerrabatt')
 function openDiscount() {
   if (!POS.cart.length) return toast('Warenkorb ist leer', {type: 'warn', icon: 'percent'});
   let line = POS.cart.find(l => l.key === POS.sel);
-  if (line && lfRabattGesperrt(line.art)) { toast('Rabattsperre', {t2: `${line.name}: Artikel von ${supName(line.art.supplierId)} sind vom Rabatt ausgeschlossen – ein Bon-Rabatt gilt nicht für diese Position`, icon: 'lock', type: 'warn', dur: 5000}); line = null; }
-  if (!line && !POS.cart.some(l => l.vat > 0 && !lfRabattGesperrt(l.art))) return toast('Kein Rabatt möglich', {t2: 'Im Warenkorb ist keine Position, auf die ein Bon-Rabatt wirkt (Rabattsperre des Lieferanten bzw. steuerfreie Positionen)', icon: 'lock', type: 'warn', dur: 5000});
+  if (line && rabattGesperrt(line.art)) { toast('Rabattsperre', {t2: `${line.name}: ${rabattSperreGrund(line.art)} – Artikel sind vom Rabatt ausgeschlossen, ein Bon-Rabatt gilt nicht für diese Position`, icon: 'lock', type: 'warn', dur: 5000}); line = null; }
+  if (!line && !POS.cart.some(l => l.vat > 0 && !rabattGesperrt(l.art))) return toast('Kein Rabatt möglich', {t2: 'Im Warenkorb ist keine Position, auf die ein Bon-Rabatt wirkt (Rabattsperre des Lieferanten oder der Warengruppe bzw. steuerfreie Positionen)', icon: 'lock', type: 'warn', dur: 5000});
   const st = {target: line ? 'line' : 'bill', pct: (line ? line.disc?.pct : POS.billDisc?.pct) || 10, reason: line?.disc?.reason || 'Kulanz'};
   const limit = POS.flow.approval ? POS.flow.approvalPct : 100;
   const el = openLayer(`<div class="modal" style="width:min(540px,100%)" role="dialog" aria-modal="true" aria-label="Rabatt gewähren"><div id="dBody"></div></div>`);
@@ -4983,7 +4998,7 @@ function recData(rec) {
   return {date: rec.date.toISOString(), cashier: rec.cashier, offline: rec.offline, sig: rec.sig, change: rec.change, billDisc: rec.billDisc || null, t: rec.t,
     parts: rec.parts.map(p => ({m: p.m, label: p.label, amount: p.amount, ref: p.ref, given: p.given || null, change: p.change || 0, code: p.code || null})),
     customer: rec.customer ? {id: rec.customer.id, name: rec.customer.name, points: rec.customer.points, email: rec.customer.email} : null,
-    lines: rec.lines.map(l => ({name: l.name, sku: l.art?.id || null, ean: l.art && l.art.variants ? variant(l.art, l.c, l.s)?.ean || null : null, glyph: l.art?.g || null, c: l.c || null, s: l.s || null, qty: l.qty, unit: l.unit, was: l.was || null, vat: l.vat, disc: l.disc || null, service: !!l.service, voucher: !!l.voucher, icon: l.icon || null, meta: l.meta || null, vals: l.vals || null, ...(l.art && lfRabattGesperrt(l.art) ? {nodisc: true} : {})}))};
+    lines: rec.lines.map(l => ({name: l.name, sku: l.art?.id || null, ean: l.art && l.art.variants ? variant(l.art, l.c, l.s)?.ean || null : null, glyph: l.art?.g || null, c: l.c || null, s: l.s || null, qty: l.qty, unit: l.unit, was: l.was || null, vat: l.vat, disc: l.disc || null, service: !!l.service, voucher: !!l.voucher, icon: l.icon || null, meta: l.meta || null, vals: l.vals || null, ...(l.art && rabattGesperrt(l.art) ? {nodisc: true} : {})}))};
 }
 const recFromData = (no, d) => ({...d, no, date: new Date(d.date), lines: d.lines.map(l => ({...l, art: l.sku ? (artById(l.sku) || {g: l.glyph, id: l.sku}) : null}))});
 async function commitSale(rec) {
@@ -11361,7 +11376,7 @@ function posLoadLines(lines, customerId, ref) {
       addLine(x.a, x.v.c, x.v.s, q);
       const cl = POS.cart.find(c => c.key === POS.lastKey);
       if (cl && l.price && Math.abs(cl.unit - l.price / 100) > 0.004) { cl.unit = l.price / 100; cl.was = null; }
-      if (cl && l.disc) cl.disc = {pct: +l.disc, reason: ref ? `lt. ${ref}` : 'vereinbart'};
+      if (cl && l.disc && !rabattGesperrt(cl.art)) cl.disc = {pct: +l.disc, reason: ref ? `lt. ${ref}` : 'vereinbart'};
     } else POS.cart.push({key: 'svc|' + uid(), service: true, icon: 'tag', name: l.name || 'Position', unit: (l.price || 0) / 100, vat: l.vat ?? 20, qty: q, meta: ref ? `aus ${ref}` : 'Dienstleistung'});
     n++;
   }
@@ -11692,7 +11707,7 @@ function applyAutoRules() {
   const best = new Map();   // Zeile → {pct, name}
   const put = (l, pct, name) => { if (l.disc || pct <= 0) return; const b = best.get(l); if (!b || pct > b.pct) best.set(l, {pct: Math.min(100, r2(pct)), name}); };
   for (const r of rules) {
-    const ls = POS.cart.filter(l => !l.service && !l.voucher && !lfRabattGesperrt(l.art) && rrMatch(r, l.art));
+    const ls = POS.cart.filter(l => !l.service && !l.voucher && !rabattGesperrt(l.art) && rrMatch(r, l.art));
     const n = ls.reduce((s, l) => s + l.qty, 0);
     if (r.typ === 'prozent') ls.forEach(l => put(l, +r.pct, r.name));
     if (r.typ === 'menge' && n >= (+r.ab || 2)) ls.forEach(l => put(l, +r.pct, r.name));
@@ -11705,7 +11720,7 @@ function applyAutoRules() {
   }
   best.forEach((b, l) => { l.disc = {pct: b.pct, reason: b.name, auto: true}; });
   if (!POS.billDisc) {
-    const base = POS.cart.filter(l => !l.voucher && !lfRabattGesperrt(l.art)).reduce((s, l) => s + l.unit * l.qty * (1 - (l.disc?.pct || 0) / 100), 0);
+    const base = POS.cart.filter(l => !l.voucher && !rabattGesperrt(l.art)).reduce((s, l) => s + l.unit * l.qty * (1 - (l.disc?.pct || 0) / 100), 0);
     const bon = rules.filter(r => r.typ === 'bon' && base >= (+r.ab_betrag || 0)).sort((a, b) => b.pct - a.pct)[0];
     if (bon) POS.billDisc = {pct: +bon.pct, reason: bon.name, auto: true};
   }
@@ -12710,14 +12725,21 @@ const STAMM_DEF = {
   verkaufsabteilung: {t: 'Verkaufsabteilung', ic: 'grid', sub: 'Abteilungen im Geschäft mit zugeordneten Warengruppen – für Verkäuferprämien und Flächenauswertung', cols: [{k: 'name', l: 'Abteilung'}, {k: 'warengruppen', l: 'Warengruppen', t: 'multi', o: catOpts, w: 280}, {k: 'leitung', l: 'Leitung'}]},
   // ── Artikel-Stammdaten
   marke: {t: 'Marken', ic: 'star', sub: 'Marken mit Lieferant und Herkunft', cols: [{k: 'name', l: 'Marke'}, {k: 'lieferant', l: 'Lieferant', t: 'select', o: supOpts}, {k: 'land', l: 'Land'}, {k: 'web', l: 'Webseite'}]},
-  warengruppe: {t: 'Warengruppen', ic: 'tag', sub: 'Warengruppen für Artikel, Kasse und Auswertungen – mit Hierarchie, Steuersatz und Konto', cols: [{k: 'nr', l: 'Nr.', w: 80}, {k: 'name', l: 'Warengruppe', w: 260}, {k: 'abteilung', l: 'Abteilung', t: 'select', o: () => stOpts('abteilung'), w: 200}, {k: 'ust', l: 'USt %', t: 'num', w: 80}, {k: 'konto', l: 'Erlöskonto', w: 100}, {k: 'zolltarif', l: 'Zolltarifnr.', w: 120}, {k: 'etikett', l: 'Etikettentyp', w: 120}, {k: 'inventur', l: 'Inventur', t: 'check'}, {k: 'altersbewertung', l: 'Altersbewertung', w: 120}, {k: 'spanne', l: 'Spanne/Kalk.', t: 'num', w: 90}]},
+  warengruppe: {t: 'Warengruppen', ic: 'tag', sub: 'Warengruppen für Artikel, Kasse und Auswertungen – mit Hierarchie, Steuersatz und Konto (gepflegt in Stammdaten › Warengruppen › Warengruppen)', cols: [{k: 'nr', l: 'Nr.', w: 80}, {k: 'name', l: 'Warengruppe', w: 260}, {k: 'abteilung', l: 'Abteilung', t: 'select', o: () => stOpts('abteilung'), w: 200}, {k: 'ust', l: 'USt %', t: 'num', w: 80}, {k: 'konto', l: 'Erlöskonto', w: 100}, {k: 'zolltarif', l: 'Zolltarifnr.', w: 120}, {k: 'etikett', l: 'Etikettentyp', w: 120}, {k: 'inventur', l: 'Inventur', t: 'check'}, {k: 'altersbewertung', l: 'Altersbewertung', w: 120}, {k: 'spanne', l: 'Spanne/Kalk.', t: 'num', w: 90}]},
   abteilung: {t: 'Abteilungen', ic: 'layers', sub: 'Ebene über den Warengruppen', cols: [{k: 'name', l: 'Abteilung'}, {k: 'parent', l: 'Hauptabteilung', t: 'select', o: () => stOpts('hauptabteilung')}]},
   hauptabteilung: {t: 'Hauptabteilungen', ic: 'layers', sub: 'Ebene über den Abteilungen', cols: [{k: 'name', l: 'Hauptabteilung'}, {k: 'parent', l: 'Bereich', t: 'select', o: () => stOpts('bereich')}]},
   bereich: {t: 'Bereiche', ic: 'layers', sub: 'Ebene über den Hauptabteilungen', cols: [{k: 'name', l: 'Bereich'}, {k: 'parent', l: 'Hauptbereich', t: 'select', o: () => stOpts('hauptbereich')}]},
   hauptbereich: {t: 'Hauptbereiche', ic: 'layers', sub: 'Oberste Ebene der Warengruppen-Hierarchie', cols: [{k: 'name', l: 'Hauptbereich'}],
     seed: [{id: 'HW', name: 'Hartware'}, {id: 'SW', name: 'Software (Textil)'}]},
-  preislage: {t: 'Preislagen', ic: 'tag', sub: 'Preisstufen für Sortiments- und Größen/Preislagen-Auswertungen', cols: [{k: 'name', l: 'Preislage'}, {k: 'von', l: 'von €', t: 'num'}, {k: 'bis', l: 'bis €', t: 'num'}],
+  preislage: {t: 'Preislagen', ic: 'tag', sub: 'Preisstufen für Sortiments- und Größen/Preislagen-Auswertungen – je Preislagen-Schlüssel (leer = Standard); die Warengruppe wählt ihren Schlüssel', cols: [{k: 'name', l: 'Preislage'}, {k: 'von', l: 'von €', t: 'num'}, {k: 'bis', l: 'bis €', t: 'num'}, {k: 'schluessel', l: 'Schlüssel', t: 'select', o: () => stOpts('preislagenschluessel')}],
     seed: [{id: 'P1', name: 'Einstieg', von: 0, bis: 49.99}, {id: 'P2', name: 'Mitte', von: 50, bis: 149.99}, {id: 'P3', name: 'Gehoben', von: 150, bis: 399.99}, {id: 'P4', name: 'Premium', von: 400, bis: 99999}]},
+  preislagenschluessel: {t: 'Preislagen-Schlüssel', ic: 'tag', sub: 'Schlüssel, aus denen eine Warengruppe wählt: jeder Schlüssel hat eigene Preisstufen (z. B. Socken 5/10/15 €, Ski 200/400/600 €) – die Stufen stehen unter „Preislagen“. Ein Schlüssel ohne eigene Stufen nutzt die Stufen von „Standard“', cols: [{k: 'name', l: 'Schlüssel'}],
+    seed: [{id: 'STANDARD', name: 'Standard'}]},
+  altersschluessel: {t: 'Altersbewertungs-Schlüssel', ic: 'percent', sub: 'Schlüssel, aus denen eine Warengruppe ihre Altersbewertung wählt – die Prozentsätze je Schlüssel stehen unter „Altersbewertung Prozentsätze“. Ein Schlüssel ohne eigene Stufen nutzt die Stufen von „Standard“', cols: [{k: 'name', l: 'Schlüssel'}],
+    seed: [{id: 'STANDARD', name: 'Standard'}, {id: 'STATISTIK', name: 'Statistik'}]},
+  statgroessenset: {t: 'Statistik-Größen-Sets', ic: 'grid', sub: 'Fasst Größen für die Größen-Auswertung zusammen (z. B. 36 2/3 und 37 1/3 zählen als 37) – die Warengruppe wählt ihr Set; Größen ohne Zuordnung bleiben, wie sie sind', cols: [{k: 'name', l: 'Set'}, {k: 'zuordnung', l: 'Zuordnung (Größe=Statistik-Größe)', t: 'list', w: 380, ph: '36 2/3=37, 37 1/3=37, 38 2/3=39'}]},
+  wghierarchie: {t: 'Warengruppenhierarchie (Etikett)', ic: 'layers', sub: 'Welche Ebenen der Hierarchie auf dem Etikett der Warengruppe stehen (z. B. Bereich › Haupt-Abteilung › Abteilung)', cols: [{k: 'name', l: 'Bezeichnung'}, {k: 'ebenen', l: 'Ebenen (von oben nach unten)', t: 'multi', o: [['hauptbereich', 'Haupt-Bereich'], ['bereich', 'Bereich'], ['hauptabteilung', 'Haupt-Abteilung'], ['abteilung', 'Abteilung']], w: 380}],
+    seed: [{id: 'KEINE', name: 'Keine Hierarchie auf dem Etikett', ebenen: []}, {id: 'ABTEILUNG', name: 'Abteilung', ebenen: ['abteilung']}, {id: 'PFAD', name: 'Bereich › Haupt-Abteilung › Abteilung', ebenen: ['bereich', 'hauptabteilung', 'abteilung']}]},
   groessenschluessel: {t: 'Größenschlüssel', ic: 'grid', sub: 'Größenläufe für die Artikelanlage (Order, EDI-Import, Artikel-Import)', cols: [{k: 'name', l: 'Größenschlüssel'}, {k: 'groessen', l: 'Größen', t: 'list', w: 340}],
     seed: [{id: 'KONF', name: 'Konfektion', groessen: ['XS', 'S', 'M', 'L', 'XL', 'XXL']}, {id: 'SCHUH', name: 'Schuhe EU', groessen: ['38', '39', '40', '41', '42', '43', '44', '45', '46']}, {id: 'HOSE', name: 'Hosen DE', groessen: ['44', '46', '48', '50', '52', '54', '56']}, {id: 'ONE', name: 'Einheitsgröße', groessen: ['one size']}]},
   groessenfolge: {t: 'Größen sortieren', ic: 'list', sub: 'Reihenfolge, in der Größen in Matrix, Etiketten und Auswertungen erscheinen', cols: [{k: 'name', l: 'Größe'}]},
@@ -12734,7 +12756,8 @@ const STAMM_DEF = {
   zahlungsbedingung: {t: 'Zahlungsbedingungen', ic: 'cash', sub: 'Für Lieferanten (Eingangsrechnungen) und Kund:innen (Faktura)', cols: [{k: 'name', l: 'Bezeichnung'}, {k: 'tage', l: 'Netto Tage', t: 'num'}, {k: 'skonto', l: 'Skonto %', t: 'num'}, {k: 'skonto_tage', l: 'Skonto Tage', t: 'num'}, {k: 'text', l: 'Text auf Beleg', w: 260}],
     seed: [{id: 'N14', name: '14 Tage netto', tage: 14, skonto: 0, skonto_tage: 0, text: 'Zahlbar binnen 14 Tagen ohne Abzug.'}, {id: 'S30', name: '30 Tage, 3 % Skonto 10 Tage', tage: 30, skonto: 3, skonto_tage: 10, text: 'Zahlbar binnen 30 Tagen, bei Zahlung binnen 10 Tagen 3 % Skonto.'}, {id: 'SOFORT', name: 'Sofort', tage: 0, skonto: 0, skonto_tage: 0, text: 'Zahlbar sofort.'}]},
   praemienmonat: {t: 'Verkäuferprämie – Monate', ic: 'calendar', sub: 'Umsatzziel und Prämie je Monat – Abrechnung unter „Prämienabrechnung“', cols: [{k: 'name', l: 'Monat (JJJJ-MM)'}, {k: 'ziel', l: 'Umsatzziel je Person €', t: 'num'}, {k: 'pct', l: 'Prämie % vom Umsatz über Ziel', t: 'num'}]},
-  praemienschluessel: {t: 'Prämienschlüssel', ic: 'percent', sub: 'Prämiensatz je Warengruppe (z. B. Ski höher als Accessoires)', cols: [{k: 'name', l: 'Bezeichnung'}, {k: 'warengruppe', l: 'Warengruppe', t: 'select', o: catOpts}, {k: 'pct', l: 'Prämie %', t: 'num'}]},
+  praemienschluessel: {t: 'Prämienschlüssel', ic: 'percent', sub: 'Prämiensatz vom Netto-Umsatz (z. B. Ski höher als Accessoires) – die Warengruppe wählt ihren Schlüssel; „Warengruppe“ ist die frühere Zuordnung und gilt nur, wo die Warengruppe selbst keinen Schlüssel hat', cols: [{k: 'name', l: 'Bezeichnung'}, {k: 'pct', l: 'Prämie %', t: 'num'}, {k: 'warengruppe', l: 'Warengruppe (früher)', t: 'select', o: catOpts}],
+    seed: [{id: 'STANDARD', name: 'Standard', pct: 0}]},
   preisrundung: {t: 'Preisrundung', ic: 'tag', sub: 'Endungen für Preisänderungen und Kalkulation – z. B. bis € 100 auf ,95, darüber auf volle 9', cols: [{k: 'name', l: 'Regel'}, {k: 'von', l: 'ab €', t: 'num'}, {k: 'bis', l: 'bis €', t: 'num'}, {k: 'endung', l: 'Endung (z. B. 0.95 oder 9)', t: 'num'}],
     seed: [{id: 'R1', name: 'bis 100 → ,95', von: 0, bis: 99.99, endung: 0.95}, {id: 'R2', name: 'ab 100 → 9,–', von: 100, bis: 99999, endung: 9}]},
   preisgruppe: {t: 'Preisgruppen', ic: 'percent', sub: 'Rabattgruppen für Kund:innen (Feld „Preisgruppe“ am Kunden) – wird an der Kasse automatisch angeboten', cols: [{k: 'name', l: 'Preisgruppe'}, {k: 'pct', l: 'Rabatt %', t: 'num'}, {k: 'warengruppen', l: 'nur Warengruppen (leer = alle)', t: 'multi', o: catOpts, w: 240}]},
@@ -12771,7 +12794,7 @@ const STAMM_DEF = {
   spediteur: {t: 'Spediteur', ic: 'truck', sub: 'Paketdienste mit Sendungsverfolgung – {nr} wird durch die Sendungsnummer ersetzt', cols: [{k: 'name', l: 'Spediteur'}, {k: 'tracking', l: 'Tracking-Link', w: 320}, {k: 'kundennr', l: 'Kundennummer'}],
     seed: [{id: 'POST', name: 'Österreichische Post', tracking: 'https://www.post.at/s/sendungsdetails?snr={nr}'}, {id: 'DPD', name: 'DPD', tracking: 'https://tracking.dpd.de/status/de_DE/parcel/{nr}'}, {id: 'GLS', name: 'GLS', tracking: 'https://gls-group.com/AT/de/paketverfolgung?match={nr}'}, {id: 'DHL', name: 'DHL', tracking: 'https://www.dhl.com/at-de/home/tracking.html?tracking-id={nr}'}]},
   // ── Einstellungen
-  etikettentyp: {t: 'Etikettentypen', ic: 'tag', sub: 'Formate für Etikettendruck – Größe und Inhalt', cols: [{k: 'name', l: 'Typ'}, {k: 'b', l: 'Breite mm', t: 'num'}, {k: 'h', l: 'Höhe mm', t: 'num'}, {k: 'felder', l: 'Inhalt', t: 'list', w: 260, ph: 'Marke,Name,Größe,Preis,EAN'}], seed: [{id: 'STD', name: 'Standard 50×30', b: 50, h: 30, felder: ['Marke', 'Name', 'Farbe', 'Größe', 'Preis', 'EAN']}, {id: 'SCHUH', name: 'Schuhkarton 70×40', b: 70, h: 40, felder: ['Marke', 'Name', 'Größe', 'Preis', 'EAN']}]},
+  etikettentyp: {t: 'Etikettentypen', ic: 'tag', sub: 'Formate für Etikettendruck – Größe und Inhalt; die Warengruppe wählt ihren Typ (und einen zweiten für reduzierte Ware)', cols: [{k: 'name', l: 'Typ'}, {k: 'b', l: 'Breite mm', t: 'num'}, {k: 'h', l: 'Höhe mm', t: 'num'}, {k: 'felder', l: 'Inhalt', t: 'list', w: 260, ph: 'Marke,Name,Größe,Preis,EAN'}], seed: [{id: 'STD', name: 'Standard 50×30', b: 50, h: 30, felder: ['Marke', 'Name', 'Farbe', 'Größe', 'Preis', 'EAN']}, {id: 'SCHUH', name: 'Schuhkarton 70×40', b: 70, h: 40, felder: ['Marke', 'Name', 'Größe', 'Preis', 'EAN']}, {id: 'K50X30', name: 'Klebe 50x30', b: 50, h: 30, felder: ['Marke', 'Name', 'Farbe', 'Größe', 'Preis', 'EAN']}]},
   etikettendrucker: {t: 'Einstellungen Etikettendrucker', ic: 'printer', sub: 'Etikettendrucker je Arbeitsplatz', cols: [{k: 'name', l: 'Drucker'}, {k: 'typ', l: 'Typ', t: 'select', o: [['zpl', 'ZPL (Zebra)'], ['windows', 'Windows-Drucker'], ['pdf', 'PDF']]}, {k: 'dpi', l: 'DPI', t: 'num'}, {k: 'platz', l: 'Arbeitsplatz'}]},
   esl: {t: 'Elektronische Etiketten', ic: 'tag', sub: 'Regal-Etiketten (ESL) – Zuordnung Etikett ↔ Artikel; Preise werden über den Export an das ESL-System übergeben', cols: [{k: 'name', l: 'Etikett-ID'}, {k: 'artikel', l: 'Artikel-Nr.'}, {k: 'platz', l: 'Platz'}]},
   scannerregel: {t: 'Scanner-Regeln', ic: 'barcode', sub: 'Muster für gescannte Codes (regulärer Ausdruck) – z. B. Gutschein-, Kunden- oder Gewichts-Codes', cols: [{k: 'name', l: 'Regel'}, {k: 'muster', l: 'Muster (RegEx)', w: 220}, {k: 'aktion', l: 'Aktion', t: 'select', o: [['gutschein', 'Gutschein einlösen'], ['kunde', 'Kunde wählen'], ['artikel', 'Artikel (Teil als EAN)'], ['beleg', 'Beleg öffnen']]}, {k: 'gruppe', l: 'Teil (Gruppe)', t: 'num', w: 90}],
@@ -12791,7 +12814,7 @@ const STAMM_DEF = {
   zusatzbuchung: {t: 'Zusatz Buchungstypen', ic: 'cash', sub: 'Eigene Kassenbuch-Buchungen (z. B. Trinkgeld, Porto, Reinigung) mit Konto', cols: [{k: 'name', l: 'Buchungstyp'}, {k: 'richtung', l: 'Richtung', t: 'select', o: [['ein', 'Einlage'], ['aus', 'Entnahme']]}, {k: 'konto', l: 'Konto'}],
     seed: [{id: 'PORTO', name: 'Porto', richtung: 'aus', konto: '7380'}, {id: 'TRINK', name: 'Trinkgeld-Kassa', richtung: 'ein', konto: '3600'}]},
   inventurort: {t: 'Inventurorte', ic: 'grid', sub: 'Zählbereiche (Regale, Lager, Schaufenster) – Zählungen je Ort erfassen', cols: [{k: 'name', l: 'Ort'}, {k: 'filiale', l: 'Filiale', t: 'select', o: storeOpts}, {k: 'bereich', l: 'Bereich'}, {k: 'zaehler', l: 'Zählteam'}]},
-  altersbewertung: {t: 'Altersbewertung Prozentsätze', ic: 'percent', sub: 'Abwertung des Lagerwerts nach Alter (Monate seit Wareneingang) – für Inventurbewertung und Bilanz', cols: [{k: 'name', l: 'Stufe'}, {k: 'ab', l: 'ab Monaten', t: 'num'}, {k: 'pct', l: 'Abwertung %', t: 'num'}],
+  altersbewertung: {t: 'Altersbewertung Prozentsätze', ic: 'percent', sub: 'Abwertung des Lagerwerts nach Alter (Monate seit Saisonbeginn) – für Inventurbewertung und Bilanz; je Altersbewertungs-Schlüssel (leer = Standard), den die Warengruppe wählt', cols: [{k: 'name', l: 'Stufe'}, {k: 'ab', l: 'ab Monaten', t: 'num'}, {k: 'pct', l: 'Abwertung %', t: 'num'}, {k: 'schluessel', l: 'Schlüssel', t: 'select', o: () => stOpts('altersschluessel')}],
     seed: [{id: 'A1', name: 'bis 6 Monate', ab: 0, pct: 0}, {id: 'A2', name: '6–12 Monate', ab: 6, pct: 20}, {id: 'A3', name: '12–24 Monate', ab: 12, pct: 50}, {id: 'A4', name: 'über 24 Monate', ab: 24, pct: 80}]},
   analysekategorie: {t: 'Flexanalysekategorie', ic: 'folder', sub: 'Ordner für gespeicherte Analysen', cols: [{k: 'name', l: 'Kategorie'}], seed: [{id: 'VK', name: 'Verkauf'}, {id: 'SORT', name: 'Sortiment'}, {id: 'PERS', name: 'Personal'}]},
   indikator: {t: 'Wert-Indikator-Sets', ic: 'target', sub: 'Ampeln für Kennzahlen in der Flexanalyse – grün ab, gelb ab, sonst rot', cols: [{k: 'name', l: 'Set'}, {k: 'kennzahl', l: 'Kennzahl', t: 'select', o: () => AN_MEAS.map(m => [m[0], m[1]])}, {k: 'gruen', l: 'grün ab', t: 'num'}, {k: 'gelb', l: 'gelb ab', t: 'num'}],
@@ -12805,7 +12828,7 @@ const STAMM_DEF = {
   edimapwg: {t: 'Zuordnung Warengruppen', ic: 'swap', sub: 'Warengruppen-Codes der Lieferanten (EDI/PRICAT) auf eigene Warengruppen', cols: [{k: 'lieferant', l: 'Lieferant', t: 'select', o: supOpts}, {k: 'code', l: 'Code des Lieferanten'}, {k: 'warengruppe', l: 'Warengruppe', t: 'select', o: catOpts}]},
   edimapgr: {t: 'Zuordnung Größen', ic: 'swap', sub: 'Größenbezeichnungen der Lieferanten auf eigene Größen', cols: [{k: 'lieferant', l: 'Lieferant', t: 'select', o: supOpts}, {k: 'code', l: 'Größe beim Lieferanten'}, {k: 'groesse', l: 'eigene Größe'}]},
   wgschema: {t: 'Warengruppen Schemas', ic: 'grid', sub: 'Externe Warengruppen-Schemas (z. B. GS1 GPC, Verbands-Schlüssel) je Warengruppe', cols: [{k: 'name', l: 'Schema'}, {k: 'warengruppe', l: 'Warengruppe', t: 'select', o: catOpts}, {k: 'code', l: 'Code im Schema'}]},
-  webkategorie: {t: 'Webshop-Kategorie', ic: 'folder', sub: 'Kategorien im Schaufenster/Webshop mit zugeordneten Warengruppen', cols: [{k: 'name', l: 'Kategorie'}, {k: 'warengruppen', l: 'Warengruppen', t: 'multi', o: catOpts, w: 300}, {k: 'sichtbar', l: 'sichtbar', t: 'check'}]},
+  webkategorie: {t: 'Webshop-Kategorie', ic: 'folder', sub: 'Kategorien im Schaufenster/Webshop – die Warengruppen ordnen sich ihnen selbst zu (Stammdaten › Warengruppen › Warengruppen, Karte „WebShop-Kategorien“); „Warengruppen“ hier ist die frühere Zuordnung und gilt weiter', cols: [{k: 'name', l: 'Kategorie'}, {k: 'sichtbar', l: 'sichtbar', t: 'check'}, {k: 'warengruppen', l: 'Warengruppen (früher)', t: 'multi', o: catOpts, w: 300}]},
   webfilter: {t: 'Artikel-Filter (Webshop)', ic: 'filter', sub: 'Artikel vom Webshop ausschließen – nach Marke, Warengruppe, Feld oder Mindestbestand', cols: [{k: 'name', l: 'Regel'}, {k: 'feld', l: 'Feld', t: 'select', o: [['brand', 'Marke'], ['cat', 'Warengruppe'], ['id', 'Artikel-Nr.'], ['minbestand', 'Bestand unter']]}, {k: 'wert', l: 'Wert'}]},
   webversand: {t: 'Versand (Webshop)', ic: 'truck', sub: 'Versandarten und Kosten für Webshop-Bestellungen', cols: [{k: 'name', l: 'Versandart'}, {k: 'preis', l: 'Kosten €', t: 'num'}, {k: 'frei_ab', l: 'versandkostenfrei ab €', t: 'num'}, {k: 'spediteur', l: 'Spediteur', t: 'select', o: () => stOpts('spediteur')}],
     seed: [{id: 'STD', name: 'Standard', preis: 5.9, frei_ab: 100, spediteur: 'POST'}, {id: 'ABH', name: 'Abholung in der Filiale', preis: 0, frei_ab: 0}]},
@@ -12836,6 +12859,75 @@ async function stammSave(kind, rows) {
   else { const all = persist.get('stamm', {}); all[kind] = rows; persist.set('stamm', all); }
   STAMM.data[kind] = rows.map(r => ({...r}));
   applyStamm(); Hooks.emit('stamm.saved', {tabelle: kind, zeilen: rows.length});
+}
+
+/* ── Eine Zeile einer Stammdaten-Tabelle im Dialog bearbeiten oder neu anlegen (Stift/Plus an den Auswahlfeldern der Masken) ── */
+const STROW = {};   // Tabellen mit eigenem Dialog: kind → (id|null, {preset, titel}) → Promise<id|null>
+const STNEW = {groessenschluessel: rows => { const nr = Math.max(0, ...rows.map(r => +r.nr || 0)) + 1; return {id: 'gs-' + nr, extra: {nr, sync: false}}; }};   // Schlüssel-Vergabe je Tabelle
+const stSlug = x => String(x || '').toUpperCase().replace(/Ä/g, 'AE').replace(/Ö/g, 'OE').replace(/Ü/g, 'UE').replace(/ß/g, 'SS').replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 20);
+/** Dialog „Zeile bearbeiten / neu“ für jede Stammdaten-Art aus STAMM_DEF. id = null → neue Zeile (preset: Vorgaben). Gibt die Kennung der gespeicherten Zeile zurück, bei Abbruch null.
+ *  Mehrfach-Auswahlen mit sehr vielen Einträgen (alle Warengruppen) bleiben unverändert und werden in der Tabelle gepflegt. */
+async function stRowDialog(kind, id, o = {}) {
+  const D = STAMM_DEF[kind]; if (!D) return null;
+  try { await needPerm('einstellungen', D.t); } catch { return null; }
+  let base;
+  try { base = DESKTOP ? await invoke('stamm_list', {kind}) : stRows(kind); } catch { base = stRows(kind); }
+  if (!base.length) base = stRows(kind);   // Tabelle nur mit eingebauten Startzeilen: diese gehören beim Sichern dazu
+  const rows = base.map(r => ({...r})), cur = id ? rows.find(r => String(r.id) === String(id)) : null;
+  if (id && !cur) { toast(`${o.titel || D.t}: diese Zeile gibt es nicht mehr`, {type: 'warn'}); return null; }
+  const neu = !cur, row0 = cur || {...(o.preset || {})}, cols = D.cols.filter(c => c.t !== 'ro');
+  const opts = c => typeof c.o === 'function' ? c.o() : c.o || [];
+  const fld = c => {
+    const v = row0[c.k], op = opts(c), lbl = `<span>${esc(c.l)}</span>`;
+    if (c.t === 'check') return `<label class="field" style="grid-column:1/-1;flex-direction:row;align-items:center;gap:8px"><input type="checkbox" data-f="${c.k}" ${v ? 'checked' : ''}> <span>${esc(c.l)}</span></label>`;
+    if (c.t === 'select') {
+      const big = op.length > 150, have = op.find(([x]) => String(x) === String(v ?? ''));
+      return `<label class="field">${lbl}<select class="input select" data-f="${c.k}" ${big ? 'data-lazy' : ''}><option value="">–</option>${(big ? (have ? [have] : []) : op).map(([x, l]) => `<option value="${esc(x)}" ${String(v ?? '') === String(x) ? 'selected' : ''}>${esc(l)}</option>`).join('')}${v && !have ? `<option value="${esc(v)}" selected>${esc(v)} (gibt es nicht mehr)</option>` : ''}</select></label>`;
+    }
+    if (c.t === 'multi') {
+      if (op.length > 40) return `<div class="field" style="grid-column:1/-1">${lbl}<small class="ea-hint">${num((v || []).length)} ausgewählt – in der Tabelle „${esc(D.t)}“ zu pflegen (zu viele Einträge für diesen Dialog).</small></div>`;
+      const sel = new Set(v || []);
+      return `<div class="field" style="grid-column:1/-1">${lbl}<div style="display:flex;flex-wrap:wrap;gap:6px">${op.map(([x, l]) => `<label class="chip" style="cursor:pointer;height:26px"><input type="checkbox" data-fm="${c.k}" value="${esc(x)}" ${sel.has(x) ? 'checked' : ''} style="margin:0 5px 0 0">${esc(l)}</label>`).join('')}</div></div>`;
+    }
+    if (c.t === 'area') return `<label class="field" style="grid-column:1/-1">${lbl}<textarea class="input" rows="3" data-f="${c.k}" style="height:auto;padding:8px 12px">${esc(v ?? '')}</textarea></label>`;
+    if (c.t === 'color') return `<label class="field">${lbl}<input type="color" data-f="${c.k}" value="${esc(v || '#888888')}" style="width:56px;height:36px;border:0;background:none"></label>`;
+    const val = c.t === 'list' ? (v || []).join(', ') : c.t === 'num' && v != null && v !== '' ? String(v).replace('.', ',') : v ?? '';
+    return `<label class="field" ${c.t === 'list' ? 'style="grid-column:1/-1"' : ''}>${lbl}<input class="input ${c.t === 'num' ? 'num' : ''}" type="${c.t === 'date' ? 'date' : c.t === 'time' ? 'time' : 'text'}" data-f="${c.k}" value="${esc(val)}" ${c.ph ? `placeholder="${esc(c.ph)}"` : ''} ${c.t === 'num' ? 'inputmode="decimal"' : ''} autocomplete="off"></label>`;
+  };
+  return new Promise(res => {
+    let fertig = false;
+    const el = openLayer(`<div class="modal" style="width:min(580px,100%)" role="dialog" aria-modal="true" aria-label="${esc(o.titel || D.t)}"><div class="m-head"><div class="m-ic">${ic(D.ic || 'list')}</div><div><h2>${esc(o.titel || D.t)} ${neu ? '– neu' : 'bearbeiten'}</h2><p>${neu ? 'Neue Zeile anlegen' : esc(cur[D.cols[0]?.k] || cur.id)}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="m-body" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))"><label class="field"><span>Kürzel</span><input class="input mono" data-f="id" value="${esc(cur?.id || '')}" ${cur ? 'readonly tabindex="-1"' : ''} maxlength="32" autocomplete="off" placeholder="${cur ? '' : 'wird aus dem Namen gebildet'}"></label>${cols.map(fld).join('')}</div>
+      <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" data-ok>${ic('check', 'i-sm')}Speichern</button></div></div>`,
+      {focus: `[data-f="${cols[0]?.k || 'id'}"]`, onClose: () => { if (!fertig) res(null); }});
+    // große Auswahllisten erst beim Öffnen füllen
+    el.addEventListener('focusin', e => { const t = e.target; if (t.dataset?.lazy != null && t.tagName === 'SELECT') { const c = cols.find(x => x.k === t.dataset.f), cv = t.value; t.removeAttribute('data-lazy'); t.innerHTML = `<option value="">–</option>` + opts(c).map(([x, l]) => `<option value="${esc(x)}" ${String(x) === cv ? 'selected' : ''}>${esc(l)}</option>`).join(''); } });
+    const idIn = $('[data-f="id"]', el), first = cols[0];
+    if (neu && first) $(`[data-f="${first.k}"]`, el)?.addEventListener('input', e => { if (!idIn.dataset.hand) idIn.value = stSlug(e.target.value); });
+    idIn.addEventListener('input', () => { idIn.dataset.hand = '1'; });
+    $('[data-ok]', el).onclick = async () => {
+      const r = {...row0}, fv = k => $(`[data-f="${k}"]`, el);
+      for (const c of cols) {
+        if (c.t === 'multi') { if (opts(c).length > 40) continue; r[c.k] = $$(`[data-fm="${c.k}"]`, el).filter(x => x.checked).map(x => x.value); continue; }
+        const f = fv(c.k); if (!f) continue;
+        if (c.t === 'check') r[c.k] = f.checked;
+        else if (c.t === 'num') { const t = f.value.trim(); if (t === '') r[c.k] = null; else { const n = parseAmt(t); if (isNaN(n)) { toast(`${c.l}: Zahl angeben`, {type: 'warn'}); f.focus(); return; } r[c.k] = n; } }
+        else if (c.t === 'list') r[c.k] = f.value.split(/[,;]/).map(x => x.trim()).filter(Boolean);
+        else r[c.k] = f.value.trim();
+      }
+      if (first && first.t !== 'check' && !String(r[first.k] ?? '').trim()) { toast(`${first.l} angeben`, {type: 'warn'}); fv(first.k)?.focus(); return; }
+      let all = rows;
+      if (neu) {
+        const gen = STNEW[kind]?.(rows);
+        let nid = idIn.value.trim() || gen?.id || stSlug(r[first?.k]) || stSlug(kind) || 'NEU';
+        if (!idIn.value.trim() && !gen) { const b = nid; let k = 2; while (rows.some(x => String(x.id).toLowerCase() === nid.toLowerCase())) nid = `${b}-${k++}`; }
+        else if (rows.some(x => String(x.id).toLowerCase() === nid.toLowerCase())) { toast(`Das Kürzel „${nid}“ gibt es schon`, {type: 'warn'}); idIn.focus(); return; }
+        Object.assign(r, gen?.extra || {}); r.id = nid; r._aktiv = true; all = [...rows, r];
+      } else all = rows.map(x => String(x.id) === String(cur.id) ? {...x, ...r, id: cur.id} : x);
+      try { await stammSave(kind, all); } catch (err) { toast('Nicht gespeichert', {t2: String(err.message || err), type: 'warn', dur: 6000}); return; }
+      fertig = true; closeLayer(el); res(neu ? r.id : cur.id);
+    };
+  });
 }
 
 /* ── Tabellen-Editor ── */
@@ -14900,7 +14992,7 @@ registerPage('advarics-import', {title: 'Advarics-Import', sub: () => ADV.pv ? `
 }});
 VIEW_PERM['advarics-import'] = 'artikel.bearbeiten';
 /* ════════════════════════════════════════════════════════════════════
-   Datentabelle im Advarics-Stil (Warengruppen): dunkle Werkzeugleiste, Gruppierleiste,
+   Datentabelle im Advarics-Stil (Listen der Stammdaten): dunkle Werkzeugleiste, Gruppierleiste,
    Spaltenköpfe mit Filterzeile, Spaltenauswahl, automatische Spaltenbreite, Export,
    Auswahlkästchen und flüssiges Scrollen auch bei über 10.000 Zeilen (virtuelle Zeilen).
    ════════════════════════════════════════════════════════════════════ */
@@ -15140,78 +15232,6 @@ function agExport(page) {
   if (!DESKTOP) { toast('Export nur in der Desktop-App'); return; }
   invoke('save_text', {name: `Kontor_${st.cfg.title.replace(/\W+/g, '_')}.csv`, content: csv, title: st.cfg.title + ' exportieren'}).then(p => p && toast('Exportiert', {t2: p, type: 'pos', icon: 'download'})).catch(e => toast('Export fehlgeschlagen', {t2: String(e), type: 'warn'}));
 }
-
-/* ── Warengruppen ── */
-const WG_MWST = [['Standard', 20], ['Reduziert', 10], ['Ohne MwSt.', 0]];
-const wgMwstTyp = u => (WG_MWST.find(x => x[1] === +u) || WG_MWST[0])[0];
-function wgRows() {
-  const idx = k => new Map(stRows(k).map(r => [r.id, r]));
-  const ab = idx('abteilung'), ha = idx('hauptabteilung'), be = idx('bereich');
-  const lvl = r => r ? [r.nr ?? '0', r.name || 'NA'] : ['0', 'NA'];
-  return stRows('warengruppe').map(r => {
-    const a = ab.get(r.abteilung), h = a && ha.get(a.parent), b = h && be.get(h.parent);
-    const [e1n, e1] = lvl(b), [e2n, e2] = lvl(h), [e3n, e3] = lvl(a);
-    return {id: r.id, nr: r.nr ?? String(r.id).replace(/^adv-/, ''), name: r.name || r.id, e1n, e1, e2n, e2, e3n, e3, mwst: r.mwst || wgMwstTyp(r.ust ?? 20), etikett: r.etikett || '', inventur: !!r.inventur, alter: r.altersbewertung || '', spanne: r.spanne == null || r.spanne === '' ? 0 : Math.round(+r.spanne * 10000) / 100, _raw: r};
-  });
-}
-function wgEdit(id, done) {
-  const st = AG['st-warengruppe'], row = id ? st.rows.find(r => r.id === id) : null;
-  const o = row?._raw || {}, abt = stRows('abteilung');
-  const lab = a => { const h = stRows('hauptabteilung').find(x => x.id === a.parent); return `${a.name}${h ? ' · ' + h.name : ''}`; };
-  const el = openLayer(`<div class="modal" style="width:min(560px,100%)" role="dialog" aria-modal="true"><div class="m-head"><div class="m-ic">${ic('tag')}</div><div><h2>${row ? 'Warengruppe bearbeiten' : 'Neue Warengruppe'}</h2><p>${row ? esc(row.nr + ' · ' + row.name) : 'Nr. und Name vergeben'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
-    <div class="m-body" style="display:grid;gap:12px;grid-template-columns:1fr 2fr">
-      <label class="field"><span>Nr.</span><input class="input" data-f="nr" value="${esc(row?.nr || '')}" ${row ? 'disabled' : ''}></label>
-      <label class="field"><span>Name</span><input class="input" data-f="name" value="${esc(row?.name || '')}"></label>
-      <label class="field" style="grid-column:1/-1"><span>Abteilung (Ebene 3)</span><select class="input select" data-f="abteilung"><option value="">NA</option>${abt.map(a => `<option value="${esc(a.id)}" ${a.id === o.abteilung ? 'selected' : ''}>${esc(lab(a))}</option>`).join('')}</select></label>
-      <label class="field"><span>MwSt.-Typ</span><select class="input select" data-f="mwst">${WG_MWST.map(([l]) => `<option ${l === (row?.mwst || 'Standard') ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="field"><span>Etiketten-Typ</span><input class="input" data-f="etikett" value="${esc(row?.etikett ?? 'Klebe 50x30')}"></label>
-      <label class="field"><span>Altersbewertung</span><select class="input select" data-f="alter">${['Standard', 'Statistik'].map(l => `<option ${l === (row?.alter || 'Statistik') ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="field"><span>Vorschl.-Spanne/Kalk. %</span><input class="input num" data-f="spanne" inputmode="decimal" value="${esc(String(row?.spanne ?? 50).replace('.', ','))}"></label>
-      <label style="display:flex;gap:8px;align-items:center;font-size:13px;grid-column:1/-1"><input type="checkbox" data-f="inventur" ${row ? (row.inventur ? 'checked' : '') : 'checked'}> bei Inventur berücksichtigen</label></div>
-    <div class="m-foot">${row ? `<button class="btn btn-ghost" data-del style="color:var(--neg)">${ic('trash', 'i-sm')}Löschen</button>` : ''}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" data-ok>${ic('check', 'i-sm')}Speichern</button></div></div>`, {focus: row ? '[data-f="name"]' : '[data-f="nr"]'});
-  const f = k => $(`[data-f="${k}"]`, el);
-  const save = async list => { await needPerm('einstellungen', 'Warengruppen'); await stammSave('warengruppe', list); closeLayer(el); done(); };
-  $('[data-ok]', el).onclick = async () => {
-    const nr = f('nr').value.trim(), name = f('name').value.trim();
-    if (!nr || !name) { toast('Nr. und Name angeben', {type: 'warn'}); return; }
-    const all = stRows('warengruppe').map(r => ({...r}));
-    const mw = f('mwst').value, ust = (WG_MWST.find(x => x[0] === mw) || WG_MWST[0])[1];
-    const data = {name, nr, abteilung: f('abteilung').value, ust, mwst: mw, etikett: f('etikett').value.trim(), inventur: f('inventur').checked, altersbewertung: f('alter').value, spanne: (parseAmt(f('spanne').value) || 0) / 100};
-    try {
-      if (row) { const i = all.findIndex(r => r.id === row.id); all[i] = {...all[i], ...data}; }
-      else { const nid = 'adv-' + nr; if (all.some(r => r.id === nid)) { toast(`Nr. ${nr} gibt es schon`, {type: 'warn'}); return; } all.push({id: nid, _aktiv: true, ...data}); }
-      await save(all);
-    } catch (err) { if (String(err.message || err) !== 'abgebrochen') toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
-  };
-  const del = $('[data-del]', el);
-  if (del) del.onclick = async () => { if (!await confirmBox(`Warengruppe „${row.name}“ löschen?`, 'Löschen')) return; try { await save(stRows('warengruppe').filter(r => r.id !== row.id).map(r => ({...r}))); } catch { /* */ } };
-}
-agridPage('st-warengruppe', {
-  title: 'Warengruppen',
-  rows: wgRows,
-  count: () => stRows('warengruppe').length,
-  toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}, {k: 'fedas', l: 'Fedas Synchronisierung', icon: 'sync'}],
-  cols: [
-    {k: 'nr', l: 'Nr.', t: 'num', w: 80}, {k: 'name', l: 'Name', w: 240},
-    {k: 'e1n', l: 'Hierarchie Ebene1-Nr.', t: 'num', w: 130}, {k: 'e1', l: 'Hierarchie Ebene1-Name', w: 150},
-    {k: 'e2n', l: 'Hierarchie Ebene2-Nr.', t: 'num', w: 130}, {k: 'e2', l: 'Hierarchie Ebene2-Name', w: 170},
-    {k: 'e3n', l: 'Hierarchie Ebene3-Nr.', t: 'num', w: 130}, {k: 'e3', l: 'Hierarchie Ebene3-Name', w: 170},
-    {k: 'mwst', l: 'MwSt.-Typ', w: 100}, {k: 'etikett', l: 'Etiketten-Typ', w: 120}, {k: 'inventur', l: 'Inventur', t: 'check', w: 80},
-    {k: 'alter', l: 'Altersbewertung', w: 120}, {k: 'spanne', l: 'Vorschl.-Spanne/Kalk.', t: 'num', w: 140, fmt: v => num(+v || 0, 2) + ' %'},
-  ],
-  actions: {
-    back: () => history.length > 1 ? history.back() : go('dashboard'),
-    refresh: async () => { await loadStamm(true); PAGES['st-warengruppe'].render(); },
-    new: () => wgEdit(null, () => PAGES['st-warengruppe'].render()),
-    fedas: () => go('fedas-sync'),
-  },
-  edit: (id, done) => wgEdit(id, done),
-  remove: async ids => {
-    if (!await confirmBox(`${num(ids.length)} Warengruppe${ids.length > 1 ? 'n' : ''} löschen?`, 'Löschen')) throw new Error('abgebrochen');
-    await needPerm('einstellungen', 'Warengruppen');
-    const s = new Set(ids); await stammSave('warengruppe', stRows('warengruppe').filter(r => !s.has(r.id)).map(r => ({...r})));
-  },
-});
 /* ════════════════════════════════════════════════════════════════════
    Artikel im Advarics-Stil: Artikelliste als Datentabelle und Artikelmaske als eigene Seite
    mit Werkzeugleiste (Übersicht · Aktualisieren · Sichern · Neu · Änderungen zurücknehmen · Löschen ·
@@ -18084,7 +18104,8 @@ if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {belegKopf: () => letterHe
    zurücknehmen, Löschen), Reiter mit rotem Zähler für fehlende Pflichtangaben, Felder mit Prüfung und Fehlertext,
    Blättern 1/n, Schutz vor dem Verlassen mit ungesicherten Änderungen. Felder sprechen den Entwurf über Pfade an
    („hersteller.email“). Die Prüfungen liefert die jeweilige Maske (und das Backend entscheidet).
-   Dazu die gemeinsame Länderliste (EU-Kennzeichen für GPSR und Intrastat).
+   Dazu die Auswahl aus einer Stammdaten-Tabelle (K.ref: Auswahlmenü mit Stift = bearbeiten, Plus = neu, Lupe = suchen; Pflichtfelder
+   tragen einen roten Punkt, solange sie leer sind) und die gemeinsame Länderliste (EU-Kennzeichen für GPSR und Intrastat).
    ═════════════════════════════════════════════════════════════════ */
 const mgetp = (o, k) => k.split('.').reduce((x, p) => x == null ? undefined : x[p], o);
 const msetp = (o, k, v) => { const ps = k.split('.'), l = ps.pop(); let x = o; for (const p of ps) { if (x[p] == null || typeof x[p] !== 'object') x[p] = {}; x = x[p]; } x[l] = v; };
@@ -18120,12 +18141,13 @@ function maskeNew(o) {
   const lock = () => !!o.locked?.();
   K.err = k => o.errors(st.d).find(e => e.k === k);
   K.val = k => mgetp(st.d, k);
-  const attrs = (op, dis, er) => `${op.ph ? `placeholder="${esc(op.ph)}"` : ''} ${op.inputmode ? `inputmode="${op.inputmode}"` : ''} ${op.list ? `list="${op.list}"` : ''} ${op.max ? `maxlength="${op.max}"` : ''} autocomplete="off" ${dis ? 'disabled' : ''} ${er ? 'aria-invalid="true"' : ''}`;
+  const attrs = (op, dis, er) => `${op.ph ? `placeholder="${esc(op.ph)}"` : ''} ${op.inputmode ? `inputmode="${op.inputmode}"` : ''} ${op.list ? `list="${op.list}"` : ''} ${op.max ? `maxlength="${op.max}"` : ''} autocomplete="off" ${dis ? 'disabled' : ''} ${er ? 'aria-invalid="true"' : ''} ${op.pflicht ? 'data-req' : ''}`;
   const foot = (er, op) => er ? `<small class="zp-err" role="alert">${esc(er.t)}</small>` : op.hint ? `<small class="ea-hint">${esc(op.hint)}</small>` : '';
-  /** Eingabefeld; op: mono, num, type, ph, hint, dis, inputmode, list, max */
+  /** Eingabefeld; op: mono, num, type, ph, hint, dis, inputmode, list, max, pflicht (roter Punkt, solange leer), suffix (Einheit hinter dem Feld) */
   K.in = (k, l, op = {}) => {
-    const er = st.show && K.err(k), dis = lock() || op.dis;
-    return `<label class="field ${er ? 'zp-bad' : ''}"><span>${esc(l)}</span><input class="input ${op.mono ? 'mono' : ''} ${op.num ? 'num' : ''}" ${op.type ? `type="${op.type}"` : ''} data-mf="${k}" value="${esc(K.val(k) ?? '')}" ${attrs(op, dis, er)}>${foot(er, op)}</label>`;
+    const er = st.show && K.err(k), dis = lock() || op.dis, v = K.val(k) ?? '';
+    const inp = `<input class="input ${op.mono ? 'mono' : ''} ${op.num ? 'num' : ''}" ${op.type ? `type="${op.type}"` : ''} data-mf="${k}" value="${esc(v)}" ${attrs(op, dis, er)}>`;
+    return `<label class="field ${er ? 'zp-bad' : ''} ${op.pflicht && !String(v).trim() ? 'rq-miss' : ''}" ${op.tip ? `title="${esc(op.tip)}"` : ''}><span>${esc(l)}</span>${op.suffix ? `<div class="ea-cmb-row">${inp}<span class="ea-unit">${esc(op.suffix)}</span></div>` : inp}${foot(er, op)}</label>`;
   };
   K.area = (k, l, rows, hint, op = {}) => {
     const er = st.show && K.err(k), dis = lock() || op.dis;
@@ -18137,7 +18159,35 @@ function maskeNew(o) {
     const list = cur && !opts.some(([v]) => String(v) === cur) ? [[cur, cur], ...opts] : opts;
     return `<label class="field ${er ? 'zp-bad' : ''}"><span>${esc(l)}</span><select class="input select" data-mf="${k}" ${dis ? 'disabled' : ''}>${op.leer != null ? `<option value="">${esc(op.leer)}</option>` : ''}${list.map(([v, t]) => `<option value="${esc(v)}" ${String(v) === cur ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>${foot(er, op)}</label>`;
   };
-  K.sw = (k, l, hint, dis) => `<div class="ue-sw"><label class="ea-sw"><button type="button" class="switch" role="switch" data-mf-sw="${k}" aria-checked="${!!K.val(k)}" ${lock() || dis ? 'disabled' : ''}></button><span>${esc(l)}</span></label>${hint ? `<small class="ea-hint">${esc(hint)}</small>` : ''}</div>`;
+  K.sw = (k, l, hint, dis, tip) => `<div class="ue-sw" ${tip ? `title="${esc(tip)}"` : ''}><label class="ea-sw"><button type="button" class="switch" role="switch" data-mf-sw="${k}" aria-checked="${!!K.val(k)}" ${lock() || dis ? 'disabled' : ''}></button><span>${esc(l)}</span></label>${hint ? `<small class="ea-hint">${esc(hint)}</small>` : ''}</div>`;
+  /** Auswahl aus einer Stammdaten-Tabelle mit Stift (bearbeiten), Plus (neu) und Lupe (suchen).
+   *  op: pflicht (roter Punkt solange leer), leer (Beschriftung der leeren Zeile), rows() → Zeilen, label(zeile), preset(entwurf) → Vorgaben für „neu“,
+   *  titel (Name im Knopf-Hinweis), bearbeiten/neu/suchen: false blendet den Knopf aus, hint, dis, lazy (ab so vielen Einträgen erst beim Öffnen füllen) */
+  const refRows = (kind, op) => op.rows ? op.rows() : stActive(kind);
+  const refLbl = (r, op) => op.label ? op.label(r) : String(r.name || r.id);
+  K.refs = {};
+  K.ref = (k, l, kind, op = {}) => {
+    const er = st.show && K.err(k), dis = lock() || op.dis, cur = String(K.val(k) ?? ''), rows = refRows(kind, op);
+    const lazy = rows.length > (op.lazy ?? 150), pick = r => [String(r.id), refLbl(r, op)];
+    let list = lazy ? [] : rows.map(pick);
+    const alt = cur ? stRows(kind).find(r => String(r.id) === cur) : null;
+    if (cur && !list.some(([v]) => v === cur)) {
+      const inRows = rows.find(r => String(r.id) === cur);
+      list = [inRows ? pick(inRows) : alt ? [cur, `${refLbl(alt, op)} (nicht aktiv)`] : [cur, `${cur} (gibt es nicht mehr)`], ...list];
+    }
+    K.refs[k] = {kind, op, l};
+    const nm = (op.titel || l).replace(/[\s*]+$/, ''), b = (a, icon, t, off) => `<button type="button" class="ea-ib" data-mf-ref="${a}" data-mf-k="${k}" title="${esc(t)}" aria-label="${esc(t)}" ${dis || off ? 'disabled' : ''}>${ic(icon, 'i-sm')}</button>`;
+    const curTxt = (list.find(([v]) => v === cur) || [])[1] || (lazy && cur ? '' : ''), tip = [op.tip, curTxt].filter(Boolean).join(' – ');
+    return `<label class="field rf-field ${er ? 'zp-bad' : ''} ${op.pflicht && !cur ? 'rq-miss' : ''}" ${tip ? `title="${esc(tip)}"` : ''}><span>${esc(l)}</span><div class="ea-cmb-row rf"><select class="input select" data-mf="${k}" ${op.pflicht ? 'data-req' : ''} ${lazy ? `data-lazy-ref="${k}"` : ''} ${dis ? 'disabled' : ''} ${er ? 'aria-invalid="true"' : ''}>${op.pflicht || op.leer != null ? `<option value="">${esc(op.leer ?? '– bitte wählen –')}</option>` : ''}${list.map(([v, t]) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>${op.bearbeiten === false ? '' : b('edit', 'edit', `${nm} bearbeiten`, !cur)}${op.neu === false ? '' : b('new', 'plus', `${nm}: neu anlegen`)}${op.suchen === false ? '' : b('find', 'search', `${nm} suchen`)}</div>${foot(er, op)}</label>`;
+  };
+  /** Wert einer Auswahl setzen (Suche/Neu), Entwurf als geändert markieren und neu zeichnen */
+  K.pick = (k, v, el) => { msetp(st.d, k, v); K.dirty(el); o.onSet?.(k, el); K.render(); };
+  K.refAct = async (bt, el) => {
+    const k = bt.dataset.mfK, d = K.refs[k]; if (!d) return; const a = bt.dataset.mfRef;
+    if (a === 'find') { const v = await eaPick({l: d.op.titel || d.l.replace(/[\s*]+$/, ''), o: () => refRows(d.kind, d.op).map(r => [String(r.id), refLbl(r, d.op)])}); if (v !== undefined) K.pick(k, v, el); return; }
+    const id = await (STROW[d.kind] || stRowDialog)(d.kind, a === 'edit' ? K.val(k) : null, {preset: a === 'new' ? d.op.preset?.(st.d) : null, titel: d.op.titel || d.l.replace(/[\s*]+$/, '')});
+    if (id) { if (a === 'new') K.pick(k, id, el); else K.render(); }
+  };
   K.card = (h, inner, cls = '') => `<div class="ae-card ea-card ${cls}">${h ? `<h4>${esc(h)}</h4>` : ''}<div class="ea-fields ge-one">${inner}</div></div>`;
   K.landSel = (k, l = 'Land *', op = {}) => K.sel(k, l, landListe().map(x => [x.id, x.name]), {leer: op.leer ?? '–', ...op});
   K.note = h => h ? `<div class="zp-note">${ic('info', 'i-sm')}<span>${h}</span></div>` : '';
@@ -18150,12 +18200,13 @@ function maskeNew(o) {
       if (!n) { bd?.remove(); return; }
       if (!bd) { bd = document.createElement('span'); bd.className = 'ed-badge'; bd.dataset.mfBd = '1'; tb.append(' ', bd); } bd.textContent = n;
     });
+    $$('[data-mf-cbd]', el).forEach(b => { const keys = b.dataset.mfCbd.split(','), n = errs.filter(e => keys.includes(e.k)).length; b.textContent = n; b.hidden = !n; });
   };
   K.fields = el => {
     const er = new Map(o.errors(st.d).map(e => [e.k, e.t]));
     $$('[data-mf]', el).forEach(inp => {
       const lab = inp.closest('label.field'); if (!lab) return; const k = inp.dataset.mf, bad = (st.show || inp.dataset.touched) && er.has(k);
-      lab.classList.toggle('zp-bad', !!bad); let sm = $('small.zp-err', lab);
+      lab.classList.toggle('zp-bad', !!bad); if (inp.hasAttribute('data-req')) lab.classList.toggle('rq-miss', !String(inp.value).trim()); let sm = $('small.zp-err', lab);
       if (bad) { if (!sm) { sm = document.createElement('small'); sm.className = 'zp-err'; sm.setAttribute('role', 'alert'); $('.ea-hint', lab)?.remove(); lab.append(sm); } sm.textContent = er.get(k); } else if (sm) sm.remove();
     });
   };
@@ -18179,6 +18230,7 @@ function maskeNew(o) {
 
   K.render = () => {
     const host = $('#view-' + o.page); if (!host || !st.d) return;
+    const fk = document.activeElement?.closest?.('[data-mf]')?.dataset?.mf;   // nach dem Zeichnen wieder in dasselbe Feld (Tastaturbedienung)
     const pos = st.ids.indexOf(st.id), el = document.createElement('div'); el.className = 'ae ue ge fl'; host.replaceChildren(el);
     const can = {new: true, del: !!st.id, refresh: !!st.id, ...(o.can?.() || {})}, lk = lock();
     const btn = (a, icon, l, dis, text = true, kurz) => `<button class="ag-btn" data-mf-a="${a}" title="${esc(l)}" aria-label="${esc(l)}" ${dis ? 'disabled' : ''}>${ic(icon, 'i-sm')}${text ? `<span>${kurz || l}</span>` : ''}</button>`;
@@ -18186,15 +18238,16 @@ function maskeNew(o) {
     const tab = ([k, l, extra]) => { const n = cnt(k); return `<button type="button" class="ed-tab" role="tab" data-mf-tab="${k}" aria-selected="${st.tab === k}">${esc(l)}${extra || ''}${n ? ` <span class="ed-badge" data-mf-bd="1">${n}</span>` : ''}</button>`; };
     if (!o.tabs().some(([k]) => k === st.tab)) st.tab = o.tabs()[0][0];
     const body = o.body();
-    el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', `Übersicht: ${o.title}`)}${btn('refresh', 'sync', 'Aktualisieren', !can.refresh)}${btn('save', 'check', 'Sichern', lk || !st.dirty)}${btn('new', 'plus', 'Neu', !can.new)}${btn('undo', 'undo', 'Änderungen zurücknehmen', lk || !st.dirty)}${btn('del', 'trash', 'Löschen', !can.del)}${o.bar?.() || ''}
+    el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', `Übersicht: ${o.title}`)}${btn('refresh', 'sync', 'Aktualisieren', !can.refresh)}${btn('save', 'check', 'Sichern', lk || !st.dirty)}${btn('new', 'plus', 'Neu', !can.new)}${btn('undo', 'undo', 'Änderungen zurücknehmen', lk || !st.dirty)}${can.hideDel ? '' : btn('del', 'trash', 'Löschen', !can.del)}${o.bar?.() || ''}
       <span class="sp"></span>${st.id && st.ids.length > 1 ? `<span class="ae-nav">${btn('prev', 'chevron-left', 'Vorheriger Eintrag', pos <= 0, false)}<span class="ae-nr">${pos + 1}/${st.ids.length}</span>${btn('next', 'chevron-right', 'Nächster Eintrag', pos >= st.ids.length - 1, false)}</span>` : ''}</div>
-      <div class="ae-tabsw"><div class="ed-tabs" role="tablist">${o.tabs().map(tab).join('')}</div></div>
+      ${o.tabs().length > 1 || o.alwaysTabs ? `<div class="ae-tabsw"><div class="ed-tabs" role="tablist">${o.tabs().map(tab).join('')}</div></div>` : ''}
       <div class="ae-body"><div id="edBody">${body.html}</div></div>`;
     el.addEventListener('input', e => { const t = e.target.closest('[data-mf]'); if (t && t.type !== 'color' && t.tagName !== 'SELECT') { K.set(t, el); K.fields(el); } });
     el.addEventListener('focusout', e => { const t = e.target.closest('[data-mf]'); if (t) { t.dataset.touched = '1'; K.fields(el); } });
     el.addEventListener('change', e => { const t = e.target.closest('[data-mf]'); if (t) { K.set(t, el); t.dataset.touched = '1'; if (t.tagName === 'SELECT' || t.type === 'color' || o.rerender?.(t.dataset.mf)) K.render(); else K.fields(el); } });
     el.addEventListener('click', async e => {
-      const t = e.target, tb = t.closest('[data-mf-tab]'), b = t.closest('[data-mf-a]'), sw = t.closest('[data-mf-sw]');
+      const t = e.target, tb = t.closest('[data-mf-tab]'), b = t.closest('[data-mf-a]'), sw = t.closest('[data-mf-sw]'), rf = t.closest('[data-mf-ref]');
+      if (rf) return rf.disabled ? undefined : K.refAct(rf, el);
       if (tb) { st.tab = tb.dataset.mfTab; return K.render(); }
       if (sw && !sw.disabled) { const k = sw.dataset.mfSw; msetp(st.d, k, !K.val(k)); K.dirty(el); o.onSet?.(k, el); return K.render(); }
       if (!b || b.disabled) return;
@@ -18207,7 +18260,17 @@ function maskeNew(o) {
       if (a === 'save') return o.save();
       await o.act?.(a, b, el);
     });
+    // große Auswahllisten (z. B. 2.800 Abteilungen) enthalten zunächst nur den gewählten Eintrag und füllen sich beim Öffnen
+    const fill = t => {
+      const sel = t.closest?.('select[data-lazy-ref]'); if (!sel) return; const d = K.refs[sel.dataset.lazyRef]; if (!d) return;
+      const cur = sel.value; sel.removeAttribute('data-lazy-ref');
+      const rows = refRows(d.kind, d.op), has = rows.some(r => String(r.id) === cur), keep = cur && !has ? sel.querySelector(`option[value="${CSS.escape(cur)}"]`)?.outerHTML || '' : '';
+      sel.innerHTML = `${d.op.pflicht || d.op.leer != null ? `<option value="">${esc(d.op.leer ?? '– bitte wählen –')}</option>` : ''}${keep}${rows.map(r => `<option value="${esc(r.id)}" ${String(r.id) === cur ? 'selected' : ''}>${esc(refLbl(r, d.op))}</option>`).join('')}`;
+      sel.value = cur;
+    };
+    el.addEventListener('focusin', e => fill(e.target)); el.addEventListener('mousedown', e => fill(e.target));
     body.mount?.(el);
+    if (fk) { const f = $(`[data-mf="${CSS.escape(fk)}"]`, el); if (f && !f.disabled) try { f.focus({preventScroll: true}); } catch { /* */ } }
   };
   /** Erster Fehler beim Sichern: zum Reiter springen und Fehler zeigen; true = alles in Ordnung */
   K.gate = () => {
@@ -19101,6 +19164,334 @@ DOC_EXTRA.er = st => { const s = lfSup(st.partner), ids = s ? [['USt-IdNr.', s.p
 
 // nur lesend – für Prüfungen: Empfängerblock und Hinweise zu einem Lieferanten, Kunden-Nr. je Filiale
 if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {lfEmpfaenger: (id, art) => lfEmpfaenger(lfRow(id), art), lfKundenNr: (id, st) => lfKundenNr(lfRow(id), st), lfGlnOk, lfSichtbar: name => ({alle: SUPPLIERS_ALL.some(s => s.name === name), aktiv: SUPPLIERS.some(s => s.name === name)}), lfMarkeSync, lfMarkeEigen, lfOptionen: sel => lfOptionen(sel).map(x => x[1]), poHTML: (head, lines, sid) => poHTML(head, lines, lfSup(sid)), lfTermine, posTotals: (cart, billPct) => { const sc = POS.cart, sb = POS.billDisc; POS.cart = cart; POS.billDisc = billPct ? {pct: billPct} : null; try { return totals(); } finally { POS.cart = sc; POS.billDisc = sb; } }});
+/* ═════════════════════════════════════════════════════════════════
+   55f · WARENGRUPPEN (Stammdaten › Warengruppen › Warengruppen) – Liste und Maske mit fünf Karten
+   Eine Zeile je Warengruppe (Stammdaten-Art „warengruppe“, Schlüssel „adv-<Nr.>“; die Artikel verweisen über die Kategorie darauf).
+   Karten: Haupt-Abteilung (Nr., Name, Hierarchie, Altersbewertung, Prämienschlüssel, Service, Inventur, Intrastat), WebShop-Kategorien,
+   Größeneinstellungen, Finanzeinstellungen (Rabattsperre, MwSt.-Typ, Preislagen-Schlüssel, Spanne), Etiketten.
+   Jede Auswahl ist ein Menü mit Stift (bearbeiten), Plus (neu) und Lupe (suchen) auf die jeweilige Stammdaten-Tabelle.
+   • Hierarchie: gespeichert wird nur die Abteilung; Haupt-Abteilung, Bereich und Haupt-Bereich ergeben sich aus der Kette (und schränken die Auswahl ein)
+   • Nr. ist der Schlüssel (nach dem Anlegen gesperrt); die Prüfungen stehen hier und in warengruppe.rs gleich (das Backend entscheidet)
+   • Wirkungen der Felder: siehe die Hilfen ganz unten (wgInfo & Co.) und die Release-Notes
+   ═════════════════════════════════════════════════════════════════ */
+const WG = {zaehler: {}, naechste: 1, rolle: 'einzel', geladen: false};
+const WGE = {id: null, ids: [], d: null, orig: null, tab: 'allg', dirty: false, show: false};
+const wgLocked = () => WG.rolle === 'filiale';
+
+/* ── Nachschlagen ── */
+const WGI = {src: null, n: -1, map: new Map()};
+/** Warengruppen nach Kennung (Index wird nur bei Änderung der Tabelle neu gebaut) */
+function wgIdx() {
+  const rows = STAMM.data.warengruppe || [];
+  if (WGI.src !== rows || WGI.n !== rows.length) { WGI.src = rows; WGI.n = rows.length; WGI.map = new Map(rows.map(r => [r.id, r])); }
+  return WGI.map;
+}
+const wgRaw = id => wgIdx().get(id);
+const WGH = {a: null, h: null, b: null, x: null, ab: new Map(), ha: new Map(), be: new Map(), hb: new Map()};
+/** Hierarchie-Ebenen nach Kennung: ab = Abteilung (Ebene 3), ha = Haupt-Abteilung (Ebene 2), be = Bereich (Ebene 1), hb = Haupt-Bereich (Ebene 0) */
+function wgH() {
+  const A = STAMM.data.abteilung || [], Hh = STAMM.data.hauptabteilung || [], B = STAMM.data.bereich || [], X = STAMM.data.hauptbereich || [];
+  if (WGH.a !== A || WGH.h !== Hh || WGH.b !== B || WGH.x !== X || WGH.na !== A.length || WGH.nh !== Hh.length || WGH.nb !== B.length || WGH.nx !== X.length) {
+    Object.assign(WGH, {a: A, h: Hh, b: B, x: X, na: A.length, nh: Hh.length, nb: B.length, nx: X.length, ab: new Map(A.map(r => [r.id, r])), ha: new Map(Hh.map(r => [r.id, r])), be: new Map(B.map(r => [r.id, r])), hb: new Map(X.map(r => [r.id, r]))});
+  }
+  return WGH;
+}
+/** Kennung zu einem Wert aus der Tabelle: die Kennung selbst, sonst der Klartext (früher stand der Name in der Warengruppe) */
+function wgKey(kind, v) {
+  v = String(v ?? '').trim(); if (!v) return '';
+  const rows = stRows(kind);
+  return (rows.find(r => String(r.id) === v) || rows.find(r => norm(r.name) === norm(v)))?.id ?? v;
+}
+const wgNm = (kind, id) => { const r = id ? stRows(kind).find(x => String(x.id) === String(id)) : null; return r ? r.name || r.id : id || ''; };
+/** Weg einer Abteilung nach oben: Haupt-Abteilung, Bereich, Haupt-Bereich */
+function wgKette(abtId) {
+  const H = wgH(), a = H.ab.get(abtId), h = a && H.ha.get(a.parent), b = h && H.be.get(h.parent), x = b && H.hb.get(b.parent);
+  return {a, h, b, x};
+}
+const wgAbtPfad = r => { const H = wgH(), h = H.ha.get(r.parent), b = h && H.be.get(h.parent); return [r.name || r.id, h?.name, b?.name].filter(Boolean).join(' · '); };
+const wgHaPfad = r => { const b = wgH().be.get(r.parent); return [r.name || r.id, b?.name].filter(Boolean).join(' · '); };
+const wgMwstTyp = ust => { const m = stActive('mwsttyp').find(x => +x.satz === +ust); return m?.id || ({20: 'N', 10: 'E', 13: 'E13', 0: 'F'})[+ust] || 'N'; };
+const wgGsStd = () => { const k = CFG['allg.groessenschluessel'], rows = stActive('groessenschluessel'); return rows.some(r => r.id === k) ? k : rows[0]?.id || ''; };
+const wgNaechsteNr = () => { let m = 0; for (const r of stRows('warengruppe')) { const n = +r.nr; if (n > m && n < 1e7) m = n; } return m + 1; };
+
+/* ── Laden ── */
+async function wgLoadZaehler() {
+  if (DESKTOP) {
+    try { const r = await invoke('warengruppe_zaehler'); WG.zaehler = r.artikel || {}; WG.naechste = r.naechste_nr || 1; WG.rolle = r.rolle || 'einzel'; } catch (e) { console.error(e); }
+  } else {
+    const z = {}; for (const a of ART) { const x = z[a.cat] ||= [0, 0]; x[0]++; if (a.active !== false) x[1]++; }
+    WG.zaehler = z; WG.naechste = wgNaechsteNr(); WG.rolle = 'zentrale';
+  }
+  WG.geladen = true;
+}
+/** Tabelle der Warengruppen frisch holen (nur diese Art, nicht alle Stammdaten) */
+async function wgReload() {
+  if (DESKTOP) { try { STAMM.data.warengruppe = await invoke('stamm_list', {kind: 'warengruppe'}); } catch (e) { console.error(e); } }
+  else STAMM.data.warengruppe = persist.get('stamm', {}).warengruppe || STAMM.data.warengruppe || [];
+  applyStamm(); await wgLoadZaehler();
+}
+const wgArtikel = id => WG.zaehler[id] || [0, 0];
+
+/* ── Liste ── */
+function wgRows() {
+  const idx = k => new Map(stRows(k).map(r => [r.id, r])), H = wgH();
+  const mw = idx('mwsttyp'), et = idx('etikettentyp'), al = idx('altersschluessel'), pr = idx('praemienschluessel'), gs = idx('groessenschluessel'), sg = idx('statgroessenset'), pl = idx('preislagenschluessel'), hi = idx('wghierarchie'), wk = idx('webkategorie');
+  const nm = (m, v) => v ? (m.get(v) || m.get(wgKey2(m, v)))?.name ?? v : '';
+  const wgKey2 = (m, v) => { for (const r of m.values()) if (norm(r.name) === norm(v)) return r.id; return v; };
+  const lvl = r => r ? [r.nr ?? '0', r.name || 'NA'] : ['0', 'NA'];
+  return stRows('warengruppe').map(r => {
+    const {a, h, b, x} = wgKette(r.abteilung), [e1n, e1] = lvl(b), [e2n, e2] = lvl(h), [e3n, e3] = lvl(a);
+    const mt = r.mwsttyp ? mw.get(r.mwsttyp) : null, art = wgArtikel(r.id);
+    return {id: r.id, nr: r.nr ?? String(r.id).replace(/^adv-/, ''), name: r.name || r.id, e1n, e1, e2n, e2, e3n, e3, e0: x?.name || '',
+      mwst: mt ? mt.name : nm(mw, r.mwsttyp) || (r.mwst || (+r.ust === 10 ? 'Reduziert' : +r.ust === 0 ? 'Ohne MwSt.' : 'Standard')), satz: mt ? +mt.satz : +(r.ust ?? 20),
+      etikett: nm(et, r.etikett), etikett2: nm(et, r.etikett2), anz: r.anz_etiketten ?? 1, hier: nm(hi, r.hierarchie),
+      inventur: r.inventur !== false, alter: nm(al, r.altersbewertung), praemie: nm(pr, r.praemienschluessel), gschl: nm(gs, r.groessenschluessel), sgs: nm(sg, r.statgroessen), plschl: nm(pl, r.preislage),
+      spanne: r.spanne == null || r.spanne === '' ? 0 : Math.round(+r.spanne * 10000) / 100, service: !!r.service, rabattsperre: !!r.rabattsperre,
+      web: [1, 2, 3, 4, 5].map(i => r['webkat' + i]).filter(Boolean).map(v => nm(wk, v)).join(', '), inr: r.intrastat_nr || r.zolltarif || '', ibez: r.intrastat_bez || '', gewicht: +r.gewicht || 0, artikel: art[0], aktiv: art[1], _raw: r};
+  });
+}
+agridPage('st-warengruppe', {
+  title: 'Warengruppen', rows: wgRows, count: () => stRows('warengruppe').length,
+  toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}, {k: 'fedas', l: 'Fedas Synchronisierung', icon: 'sync'}],
+  cols: [
+    {k: 'nr', l: 'Nr.', t: 'num', w: 80}, {k: 'name', l: 'Name', w: 240},
+    {k: 'e1n', l: 'Hierarchie Ebene1-Nr.', t: 'num', w: 130}, {k: 'e1', l: 'Hierarchie Ebene1-Name', w: 150},
+    {k: 'e2n', l: 'Hierarchie Ebene2-Nr.', t: 'num', w: 130}, {k: 'e2', l: 'Hierarchie Ebene2-Name', w: 170},
+    {k: 'e3n', l: 'Hierarchie Ebene3-Nr.', t: 'num', w: 130}, {k: 'e3', l: 'Hierarchie Ebene3-Name', w: 170},
+    {k: 'mwst', l: 'MwSt.-Typ', w: 100}, {k: 'etikett', l: 'Etiketten-Typ', w: 120}, {k: 'inventur', l: 'Inventur', t: 'check', w: 80},
+    {k: 'alter', l: 'Altersbewertung', w: 120}, {k: 'spanne', l: 'Vorschl.-Spanne/Kalk.', t: 'num', w: 140, fmt: v => num(+v || 0, 2) + ' %'},
+    {k: 'e0', l: 'Haupt-Bereich', w: 130, show: false}, {k: 'praemie', l: 'Prämienschlüssel', w: 140, show: false}, {k: 'gschl', l: 'Größen-Schlüssel', w: 150, show: false}, {k: 'sgs', l: 'Statistik-Größen-Set', w: 150, show: false},
+    {k: 'plschl', l: 'Preisl.-Schl.', w: 120, show: false}, {k: 'etikett2', l: 'Etiketten-Typ2', w: 130, show: false}, {k: 'anz', l: 'Anz. Etiketten', t: 'num', w: 100, show: false}, {k: 'hier', l: 'Warengruppenhierarchie', w: 170, show: false},
+    {k: 'service', l: 'Service-Warengruppe', t: 'check', w: 120, show: false}, {k: 'rabattsperre', l: 'Rabattsperre', t: 'check', w: 100, show: false}, {k: 'web', l: 'WebShop-Kategorien', w: 200, show: false},
+    {k: 'inr', l: 'Intrastat-Waren-Nr.', w: 140, show: false}, {k: 'ibez', l: 'Intrastat-Waren-Bez.', w: 170, show: false}, {k: 'gewicht', l: 'Durchschnitts Gewicht (kg)', t: 'num', w: 150, show: false, fmt: v => v ? num(+v, 3) : ''},
+    {k: 'artikel', l: 'Artikel', t: 'num', w: 80, show: false}, {k: 'aktiv', l: 'davon aktiv', t: 'num', w: 90, show: false},
+  ],
+  actions: {
+    back: () => e2Back(),
+    refresh: async () => { await loadStamm(true); await wgLoadZaehler(); PAGES['st-warengruppe'].render(); },
+    new: () => wgNeu(),
+    fedas: () => go('fedas-sync'),
+  },
+  edit: id => wgOpen(id, (AG['st-warengruppe'].filtered || []).map(r => r.id)),
+  remove: ids => wgRemove(ids),
+});
+{ const p = PAGES['st-warengruppe'], _r = p.render; p.render = async () => { await Promise.all([loadStamm(), wgLoadZaehler()]); await _r(); renderTopbar(); }; }
+VIEW_PERM['st-warengruppe'] = 'einstellungen';
+function wgNeu() {
+  if (wgLocked()) return toast('Warengruppen pflegt die Zentrale', {t2: 'Diese Kasse bekommt die Angaben beim Abgleich', icon: 'lock'});
+  wgOpen(null, WGE.ids);
+}
+
+/* ── Entwurf ── */
+function wgBlank() {
+  return {id: '', _aktiv: true, nr: String(Math.max(WG.naechste, wgNaechsteNr())), name: '', hb: '', be: '', ha: '', abteilung: '', altersbewertung: wgKey('altersschluessel', 'Statistik') || 'STATISTIK', praemienschluessel: 'STANDARD', service: false, inventur: true,
+    intrastat_nr: '', intrastat_bez: '', gewicht: '', webkat1: '', webkat2: '', webkat3: '', webkat4: '', webkat5: '', groessenschluessel: wgGsStd(), statgroessen: '',
+    rabattsperre: false, mwsttyp: wgMwstTyp(+CFG['allg.mwst'] ? CFG['allg.mwst'] : 20), preislage: 'STANDARD', spanne: '50', etikett: wgKey('etikettentyp', 'Klebe 50x30') || 'K50X30', etikett2: '', anz_etiketten: '1', hierarchie: ''};
+}
+function wgDraft(id) {
+  const r = id ? wgRaw(id) : null; if (!r) return wgBlank();
+  const k = wgKette(r.abteilung), pr = stRows('praemienschluessel').find(x => x.warengruppe === r.id);
+  const txt = v => v == null || v === '' ? '' : String(v).replace('.', ',');
+  const d = {id: r.id, _aktiv: r._aktiv !== false, nr: String(r.nr ?? String(r.id).replace(/^adv-/, '')), name: String(r.name ?? ''), hb: k.x?.id || '', be: k.b?.id || '', ha: k.h?.id || '', abteilung: k.a ? k.a.id : '',
+    altersbewertung: wgKey('altersschluessel', r.altersbewertung) || 'STANDARD', praemienschluessel: r.praemienschluessel || pr?.id || 'STANDARD', service: !!r.service, inventur: r.inventur !== false,
+    intrastat_nr: String(r.intrastat_nr || r.zolltarif || ''), intrastat_bez: String(r.intrastat_bez || ''), gewicht: txt(r.gewicht),
+    groessenschluessel: r.groessenschluessel || wgGsStd(), statgroessen: r.statgroessen || '', rabattsperre: !!r.rabattsperre,
+    mwsttyp: r.mwsttyp || wgMwstTyp(r.ust ?? 20), preislage: r.preislage || 'STANDARD', spanne: txt(r.spanne == null || r.spanne === '' ? 0 : Math.round(+r.spanne * 10000) / 100),
+    etikett: wgKey('etikettentyp', r.etikett) || 'K50X30', etikett2: r.etikett2 || '', anz_etiketten: String(r.anz_etiketten ?? 1), hierarchie: r.hierarchie || ''};
+  for (let i = 1; i <= 5; i++) d['webkat' + i] = r['webkat' + i] || '';
+  if (r.abteilung && !k.a) d.abteilung = r.abteilung;   // verweist auf eine Abteilung, die es nicht mehr gibt: sichtbar lassen (Fehler „nicht mehr“)
+  return d;
+}
+const wgTxtNum = t => { t = String(t ?? '').trim(); if (t === '') return 0; const n = parseAmt(t); return isNaN(n) ? t : n; };
+/** Zeile für das Backend (Prozent → Bruchteil) */
+function wgToRow(d) {
+  const sp = wgTxtNum(d.spanne), gw = wgTxtNum(d.gewicht);
+  const r = {id: d.id || '', _aktiv: d._aktiv !== false, nr: String(d.nr).trim(), name: String(d.name).trim(), abteilung: d.abteilung || '', spanne: typeof sp === 'number' ? sp / 100 : sp, gewicht: gw, inventur: !!d.inventur, service: !!d.service, rabattsperre: !!d.rabattsperre,
+    intrastat_nr: String(d.intrastat_nr).trim(), intrastat_bez: String(d.intrastat_bez).trim(), anz_etiketten: String(d.anz_etiketten).trim()};
+  for (const k of ['altersbewertung', 'praemienschluessel', 'groessenschluessel', 'statgroessen', 'mwsttyp', 'preislage', 'etikett', 'etikett2', 'hierarchie', 'webkat1', 'webkat2', 'webkat3', 'webkat4', 'webkat5']) r[k] = d[k] || '';
+  return r;
+}
+const WG_PFLICHT = [['altersbewertung', 'Altersbewertung', 'altersschluessel'], ['praemienschluessel', 'Prämienschlüssel', 'praemienschluessel'], ['groessenschluessel', 'Größen-Schlüssel', 'groessenschluessel'], ['mwsttyp', 'MwSt.-Typ', 'mwsttyp'], ['preislage', 'Preisl.-Schl.', 'preislagenschluessel'], ['etikett', 'Etiketten-Typ', 'etikettentyp']];
+const WG_WEITERE = [['statgroessen', 'Statistik-Größen-Set', 'statgroessenset'], ['etikett2', 'Etiketten-Typ2', 'etikettentyp'], ['hierarchie', 'Warengruppenhierarchie', 'wghierarchie']];
+/** Prüfungen wie im Backend (warengruppe.rs); k = Feld */
+function wgErrors(d) {
+  const m = [], add = (k, t) => m.push({k, t}), alt = d.id ? wgRaw(d.id) : null, nr = String(d.nr).trim(), name = String(d.name).trim();
+  if (!nr) add('nr', 'Nr. angeben'); else if (!/^\d{1,6}$/.test(nr)) add('nr', 'Nr.: eine ganze Zahl bis 999999 (nur Ziffern)');
+  else if (!alt && wgIdx().has('adv-' + String(+nr))) add('nr', `Die Nr. ${+nr} gibt es schon`);
+  if (!name) add('name', 'Name angeben'); else if (name.length > 50) add('name', 'Name: höchstens 50 Zeichen');
+  const H = wgH();
+  if (!d.abteilung) { if (!alt || alt.abteilung) add('abteilung', 'Abteilung wählen'); } else if (!H.ab.has(d.abteilung) && alt?.abteilung !== d.abteilung) add('abteilung', 'Abteilung: diese Auswahl gibt es nicht mehr – bitte neu wählen');
+  const gibt = (kind, id, altv) => !id || altv === id || !stRows(kind).length || stRows(kind).some(r => String(r.id) === String(id));
+  for (const [k, l, kind] of WG_PFLICHT) { if (!d[k]) add(k, `${l} wählen`); else if (!gibt(kind, d[k], alt?.[k])) add(k, `${l}: diese Auswahl gibt es nicht mehr – bitte neu wählen`); }
+  for (const [k, l, kind] of WG_WEITERE) if (d[k] && !gibt(kind, d[k], alt?.[k])) add(k, `${l}: diese Auswahl gibt es nicht mehr – bitte neu wählen`);
+  const seen = new Set();
+  for (let i = 1; i <= 5; i++) { const v = d['webkat' + i]; if (!v) continue; if (seen.has(v)) add('webkat' + i, 'Diese Kategorie ist schon eingetragen'); else if (!gibt('webkategorie', v, alt?.['webkat' + i])) add('webkat' + i, 'Diese Kategorie gibt es nicht mehr – bitte neu wählen'); seen.add(v); }
+  const sp = wgTxtNum(d.spanne); if (typeof sp !== 'number') add('spanne', 'Zahl angeben'); else if (sp < 0 || sp >= 100) add('spanne', 'Zwischen 0 und unter 100 %');
+  const gw = wgTxtNum(d.gewicht); if (typeof gw !== 'number') add('gewicht', 'Zahl angeben (kg)'); else if (gw < 0 || gw > 10000) add('gewicht', 'Zwischen 0 und 10.000 kg');
+  const ins = String(d.intrastat_nr).replace(/\s/g, ''); if (ins && !/^\d{4,10}$/.test(ins)) add('intrastat_nr', '4 bis 10 Ziffern (Warennummer, z. B. 62011290)');
+  if (String(d.intrastat_bez).trim().length > 120) add('intrastat_bez', 'Höchstens 120 Zeichen');
+  const an = String(d.anz_etiketten).trim(); if (an === '' || !/^\d{1,2}$/.test(an)) add('anz_etiketten', 'Ganze Zahl von 0 bis 99');
+  return m;
+}
+const wgTabOf = () => 'allg';
+
+/* ── Auswahl-Quellen ── */
+/** Auswahl je Ebene: die darüber gewählten Ebenen schränken ein (Haupt-Bereich → Bereich → Haupt-Abteilung → Abteilung) */
+const wgRowsAbt = () => { const H = wgH(), d = WGE.d || {}, f = d._f || {}; let l = stActive('abteilung'); if (f.ha && d.ha) l = l.filter(a => a.parent === d.ha); else if (f.be && d.be) l = l.filter(a => H.ha.get(a.parent)?.parent === d.be); else if (f.hb && d.hb) l = l.filter(a => H.be.get(H.ha.get(a.parent)?.parent)?.parent === d.hb); return l; };
+const wgRowsHa = () => { const H = wgH(), d = WGE.d || {}, f = d._f || {}; let l = stActive('hauptabteilung'); if (f.be && d.be) l = l.filter(h => h.parent === d.be); else if (f.hb && d.hb) l = l.filter(h => H.be.get(h.parent)?.parent === d.hb); return l; };
+const wgRowsBe = () => { const d = WGE.d || {}, f = d._f || {}; let l = stActive('bereich'); if (f.hb && d.hb) l = l.filter(b => b.parent === d.hb || !b.parent); return l; };
+/** Ebene wechseln: darüberliegende Ebenen nachziehen, nicht mehr passende darunterliegende leeren.
+ *  Nur eine ausdrücklich gewählte Ebene (d._f) schränkt die Auswahl darunter ein; was sich aus der Abteilung ergibt, tut es nicht. */
+function wgKetteSetzen(d, k) {
+  const H = wgH(); d._f ||= {};
+  if (k === 'abteilung') { d._f = {}; const c = wgKette(d.abteilung); if (c.a) { d.ha = c.h?.id || ''; d.be = c.b?.id || ''; d.hb = c.x?.id || ''; } return; }
+  if (!['ha', 'be', 'hb'].includes(k)) return;
+  if (!d[k]) { d._f[k] = false; if (d.abteilung) wgKetteSetzen(d, 'abteilung'); return; }
+  d._f[k] = true;
+  if (k === 'ha') {
+    const a = H.ab.get(d.abteilung); if (a && a.parent !== d.ha) d.abteilung = '';
+    const h = H.ha.get(d.ha); if (h?.parent && H.be.has(h.parent)) { d.be = h.parent; d._f.be = false; }
+    const b = H.be.get(d.be); if (b?.parent && H.hb.has(b.parent)) { d.hb = b.parent; d._f.hb = false; }
+  } else if (k === 'be') {
+    const h = H.ha.get(d.ha); if (h && h.parent !== d.be) { d.ha = ''; d.abteilung = ''; d._f.ha = false; }
+    const b = H.be.get(d.be); if (b?.parent && H.hb.has(b.parent)) { d.hb = b.parent; d._f.hb = false; }
+  } else {
+    const b = H.be.get(d.be); if (b?.parent && b.parent !== d.hb) { d.be = ''; d.ha = ''; d.abteilung = ''; d._f.be = d._f.ha = false; }
+  }
+}
+const wgWebRows = k => () => { const d = WGE.d || {}, used = new Set([1, 2, 3, 4, 5].map(i => 'webkat' + i).filter(x => x !== k).map(x => d[x]).filter(Boolean)); return stActive('webkategorie').filter(r => !used.has(r.id)); };
+
+/* ── Maske ── */
+const WGK = maskeNew({
+  page: 'warengruppe-edit', list: 'st-warengruppe', title: 'Warengruppen', perm: 'einstellungen', st: WGE,
+  sub: st => `${st.d.name || (st.id ? '' : 'neue Warengruppe')} (${st.d.nr})`.trim(),
+  load: async () => { await Promise.all([loadStamm(), wgLoadZaehler()]); },
+  reload: async () => { await Promise.all([loadStamm(true), wgLoadZaehler()]); },
+  draft: wgDraft, tabs: () => [['allg', 'Allgemein']], errors: wgErrors, tabOf: wgTabOf, locked: wgLocked,
+  can: () => ({new: !wgLocked(), del: false, hideDel: true, refresh: true}),
+  bar: () => `<button class="ag-btn" data-mf-a="copy" title="Kopieren" aria-label="Kopieren" ${WGE.id ? '' : 'disabled'} ${wgLocked() ? 'disabled' : ''}>${ic('copy', 'i-sm')}<span>Kopieren</span></button>`,
+  body: () => ({html: wgMaske(), mount: null}),
+  onSet: (k, el) => { wgKetteSetzen(WGE.d, k); if (k === 'name' || k === 'nr') renderTopbar(); },
+  rerender: k => ['abteilung', 'ha', 'be', 'hb', 'mwsttyp', 'etikett', 'etikett2'].includes(k),
+  act: async a => { if (a === 'copy') wgKopieren(); },
+  save: () => wgSave(), remove: () => { /* Löschen nur in der Liste */ },
+});
+WGK.register();
+function wgOpen(id, ids) { WGK.open(id, ids); }
+function wgKopieren() {
+  if (wgLocked() || !WGE.id) return;
+  const src = mclone(WGE.d);
+  WGK.open(null, WGE.ids);
+  Object.assign(WGE.d, src, {id: '', nr: String(Math.max(WG.naechste, wgNaechsteNr())), name: `Kopie von ${src.name}`});
+  WGE.dirty = true; WGK.render(); renderTopbar();
+}
+const wgNote = () => wgLocked() ? `<div class="zp-note">${ic('lock', 'i-sm')}<span><b>Warengruppen pflegt die Zentrale.</b> Diese Kasse bekommt die Angaben beim Abgleich; hier sind sie nur lesbar.</span></div>` : '';
+function wgMaske() {
+  const D = WGE.d, K = WGK, errs = wgErrors(D);
+  const card = (h, keys, inner) => { const n = errs.filter(e => keys.includes(e.k)).length; return `<div class="ae-card ea-card"><h4>${esc(h)}<span class="ed-badge" data-mf-cbd="${keys.join(',')}" ${n ? '' : 'hidden'}>${n}</span></h4><div class="ea-fields ge-one">${inner}</div></div>`; };
+  const art = WGE.id ? wgArtikel(WGE.id) : [0, 0];
+  const leer = {leer: '–'};
+  const c1 = card('Haupt-Abteilung', ['nr', 'name', 'be', 'hb', 'abteilung', 'ha', 'altersbewertung', 'praemienschluessel', 'intrastat_nr', 'intrastat_bez', 'gewicht'], `
+    ${K.in('nr', 'Nr. *', {pflicht: true, inputmode: 'numeric', max: 6, dis: !!WGE.id, tip: WGE.id ? 'Die Nr. ist der Schlüssel der Warengruppe und lässt sich nicht mehr ändern – zum Umnummerieren kopieren.' : 'Nächste freie Nr. vorgeschlagen; frei wählbar, bis 999999.'})}
+    ${K.in('name', 'Name *', {pflicht: true, max: 50})}
+    ${K.ref('be', 'Bereich *', 'bereich', {pflicht: true, rows: wgRowsBe, preset: d => (d.hb ? {parent: d.hb} : null), tip: 'Ebene 1 der Hierarchie – ergibt sich aus der Abteilung.'})}
+    ${K.ref('hb', 'Haupt-Bereich', 'hauptbereich', {leer: '–', tip: 'Oberste Ebene – ergibt sich aus dem Bereich (dort zu pflegen).'})}
+    ${K.ref('abteilung', 'Abteilung *', 'abteilung', {pflicht: true, rows: wgRowsAbt, label: wgAbtPfad, preset: d => (d.ha ? {parent: d.ha} : null), tip: 'Ebene 3 – gespeichert wird diese Abteilung, die übrigen Ebenen folgen daraus.'})}
+    ${K.ref('ha', 'Haupt-Abteilung *', 'hauptabteilung', {pflicht: true, rows: wgRowsHa, label: wgHaPfad, preset: d => (d.be ? {parent: d.be} : null), titel: 'Haupt-Abteilung'})}
+    ${K.ref('altersbewertung', 'Altersbewertung *', 'altersschluessel', {pflicht: true, tip: 'Welche Prozentsätze die Altersbewertung des Lagers für diese Gruppe anwendet.'})}
+    ${K.ref('praemienschluessel', 'Prämienschlüssel *', 'praemienschluessel', {pflicht: true, label: r => `${r.name || r.id}${r.pct != null && r.pct !== '' ? ` (${num(+r.pct)} %)` : ''}`, tip: 'Prämiensatz der Verkäufer:innen auf den Netto-Umsatz dieser Gruppe.'})}
+    ${K.sw('service', 'Service-Warengruppe', '', false, 'Dienstleistung: kein Bestand, nie „ausverkauft“, keine Inventur, kein Bestellvorschlag.')}
+    ${K.sw('inventur', 'Inventur', '', false, 'Aus: Artikel dieser Gruppe stehen nicht in der Zählliste.')}
+    ${K.in('intrastat_nr', 'Intrastat-Waren-Nr.', {mono: true, inputmode: 'numeric', max: 12, tip: 'Warennummer (KN) für die Intrastat-Auswertung, wenn der Artikel keine eigene hat.'})}
+    ${K.in('intrastat_bez', 'Intrastat-Waren-Bez.', {max: 120})}
+    ${K.in('gewicht', 'Durchschnitts Gewicht', {num: true, inputmode: 'decimal', suffix: 'kg', tip: 'Eigenmasse je Stück für die Intrastat-Auswertung, wenn der Artikel kein Gewicht hat.'})}
+    <p class="wg-facts">${WGE.id ? `${art[0] ? `${num(art[0])} Artikel in dieser Warengruppe${art[1] !== art[0] ? ` (davon ${num(art[1])} aktiv)` : ''}.` : 'Noch kein Artikel in dieser Warengruppe.'}` : 'Neue Warengruppe.'}</p>`);
+  const c2 = card('WebShop-Kategorien', [1, 2, 3, 4, 5].map(i => 'webkat' + i), [1, 2, 3, 4, 5].map(i => K.ref('webkat' + i, `WebShop-Kategorie ${i}`, 'webkategorie', {...leer, rows: wgWebRows('webkat' + i), titel: 'WebShop-Kategorie', tip: i === 1 ? 'Im Digitalen Schaufenster und in der Schnittstelle erscheinen die Artikel dieser Gruppe in diesen Kategorien.' : ''})).join(''));
+  const c3 = card('Größeneinstellungen', ['groessenschluessel', 'statgroessen'], `
+    ${K.ref('groessenschluessel', 'Größen-Schlüssel *', 'groessenschluessel', {pflicht: true, label: r => r.name || r.id, tip: 'Die Größenreihe wird bei neuen Artikeln dieser Gruppe vorbelegt.'})}
+    ${K.ref('statgroessen', 'Statistik-Größen-Set', 'statgroessenset', {...leer, tip: 'Fasst Größen in der Größen-Auswertung zusammen.'})}`);
+  const c4 = card('Finanzeinstellungen', ['mwsttyp', 'preislage', 'spanne'], `
+    ${K.sw('rabattsperre', 'Rabattsperre', '', false, 'An der Kasse kein Rabatt auf Artikel dieser Gruppe (Aktionspreise bleiben).')}
+    ${K.ref('mwsttyp', 'MwSt.-Typ *', 'mwsttyp', {pflicht: true, label: r => `${r.name || r.id} (${num(+r.satz || 0)} %)`, tip: 'Steuersatz neuer Artikel dieser Gruppe.'})}
+    ${K.ref('preislage', 'Preisl.-Schl. *', 'preislagenschluessel', {pflicht: true, titel: 'Preislagen-Schlüssel', tip: 'Preisstufen der Preislagen-Auswertung für diese Gruppe.'})}
+    ${K.in('spanne', 'Vorschl.-Spanne/Kalk.', {num: true, inputmode: 'decimal', suffix: '%', tip: 'Handelsspanne vom Netto-Verkaufspreis: schlägt den Verkaufspreis vor, wenn der Einkaufspreis eingegeben wird.'})}`);
+  const c5 = card('Etiketten', ['etikett', 'etikett2', 'anz_etiketten', 'hierarchie'], `
+    ${K.ref('etikett', 'Etiketten-Typ *', 'etikettentyp', {pflicht: true, tip: 'Größe und Inhalt des Etiketts dieser Gruppe.'})}
+    ${K.ref('etikett2', 'Etiketten-Typ2 (Preisreduzierung)', 'etikettentyp', {...leer, titel: 'Etiketten-Typ', tip: 'Dieser Typ ersetzt den Typ bei reduzierter Ware (Preissenkung, Aktionspreis).'})}
+    ${K.in('anz_etiketten', 'Anz. Etiketten', {num: true, inputmode: 'numeric', max: 2, tip: 'Etiketten je Stück bei automatischen Mengen (Wareneingang, Preisänderung); 0 = keine.'})}
+    ${K.ref('hierarchie', 'Warengruppenhierarchie', 'wghierarchie', {...leer, tip: 'Welche Ebenen der Hierarchie auf dem Etikett stehen.'})}`);
+  return `${wgNote()}<div class="fl-grid wg-grid">${c1}${c2}${c3}${c4}${c5}</div>`;
+}
+
+/* ── Sichern, Löschen ── */
+async function wgSave() {
+  if (wgLocked()) return;
+  const isNew = !WGE.id;
+  if (!WGK.gate()) return;
+  try { await needPerm('einstellungen', 'Warengruppen'); } catch { return; }
+  const row = wgToRow(WGE.d);
+  let saved;
+  try {
+    if (DESKTOP) saved = await invoke('warengruppe_save', {row, by: S.user.name});
+    else {
+      const all = persist.get('stamm', {}).warengruppe || stRows('warengruppe').map(r => ({...r})), nr = String(+row.nr), id = isNew ? 'adv-' + nr : row.id;
+      if (isNew && all.some(r => r.id === id)) throw new Error(`Die Nr. ${nr} gibt es schon`);
+      const o = {...(all.find(r => r.id === id) || {}), ...row, nr, id, ust: +(stRows('mwsttyp').find(m => m.id === row.mwsttyp)?.satz ?? 20)};
+      for (const k of ['service', 'rabattsperre', 'etikett2', 'hierarchie', 'statgroessen', 'intrastat_nr', 'intrastat_bez', 'webkat1', 'webkat2', 'webkat3', 'webkat4', 'webkat5']) if (!o[k]) delete o[k];
+      o.intrastat_nr = String(o.intrastat_nr || '').replace(/\s/g, ''); if (!o.intrastat_nr) delete o.intrastat_nr;
+      if (!o.gewicht) delete o.gewicht; if (String(o.anz_etiketten) === '1') delete o.anz_etiketten; else o.anz_etiketten = +o.anz_etiketten;
+      const i = all.findIndex(r => r.id === id); if (i < 0) all.push(o); else all[i] = o;
+      await stammSave('warengruppe', all); saved = o;
+    }
+  } catch (err) { return toast('Speichern fehlgeschlagen', {t2: String(err.message || err), type: 'warn', dur: 7000}); }
+  // nur diese eine Zeile in der Tabelle ersetzen (kein Neuladen von 11.848 Zeilen)
+  if (DESKTOP) { const rows = stRows('warengruppe').slice(), i = rows.findIndex(r => r.id === saved.id); if (i < 0) rows.push(saved); else rows[i] = saved; STAMM.data.warengruppe = rows; applyStamm(); }
+  await wgLoadZaehler();
+  const id = saved.id; WGE.id = id; WGE.d = wgDraft(id); WGE.orig = mclone(WGE.d); WGE.dirty = false; WGE.show = false; if (isNew) WGE.ids = [...WGE.ids, id];
+  Hooks.emit('warengruppe.saved', {nr: row.nr, name: row.name, neu: isNew});
+  toast(isNew ? 'Warengruppe angelegt' : 'Gespeichert', {t2: `${row.nr} · ${row.name}`, type: 'pos', icon: 'tag', dur: 2200});
+  WGK.render(); renderTopbar();
+}
+async function wgRemove(ids) {
+  const abort = () => { throw new Error('abgebrochen'); };
+  if (wgLocked()) { toast('Warengruppen löscht die Zentrale', {icon: 'lock'}); abort(); }
+  const rs = ids.map(wgRaw).filter(Boolean); if (!rs.length) abort();
+  const mit = rs.filter(r => wgArtikel(r.id)[0] > 0);
+  const wer = rs.length === 1 ? `Warengruppe „${rs[0].name}“` : `${num(rs.length)} Warengruppen`;
+  if (!await confirmBox(`${wer} löschen?${mit.length ? ` ${mit.length === 1 ? 'Eine Gruppe hat' : `${mit.length} Gruppen haben`} Artikel und lässt sich nicht löschen.` : ''}`, 'Löschen')) abort();
+  try { await needPerm('einstellungen', 'Warengruppen'); } catch { abort(); }
+  let n = 0, fehler = '';
+  try {
+    if (DESKTOP) n = await invoke('warengruppe_delete', {ids: rs.map(r => r.id), by: S.user.name});
+    else { const weg = new Set(rs.filter(r => !wgArtikel(r.id)[0]).map(r => r.id)); n = weg.size; if (n) await stammSave('warengruppe', stRows('warengruppe').filter(r => !weg.has(r.id)).map(r => ({...r}))); if (n < rs.length) throw new Error(`${rs.length - n} Gruppe(n) mit Artikeln nicht gelöscht`); }
+  } catch (e) { fehler = String(e.message || e); }
+  await wgReload();
+  if (fehler) { toast(n ? 'Nicht alles gelöscht' : 'Nicht gelöscht', {t2: fehler, type: 'warn', dur: 9000}); if (!n) abort(); return; }
+  toast(n === 1 ? 'Warengruppe gelöscht' : `${num(n)} Warengruppen gelöscht`, {t2: rs.slice(0, 3).map(r => r.name).join(', '), icon: 'tag', dur: 2400});
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Auskünfte der Warengruppe für andere Stellen (Kasse, Artikelmaske, Inventur, Auswertungen, Etiketten, Schaufenster).
+   Alle lesen dieselbe Zeile (wgRaw) – es gibt keine zweite Wahrheit. Unbekannte Warengruppe (z. B. Kategorie „acc“) = keine Besonderheit.
+   ═════════════════════════════════════════════════════════════════ */
+/** Dienstleistung: kein Bestand, nie „ausverkauft“, nicht in Inventur und Bestellvorschlag */
+const wgService = cat => !!(cat && wgRaw(cat)?.service);
+/** Inventur: Artikel der Warengruppe stehen in der Zählliste (ohne Angabe: ja) */
+const wgInventur = cat => !cat || wgRaw(cat)?.inventur !== false;
+/** Steuersatz in % aus dem MwSt.-Typ der Warengruppe (Rückfall: gespeicherter Satz); null = nicht bekannt */
+function wgSatz(cat) {
+  const r = cat ? wgRaw(cat) : null; if (!r) return null;
+  const m = r.mwsttyp ? stRows('mwsttyp').find(x => x.id === r.mwsttyp) : null, v = m ? +m.satz : r.ust != null && r.ust !== '' ? +r.ust : NaN;
+  return isFinite(v) ? v : null;
+}
+/** Rabattsperre der Warengruppe eines Artikels (art.cat) */
+const wgRabattSperre = art => !!(art && art.cat && wgRaw(art.cat)?.rabattsperre);
+/** Rabattsperre insgesamt: Lieferant ODER Warengruppe (Kasse, Bon-Rabatt, Rabattregeln, Belegposition „nodisc“) */
+const rabattGesperrt = art => lfRabattGesperrt(art) || wgRabattSperre(art);
+const rabattSperreGrund = art => lfRabattGesperrt(art) ? `Lieferant ${supName(art.supplierId)}` : wgRabattSperre(art) ? `Warengruppe „${wgNm('warengruppe', art.cat)}“` : '';
+
+// nur lesend / für Prüfungen
+if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {wgDraft, wgErrors, wgToRow, wgRows, wgKette, wgInfo: id => wgRaw(id), wgService, wgInventur, wgSatz, rabattGesperrt});
 /* ═════════════════════════════════════════════════════════════════
    56 · MENÜPUNKTE UND RECHTE
    Wer ein Recht nicht hat – weder über seine Rolle noch über seine Benutzergruppe – sieht die zugehörigen Menüpunkte nicht

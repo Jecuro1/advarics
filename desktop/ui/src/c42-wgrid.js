@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════════════
-   Datentabelle im Advarics-Stil (Warengruppen): dunkle Werkzeugleiste, Gruppierleiste,
+   Datentabelle im Advarics-Stil (Listen der Stammdaten): dunkle Werkzeugleiste, Gruppierleiste,
    Spaltenköpfe mit Filterzeile, Spaltenauswahl, automatische Spaltenbreite, Export,
    Auswahlkästchen und flüssiges Scrollen auch bei über 10.000 Zeilen (virtuelle Zeilen).
    ════════════════════════════════════════════════════════════════════ */
@@ -239,75 +239,3 @@ function agExport(page) {
   if (!DESKTOP) { toast('Export nur in der Desktop-App'); return; }
   invoke('save_text', {name: `Kontor_${st.cfg.title.replace(/\W+/g, '_')}.csv`, content: csv, title: st.cfg.title + ' exportieren'}).then(p => p && toast('Exportiert', {t2: p, type: 'pos', icon: 'download'})).catch(e => toast('Export fehlgeschlagen', {t2: String(e), type: 'warn'}));
 }
-
-/* ── Warengruppen ── */
-const WG_MWST = [['Standard', 20], ['Reduziert', 10], ['Ohne MwSt.', 0]];
-const wgMwstTyp = u => (WG_MWST.find(x => x[1] === +u) || WG_MWST[0])[0];
-function wgRows() {
-  const idx = k => new Map(stRows(k).map(r => [r.id, r]));
-  const ab = idx('abteilung'), ha = idx('hauptabteilung'), be = idx('bereich');
-  const lvl = r => r ? [r.nr ?? '0', r.name || 'NA'] : ['0', 'NA'];
-  return stRows('warengruppe').map(r => {
-    const a = ab.get(r.abteilung), h = a && ha.get(a.parent), b = h && be.get(h.parent);
-    const [e1n, e1] = lvl(b), [e2n, e2] = lvl(h), [e3n, e3] = lvl(a);
-    return {id: r.id, nr: r.nr ?? String(r.id).replace(/^adv-/, ''), name: r.name || r.id, e1n, e1, e2n, e2, e3n, e3, mwst: r.mwst || wgMwstTyp(r.ust ?? 20), etikett: r.etikett || '', inventur: !!r.inventur, alter: r.altersbewertung || '', spanne: r.spanne == null || r.spanne === '' ? 0 : Math.round(+r.spanne * 10000) / 100, _raw: r};
-  });
-}
-function wgEdit(id, done) {
-  const st = AG['st-warengruppe'], row = id ? st.rows.find(r => r.id === id) : null;
-  const o = row?._raw || {}, abt = stRows('abteilung');
-  const lab = a => { const h = stRows('hauptabteilung').find(x => x.id === a.parent); return `${a.name}${h ? ' · ' + h.name : ''}`; };
-  const el = openLayer(`<div class="modal" style="width:min(560px,100%)" role="dialog" aria-modal="true"><div class="m-head"><div class="m-ic">${ic('tag')}</div><div><h2>${row ? 'Warengruppe bearbeiten' : 'Neue Warengruppe'}</h2><p>${row ? esc(row.nr + ' · ' + row.name) : 'Nr. und Name vergeben'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
-    <div class="m-body" style="display:grid;gap:12px;grid-template-columns:1fr 2fr">
-      <label class="field"><span>Nr.</span><input class="input" data-f="nr" value="${esc(row?.nr || '')}" ${row ? 'disabled' : ''}></label>
-      <label class="field"><span>Name</span><input class="input" data-f="name" value="${esc(row?.name || '')}"></label>
-      <label class="field" style="grid-column:1/-1"><span>Abteilung (Ebene 3)</span><select class="input select" data-f="abteilung"><option value="">NA</option>${abt.map(a => `<option value="${esc(a.id)}" ${a.id === o.abteilung ? 'selected' : ''}>${esc(lab(a))}</option>`).join('')}</select></label>
-      <label class="field"><span>MwSt.-Typ</span><select class="input select" data-f="mwst">${WG_MWST.map(([l]) => `<option ${l === (row?.mwst || 'Standard') ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="field"><span>Etiketten-Typ</span><input class="input" data-f="etikett" value="${esc(row?.etikett ?? 'Klebe 50x30')}"></label>
-      <label class="field"><span>Altersbewertung</span><select class="input select" data-f="alter">${['Standard', 'Statistik'].map(l => `<option ${l === (row?.alter || 'Statistik') ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="field"><span>Vorschl.-Spanne/Kalk. %</span><input class="input num" data-f="spanne" inputmode="decimal" value="${esc(String(row?.spanne ?? 50).replace('.', ','))}"></label>
-      <label style="display:flex;gap:8px;align-items:center;font-size:13px;grid-column:1/-1"><input type="checkbox" data-f="inventur" ${row ? (row.inventur ? 'checked' : '') : 'checked'}> bei Inventur berücksichtigen</label></div>
-    <div class="m-foot">${row ? `<button class="btn btn-ghost" data-del style="color:var(--neg)">${ic('trash', 'i-sm')}Löschen</button>` : ''}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" data-ok>${ic('check', 'i-sm')}Speichern</button></div></div>`, {focus: row ? '[data-f="name"]' : '[data-f="nr"]'});
-  const f = k => $(`[data-f="${k}"]`, el);
-  const save = async list => { await needPerm('einstellungen', 'Warengruppen'); await stammSave('warengruppe', list); closeLayer(el); done(); };
-  $('[data-ok]', el).onclick = async () => {
-    const nr = f('nr').value.trim(), name = f('name').value.trim();
-    if (!nr || !name) { toast('Nr. und Name angeben', {type: 'warn'}); return; }
-    const all = stRows('warengruppe').map(r => ({...r}));
-    const mw = f('mwst').value, ust = (WG_MWST.find(x => x[0] === mw) || WG_MWST[0])[1];
-    const data = {name, nr, abteilung: f('abteilung').value, ust, mwst: mw, etikett: f('etikett').value.trim(), inventur: f('inventur').checked, altersbewertung: f('alter').value, spanne: (parseAmt(f('spanne').value) || 0) / 100};
-    try {
-      if (row) { const i = all.findIndex(r => r.id === row.id); all[i] = {...all[i], ...data}; }
-      else { const nid = 'adv-' + nr; if (all.some(r => r.id === nid)) { toast(`Nr. ${nr} gibt es schon`, {type: 'warn'}); return; } all.push({id: nid, _aktiv: true, ...data}); }
-      await save(all);
-    } catch (err) { if (String(err.message || err) !== 'abgebrochen') toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); }
-  };
-  const del = $('[data-del]', el);
-  if (del) del.onclick = async () => { if (!await confirmBox(`Warengruppe „${row.name}“ löschen?`, 'Löschen')) return; try { await save(stRows('warengruppe').filter(r => r.id !== row.id).map(r => ({...r}))); } catch { /* */ } };
-}
-agridPage('st-warengruppe', {
-  title: 'Warengruppen',
-  rows: wgRows,
-  count: () => stRows('warengruppe').length,
-  toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}, {k: 'fedas', l: 'Fedas Synchronisierung', icon: 'sync'}],
-  cols: [
-    {k: 'nr', l: 'Nr.', t: 'num', w: 80}, {k: 'name', l: 'Name', w: 240},
-    {k: 'e1n', l: 'Hierarchie Ebene1-Nr.', t: 'num', w: 130}, {k: 'e1', l: 'Hierarchie Ebene1-Name', w: 150},
-    {k: 'e2n', l: 'Hierarchie Ebene2-Nr.', t: 'num', w: 130}, {k: 'e2', l: 'Hierarchie Ebene2-Name', w: 170},
-    {k: 'e3n', l: 'Hierarchie Ebene3-Nr.', t: 'num', w: 130}, {k: 'e3', l: 'Hierarchie Ebene3-Name', w: 170},
-    {k: 'mwst', l: 'MwSt.-Typ', w: 100}, {k: 'etikett', l: 'Etiketten-Typ', w: 120}, {k: 'inventur', l: 'Inventur', t: 'check', w: 80},
-    {k: 'alter', l: 'Altersbewertung', w: 120}, {k: 'spanne', l: 'Vorschl.-Spanne/Kalk.', t: 'num', w: 140, fmt: v => num(+v || 0, 2) + ' %'},
-  ],
-  actions: {
-    back: () => history.length > 1 ? history.back() : go('dashboard'),
-    refresh: async () => { await loadStamm(true); PAGES['st-warengruppe'].render(); },
-    new: () => wgEdit(null, () => PAGES['st-warengruppe'].render()),
-    fedas: () => go('fedas-sync'),
-  },
-  edit: (id, done) => wgEdit(id, done),
-  remove: async ids => {
-    if (!await confirmBox(`${num(ids.length)} Warengruppe${ids.length > 1 ? 'n' : ''} löschen?`, 'Löschen')) throw new Error('abgebrochen');
-    await needPerm('einstellungen', 'Warengruppen');
-    const s = new Set(ids); await stammSave('warengruppe', stRows('warengruppe').filter(r => !s.has(r.id)).map(r => ({...r})));
-  },
-});

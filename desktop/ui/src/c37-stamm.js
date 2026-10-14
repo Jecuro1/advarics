@@ -30,14 +30,21 @@ const STAMM_DEF = {
   verkaufsabteilung: {t: 'Verkaufsabteilung', ic: 'grid', sub: 'Abteilungen im Geschäft mit zugeordneten Warengruppen – für Verkäuferprämien und Flächenauswertung', cols: [{k: 'name', l: 'Abteilung'}, {k: 'warengruppen', l: 'Warengruppen', t: 'multi', o: catOpts, w: 280}, {k: 'leitung', l: 'Leitung'}]},
   // ── Artikel-Stammdaten
   marke: {t: 'Marken', ic: 'star', sub: 'Marken mit Lieferant und Herkunft', cols: [{k: 'name', l: 'Marke'}, {k: 'lieferant', l: 'Lieferant', t: 'select', o: supOpts}, {k: 'land', l: 'Land'}, {k: 'web', l: 'Webseite'}]},
-  warengruppe: {t: 'Warengruppen', ic: 'tag', sub: 'Warengruppen für Artikel, Kasse und Auswertungen – mit Hierarchie, Steuersatz und Konto', cols: [{k: 'nr', l: 'Nr.', w: 80}, {k: 'name', l: 'Warengruppe', w: 260}, {k: 'abteilung', l: 'Abteilung', t: 'select', o: () => stOpts('abteilung'), w: 200}, {k: 'ust', l: 'USt %', t: 'num', w: 80}, {k: 'konto', l: 'Erlöskonto', w: 100}, {k: 'zolltarif', l: 'Zolltarifnr.', w: 120}, {k: 'etikett', l: 'Etikettentyp', w: 120}, {k: 'inventur', l: 'Inventur', t: 'check'}, {k: 'altersbewertung', l: 'Altersbewertung', w: 120}, {k: 'spanne', l: 'Spanne/Kalk.', t: 'num', w: 90}]},
+  warengruppe: {t: 'Warengruppen', ic: 'tag', sub: 'Warengruppen für Artikel, Kasse und Auswertungen – mit Hierarchie, Steuersatz und Konto (gepflegt in Stammdaten › Warengruppen › Warengruppen)', cols: [{k: 'nr', l: 'Nr.', w: 80}, {k: 'name', l: 'Warengruppe', w: 260}, {k: 'abteilung', l: 'Abteilung', t: 'select', o: () => stOpts('abteilung'), w: 200}, {k: 'ust', l: 'USt %', t: 'num', w: 80}, {k: 'konto', l: 'Erlöskonto', w: 100}, {k: 'zolltarif', l: 'Zolltarifnr.', w: 120}, {k: 'etikett', l: 'Etikettentyp', w: 120}, {k: 'inventur', l: 'Inventur', t: 'check'}, {k: 'altersbewertung', l: 'Altersbewertung', w: 120}, {k: 'spanne', l: 'Spanne/Kalk.', t: 'num', w: 90}]},
   abteilung: {t: 'Abteilungen', ic: 'layers', sub: 'Ebene über den Warengruppen', cols: [{k: 'name', l: 'Abteilung'}, {k: 'parent', l: 'Hauptabteilung', t: 'select', o: () => stOpts('hauptabteilung')}]},
   hauptabteilung: {t: 'Hauptabteilungen', ic: 'layers', sub: 'Ebene über den Abteilungen', cols: [{k: 'name', l: 'Hauptabteilung'}, {k: 'parent', l: 'Bereich', t: 'select', o: () => stOpts('bereich')}]},
   bereich: {t: 'Bereiche', ic: 'layers', sub: 'Ebene über den Hauptabteilungen', cols: [{k: 'name', l: 'Bereich'}, {k: 'parent', l: 'Hauptbereich', t: 'select', o: () => stOpts('hauptbereich')}]},
   hauptbereich: {t: 'Hauptbereiche', ic: 'layers', sub: 'Oberste Ebene der Warengruppen-Hierarchie', cols: [{k: 'name', l: 'Hauptbereich'}],
     seed: [{id: 'HW', name: 'Hartware'}, {id: 'SW', name: 'Software (Textil)'}]},
-  preislage: {t: 'Preislagen', ic: 'tag', sub: 'Preisstufen für Sortiments- und Größen/Preislagen-Auswertungen', cols: [{k: 'name', l: 'Preislage'}, {k: 'von', l: 'von €', t: 'num'}, {k: 'bis', l: 'bis €', t: 'num'}],
+  preislage: {t: 'Preislagen', ic: 'tag', sub: 'Preisstufen für Sortiments- und Größen/Preislagen-Auswertungen – je Preislagen-Schlüssel (leer = Standard); die Warengruppe wählt ihren Schlüssel', cols: [{k: 'name', l: 'Preislage'}, {k: 'von', l: 'von €', t: 'num'}, {k: 'bis', l: 'bis €', t: 'num'}, {k: 'schluessel', l: 'Schlüssel', t: 'select', o: () => stOpts('preislagenschluessel')}],
     seed: [{id: 'P1', name: 'Einstieg', von: 0, bis: 49.99}, {id: 'P2', name: 'Mitte', von: 50, bis: 149.99}, {id: 'P3', name: 'Gehoben', von: 150, bis: 399.99}, {id: 'P4', name: 'Premium', von: 400, bis: 99999}]},
+  preislagenschluessel: {t: 'Preislagen-Schlüssel', ic: 'tag', sub: 'Schlüssel, aus denen eine Warengruppe wählt: jeder Schlüssel hat eigene Preisstufen (z. B. Socken 5/10/15 €, Ski 200/400/600 €) – die Stufen stehen unter „Preislagen“. Ein Schlüssel ohne eigene Stufen nutzt die Stufen von „Standard“', cols: [{k: 'name', l: 'Schlüssel'}],
+    seed: [{id: 'STANDARD', name: 'Standard'}]},
+  altersschluessel: {t: 'Altersbewertungs-Schlüssel', ic: 'percent', sub: 'Schlüssel, aus denen eine Warengruppe ihre Altersbewertung wählt – die Prozentsätze je Schlüssel stehen unter „Altersbewertung Prozentsätze“. Ein Schlüssel ohne eigene Stufen nutzt die Stufen von „Standard“', cols: [{k: 'name', l: 'Schlüssel'}],
+    seed: [{id: 'STANDARD', name: 'Standard'}, {id: 'STATISTIK', name: 'Statistik'}]},
+  statgroessenset: {t: 'Statistik-Größen-Sets', ic: 'grid', sub: 'Fasst Größen für die Größen-Auswertung zusammen (z. B. 36 2/3 und 37 1/3 zählen als 37) – die Warengruppe wählt ihr Set; Größen ohne Zuordnung bleiben, wie sie sind', cols: [{k: 'name', l: 'Set'}, {k: 'zuordnung', l: 'Zuordnung (Größe=Statistik-Größe)', t: 'list', w: 380, ph: '36 2/3=37, 37 1/3=37, 38 2/3=39'}]},
+  wghierarchie: {t: 'Warengruppenhierarchie (Etikett)', ic: 'layers', sub: 'Welche Ebenen der Hierarchie auf dem Etikett der Warengruppe stehen (z. B. Bereich › Haupt-Abteilung › Abteilung)', cols: [{k: 'name', l: 'Bezeichnung'}, {k: 'ebenen', l: 'Ebenen (von oben nach unten)', t: 'multi', o: [['hauptbereich', 'Haupt-Bereich'], ['bereich', 'Bereich'], ['hauptabteilung', 'Haupt-Abteilung'], ['abteilung', 'Abteilung']], w: 380}],
+    seed: [{id: 'KEINE', name: 'Keine Hierarchie auf dem Etikett', ebenen: []}, {id: 'ABTEILUNG', name: 'Abteilung', ebenen: ['abteilung']}, {id: 'PFAD', name: 'Bereich › Haupt-Abteilung › Abteilung', ebenen: ['bereich', 'hauptabteilung', 'abteilung']}]},
   groessenschluessel: {t: 'Größenschlüssel', ic: 'grid', sub: 'Größenläufe für die Artikelanlage (Order, EDI-Import, Artikel-Import)', cols: [{k: 'name', l: 'Größenschlüssel'}, {k: 'groessen', l: 'Größen', t: 'list', w: 340}],
     seed: [{id: 'KONF', name: 'Konfektion', groessen: ['XS', 'S', 'M', 'L', 'XL', 'XXL']}, {id: 'SCHUH', name: 'Schuhe EU', groessen: ['38', '39', '40', '41', '42', '43', '44', '45', '46']}, {id: 'HOSE', name: 'Hosen DE', groessen: ['44', '46', '48', '50', '52', '54', '56']}, {id: 'ONE', name: 'Einheitsgröße', groessen: ['one size']}]},
   groessenfolge: {t: 'Größen sortieren', ic: 'list', sub: 'Reihenfolge, in der Größen in Matrix, Etiketten und Auswertungen erscheinen', cols: [{k: 'name', l: 'Größe'}]},
@@ -54,7 +61,8 @@ const STAMM_DEF = {
   zahlungsbedingung: {t: 'Zahlungsbedingungen', ic: 'cash', sub: 'Für Lieferanten (Eingangsrechnungen) und Kund:innen (Faktura)', cols: [{k: 'name', l: 'Bezeichnung'}, {k: 'tage', l: 'Netto Tage', t: 'num'}, {k: 'skonto', l: 'Skonto %', t: 'num'}, {k: 'skonto_tage', l: 'Skonto Tage', t: 'num'}, {k: 'text', l: 'Text auf Beleg', w: 260}],
     seed: [{id: 'N14', name: '14 Tage netto', tage: 14, skonto: 0, skonto_tage: 0, text: 'Zahlbar binnen 14 Tagen ohne Abzug.'}, {id: 'S30', name: '30 Tage, 3 % Skonto 10 Tage', tage: 30, skonto: 3, skonto_tage: 10, text: 'Zahlbar binnen 30 Tagen, bei Zahlung binnen 10 Tagen 3 % Skonto.'}, {id: 'SOFORT', name: 'Sofort', tage: 0, skonto: 0, skonto_tage: 0, text: 'Zahlbar sofort.'}]},
   praemienmonat: {t: 'Verkäuferprämie – Monate', ic: 'calendar', sub: 'Umsatzziel und Prämie je Monat – Abrechnung unter „Prämienabrechnung“', cols: [{k: 'name', l: 'Monat (JJJJ-MM)'}, {k: 'ziel', l: 'Umsatzziel je Person €', t: 'num'}, {k: 'pct', l: 'Prämie % vom Umsatz über Ziel', t: 'num'}]},
-  praemienschluessel: {t: 'Prämienschlüssel', ic: 'percent', sub: 'Prämiensatz je Warengruppe (z. B. Ski höher als Accessoires)', cols: [{k: 'name', l: 'Bezeichnung'}, {k: 'warengruppe', l: 'Warengruppe', t: 'select', o: catOpts}, {k: 'pct', l: 'Prämie %', t: 'num'}]},
+  praemienschluessel: {t: 'Prämienschlüssel', ic: 'percent', sub: 'Prämiensatz vom Netto-Umsatz (z. B. Ski höher als Accessoires) – die Warengruppe wählt ihren Schlüssel; „Warengruppe“ ist die frühere Zuordnung und gilt nur, wo die Warengruppe selbst keinen Schlüssel hat', cols: [{k: 'name', l: 'Bezeichnung'}, {k: 'pct', l: 'Prämie %', t: 'num'}, {k: 'warengruppe', l: 'Warengruppe (früher)', t: 'select', o: catOpts}],
+    seed: [{id: 'STANDARD', name: 'Standard', pct: 0}]},
   preisrundung: {t: 'Preisrundung', ic: 'tag', sub: 'Endungen für Preisänderungen und Kalkulation – z. B. bis € 100 auf ,95, darüber auf volle 9', cols: [{k: 'name', l: 'Regel'}, {k: 'von', l: 'ab €', t: 'num'}, {k: 'bis', l: 'bis €', t: 'num'}, {k: 'endung', l: 'Endung (z. B. 0.95 oder 9)', t: 'num'}],
     seed: [{id: 'R1', name: 'bis 100 → ,95', von: 0, bis: 99.99, endung: 0.95}, {id: 'R2', name: 'ab 100 → 9,–', von: 100, bis: 99999, endung: 9}]},
   preisgruppe: {t: 'Preisgruppen', ic: 'percent', sub: 'Rabattgruppen für Kund:innen (Feld „Preisgruppe“ am Kunden) – wird an der Kasse automatisch angeboten', cols: [{k: 'name', l: 'Preisgruppe'}, {k: 'pct', l: 'Rabatt %', t: 'num'}, {k: 'warengruppen', l: 'nur Warengruppen (leer = alle)', t: 'multi', o: catOpts, w: 240}]},
@@ -91,7 +99,7 @@ const STAMM_DEF = {
   spediteur: {t: 'Spediteur', ic: 'truck', sub: 'Paketdienste mit Sendungsverfolgung – {nr} wird durch die Sendungsnummer ersetzt', cols: [{k: 'name', l: 'Spediteur'}, {k: 'tracking', l: 'Tracking-Link', w: 320}, {k: 'kundennr', l: 'Kundennummer'}],
     seed: [{id: 'POST', name: 'Österreichische Post', tracking: 'https://www.post.at/s/sendungsdetails?snr={nr}'}, {id: 'DPD', name: 'DPD', tracking: 'https://tracking.dpd.de/status/de_DE/parcel/{nr}'}, {id: 'GLS', name: 'GLS', tracking: 'https://gls-group.com/AT/de/paketverfolgung?match={nr}'}, {id: 'DHL', name: 'DHL', tracking: 'https://www.dhl.com/at-de/home/tracking.html?tracking-id={nr}'}]},
   // ── Einstellungen
-  etikettentyp: {t: 'Etikettentypen', ic: 'tag', sub: 'Formate für Etikettendruck – Größe und Inhalt', cols: [{k: 'name', l: 'Typ'}, {k: 'b', l: 'Breite mm', t: 'num'}, {k: 'h', l: 'Höhe mm', t: 'num'}, {k: 'felder', l: 'Inhalt', t: 'list', w: 260, ph: 'Marke,Name,Größe,Preis,EAN'}], seed: [{id: 'STD', name: 'Standard 50×30', b: 50, h: 30, felder: ['Marke', 'Name', 'Farbe', 'Größe', 'Preis', 'EAN']}, {id: 'SCHUH', name: 'Schuhkarton 70×40', b: 70, h: 40, felder: ['Marke', 'Name', 'Größe', 'Preis', 'EAN']}]},
+  etikettentyp: {t: 'Etikettentypen', ic: 'tag', sub: 'Formate für Etikettendruck – Größe und Inhalt; die Warengruppe wählt ihren Typ (und einen zweiten für reduzierte Ware)', cols: [{k: 'name', l: 'Typ'}, {k: 'b', l: 'Breite mm', t: 'num'}, {k: 'h', l: 'Höhe mm', t: 'num'}, {k: 'felder', l: 'Inhalt', t: 'list', w: 260, ph: 'Marke,Name,Größe,Preis,EAN'}], seed: [{id: 'STD', name: 'Standard 50×30', b: 50, h: 30, felder: ['Marke', 'Name', 'Farbe', 'Größe', 'Preis', 'EAN']}, {id: 'SCHUH', name: 'Schuhkarton 70×40', b: 70, h: 40, felder: ['Marke', 'Name', 'Größe', 'Preis', 'EAN']}, {id: 'K50X30', name: 'Klebe 50x30', b: 50, h: 30, felder: ['Marke', 'Name', 'Farbe', 'Größe', 'Preis', 'EAN']}]},
   etikettendrucker: {t: 'Einstellungen Etikettendrucker', ic: 'printer', sub: 'Etikettendrucker je Arbeitsplatz', cols: [{k: 'name', l: 'Drucker'}, {k: 'typ', l: 'Typ', t: 'select', o: [['zpl', 'ZPL (Zebra)'], ['windows', 'Windows-Drucker'], ['pdf', 'PDF']]}, {k: 'dpi', l: 'DPI', t: 'num'}, {k: 'platz', l: 'Arbeitsplatz'}]},
   esl: {t: 'Elektronische Etiketten', ic: 'tag', sub: 'Regal-Etiketten (ESL) – Zuordnung Etikett ↔ Artikel; Preise werden über den Export an das ESL-System übergeben', cols: [{k: 'name', l: 'Etikett-ID'}, {k: 'artikel', l: 'Artikel-Nr.'}, {k: 'platz', l: 'Platz'}]},
   scannerregel: {t: 'Scanner-Regeln', ic: 'barcode', sub: 'Muster für gescannte Codes (regulärer Ausdruck) – z. B. Gutschein-, Kunden- oder Gewichts-Codes', cols: [{k: 'name', l: 'Regel'}, {k: 'muster', l: 'Muster (RegEx)', w: 220}, {k: 'aktion', l: 'Aktion', t: 'select', o: [['gutschein', 'Gutschein einlösen'], ['kunde', 'Kunde wählen'], ['artikel', 'Artikel (Teil als EAN)'], ['beleg', 'Beleg öffnen']]}, {k: 'gruppe', l: 'Teil (Gruppe)', t: 'num', w: 90}],
@@ -111,7 +119,7 @@ const STAMM_DEF = {
   zusatzbuchung: {t: 'Zusatz Buchungstypen', ic: 'cash', sub: 'Eigene Kassenbuch-Buchungen (z. B. Trinkgeld, Porto, Reinigung) mit Konto', cols: [{k: 'name', l: 'Buchungstyp'}, {k: 'richtung', l: 'Richtung', t: 'select', o: [['ein', 'Einlage'], ['aus', 'Entnahme']]}, {k: 'konto', l: 'Konto'}],
     seed: [{id: 'PORTO', name: 'Porto', richtung: 'aus', konto: '7380'}, {id: 'TRINK', name: 'Trinkgeld-Kassa', richtung: 'ein', konto: '3600'}]},
   inventurort: {t: 'Inventurorte', ic: 'grid', sub: 'Zählbereiche (Regale, Lager, Schaufenster) – Zählungen je Ort erfassen', cols: [{k: 'name', l: 'Ort'}, {k: 'filiale', l: 'Filiale', t: 'select', o: storeOpts}, {k: 'bereich', l: 'Bereich'}, {k: 'zaehler', l: 'Zählteam'}]},
-  altersbewertung: {t: 'Altersbewertung Prozentsätze', ic: 'percent', sub: 'Abwertung des Lagerwerts nach Alter (Monate seit Wareneingang) – für Inventurbewertung und Bilanz', cols: [{k: 'name', l: 'Stufe'}, {k: 'ab', l: 'ab Monaten', t: 'num'}, {k: 'pct', l: 'Abwertung %', t: 'num'}],
+  altersbewertung: {t: 'Altersbewertung Prozentsätze', ic: 'percent', sub: 'Abwertung des Lagerwerts nach Alter (Monate seit Saisonbeginn) – für Inventurbewertung und Bilanz; je Altersbewertungs-Schlüssel (leer = Standard), den die Warengruppe wählt', cols: [{k: 'name', l: 'Stufe'}, {k: 'ab', l: 'ab Monaten', t: 'num'}, {k: 'pct', l: 'Abwertung %', t: 'num'}, {k: 'schluessel', l: 'Schlüssel', t: 'select', o: () => stOpts('altersschluessel')}],
     seed: [{id: 'A1', name: 'bis 6 Monate', ab: 0, pct: 0}, {id: 'A2', name: '6–12 Monate', ab: 6, pct: 20}, {id: 'A3', name: '12–24 Monate', ab: 12, pct: 50}, {id: 'A4', name: 'über 24 Monate', ab: 24, pct: 80}]},
   analysekategorie: {t: 'Flexanalysekategorie', ic: 'folder', sub: 'Ordner für gespeicherte Analysen', cols: [{k: 'name', l: 'Kategorie'}], seed: [{id: 'VK', name: 'Verkauf'}, {id: 'SORT', name: 'Sortiment'}, {id: 'PERS', name: 'Personal'}]},
   indikator: {t: 'Wert-Indikator-Sets', ic: 'target', sub: 'Ampeln für Kennzahlen in der Flexanalyse – grün ab, gelb ab, sonst rot', cols: [{k: 'name', l: 'Set'}, {k: 'kennzahl', l: 'Kennzahl', t: 'select', o: () => AN_MEAS.map(m => [m[0], m[1]])}, {k: 'gruen', l: 'grün ab', t: 'num'}, {k: 'gelb', l: 'gelb ab', t: 'num'}],
@@ -125,7 +133,7 @@ const STAMM_DEF = {
   edimapwg: {t: 'Zuordnung Warengruppen', ic: 'swap', sub: 'Warengruppen-Codes der Lieferanten (EDI/PRICAT) auf eigene Warengruppen', cols: [{k: 'lieferant', l: 'Lieferant', t: 'select', o: supOpts}, {k: 'code', l: 'Code des Lieferanten'}, {k: 'warengruppe', l: 'Warengruppe', t: 'select', o: catOpts}]},
   edimapgr: {t: 'Zuordnung Größen', ic: 'swap', sub: 'Größenbezeichnungen der Lieferanten auf eigene Größen', cols: [{k: 'lieferant', l: 'Lieferant', t: 'select', o: supOpts}, {k: 'code', l: 'Größe beim Lieferanten'}, {k: 'groesse', l: 'eigene Größe'}]},
   wgschema: {t: 'Warengruppen Schemas', ic: 'grid', sub: 'Externe Warengruppen-Schemas (z. B. GS1 GPC, Verbands-Schlüssel) je Warengruppe', cols: [{k: 'name', l: 'Schema'}, {k: 'warengruppe', l: 'Warengruppe', t: 'select', o: catOpts}, {k: 'code', l: 'Code im Schema'}]},
-  webkategorie: {t: 'Webshop-Kategorie', ic: 'folder', sub: 'Kategorien im Schaufenster/Webshop mit zugeordneten Warengruppen', cols: [{k: 'name', l: 'Kategorie'}, {k: 'warengruppen', l: 'Warengruppen', t: 'multi', o: catOpts, w: 300}, {k: 'sichtbar', l: 'sichtbar', t: 'check'}]},
+  webkategorie: {t: 'Webshop-Kategorie', ic: 'folder', sub: 'Kategorien im Schaufenster/Webshop – die Warengruppen ordnen sich ihnen selbst zu (Stammdaten › Warengruppen › Warengruppen, Karte „WebShop-Kategorien“); „Warengruppen“ hier ist die frühere Zuordnung und gilt weiter', cols: [{k: 'name', l: 'Kategorie'}, {k: 'sichtbar', l: 'sichtbar', t: 'check'}, {k: 'warengruppen', l: 'Warengruppen (früher)', t: 'multi', o: catOpts, w: 300}]},
   webfilter: {t: 'Artikel-Filter (Webshop)', ic: 'filter', sub: 'Artikel vom Webshop ausschließen – nach Marke, Warengruppe, Feld oder Mindestbestand', cols: [{k: 'name', l: 'Regel'}, {k: 'feld', l: 'Feld', t: 'select', o: [['brand', 'Marke'], ['cat', 'Warengruppe'], ['id', 'Artikel-Nr.'], ['minbestand', 'Bestand unter']]}, {k: 'wert', l: 'Wert'}]},
   webversand: {t: 'Versand (Webshop)', ic: 'truck', sub: 'Versandarten und Kosten für Webshop-Bestellungen', cols: [{k: 'name', l: 'Versandart'}, {k: 'preis', l: 'Kosten €', t: 'num'}, {k: 'frei_ab', l: 'versandkostenfrei ab €', t: 'num'}, {k: 'spediteur', l: 'Spediteur', t: 'select', o: () => stOpts('spediteur')}],
     seed: [{id: 'STD', name: 'Standard', preis: 5.9, frei_ab: 100, spediteur: 'POST'}, {id: 'ABH', name: 'Abholung in der Filiale', preis: 0, frei_ab: 0}]},
@@ -156,6 +164,75 @@ async function stammSave(kind, rows) {
   else { const all = persist.get('stamm', {}); all[kind] = rows; persist.set('stamm', all); }
   STAMM.data[kind] = rows.map(r => ({...r}));
   applyStamm(); Hooks.emit('stamm.saved', {tabelle: kind, zeilen: rows.length});
+}
+
+/* ── Eine Zeile einer Stammdaten-Tabelle im Dialog bearbeiten oder neu anlegen (Stift/Plus an den Auswahlfeldern der Masken) ── */
+const STROW = {};   // Tabellen mit eigenem Dialog: kind → (id|null, {preset, titel}) → Promise<id|null>
+const STNEW = {groessenschluessel: rows => { const nr = Math.max(0, ...rows.map(r => +r.nr || 0)) + 1; return {id: 'gs-' + nr, extra: {nr, sync: false}}; }};   // Schlüssel-Vergabe je Tabelle
+const stSlug = x => String(x || '').toUpperCase().replace(/Ä/g, 'AE').replace(/Ö/g, 'OE').replace(/Ü/g, 'UE').replace(/ß/g, 'SS').replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 20);
+/** Dialog „Zeile bearbeiten / neu“ für jede Stammdaten-Art aus STAMM_DEF. id = null → neue Zeile (preset: Vorgaben). Gibt die Kennung der gespeicherten Zeile zurück, bei Abbruch null.
+ *  Mehrfach-Auswahlen mit sehr vielen Einträgen (alle Warengruppen) bleiben unverändert und werden in der Tabelle gepflegt. */
+async function stRowDialog(kind, id, o = {}) {
+  const D = STAMM_DEF[kind]; if (!D) return null;
+  try { await needPerm('einstellungen', D.t); } catch { return null; }
+  let base;
+  try { base = DESKTOP ? await invoke('stamm_list', {kind}) : stRows(kind); } catch { base = stRows(kind); }
+  if (!base.length) base = stRows(kind);   // Tabelle nur mit eingebauten Startzeilen: diese gehören beim Sichern dazu
+  const rows = base.map(r => ({...r})), cur = id ? rows.find(r => String(r.id) === String(id)) : null;
+  if (id && !cur) { toast(`${o.titel || D.t}: diese Zeile gibt es nicht mehr`, {type: 'warn'}); return null; }
+  const neu = !cur, row0 = cur || {...(o.preset || {})}, cols = D.cols.filter(c => c.t !== 'ro');
+  const opts = c => typeof c.o === 'function' ? c.o() : c.o || [];
+  const fld = c => {
+    const v = row0[c.k], op = opts(c), lbl = `<span>${esc(c.l)}</span>`;
+    if (c.t === 'check') return `<label class="field" style="grid-column:1/-1;flex-direction:row;align-items:center;gap:8px"><input type="checkbox" data-f="${c.k}" ${v ? 'checked' : ''}> <span>${esc(c.l)}</span></label>`;
+    if (c.t === 'select') {
+      const big = op.length > 150, have = op.find(([x]) => String(x) === String(v ?? ''));
+      return `<label class="field">${lbl}<select class="input select" data-f="${c.k}" ${big ? 'data-lazy' : ''}><option value="">–</option>${(big ? (have ? [have] : []) : op).map(([x, l]) => `<option value="${esc(x)}" ${String(v ?? '') === String(x) ? 'selected' : ''}>${esc(l)}</option>`).join('')}${v && !have ? `<option value="${esc(v)}" selected>${esc(v)} (gibt es nicht mehr)</option>` : ''}</select></label>`;
+    }
+    if (c.t === 'multi') {
+      if (op.length > 40) return `<div class="field" style="grid-column:1/-1">${lbl}<small class="ea-hint">${num((v || []).length)} ausgewählt – in der Tabelle „${esc(D.t)}“ zu pflegen (zu viele Einträge für diesen Dialog).</small></div>`;
+      const sel = new Set(v || []);
+      return `<div class="field" style="grid-column:1/-1">${lbl}<div style="display:flex;flex-wrap:wrap;gap:6px">${op.map(([x, l]) => `<label class="chip" style="cursor:pointer;height:26px"><input type="checkbox" data-fm="${c.k}" value="${esc(x)}" ${sel.has(x) ? 'checked' : ''} style="margin:0 5px 0 0">${esc(l)}</label>`).join('')}</div></div>`;
+    }
+    if (c.t === 'area') return `<label class="field" style="grid-column:1/-1">${lbl}<textarea class="input" rows="3" data-f="${c.k}" style="height:auto;padding:8px 12px">${esc(v ?? '')}</textarea></label>`;
+    if (c.t === 'color') return `<label class="field">${lbl}<input type="color" data-f="${c.k}" value="${esc(v || '#888888')}" style="width:56px;height:36px;border:0;background:none"></label>`;
+    const val = c.t === 'list' ? (v || []).join(', ') : c.t === 'num' && v != null && v !== '' ? String(v).replace('.', ',') : v ?? '';
+    return `<label class="field" ${c.t === 'list' ? 'style="grid-column:1/-1"' : ''}>${lbl}<input class="input ${c.t === 'num' ? 'num' : ''}" type="${c.t === 'date' ? 'date' : c.t === 'time' ? 'time' : 'text'}" data-f="${c.k}" value="${esc(val)}" ${c.ph ? `placeholder="${esc(c.ph)}"` : ''} ${c.t === 'num' ? 'inputmode="decimal"' : ''} autocomplete="off"></label>`;
+  };
+  return new Promise(res => {
+    let fertig = false;
+    const el = openLayer(`<div class="modal" style="width:min(580px,100%)" role="dialog" aria-modal="true" aria-label="${esc(o.titel || D.t)}"><div class="m-head"><div class="m-ic">${ic(D.ic || 'list')}</div><div><h2>${esc(o.titel || D.t)} ${neu ? '– neu' : 'bearbeiten'}</h2><p>${neu ? 'Neue Zeile anlegen' : esc(cur[D.cols[0]?.k] || cur.id)}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+      <div class="m-body" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))"><label class="field"><span>Kürzel</span><input class="input mono" data-f="id" value="${esc(cur?.id || '')}" ${cur ? 'readonly tabindex="-1"' : ''} maxlength="32" autocomplete="off" placeholder="${cur ? '' : 'wird aus dem Namen gebildet'}"></label>${cols.map(fld).join('')}</div>
+      <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" data-ok>${ic('check', 'i-sm')}Speichern</button></div></div>`,
+      {focus: `[data-f="${cols[0]?.k || 'id'}"]`, onClose: () => { if (!fertig) res(null); }});
+    // große Auswahllisten erst beim Öffnen füllen
+    el.addEventListener('focusin', e => { const t = e.target; if (t.dataset?.lazy != null && t.tagName === 'SELECT') { const c = cols.find(x => x.k === t.dataset.f), cv = t.value; t.removeAttribute('data-lazy'); t.innerHTML = `<option value="">–</option>` + opts(c).map(([x, l]) => `<option value="${esc(x)}" ${String(x) === cv ? 'selected' : ''}>${esc(l)}</option>`).join(''); } });
+    const idIn = $('[data-f="id"]', el), first = cols[0];
+    if (neu && first) $(`[data-f="${first.k}"]`, el)?.addEventListener('input', e => { if (!idIn.dataset.hand) idIn.value = stSlug(e.target.value); });
+    idIn.addEventListener('input', () => { idIn.dataset.hand = '1'; });
+    $('[data-ok]', el).onclick = async () => {
+      const r = {...row0}, fv = k => $(`[data-f="${k}"]`, el);
+      for (const c of cols) {
+        if (c.t === 'multi') { if (opts(c).length > 40) continue; r[c.k] = $$(`[data-fm="${c.k}"]`, el).filter(x => x.checked).map(x => x.value); continue; }
+        const f = fv(c.k); if (!f) continue;
+        if (c.t === 'check') r[c.k] = f.checked;
+        else if (c.t === 'num') { const t = f.value.trim(); if (t === '') r[c.k] = null; else { const n = parseAmt(t); if (isNaN(n)) { toast(`${c.l}: Zahl angeben`, {type: 'warn'}); f.focus(); return; } r[c.k] = n; } }
+        else if (c.t === 'list') r[c.k] = f.value.split(/[,;]/).map(x => x.trim()).filter(Boolean);
+        else r[c.k] = f.value.trim();
+      }
+      if (first && first.t !== 'check' && !String(r[first.k] ?? '').trim()) { toast(`${first.l} angeben`, {type: 'warn'}); fv(first.k)?.focus(); return; }
+      let all = rows;
+      if (neu) {
+        const gen = STNEW[kind]?.(rows);
+        let nid = idIn.value.trim() || gen?.id || stSlug(r[first?.k]) || stSlug(kind) || 'NEU';
+        if (!idIn.value.trim() && !gen) { const b = nid; let k = 2; while (rows.some(x => String(x.id).toLowerCase() === nid.toLowerCase())) nid = `${b}-${k++}`; }
+        else if (rows.some(x => String(x.id).toLowerCase() === nid.toLowerCase())) { toast(`Das Kürzel „${nid}“ gibt es schon`, {type: 'warn'}); idIn.focus(); return; }
+        Object.assign(r, gen?.extra || {}); r.id = nid; r._aktiv = true; all = [...rows, r];
+      } else all = rows.map(x => String(x.id) === String(cur.id) ? {...x, ...r, id: cur.id} : x);
+      try { await stammSave(kind, all); } catch (err) { toast('Nicht gespeichert', {t2: String(err.message || err), type: 'warn', dur: 6000}); return; }
+      fertig = true; closeLayer(el); res(neu ? r.id : cur.id);
+    };
+  });
 }
 
 /* ── Tabellen-Editor ── */

@@ -4,7 +4,8 @@
    zurücknehmen, Löschen), Reiter mit rotem Zähler für fehlende Pflichtangaben, Felder mit Prüfung und Fehlertext,
    Blättern 1/n, Schutz vor dem Verlassen mit ungesicherten Änderungen. Felder sprechen den Entwurf über Pfade an
    („hersteller.email“). Die Prüfungen liefert die jeweilige Maske (und das Backend entscheidet).
-   Dazu die gemeinsame Länderliste (EU-Kennzeichen für GPSR und Intrastat).
+   Dazu die Auswahl aus einer Stammdaten-Tabelle (K.ref: Auswahlmenü mit Stift = bearbeiten, Plus = neu, Lupe = suchen; Pflichtfelder
+   tragen einen roten Punkt, solange sie leer sind) und die gemeinsame Länderliste (EU-Kennzeichen für GPSR und Intrastat).
    ═════════════════════════════════════════════════════════════════ */
 const mgetp = (o, k) => k.split('.').reduce((x, p) => x == null ? undefined : x[p], o);
 const msetp = (o, k, v) => { const ps = k.split('.'), l = ps.pop(); let x = o; for (const p of ps) { if (x[p] == null || typeof x[p] !== 'object') x[p] = {}; x = x[p]; } x[l] = v; };
@@ -40,12 +41,13 @@ function maskeNew(o) {
   const lock = () => !!o.locked?.();
   K.err = k => o.errors(st.d).find(e => e.k === k);
   K.val = k => mgetp(st.d, k);
-  const attrs = (op, dis, er) => `${op.ph ? `placeholder="${esc(op.ph)}"` : ''} ${op.inputmode ? `inputmode="${op.inputmode}"` : ''} ${op.list ? `list="${op.list}"` : ''} ${op.max ? `maxlength="${op.max}"` : ''} autocomplete="off" ${dis ? 'disabled' : ''} ${er ? 'aria-invalid="true"' : ''}`;
+  const attrs = (op, dis, er) => `${op.ph ? `placeholder="${esc(op.ph)}"` : ''} ${op.inputmode ? `inputmode="${op.inputmode}"` : ''} ${op.list ? `list="${op.list}"` : ''} ${op.max ? `maxlength="${op.max}"` : ''} autocomplete="off" ${dis ? 'disabled' : ''} ${er ? 'aria-invalid="true"' : ''} ${op.pflicht ? 'data-req' : ''}`;
   const foot = (er, op) => er ? `<small class="zp-err" role="alert">${esc(er.t)}</small>` : op.hint ? `<small class="ea-hint">${esc(op.hint)}</small>` : '';
-  /** Eingabefeld; op: mono, num, type, ph, hint, dis, inputmode, list, max */
+  /** Eingabefeld; op: mono, num, type, ph, hint, dis, inputmode, list, max, pflicht (roter Punkt, solange leer), suffix (Einheit hinter dem Feld) */
   K.in = (k, l, op = {}) => {
-    const er = st.show && K.err(k), dis = lock() || op.dis;
-    return `<label class="field ${er ? 'zp-bad' : ''}"><span>${esc(l)}</span><input class="input ${op.mono ? 'mono' : ''} ${op.num ? 'num' : ''}" ${op.type ? `type="${op.type}"` : ''} data-mf="${k}" value="${esc(K.val(k) ?? '')}" ${attrs(op, dis, er)}>${foot(er, op)}</label>`;
+    const er = st.show && K.err(k), dis = lock() || op.dis, v = K.val(k) ?? '';
+    const inp = `<input class="input ${op.mono ? 'mono' : ''} ${op.num ? 'num' : ''}" ${op.type ? `type="${op.type}"` : ''} data-mf="${k}" value="${esc(v)}" ${attrs(op, dis, er)}>`;
+    return `<label class="field ${er ? 'zp-bad' : ''} ${op.pflicht && !String(v).trim() ? 'rq-miss' : ''}" ${op.tip ? `title="${esc(op.tip)}"` : ''}><span>${esc(l)}</span>${op.suffix ? `<div class="ea-cmb-row">${inp}<span class="ea-unit">${esc(op.suffix)}</span></div>` : inp}${foot(er, op)}</label>`;
   };
   K.area = (k, l, rows, hint, op = {}) => {
     const er = st.show && K.err(k), dis = lock() || op.dis;
@@ -57,7 +59,35 @@ function maskeNew(o) {
     const list = cur && !opts.some(([v]) => String(v) === cur) ? [[cur, cur], ...opts] : opts;
     return `<label class="field ${er ? 'zp-bad' : ''}"><span>${esc(l)}</span><select class="input select" data-mf="${k}" ${dis ? 'disabled' : ''}>${op.leer != null ? `<option value="">${esc(op.leer)}</option>` : ''}${list.map(([v, t]) => `<option value="${esc(v)}" ${String(v) === cur ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>${foot(er, op)}</label>`;
   };
-  K.sw = (k, l, hint, dis) => `<div class="ue-sw"><label class="ea-sw"><button type="button" class="switch" role="switch" data-mf-sw="${k}" aria-checked="${!!K.val(k)}" ${lock() || dis ? 'disabled' : ''}></button><span>${esc(l)}</span></label>${hint ? `<small class="ea-hint">${esc(hint)}</small>` : ''}</div>`;
+  K.sw = (k, l, hint, dis, tip) => `<div class="ue-sw" ${tip ? `title="${esc(tip)}"` : ''}><label class="ea-sw"><button type="button" class="switch" role="switch" data-mf-sw="${k}" aria-checked="${!!K.val(k)}" ${lock() || dis ? 'disabled' : ''}></button><span>${esc(l)}</span></label>${hint ? `<small class="ea-hint">${esc(hint)}</small>` : ''}</div>`;
+  /** Auswahl aus einer Stammdaten-Tabelle mit Stift (bearbeiten), Plus (neu) und Lupe (suchen).
+   *  op: pflicht (roter Punkt solange leer), leer (Beschriftung der leeren Zeile), rows() → Zeilen, label(zeile), preset(entwurf) → Vorgaben für „neu“,
+   *  titel (Name im Knopf-Hinweis), bearbeiten/neu/suchen: false blendet den Knopf aus, hint, dis, lazy (ab so vielen Einträgen erst beim Öffnen füllen) */
+  const refRows = (kind, op) => op.rows ? op.rows() : stActive(kind);
+  const refLbl = (r, op) => op.label ? op.label(r) : String(r.name || r.id);
+  K.refs = {};
+  K.ref = (k, l, kind, op = {}) => {
+    const er = st.show && K.err(k), dis = lock() || op.dis, cur = String(K.val(k) ?? ''), rows = refRows(kind, op);
+    const lazy = rows.length > (op.lazy ?? 150), pick = r => [String(r.id), refLbl(r, op)];
+    let list = lazy ? [] : rows.map(pick);
+    const alt = cur ? stRows(kind).find(r => String(r.id) === cur) : null;
+    if (cur && !list.some(([v]) => v === cur)) {
+      const inRows = rows.find(r => String(r.id) === cur);
+      list = [inRows ? pick(inRows) : alt ? [cur, `${refLbl(alt, op)} (nicht aktiv)`] : [cur, `${cur} (gibt es nicht mehr)`], ...list];
+    }
+    K.refs[k] = {kind, op, l};
+    const nm = (op.titel || l).replace(/[\s*]+$/, ''), b = (a, icon, t, off) => `<button type="button" class="ea-ib" data-mf-ref="${a}" data-mf-k="${k}" title="${esc(t)}" aria-label="${esc(t)}" ${dis || off ? 'disabled' : ''}>${ic(icon, 'i-sm')}</button>`;
+    const curTxt = (list.find(([v]) => v === cur) || [])[1] || (lazy && cur ? '' : ''), tip = [op.tip, curTxt].filter(Boolean).join(' – ');
+    return `<label class="field rf-field ${er ? 'zp-bad' : ''} ${op.pflicht && !cur ? 'rq-miss' : ''}" ${tip ? `title="${esc(tip)}"` : ''}><span>${esc(l)}</span><div class="ea-cmb-row rf"><select class="input select" data-mf="${k}" ${op.pflicht ? 'data-req' : ''} ${lazy ? `data-lazy-ref="${k}"` : ''} ${dis ? 'disabled' : ''} ${er ? 'aria-invalid="true"' : ''}>${op.pflicht || op.leer != null ? `<option value="">${esc(op.leer ?? '– bitte wählen –')}</option>` : ''}${list.map(([v, t]) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>${op.bearbeiten === false ? '' : b('edit', 'edit', `${nm} bearbeiten`, !cur)}${op.neu === false ? '' : b('new', 'plus', `${nm}: neu anlegen`)}${op.suchen === false ? '' : b('find', 'search', `${nm} suchen`)}</div>${foot(er, op)}</label>`;
+  };
+  /** Wert einer Auswahl setzen (Suche/Neu), Entwurf als geändert markieren und neu zeichnen */
+  K.pick = (k, v, el) => { msetp(st.d, k, v); K.dirty(el); o.onSet?.(k, el); K.render(); };
+  K.refAct = async (bt, el) => {
+    const k = bt.dataset.mfK, d = K.refs[k]; if (!d) return; const a = bt.dataset.mfRef;
+    if (a === 'find') { const v = await eaPick({l: d.op.titel || d.l.replace(/[\s*]+$/, ''), o: () => refRows(d.kind, d.op).map(r => [String(r.id), refLbl(r, d.op)])}); if (v !== undefined) K.pick(k, v, el); return; }
+    const id = await (STROW[d.kind] || stRowDialog)(d.kind, a === 'edit' ? K.val(k) : null, {preset: a === 'new' ? d.op.preset?.(st.d) : null, titel: d.op.titel || d.l.replace(/[\s*]+$/, '')});
+    if (id) { if (a === 'new') K.pick(k, id, el); else K.render(); }
+  };
   K.card = (h, inner, cls = '') => `<div class="ae-card ea-card ${cls}">${h ? `<h4>${esc(h)}</h4>` : ''}<div class="ea-fields ge-one">${inner}</div></div>`;
   K.landSel = (k, l = 'Land *', op = {}) => K.sel(k, l, landListe().map(x => [x.id, x.name]), {leer: op.leer ?? '–', ...op});
   K.note = h => h ? `<div class="zp-note">${ic('info', 'i-sm')}<span>${h}</span></div>` : '';
@@ -70,12 +100,13 @@ function maskeNew(o) {
       if (!n) { bd?.remove(); return; }
       if (!bd) { bd = document.createElement('span'); bd.className = 'ed-badge'; bd.dataset.mfBd = '1'; tb.append(' ', bd); } bd.textContent = n;
     });
+    $$('[data-mf-cbd]', el).forEach(b => { const keys = b.dataset.mfCbd.split(','), n = errs.filter(e => keys.includes(e.k)).length; b.textContent = n; b.hidden = !n; });
   };
   K.fields = el => {
     const er = new Map(o.errors(st.d).map(e => [e.k, e.t]));
     $$('[data-mf]', el).forEach(inp => {
       const lab = inp.closest('label.field'); if (!lab) return; const k = inp.dataset.mf, bad = (st.show || inp.dataset.touched) && er.has(k);
-      lab.classList.toggle('zp-bad', !!bad); let sm = $('small.zp-err', lab);
+      lab.classList.toggle('zp-bad', !!bad); if (inp.hasAttribute('data-req')) lab.classList.toggle('rq-miss', !String(inp.value).trim()); let sm = $('small.zp-err', lab);
       if (bad) { if (!sm) { sm = document.createElement('small'); sm.className = 'zp-err'; sm.setAttribute('role', 'alert'); $('.ea-hint', lab)?.remove(); lab.append(sm); } sm.textContent = er.get(k); } else if (sm) sm.remove();
     });
   };
@@ -99,6 +130,7 @@ function maskeNew(o) {
 
   K.render = () => {
     const host = $('#view-' + o.page); if (!host || !st.d) return;
+    const fk = document.activeElement?.closest?.('[data-mf]')?.dataset?.mf;   // nach dem Zeichnen wieder in dasselbe Feld (Tastaturbedienung)
     const pos = st.ids.indexOf(st.id), el = document.createElement('div'); el.className = 'ae ue ge fl'; host.replaceChildren(el);
     const can = {new: true, del: !!st.id, refresh: !!st.id, ...(o.can?.() || {})}, lk = lock();
     const btn = (a, icon, l, dis, text = true, kurz) => `<button class="ag-btn" data-mf-a="${a}" title="${esc(l)}" aria-label="${esc(l)}" ${dis ? 'disabled' : ''}>${ic(icon, 'i-sm')}${text ? `<span>${kurz || l}</span>` : ''}</button>`;
@@ -106,15 +138,16 @@ function maskeNew(o) {
     const tab = ([k, l, extra]) => { const n = cnt(k); return `<button type="button" class="ed-tab" role="tab" data-mf-tab="${k}" aria-selected="${st.tab === k}">${esc(l)}${extra || ''}${n ? ` <span class="ed-badge" data-mf-bd="1">${n}</span>` : ''}</button>`; };
     if (!o.tabs().some(([k]) => k === st.tab)) st.tab = o.tabs()[0][0];
     const body = o.body();
-    el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', `Übersicht: ${o.title}`)}${btn('refresh', 'sync', 'Aktualisieren', !can.refresh)}${btn('save', 'check', 'Sichern', lk || !st.dirty)}${btn('new', 'plus', 'Neu', !can.new)}${btn('undo', 'undo', 'Änderungen zurücknehmen', lk || !st.dirty)}${btn('del', 'trash', 'Löschen', !can.del)}${o.bar?.() || ''}
+    el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', `Übersicht: ${o.title}`)}${btn('refresh', 'sync', 'Aktualisieren', !can.refresh)}${btn('save', 'check', 'Sichern', lk || !st.dirty)}${btn('new', 'plus', 'Neu', !can.new)}${btn('undo', 'undo', 'Änderungen zurücknehmen', lk || !st.dirty)}${can.hideDel ? '' : btn('del', 'trash', 'Löschen', !can.del)}${o.bar?.() || ''}
       <span class="sp"></span>${st.id && st.ids.length > 1 ? `<span class="ae-nav">${btn('prev', 'chevron-left', 'Vorheriger Eintrag', pos <= 0, false)}<span class="ae-nr">${pos + 1}/${st.ids.length}</span>${btn('next', 'chevron-right', 'Nächster Eintrag', pos >= st.ids.length - 1, false)}</span>` : ''}</div>
-      <div class="ae-tabsw"><div class="ed-tabs" role="tablist">${o.tabs().map(tab).join('')}</div></div>
+      ${o.tabs().length > 1 || o.alwaysTabs ? `<div class="ae-tabsw"><div class="ed-tabs" role="tablist">${o.tabs().map(tab).join('')}</div></div>` : ''}
       <div class="ae-body"><div id="edBody">${body.html}</div></div>`;
     el.addEventListener('input', e => { const t = e.target.closest('[data-mf]'); if (t && t.type !== 'color' && t.tagName !== 'SELECT') { K.set(t, el); K.fields(el); } });
     el.addEventListener('focusout', e => { const t = e.target.closest('[data-mf]'); if (t) { t.dataset.touched = '1'; K.fields(el); } });
     el.addEventListener('change', e => { const t = e.target.closest('[data-mf]'); if (t) { K.set(t, el); t.dataset.touched = '1'; if (t.tagName === 'SELECT' || t.type === 'color' || o.rerender?.(t.dataset.mf)) K.render(); else K.fields(el); } });
     el.addEventListener('click', async e => {
-      const t = e.target, tb = t.closest('[data-mf-tab]'), b = t.closest('[data-mf-a]'), sw = t.closest('[data-mf-sw]');
+      const t = e.target, tb = t.closest('[data-mf-tab]'), b = t.closest('[data-mf-a]'), sw = t.closest('[data-mf-sw]'), rf = t.closest('[data-mf-ref]');
+      if (rf) return rf.disabled ? undefined : K.refAct(rf, el);
       if (tb) { st.tab = tb.dataset.mfTab; return K.render(); }
       if (sw && !sw.disabled) { const k = sw.dataset.mfSw; msetp(st.d, k, !K.val(k)); K.dirty(el); o.onSet?.(k, el); return K.render(); }
       if (!b || b.disabled) return;
@@ -127,7 +160,17 @@ function maskeNew(o) {
       if (a === 'save') return o.save();
       await o.act?.(a, b, el);
     });
+    // große Auswahllisten (z. B. 2.800 Abteilungen) enthalten zunächst nur den gewählten Eintrag und füllen sich beim Öffnen
+    const fill = t => {
+      const sel = t.closest?.('select[data-lazy-ref]'); if (!sel) return; const d = K.refs[sel.dataset.lazyRef]; if (!d) return;
+      const cur = sel.value; sel.removeAttribute('data-lazy-ref');
+      const rows = refRows(d.kind, d.op), has = rows.some(r => String(r.id) === cur), keep = cur && !has ? sel.querySelector(`option[value="${CSS.escape(cur)}"]`)?.outerHTML || '' : '';
+      sel.innerHTML = `${d.op.pflicht || d.op.leer != null ? `<option value="">${esc(d.op.leer ?? '– bitte wählen –')}</option>` : ''}${keep}${rows.map(r => `<option value="${esc(r.id)}" ${String(r.id) === cur ? 'selected' : ''}>${esc(refLbl(r, d.op))}</option>`).join('')}`;
+      sel.value = cur;
+    };
+    el.addEventListener('focusin', e => fill(e.target)); el.addEventListener('mousedown', e => fill(e.target));
     body.mount?.(el);
+    if (fk) { const f = $(`[data-mf="${CSS.escape(fk)}"]`, el); if (f && !f.disabled) try { f.focus({preventScroll: true}); } catch { /* */ } }
   };
   /** Erster Fehler beim Sichern: zum Reiter springen und Fehler zeigen; true = alles in Ordnung */
   K.gate = () => {

@@ -12,7 +12,7 @@ const discOf = a => a.sale ? Math.round((1 - a.sale / a.price) * 100) : 0;
 
 function totals() {
   let sub = 0, ldisc = 0; const byRate = {}, gesperrt = {};   // gesperrt: Positionen von Lieferanten mit Rabattsperre – der Bon-Rabatt erfasst sie nicht
-  POS.cart.forEach(l => { const g = r2(l.unit * l.qty), d = l.disc ? r2(g * l.disc.pct / 100) : 0; sub += g; ldisc += d; byRate[l.vat] = (byRate[l.vat] || 0) + g - d; if (lfRabattGesperrt(l.art)) gesperrt[l.vat] = (gesperrt[l.vat] || 0) + g - d; });
+  POS.cart.forEach(l => { const g = r2(l.unit * l.qty), d = l.disc ? r2(g * l.disc.pct / 100) : 0; sub += g; ldisc += d; byRate[l.vat] = (byRate[l.vat] || 0) + g - d; if (rabattGesperrt(l.art)) gesperrt[l.vat] = (gesperrt[l.vat] || 0) + g - d; });
   let bdisc = 0;
   if (POS.billDisc) Object.keys(byRate).forEach(k => { if (+k > 0) { const d = r2((byRate[k] - (gesperrt[k] || 0)) * POS.billDisc.pct / 100); byRate[k] -= d; bdisc += d; } });
   const total = r2(sub - ldisc - bdisc);
@@ -97,7 +97,7 @@ function lineHTML(l) {
   const c = l.c ? COLORS[l.c][1] : 'var(--text-3)';
   const g = r2(l.unit * l.qty), d = l.disc ? r2(g * l.disc.pct / 100) : 0;
   const varTxt = l.service ? esc(l.meta || 'Dienstleistung') : `<i class="sw" style="background:${c}"></i>${COLORS[l.c][0]}${l.s !== 'Einheitsgröße' ? ` · Gr. ${esc(l.s)}` : ''}`;
-  const extra = [l.disc ? `<span class="disc-tag">−${num(l.disc.pct, Number.isInteger(+l.disc.pct) ? 0 : 1)} %${l.disc.auto ? ` · ${esc(l.disc.reason)}` : ''}</span>` : '', l.was && !l.disc ? `<span class="disc-tag">Aktion</span>` : '', lfRabattGesperrt(l.art) ? `<span class="disc-tag" title="Rabattsperre des Lieferanten">${ic('lock', 'i-xs')}ohne Rabatt</span>` : '',
+  const extra = [l.disc ? `<span class="disc-tag">−${num(l.disc.pct, Number.isInteger(+l.disc.pct) ? 0 : 1)} %${l.disc.auto ? ` · ${esc(l.disc.reason)}` : ''}</span>` : '', l.was && !l.disc ? `<span class="disc-tag">Aktion</span>` : '', rabattGesperrt(l.art) ? `<span class="disc-tag" title="Rabattsperre: ${esc(rabattSperreGrund(l.art))}">${ic('lock', 'i-xs')}ohne Rabatt</span>` : '',
     l.vals ? Object.entries(l.vals).filter(([, v]) => v).map(([k, v]) => `<span class="pill" style="height:18px;font-size:10.5px;padding:0 6px">${esc((SKI_PROMPTS.find(p => p.key === k) || {label: k}).label.split(' ')[0])} ${esc(v)}</span>`).join('') : '',
     l.seller ? `<span class="pill" style="height:18px;font-size:10.5px;padding:0 6px">${ic('user')}${esc(l.seller.split(' ')[0])}</span>` : ''].join('');
   const cls = ['line', POS.sel === l.key ? 'sel' : '', POS.lastKey === l.key ? (POS.lastNew ? 'new' : 'flash') : ''].join(' ');
@@ -337,8 +337,8 @@ const fixDisc = () => (typeof stActive === 'function' ? stActive('festerrabatt')
 function openDiscount() {
   if (!POS.cart.length) return toast('Warenkorb ist leer', {type: 'warn', icon: 'percent'});
   let line = POS.cart.find(l => l.key === POS.sel);
-  if (line && lfRabattGesperrt(line.art)) { toast('Rabattsperre', {t2: `${line.name}: Artikel von ${supName(line.art.supplierId)} sind vom Rabatt ausgeschlossen – ein Bon-Rabatt gilt nicht für diese Position`, icon: 'lock', type: 'warn', dur: 5000}); line = null; }
-  if (!line && !POS.cart.some(l => l.vat > 0 && !lfRabattGesperrt(l.art))) return toast('Kein Rabatt möglich', {t2: 'Im Warenkorb ist keine Position, auf die ein Bon-Rabatt wirkt (Rabattsperre des Lieferanten bzw. steuerfreie Positionen)', icon: 'lock', type: 'warn', dur: 5000});
+  if (line && rabattGesperrt(line.art)) { toast('Rabattsperre', {t2: `${line.name}: ${rabattSperreGrund(line.art)} – Artikel sind vom Rabatt ausgeschlossen, ein Bon-Rabatt gilt nicht für diese Position`, icon: 'lock', type: 'warn', dur: 5000}); line = null; }
+  if (!line && !POS.cart.some(l => l.vat > 0 && !rabattGesperrt(l.art))) return toast('Kein Rabatt möglich', {t2: 'Im Warenkorb ist keine Position, auf die ein Bon-Rabatt wirkt (Rabattsperre des Lieferanten oder der Warengruppe bzw. steuerfreie Positionen)', icon: 'lock', type: 'warn', dur: 5000});
   const st = {target: line ? 'line' : 'bill', pct: (line ? line.disc?.pct : POS.billDisc?.pct) || 10, reason: line?.disc?.reason || 'Kulanz'};
   const limit = POS.flow.approval ? POS.flow.approvalPct : 100;
   const el = openLayer(`<div class="modal" style="width:min(540px,100%)" role="dialog" aria-modal="true" aria-label="Rabatt gewähren"><div id="dBody"></div></div>`);
