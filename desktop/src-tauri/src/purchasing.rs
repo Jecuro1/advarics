@@ -84,7 +84,13 @@ pub fn suppliers_alle(c: &Connection) -> rusqlite::Result<Vec<Supplier>> {
 
 /// Nächste freie Lieferanten-Nr.
 pub fn naechste_nr(c: &Connection) -> i64 {
-    c.query_row("SELECT COALESCE(MAX(nr), 0) + 1 FROM suppliers", [], |r| r.get(0)).unwrap_or(1)
+    // erlaubt sind 1 bis 999 999 (wie in der Maske): nach dem Höchsten, sonst die erste Lücke
+    let max: i64 = c.query_row("SELECT COALESCE(MAX(nr), 0) FROM suppliers WHERE nr BETWEEN 1 AND 999999", [], |r| r.get(0)).unwrap_or(0);
+    if max < 999_999 {
+        return max + 1;
+    }
+    let belegt: std::collections::HashSet<i64> = c.prepare("SELECT nr FROM suppliers WHERE nr BETWEEN 1 AND 999999").and_then(|mut st| st.query_map([], |r| r.get(0)).map(|x| x.flatten().collect())).unwrap_or_default();
+    (1..=999_999).find(|n| !belegt.contains(n)).unwrap_or(1)
 }
 
 /// Lieferant anlegen (Import, Demo) oder die Grunddaten überschreiben; Nr., Land und Profil nur beim Anlegen, Aktiv-Zustand nie
@@ -92,7 +98,7 @@ pub fn supplier_save(c: &Connection, s: &Supplier) -> Result<String, String> {
     if s.name.trim().chars().count() < 2 {
         return Err("Name fehlt".into());
     }
-    let nr = if s.nr > 0 && c.query_row("SELECT 1 FROM suppliers WHERE nr = ?1 AND id <> ?2", params![s.nr, s.id.trim()], |_| Ok(())).optional().map_err(|e| e.to_string())?.is_none() { s.nr } else { naechste_nr(c) };
+    let nr = if (1..=999_999).contains(&s.nr) && c.query_row("SELECT 1 FROM suppliers WHERE nr = ?1 AND id <> ?2", params![s.nr, s.id.trim()], |_| Ok(())).optional().map_err(|e| e.to_string())?.is_none() { s.nr } else { naechste_nr(c) };
     let id = if s.id.trim().is_empty() {
         let mut k = nr;
         loop {

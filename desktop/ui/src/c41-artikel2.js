@@ -136,7 +136,7 @@ function artEditorMount(host, a, tab0) {
           <label class="field"><span>MwSt.-Typ</span><select class="input select" data-f="vat">${[[20, 'Standard 20 %'], [13, 'Reduziert 13 %'], [10, 'Reduziert 10 %'], [0, 'Ohne MwSt. 0 %']].map(([r, l]) => `<option value="${r}" ${+st.vat === r ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
           <div class="muted" id="edMargin" style="font-size:12px"></div></div>
         <div class="ae-card"><h4>Lieferant & Bestand</h4>
-          <label class="field"><span>Lieferant</span><select class="input select" data-f="supplierId"><option value="">–</option>${SUPPLIERS.map(x => `<option value="${esc(x.id)}" ${x.id === st.supplierId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
+          <label class="field"><span>Lieferant</span><select class="input select" data-f="supplierId"><option value="">–</option>${lfOptionen(st.supplierId).map(([id, name]) => `<option value="${esc(id)}" ${id === st.supplierId ? 'selected' : ''}>${esc(name)}</option>`).join('')}</select></label>
           <label class="field"><span>Mindestbestand je Variante</span><input class="input num" data-f="minStock" inputmode="numeric" value="${esc(st.minStock)}"></label>
           <label class="field"><span>Darstellung (ohne Bild)</span><select class="input select" data-f="g">${GLYPHS.map(([k, l]) => `<option value="${k}" ${k === st.g ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
         <div class="ae-card"><h4>Übersicht</h4>

@@ -47,7 +47,7 @@ function edifactRead(raw) {
     if (s.tag === 'LIN') { pos = {ean: edVal(s, 2, 0), menge: 0}; out.positionen.push(pos); }
     if (!pos) continue;
     if (s.tag === 'PIA') { const q = edVal(s, 1, 1); if (q === 'SA') pos.artikelnr = edVal(s, 1, 0); if (q === 'GN') pos.wg = edVal(s, 1, 0); }
-    if (s.tag === 'IMD') { const q = edVal(s, 1), txt = edVal(s, 2, 3) || edVal(s, 2, 0); if (q === '35') pos.farbe = txt; else if (q === '98') pos.groesse = txt; else if (q === 'BRN') pos.marke = txt; else if (!pos.name) pos.name = txt; }
+    if (s.tag === 'IMD') { const q = edVal(s, 1), txt = edVal(s, 2, 3) || edVal(s, 2, 0); if (q === '35') pos.farbe = txt; else if (q === '98') pos.groesse = txt; else if (q === 'BRN') { pos.marke = txt; pos.marke_code = edVal(s, 2, 0); } else if (!pos.name) pos.name = txt; }
     if (s.tag === 'QTY') { const q = edVal(s, 0, 0); if (['12', '21', '47', '113', '153', '145', '1'].includes(q)) pos.menge = parseFloat(edVal(s, 0, 1)) || 0; }
     if (s.tag === 'PRI') { const q = edVal(s, 0, 0), p = parseFloat(edVal(s, 0, 1)) || 0; if (q === 'AAA' || q === 'AAB') pos.ek = p; if (q === 'AAE' || q === 'INF') pos.vk = p; }
     if (s.tag === 'MOA' && edVal(s, 0, 0) === '203') pos.betrag = parseFloat(edVal(s, 0, 1)) || 0;
@@ -83,7 +83,7 @@ async function ediImportFolder(auto) {
       const raw = await invoke('edi_read', {which: 'import', name: f.name});
       const d = await ediCreate(f.name, raw);
       await invoke('edi_done', {name: f.name}); n++;
-      const sup = SUPPLIERS.find(s => s.id === d.partner), cfg = stActive('edilieferant').find(x => x.lieferant === sup?.id);
+      const sup = lfSup(d.partner), cfg = stActive('edilieferant').find(x => x.lieferant === sup?.id);
       if (auto && cfg?.auto && ['DESADV', 'INVOIC', 'ORDRSP', 'PRICAT'].includes(d.data.typ)) { try { await ediProcess(await invoke('doc_get', {id: d.id})); } catch (e) { Hooks.emit('edi.fehler', {no: d.no, fehler: String(e)}); } }
     } catch (e) { Hooks.emit('edi.fehler', {datei: f.name, fehler: String(e)}); }
   }
@@ -93,22 +93,24 @@ async function ediImportFolder(auto) {
 }
 /** Nachricht verarbeiten: DESADV → Avis, INVOIC → Eingangsrechnung, ORDRSP → bestätigt, PRICAT → Katalog */
 async function ediProcess(d) {
-  const p = d.data.parsed || {}, sup = SUPPLIERS.find(s => s.id === d.partner);
+  const p = d.data.parsed || {}, sup = lfSup(d.partner);
   const lines = [], unknown = [];
   for (const x of p.positionen || []) { const f = findEan(x.ean); if (f) lines.push({...newLine(DK.avis, f.a, f.v, x.menge || 1), ...(x.ek ? {price: Math.round(x.ek * 100)} : {})}); else unknown.push(x.ean); }
   let info = '';
   if (p.typ === 'DESADV') {
-    if (!sup) throw new Error('Lieferant unbekannt – GLN unter EDI › Lieferanten EDI-Einstellungen hinterlegen');
+    if (!sup) throw new Error('Lieferant unbekannt – Haupt-GLN im Lieferanten (Stammdaten › Lieferanten) hinterlegen');
     if (unknown.length) throw new Error(`Unbekannte EAN: ${unknown.slice(0, 5).join(', ')}${unknown.length > 5 ? ' …' : ''} – erst per PRICAT/Artikel-Import anlegen`);
     const po = EK.pos.find(x => x.no === p.bestellung);
     const a = await invoke('doc_save', {doc: {kind: 'avis', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), data: {lines, order_id: po?.id || null, spedition: '', edi: d.no}}, user: S.user.name});
     info = `Avis ${a.no}`;
   } else if (p.typ === 'INVOIC') {
-    if (!sup) throw new Error('Lieferant unbekannt – GLN hinterlegen');
+    if (!sup) throw new Error('Lieferant unbekannt – Haupt-GLN im Lieferanten (Stammdaten › Lieferanten) hinterlegen');
     const betrag = Math.round((p.summe ?? (p.positionen || []).reduce((s, x) => s + (x.betrag ?? (x.ek || 0) * (x.menge || 0)), 0)) * 100);
     const po = EK.pos.find(x => x.no === p.bestellung);
-    const zb = stActive('zahlungsbedingung')[0];
-    const r = await invoke('doc_save', {doc: {kind: 'er', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), due: plusDays(+zb?.tage || 30), data: {rechnungsnr: p.nr, betrag, bestellungen: po ? [po.id] : [], notiz: `aus EDI ${d.no}`}}, user: S.user.name});
+    // Fälligkeit und Skonto wie bei der von Hand erfassten Rechnung: Valuta/Skonto des Lieferanten, sonst seine Zahlungs-Bed., sonst die erste Zahlungsbedingung
+    const sp = sup.profile || {}, zb = stRows('zahlungsbedingung').find(z => z.id === sp.zahlungsbed) || stActive('zahlungsbedingung')[0];
+    const valuta = +sp.valuta || +zb?.tage || 30, skonto = +sp.skonto || +zb?.skonto || 0, skTage = +zb?.skonto_tage || 0;
+    const r = await invoke('doc_save', {doc: {kind: 'er', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), due: plusDays(valuta), data: {rechnungsnr: p.nr, betrag, bestellungen: po ? [po.id] : [], notiz: `aus EDI ${d.no}`, ...(skonto ? {skonto_pct: skonto, skonto_bis: skTage ? plusDays(skTage) : ''} : {})}}, user: S.user.name});
     info = `Eingangsrechnung ${r.no}`;
   } else if (p.typ === 'ORDRSP') {
     info = `Bestätigung zu ${p.bestellung || '–'}: ${num((p.positionen || []).reduce((s, x) => s + (x.menge || 0), 0))} Teile`;
@@ -127,7 +129,7 @@ async function ediExport(type, sid, body, ref) {
   let pfad = '';
   if (CFG['edi.export_dir']) pfad = await invoke('edi_write', {which: 'export', name, content, user: S.user.name});
   else { const p = await invoke('save_text', {name, content, title: `${type} speichern`}); if (!p) return null; pfad = p; }
-  const sup = SUPPLIERS.find(s => s.id === sid);
+  const sup = lfSup(sid);
   const d = await invoke('doc_save', {doc: {kind: 'edi', partner: sid || null, partner_name: sup?.name || '', ref: name, date: today(), data: {typ: type, richtung: 'aus', datei: name, pfad, parsed: edifactRead(content), inhalt: content}}, user: S.user.name});
   await invoke('doc_action', {id: d.id, action: 'verarbeitet', payload: {ergebnis: pfad}, user: S.user.name});
   EDI.docs = null; toast(`${type} erstellt`, {t2: pfad, type: 'pos', icon: 'upload'}); return d;
@@ -161,7 +163,7 @@ async function ediInvrpt(sid) {
 /* ── PRICAT → Artikel ── */
 function ediCatalogItems(docs) {
   const out = [];
-  for (const d of docs.filter(x => x.data?.typ === 'PRICAT')) for (const x of d.data.parsed?.positionen || []) out.push({...x, marke: lfMarkeEigen(d.partner, x.marke, x.marke_gln || d.data.parsed?.marke_gln), doc: d.no, sid: d.partner, sup: d.partner_name});
+  for (const d of docs.filter(x => x.data?.typ === 'PRICAT')) for (const x of d.data.parsed?.positionen || []) out.push({...x, marke: lfMarkeEigen(d.partner, x.marke, x.marke_gln || d.data.parsed?.marke_gln, x.marke_code), doc: d.no, sid: d.partner, sup: d.partner_name});
   const by = {}; out.forEach(x => { by[x.ean] = x; }); // jüngste Übermittlung gewinnt
   return Object.values(by).map(x => { const f = findEan(x.ean); const conflict = f && ((f.a.supplierId && x.sid && f.a.supplierId !== x.sid) || (x.artikelnr && f.a.fields?.['Lieferanten-Art.-Nr.'] && f.a.fields['Lieferanten-Art.-Nr.'] !== x.artikelnr)); const preis = f && x.vk && Math.abs((f.a.price || 0) - x.vk) > 0.009; return {...x, known: !!f, art: f?.a, conflict: !!conflict, preis}; });
 }

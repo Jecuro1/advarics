@@ -139,7 +139,7 @@ async function avisFromFile() {
   const r = parseOrderText(txt);
   if (!r.ok.length) return toast('Keine Positionen erkannt', {t2: r.bad[0]?.why || 'Spalten EAN und Menge nötig', type: 'warn'});
   if (r.bad.length) toast(`${r.bad.length} Zeilen nicht zugeordnet`, {t2: r.bad.slice(0, 3).map(b => b.why).join(' · '), type: 'warn', dur: 8000});
-  const sup = SUPPLIERS.find(s => s.id === r.ok[0].a.supplierId);
+  const sup = lfSup(r.ok[0].a.supplierId);
   openDoc('avis', null, {partner: sup?.id || null, partner_name: sup?.name || '', date: plusDays(1), data: {lines: r.ok.map(x => ({ean: x.v.ean, sku: x.a.id, name: lineName(x.a, x.v), qty: x.qty, price: x.cost || 0, vat: x.a.vat ?? 20}))}, focusSearch: false});
 }
 
@@ -176,7 +176,10 @@ async function wsBook() {
       const a = await invoke('doc_get', {id: WS.avis});
       const lines = Object.entries(cnt).map(([ean, qty]) => { const x = findEan(ean); const old = a.data.lines.find(l => l.ean === ean); return {ean, sku: x?.a.id, name: old?.name || (x ? lineName(x.a, x.v) : ean), qty, price: old?.price || 0, vat: old?.vat ?? 20}; });
       await invoke('doc_save', {doc: {...a, data: {...a.data, lines, gezaehlt: true}}, user: S.user.name});
-      const r = await invoke('doc_action', {id: a.id, action: 'buchen', payload: {}, user: S.user.name}); applyStocks(r.stocks);
+      let r;
+      try { r = await invoke('doc_action', {id: a.id, action: 'buchen', payload: {}, user: S.user.name}); }
+      catch (e) { await invoke('doc_save', {doc: {...a, data: {...a.data, lines, gezaehlt: false}}, user: S.user.name}).catch(() => {}); throw e; } // nicht gebucht: der Zählstand gilt nicht weiter
+      applyStocks(r.stocks);
       toast('Avis eingebucht', {t2: `${a.no} · ${WS.items.reduce((s, x) => s + x.qty, 0)} Stück`, type: 'pos', icon: 'boxes'});
     } else if (WS.po) {
       const lines = await invoke('po_lines', {id: WS.po}), items = [], rest = [];
@@ -246,7 +249,7 @@ async function renderZahlungen() {
   v.innerHTML = `<div class="cv">${pageHead('Zahlungen', 'Zahlungsvorschlag aus freigegebenen Rechnungen (mit Skonto), Zahlung erfassen, SEPA-Überweisungsdatei (pain.001) für das Online-Banking', `<button class="btn btn-secondary" data-zp="neu">${ic('plus', 'i-sm')}Zahlung erfassen</button>${notExp.length ? `<button class="btn btn-primary" data-zp="sepa">${ic('download', 'i-sm')}SEPA-Datei (${notExp.length})</button>` : ''}`)}
     ${kpiCards([[eur0(due.reduce((s, d) => s + d.open - skonto(d), 0) / 100), `Vorschlag (fällig in ${ZP.tage} Tagen)`], [eur0(due.reduce((s, d) => s + skonto(d), 0) / 100), 'Skonto möglich', 'pos'], [num(notExp.length), 'Zahlungen nicht exportiert', notExp.length ? 'warn' : ''], [eur0(zs.filter(z => z.status !== 'storniert' && z.date.slice(0, 7) === today().slice(0, 7)).reduce((s, z) => s + z.total, 0) / 100), 'bezahlt diesen Monat']])}
     <div class="card" style="margin-bottom:16px"><div class="set-row"><div><div class="set-l">Zahlungsvorschlag</div><div class="set-h">Freigegebene Rechnungen, fällig bzw. Skontofrist innerhalb von <select class="input select" id="zpTage" style="height:28px;width:auto;display:inline-block;padding:0 26px 0 8px">${[3, 7, 14, 30, 60].map(t => `<option ${t === ZP.tage ? 'selected' : ''}>${t}</option>`).join('')}</select> Tagen</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-zp="lauf" ${due.length ? '' : 'disabled'}>${ic('check', 'i-sm')}Ausgewählte bezahlen</button></div></div>
-      ${due.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:34px"></th><th>Rechnung</th><th>Lieferant</th><th>Fällig</th><th class="r">offen</th><th class="r">Skonto</th><th class="r" style="padding-right:16px">Zahlbetrag</th></tr></thead><tbody>${due.map(d => `<tr><td style="padding-left:16px"><input type="checkbox" checked data-zpe="${d.id}"></td><td><b class="mono">${esc(d.no)}</b><div class="muted" style="font-size:11.5px">${esc(d.data.rechnungsnr || '')}</div></td><td>${esc(d.partner_name)}${SUPPLIERS.find(s => s.id === d.partner)?.iban ? '' : ' <span class="pill warn" style="height:18px">IBAN fehlt</span>'}</td><td class="num">${esc(dDate(d.due))}</td><td class="r num">${cEur(d.open)}</td><td class="r num" style="color:var(--pos)">${skonto(d) ? cEur(skonto(d)) : '–'}</td><td class="r num" style="padding-right:16px;font-weight:600">${cEur(d.open - skonto(d))}</td></tr>`).join('')}</tbody></table>`
+      ${due.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:34px"></th><th>Rechnung</th><th>Lieferant</th><th>Fällig</th><th class="r">offen</th><th class="r">Skonto</th><th class="r" style="padding-right:16px">Zahlbetrag</th></tr></thead><tbody>${due.map(d => `<tr><td style="padding-left:16px"><input type="checkbox" checked data-zpe="${d.id}"></td><td><b class="mono">${esc(d.no)}</b><div class="muted" style="font-size:11.5px">${esc(d.data.rechnungsnr || '')}</div></td><td>${esc(d.partner_name)}${lfSup(d.partner)?.iban ? '' : ' <span class="pill warn" style="height:18px">IBAN fehlt</span>'}</td><td class="num">${esc(dDate(d.due))}</td><td class="r num">${cEur(d.open)}</td><td class="r num" style="color:var(--pos)">${skonto(d) ? cEur(skonto(d)) : '–'}</td><td class="r num" style="padding-right:16px;font-weight:600">${cEur(d.open - skonto(d))}</td></tr>`).join('')}</tbody></table>`
         : '<div class="empty" style="padding:28px"><p>Nichts fällig – Rechnungen müssen freigegeben sein.</p></div>'}</div>
     <div class="card">${zs.length ? `<table class="tbl art-tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Zahlung</th><th>Datum</th><th>Lieferant</th><th>Rechnungen</th><th>Art</th><th>Status</th><th class="r" style="padding-right:16px">Betrag</th></tr></thead><tbody>${zs.map(z => `<tr data-dopen="${z.id}" style="cursor:pointer"><td style="padding-left:16px"><b class="mono">${esc(z.no)}</b></td><td class="num muted">${esc(dDate(z.date))}</td><td>${esc(z.partner_name)}</td><td class="muted" style="font-size:12.5px">${esc((z.data.zuordnung || []).map(a => ers.find(e => e.id === a.er)?.no || a.er).join(', '))}</td><td>${esc(z.data.art || '')}</td><td>${dPill(z.status)}</td><td class="r num" style="padding-right:16px;font-weight:600">${cEur(z.total)}</td></tr>`).join('')}</tbody></table>`
       : `<div class="empty" style="padding:40px"><div class="empty-icon">${ic('cash')}</div><p>Noch keine Zahlungen erfasst.</p></div>`}</div></div>`;
@@ -305,7 +308,7 @@ async function sepaExport() {
   const zs = (await docLoad('zahlung')).filter(z => z.status === 'erfasst'); await loadSuppliers();
   const iban = (CFG['zahlung.iban'] || '').replace(/\s/g, '').toUpperCase(), bic = (CFG['zahlung.bic'] || '').trim().toUpperCase();
   if (!iban) { toast('Eigene IBAN fehlt', {t2: 'Einstellungen → Zahlungsarten → IBAN', type: 'warn'}); return setGo('zahlung'); }
-  const miss = zs.filter(z => !SUPPLIERS.find(s => s.id === z.partner)?.iban);
+  const miss = zs.filter(z => !lfSup(z.partner)?.iban);
   if (miss.length) return toast('IBAN der Lieferanten fehlt', {t2: miss.map(z => z.partner_name).join(', ') + ' – unter Lieferanten ergänzen', type: 'warn', dur: 9000});
   const x = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;'}[c])).replace(/[^\x20-\x7EÄÖÜäöüß]/g, ' ');
   const sum = zs.reduce((s, z) => s + z.total, 0), id = 'KONTOR-' + Date.now(), when = zs.map(z => z.date).sort()[0] < today() ? today() : zs.map(z => z.date).sort()[0];
@@ -314,7 +317,7 @@ async function sepaExport() {
 <GrpHdr><MsgId>${id}</MsgId><CreDtTm>${new Date().toISOString().slice(0, 19)}</CreDtTm><NbOfTxs>${zs.length}</NbOfTxs><CtrlSum>${(sum / 100).toFixed(2)}</CtrlSum><InitgPty><Nm>${x(CFG['firma.name']).slice(0, 70)}</Nm></InitgPty></GrpHdr>
 <PmtInf><PmtInfId>${id}-1</PmtInfId><PmtMtd>TRF</PmtMtd><BtchBookg>true</BtchBookg><NbOfTxs>${zs.length}</NbOfTxs><CtrlSum>${(sum / 100).toFixed(2)}</CtrlSum><PmtTpInf><SvcLvl><Cd>SEPA</Cd></SvcLvl></PmtTpInf><ReqdExctnDt>${when}</ReqdExctnDt>
 <Dbtr><Nm>${x(CFG['zahlung.empfaenger'] || CFG['firma.name']).slice(0, 70)}</Nm></Dbtr><DbtrAcct><Id><IBAN>${iban}</IBAN></Id></DbtrAcct><DbtrAgt><FinInstnId>${bic ? `<BIC>${bic}</BIC>` : '<Othr><Id>NOTPROVIDED</Id></Othr>'}</FinInstnId></DbtrAgt><ChrgBr>SLEV</ChrgBr>
-${zs.map(z => { const s = SUPPLIERS.find(y => y.id === z.partner); return `<CdtTrfTxInf><PmtId><EndToEndId>${x(z.no)}</EndToEndId></PmtId><Amt><InstdAmt Ccy="EUR">${(z.total / 100).toFixed(2)}</InstdAmt></Amt>${s.bic ? `<CdtrAgt><FinInstnId><BIC>${x(s.bic)}</BIC></FinInstnId></CdtrAgt>` : ''}<Cdtr><Nm>${x(s.name).slice(0, 70)}</Nm></Cdtr><CdtrAcct><Id><IBAN>${x(s.iban)}</IBAN></Id></CdtrAcct><RmtInf><Ustrd>${x(z.ref || z.no).slice(0, 140)}</Ustrd></RmtInf></CdtTrfTxInf>`; }).join('\n')}
+${zs.map(z => { const s = lfSup(z.partner); return `<CdtTrfTxInf><PmtId><EndToEndId>${x(z.no)}</EndToEndId></PmtId><Amt><InstdAmt Ccy="EUR">${(z.total / 100).toFixed(2)}</InstdAmt></Amt>${s.bic ? `<CdtrAgt><FinInstnId><BIC>${x(s.bic)}</BIC></FinInstnId></CdtrAgt>` : ''}<Cdtr><Nm>${x(s.name).slice(0, 70)}</Nm></Cdtr><CdtrAcct><Id><IBAN>${x(s.iban)}</IBAN></Id></CdtrAcct><RmtInf><Ustrd>${x(z.ref || z.no).slice(0, 140)}</Ustrd></RmtInf></CdtTrfTxInf>`; }).join('\n')}
 </PmtInf></CstmrCdtTrfInitn></Document>`;
   try {
     const p = await invoke('save_text', {name: `SEPA_${today()}.xml`, content: xml, title: 'SEPA-Überweisungsdatei speichern'}); if (!p) return;
@@ -341,7 +344,7 @@ DOC_CLICK.reklamation = async (e, st, h) => {
   await loadSuppliers();
   if (st.status !== 'lieferant') { try { await invoke('doc_action', {id: st.id, action: 'lieferant', payload: {}, user: S.user.name}); } catch { /* */ } }
   closeLayer(h.el); docRefresh();
-  openDoc('lretoure', null, {partner: sid || null, partner_name: SUPPLIERS.find(s => s.id === sid)?.name || '', ref: SUPPLIERS.find(s => s.id === sid)?.profile?.rma_pflicht ? '' : st.no, data: {grund: st.data.grund || 'Defekt / Mangel', notiz: `Reklamation ${st.no}: ${st.data.mangel || ''}`, lines: [{...l, qty: l.qty || 1, price: x?.a.cost != null ? Math.round(x.a.cost * 100) : 0}]}, focusSearch: false});
+  openDoc('lretoure', null, {partner: sid || null, partner_name: lfSup(sid)?.name || '', ref: lfSup(sid)?.profile?.rma_pflicht ? '' : st.no, data: {grund: st.data.grund || 'Defekt / Mangel', notiz: `Reklamation ${st.no}: ${st.data.mangel || ''}`, lines: [{...l, qty: l.qty || 1, price: x?.a.cost != null ? Math.round(x.a.cost * 100) : 0}]}, focusSearch: false});
 };
 docPage('lretouren', 'lretoure', {title: 'Retouren', newLabel: 'Neue Lieferantenretoure', tabs: [['offen', 'Offen', s => ['erfasst', 'versendet'].includes(s)], ['erledigt', 'Erledigt', s => ['gutgeschrieben', 'abgelehnt', 'storniert'].includes(s)], ['alle', 'Alle', () => true]],
   cols: [{l: 'Grund', f: d => esc(d.data.grund || '')}, {l: 'Stück', r: true, f: d => num((d.data.lines || []).reduce((s, l) => s + (+l.qty || 0), 0))}, {l: 'Gutschrift', r: true, f: d => d.data.gutschrift ? cEur(d.data.gutschrift.betrag) : '–'}],
@@ -472,7 +475,7 @@ async function renderBonus() {
   const agr = sid => docs.find(d => d.partner === sid && d.data.jahr === LB.year && d.status !== 'storniert');
   const bySup = {}; vol.forEach(r => { (bySup[r.lieferant] ||= {wert: 0, wg: {}}); bySup[r.lieferant].wert += r.wert; bySup[r.lieferant].wg[r.warengruppe] = (bySup[r.lieferant].wg[r.warengruppe] || 0) + r.wert; });
   const pct = (a, w) => { const st = (a?.data.staffel || []).slice().sort((x, y) => y.ab - x.ab).find(s => w >= s.ab); return st ? +st.pct : 0; };
-  const rows = SUPPLIERS.map(s => { const a = agr(s.id), w = bySup[s.id]?.wert || 0, p = pct(a, w); return {s, a, w, p, bonus: Math.round(w * p / 100)}; }).filter(r => r.a || r.w);
+  const rows = SUPPLIERS_ALL.map(s => { const a = agr(s.id), w = bySup[s.id]?.wert || 0, p = pct(a, w); return {s, a, w, p, bonus: Math.round(w * p / 100)}; }).filter(r => r.a || r.w);
   const catN = id => CATS.find(c => c.id === id)?.name || id;
   v.innerHTML = `<div class="cv">${pageHead('Umlage Lieferantenbonus', 'Bonusvereinbarungen (Staffel nach Einkaufsvolumen) – Bonus berechnen und auf Warengruppen umlegen (mindert den Wareneinsatz)', `<select class="input select" id="lbYear" style="width:auto">${[0, 1, 2].map(i => new Date().getFullYear() - i).map(y => `<option ${y === LB.year ? 'selected' : ''}>${y}</option>`).join('')}</select><button class="btn btn-primary" data-lb="neu">${ic('plus', 'i-sm')}Vereinbarung</button>`)}
     ${kpiCards([[eur0(vol.reduce((s, r) => s + r.wert, 0) / 100), `Einkaufsvolumen ${LB.year} (EK)`], [num(rows.filter(r => r.a).length), 'Vereinbarungen'], [eur0(rows.reduce((s, r) => s + r.bonus, 0) / 100), 'erwarteter Bonus', 'pos'], [num(rows.filter(r => r.a?.status === 'umgelegt').length), 'bereits umgelegt']])}
@@ -482,7 +485,7 @@ async function renderBonus() {
   v._rows = rows; v._bySup = bySup;
 }
 function openBonus(doc, sid) {
-  const st = doc ? JSON.parse(JSON.stringify(doc)) : {kind: 'bonus', partner: sid, partner_name: SUPPLIERS.find(s => s.id === sid)?.name || '', data: {jahr: LB.year, staffel: [{ab: 0, pct: 1}, {ab: 2000000, pct: 2}, {ab: 5000000, pct: 3}]}};
+  const st = doc ? JSON.parse(JSON.stringify(doc)) : {kind: 'bonus', partner: sid, partner_name: lfSup(sid)?.name || '', data: {jahr: LB.year, staffel: [{ab: 0, pct: 1}, {ab: 2000000, pct: 2}, {ab: 5000000, pct: 3}]}};
   const el = openLayer(`<div class="modal" style="width:min(560px,100%)" role="dialog" aria-modal="true"><div data-lbb></div></div>`);
   const box = $('[data-lbb]', el);
   const render = () => { box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('percent')}</div><div><h2>Bonusvereinbarung ${esc(st.partner_name)}</h2><p>Jahr ${st.data.jahr} · Staffel nach Einkaufsvolumen (EK netto)</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>

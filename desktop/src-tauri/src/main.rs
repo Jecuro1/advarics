@@ -922,7 +922,22 @@ fn lieferant_datei_hochladen_b64(db: State<db::Db>, supplier_id: String, name: S
     let bytes = base64::engine::general_purpose::STANDARD.decode(data.trim()).map_err(|_| "Datei nicht lesbar".to_string())?;
     lieferant::datei_add(&db.conn.lock().unwrap(), &supplier_id, &name, &bytes, user.as_deref().unwrap_or("")).map_err(err)
 }
-/// Dokument mit dem Standardprogramm öffnen (als Kopie im Temp-Ordner; nur erlaubte Dateitypen)
+/// Kopien geöffneter Lieferanten-Dokumente im Temp-Ordner entfernen: die älter als `max_alter` sind, oder – mit `datei` – alle Kopien dieses Dokuments
+fn dokumente_aufraeumen(max_alter: std::time::Duration, datei: Option<i64>) {
+    let Ok(rd) = std::fs::read_dir(std::env::temp_dir().join("kontor-dokumente")) else { return };
+    for e in rd.flatten() {
+        let name = e.file_name().to_string_lossy().to_string();
+        let weg = match datei {
+            Some(id) => name.starts_with(&format!("{id}-")),
+            None => e.metadata().and_then(|m| m.modified()).ok().and_then(|t| t.elapsed().ok()).map(|a| a >= max_alter).unwrap_or(true),
+        };
+        if weg {
+            let p = e.path();
+            let _ = if p.is_dir() { std::fs::remove_dir_all(&p) } else { std::fs::remove_file(&p) };
+        }
+    }
+}
+/// Dokument mit dem Standardprogramm öffnen (als Kopie im Temp-Ordner, nur für den angemeldeten Benutzer lesbar; nur erlaubte Dateitypen; die Kopie verschwindet nach zwei Stunden, beim Löschen des Dokuments und beim Programmstart)
 #[tauri::command]
 fn lieferant_datei_oeffnen(db: State<db::Db>, id: i64, by: Option<String>) -> Res<()> {
     let (name, bytes) = {
@@ -932,9 +947,16 @@ fn lieferant_datei_oeffnen(db: State<db::Db>, id: i64, by: Option<String>) -> Re
         r
     };
     let (n, _) = lieferant::datei_pruefen(&name, &bytes).map_err(err)?;
-    let dir = std::env::temp_dir().join("kontor-dokumente");
+    dokumente_aufraeumen(std::time::Duration::from_secs(2 * 3600), None);
+    let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
+    let dir = std::env::temp_dir().join("kontor-dokumente").join(format!("{id}-{stamp}"));
     std::fs::create_dir_all(&dir).map_err(err)?;
-    let p = dir.join(format!("{id}-{n}"));
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700));
+    }
+    let p = dir.join(&n);
     std::fs::write(&p, &bytes).map_err(err)?;
     #[cfg(target_os = "windows")]
     let cmd = "explorer";
@@ -956,7 +978,9 @@ async fn lieferant_datei_speichern(app: AppHandle, id: i64, by: Option<String>) 
 }
 #[tauri::command]
 fn lieferant_datei_loeschen(db: State<db::Db>, id: i64, by: Option<String>) -> Res<()> {
-    lieferant::datei_loeschen(&db.conn.lock().unwrap(), id, by.as_deref().unwrap_or("")).map_err(err)
+    lieferant::datei_loeschen(&db.conn.lock().unwrap(), id, by.as_deref().unwrap_or("")).map_err(err)?;
+    dokumente_aufraeumen(std::time::Duration::MAX, Some(id));
+    Ok(())
 }
 #[tauri::command]
 fn lieferant_datei_beschreiben(db: State<db::Db>, id: i64, descr: String) -> Res<()> {
@@ -1070,13 +1094,6 @@ fn record_save(db: State<db::Db>, entity: String, id: Option<i64>, data: Value, 
 fn record_delete(db: State<db::Db>, entity: String, id: i64) -> Res<()> {
     let c = db.conn.lock().unwrap();
     custom::record_delete(&c, &entity, id)?;
-    Ok(())
-}
-#[tauri::command]
-fn supplier_fields_set(db: State<db::Db>, id: String, fields: Value) -> Res<()> {
-    let c = db.conn.lock().unwrap();
-    let v = custom::validate(&c, "lieferant", &fields)?;
-    c.execute("UPDATE suppliers SET fields = ?2 WHERE id = ?1", rusqlite::params![id, v.to_string()]).map_err(err)?;
     Ok(())
 }
 #[tauri::command]
@@ -2290,6 +2307,7 @@ fn main() {
                 if let Err(e) = lieferant::migrieren(&conn) {
                     eprintln!("Lieferanten: Übernahme früherer Angaben nicht abgeschlossen: {e}");
                 }
+                dokumente_aufraeumen(std::time::Duration::ZERO, None);
             }
             // Hintergrund-Dienste: Webhook-Zustellung, lokale REST-API (falls eingeschaltet)
             automation::start_worker(path.clone());
@@ -2448,7 +2466,6 @@ fn main() {
             records_list,
             record_save,
             record_delete,
-            supplier_fields_set,
             supplier_fields_get,
             rules_list,
             rule_save,

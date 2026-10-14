@@ -8,7 +8,7 @@
 //!    aus Bestellvorschlag und KI-Nachbestellung, ihre Belege behalten den Namen).
 //!  · Die Prüfungen stehen hier und in der Maske (c55e-lieferanten.js) gleich – das Backend entscheidet.
 
-use crate::{db, filiale, marke, purchasing::{self, Supplier}, stamm, verbund};
+use crate::{custom, db, filiale, marke, purchasing::{self, Supplier}, stamm, verbund};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -86,7 +86,7 @@ pub fn profil_pruefen(c: &Connection, p: &Value) -> Result<Value, String> {
         text(&mut o, p, k, max, l)?;
     }
     let uid = s(&p["uid"]).replace(' ', "").to_uppercase();
-    if !uid.is_empty() && !(uid.len() >= 4 && uid.len() <= 14 && uid[..2].chars().all(|c| c.is_ascii_alphabetic()) && uid.chars().all(|c| c.is_ascii_alphanumeric())) {
+    if !uid.is_empty() && !(uid.is_ascii() && uid.len() >= 4 && uid.len() <= 14 && uid[..2].chars().all(|c| c.is_ascii_alphabetic()) && uid.chars().all(|c| c.is_ascii_alphanumeric())) {
         return Err("USt-IdNr.: Länderkennung und Nummer (z. B. ATU12345678)".into());
     }
     o.insert("uid".into(), json!(uid));
@@ -140,7 +140,9 @@ pub fn profil_pruefen(c: &Connection, p: &Value) -> Result<Value, String> {
 
 /// Marken-Zuordnungen prüfen: jede Marke höchstens einmal, nur vorhandene Marken
 fn marken_pruefen(c: &Connection, list: &Value) -> Result<Vec<Value>, String> {
-    let bekannt: HashSet<String> = stamm::list(c, marke::KIND)?.iter().map(|r| s(&r["id"])).collect();
+    let marken = stamm::list(c, marke::KIND)?;
+    let bekannt: HashSet<String> = marken.iter().map(|r| s(&r["id"])).collect();
+    let namenlos: HashSet<String> = marken.iter().filter(|r| marke::norm(&s(&r["name"])).is_empty()).map(|r| s(&r["id"])).collect();
     let mut seen = HashSet::new();
     let mut out = vec![];
     for z in list.as_array().cloned().unwrap_or_default() {
@@ -150,6 +152,9 @@ fn marken_pruefen(c: &Connection, list: &Value) -> Result<Vec<Value>, String> {
         }
         if !bekannt.contains(&id) {
             return Err(format!("Marken: die Marke „{id}“ gibt es nicht mehr – bitte die Liste aktualisieren"));
+        }
+        if namenlos.contains(&id) {
+            return Err("Marken: eine Marke ohne Namen lässt sich nicht zuordnen – bitte unter Stammdaten › Marken einen Namen eintragen".into());
         }
         if !seen.insert(id.clone()) {
             return Err("Marken: eine Marke kann nur einmal zugeordnet werden".into());
@@ -272,7 +277,7 @@ pub fn pruefen(c: &Connection, row: &Value) -> Result<(Supplier, Vec<Value>, Val
     sup.bic = bic;
     sup.profile = profil_pruefen(c, &row["profile"])?;
     let marken = marken_pruefen(c, &row["marken"])?;
-    let fields = if row["fields"].is_object() { row["fields"].clone() } else { json!({}) };
+    let fields = custom::validate(c, "lieferant", &row["fields"])?;
     if fields.to_string().len() > 20_000 {
         return Err("Eigene Felder: zu viele Angaben".into());
     }
@@ -330,7 +335,10 @@ pub fn save(c: &Connection, row: &Value, by: &str) -> Result<Value, String> {
     let was = alt.as_ref().map(|a| geaendert(a, &sup)).unwrap_or_default();
     db::audit_append(&tx, "lieferant.saved", &json!({ "lieferant": sup.id, "nr": sup.nr, "name": sup.name, "neu": neu, "geaendert": was, "marken": marken.len(), "durch": by })).map_err(|e| e.to_string())?;
     if was.contains(&"iban") || was.contains(&"bic") {
-        let mask = |x: &str| if x.len() > 8 { format!("{}…{}", &x[..4], &x[x.len() - 4..]) } else { x.to_string() };
+        let mask = |x: &str| {
+            let n = x.chars().count();
+            if n > 8 { format!("{}…{}", x.chars().take(4).collect::<String>(), x.chars().skip(n - 4).collect::<String>()) } else { x.to_string() }
+        };
         db::audit_append(&tx, "lieferant.bank", &json!({ "lieferant": sup.id, "iban_alt": alt.as_ref().map(|a| mask(&a.iban)), "iban_neu": mask(&sup.iban), "durch": by })).map_err(|e| e.to_string())?;
     }
     tx.commit().map_err(|e| e.to_string())?;
@@ -343,7 +351,7 @@ pub fn verweise(c: &Connection, id: &str) -> (i64, i64, i64) {
     let n = |q: &str| c.query_row(q, [id], |x| x.get::<_, i64>(0)).unwrap_or(0);
     (
         n("SELECT COUNT(*) FROM purchase_orders WHERE supplier_id = ?1"),
-        n("SELECT COUNT(*) FROM docs WHERE partner = ?1 AND kind IN ('avis','er','zahlung','lretoure','reklamation','bonus')"),
+        n("SELECT COUNT(*) FROM docs WHERE (partner = ?1 AND kind IN ('avis','er','zahlung','lretoure','reklamation','bonus','edi')) OR (CASE WHEN json_valid(data) THEN json_extract(data, '$.lieferant') END) = ?1"),
         n("SELECT COUNT(*) FROM articles WHERE supplier_id = ?1"),
     )
 }
@@ -382,7 +390,7 @@ fn entfernen(tx: &Connection, id: &str) -> Result<(), String> {
 
 /// Wie viele Artikel dieser Marken haben noch keinen Lieferanten?
 pub fn artikel_offen(c: &Connection, brand_ids: &[String]) -> i64 {
-    let namen: HashSet<String> = stamm::list(c, marke::KIND).unwrap_or_default().iter().filter(|r| brand_ids.contains(&s(&r["id"]))).map(|r| marke::norm(&s(&r["name"]))).collect();
+    let namen: HashSet<String> = stamm::list(c, marke::KIND).unwrap_or_default().iter().filter(|r| brand_ids.contains(&s(&r["id"]))).map(|r| marke::norm(&s(&r["name"]))).filter(|n| !n.is_empty()).collect();
     let Ok(mut st) = c.prepare("SELECT brand FROM articles WHERE supplier_id IS NULL OR supplier_id = ''") else { return 0 };
     st.query_map([], |r| r.get::<_, String>(0)).map(|r| r.flatten().filter(|b| namen.contains(&marke::norm(b))).count() as i64).unwrap_or(0)
 }
@@ -395,7 +403,7 @@ pub fn artikel_zuordnen(c: &Connection, sid: &str, brand_ids: &[String], by: &st
     if c.query_row("SELECT 1 FROM suppliers WHERE id = ?1", [sid], |_| Ok(())).optional().map_err(|e| e.to_string())?.is_none() {
         return Err("Diesen Lieferanten gibt es nicht mehr".into());
     }
-    let namen: HashSet<String> = stamm::list(c, marke::KIND)?.iter().filter(|r| brand_ids.contains(&s(&r["id"]))).map(|r| marke::norm(&s(&r["name"]))).collect();
+    let namen: HashSet<String> = stamm::list(c, marke::KIND)?.iter().filter(|r| brand_ids.contains(&s(&r["id"]))).map(|r| marke::norm(&s(&r["name"]))).filter(|n| !n.is_empty()).collect();
     let tx = c.unchecked_transaction().map_err(|e| e.to_string())?;
     let ids: Vec<(String, String)> = tx
         .prepare("SELECT id, brand FROM articles WHERE supplier_id IS NULL OR supplier_id = ''")
@@ -483,6 +491,8 @@ pub fn uebernehmen(tx: &Connection, suppliers: &[Value], brands: Option<&Vec<Val
         for id in lokal.into_iter().filter(|i| !da.contains(i)) {
             let (po, docs, art) = verweise(tx, &id);
             if po + docs + art == 0 {
+                let dateien: i64 = tx.query_row("SELECT COUNT(*) FROM supplier_files WHERE supplier_id = ?1", [&id], |r| r.get(0)).unwrap_or(0);
+                db::audit_append(tx, "lieferant.abgleich.entfernt", &json!({ "lieferant": id, "dokumente": dateien })).map_err(|e| e.to_string())?;
                 entfernen(tx, &id)?;
             } else {
                 tx.execute("UPDATE suppliers SET active = 0 WHERE id = ?1", [&id]).map_err(|e| e.to_string())?;
@@ -547,33 +557,79 @@ pub fn kundennr(sup: &Supplier, store: &str) -> String {
 /// Einmal beim Start: Demo-Notizen „Marken: …“, die Spalte „Lieferant“ der alten Markentabelle und das Versendungsland je Lieferant (Intrastat) in die neuen
 /// Felder übernehmen; Lieferanten-Nr. der Advarics-Lieferanten („ADV-4711“) übernehmen. Nur ergänzen, nie überschreiben.
 pub fn migrieren(c: &Connection) -> Result<(), String> {
-    if db::setting_get(c, "lieferant.migriert").is_some() {
-        return Ok(());
+    // alles oder nichts: bei einem Fehler bleibt die Datenbank unverändert und der Versuch wiederholt sich beim nächsten Start
+    let tx = c.unchecked_transaction().map_err(|e| e.to_string())?;
+    if db::setting_get(&tx, "lieferant.migriert").is_none() {
+        einmalig(&tx)?;
+        db::setting_set(&tx, "lieferant.migriert", &json!(1)).map_err(|e| e.to_string())?;
     }
-    let _ = db::setting_set(c, "lieferant.migriert", &json!(1));
+    if db::setting_get(&tx, "lieferant.advnr").is_none() {
+        advarics_nr(&tx)?;
+        db::setting_set(&tx, "lieferant.advnr", &json!(1)).map_err(|e| e.to_string())?;
+    }
+    tx.commit().map_err(|e| e.to_string())
+}
+
+/// Advarics-Lieferanten („ADV-4711“) bekommen als Nr. die Lieferantennummer aus Advarics (1 bis 999 999, die erste je Nummer gewinnt). Die bisherigen Nr. wurden erst beim Update
+/// fortlaufend vergeben; alle anderen Lieferanten behalten ihre Reihenfolge und rücken auf die kleinsten freien Nummern. Die Nummer, die der Import früher als Kunden-Nr. ablegte, entfällt dort.
+fn advarics_nr(c: &Connection) -> Result<(), String> {
+    let sups = purchasing::suppliers_alle(c).map_err(|e| e.to_string())?;
+    let mut wunsch: Vec<(String, i64)> = vec![];
+    let mut belegt: HashSet<i64> = HashSet::new();
+    for x in &sups {
+        if let Some(n) = x.id.strip_prefix("ADV-").and_then(|v| v.parse::<i64>().ok()).filter(|n| (1..=999_999).contains(n)) {
+            if belegt.insert(n) {
+                wunsch.push((x.id.clone(), n));
+            }
+        }
+    }
+    if wunsch.iter().all(|(id, n)| sups.iter().any(|x| &x.id == id && x.nr == *n)) {
+        // schon richtig (oder keine Advarics-Lieferanten)
+    } else {
+        let mut rest: Vec<&Supplier> = sups.iter().filter(|x| !wunsch.iter().any(|(id, _)| id == &x.id)).collect();
+        rest.sort_by_key(|x| (x.nr, x.id.clone()));
+        c.execute("UPDATE suppliers SET nr = -rowid", []).map_err(|e| e.to_string())?; // vorübergehend, damit die Eindeutigkeit nie verletzt wird
+        for (id, n) in &wunsch {
+            c.execute("UPDATE suppliers SET nr = ?2 WHERE id = ?1", params![id, n]).map_err(|e| e.to_string())?;
+        }
+        let mut k = 0;
+        for x in rest {
+            loop {
+                k += 1;
+                if !belegt.contains(&k) {
+                    break;
+                }
+            }
+            belegt.insert(k);
+            c.execute("UPDATE suppliers SET nr = ?2 WHERE id = ?1", params![x.id, k]).map_err(|e| e.to_string())?;
+        }
+    }
+    for (id, n) in &wunsch {
+        if sups.iter().any(|x| &x.id == id && x.customer_no == n.to_string()) {
+            c.execute("UPDATE suppliers SET customer_no = '' WHERE id = ?1", [id]).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+fn einmalig(c: &Connection) -> Result<(), String> {
     marke::ensure_alle(c);
     let sups = purchasing::suppliers_alle(c).map_err(|e| e.to_string())?;
     let hat: HashSet<String> = c.prepare("SELECT DISTINCT supplier_id FROM supplier_brands").map_err(|e| e.to_string())?.query_map([], |r| r.get(0)).map_err(|e| e.to_string())?.flatten().collect();
     for sup in &sups {
-        // Notiz „Marken: A, B“ (frühere Demodaten) → Marken-Zuordnung
+        // Notiz „Marken: A, B“ (frühere Demodaten) → Marken-Zuordnung; was keiner Marke entspricht, bleibt in der Notiz stehen
         if let Some(rest) = sup.note.strip_prefix("Marken: ") {
             if !hat.contains(&sup.id) {
+                let mut offen: Vec<&str> = vec![];
                 for b in rest.split(',').map(str::trim).filter(|b| !b.is_empty()) {
                     if marke::finden(c, b).is_some() {
                         marke_zuordnen(c, &sup.id, b);
+                    } else {
+                        offen.push(b);
                     }
                 }
-                c.execute("UPDATE suppliers SET note = '' WHERE id = ?1", [&sup.id]).map_err(|e| e.to_string())?;
-            }
-        }
-        // Advarics-Lieferanten: Nr. aus der Kennung, wenn frei; die damals dort abgelegte Nummer ist keine Kundennummer
-        if let Some(n) = sup.id.strip_prefix("ADV-").and_then(|x| x.parse::<i64>().ok()).filter(|n| *n > 0) {
-            let frei = c.query_row("SELECT 1 FROM suppliers WHERE nr = ?1 AND id <> ?2", params![n, sup.id], |_| Ok(())).optional().map_err(|e| e.to_string())?.is_none();
-            if frei && sup.nr != n {
-                c.execute("UPDATE suppliers SET nr = ?2 WHERE id = ?1", params![sup.id, n]).map_err(|e| e.to_string())?;
-            }
-            if sup.customer_no == n.to_string() {
-                c.execute("UPDATE suppliers SET customer_no = '' WHERE id = ?1", [&sup.id]).map_err(|e| e.to_string())?;
+                let note = if offen.is_empty() { String::new() } else { format!("Marken: {}", offen.join(", ")) };
+                c.execute("UPDATE suppliers SET note = ?2 WHERE id = ?1", params![sup.id, note]).map_err(|e| e.to_string())?;
             }
         }
     }
@@ -623,7 +679,15 @@ fn endung(name: &str) -> String {
 /// Dateiname ohne Pfad und Steuerzeichen
 fn dateiname(name: &str) -> String {
     let n = name.rsplit(['/', '\\']).next().unwrap_or("").chars().filter(|c| !c.is_control()).collect::<String>();
-    n.trim().trim_start_matches('.').chars().take(120).collect()
+    let n = n.trim().trim_start_matches('.');
+    if n.chars().count() <= 120 {
+        return n.to_string();
+    }
+    // zu lang: den Namen kürzen, die Endung bleibt
+    match n.rsplit_once('.') {
+        Some((stamm, e)) if e.chars().count() <= 10 => format!("{}.{e}", stamm.chars().take(120 - e.chars().count() - 1).collect::<String>()),
+        _ => n.chars().take(120).collect(),
+    }
 }
 
 /// Dokument prüfen (Endung, Größe, Dateikopf) – Rückgabe (Name, Typ)
@@ -993,5 +1057,72 @@ mod tests {
         assert_eq!(adv["profile"]["gln"], "4006381333931", "GLN aus den EDI-Einstellungen übernommen");
         assert!(firn["profile"].get("gln").map(|g| g.as_str().unwrap_or("").is_empty()).unwrap_or(true), "ungültige GLN wird nicht übernommen");
         migrieren(&c).unwrap();   // zweiter Lauf ändert nichts
+    }
+
+    #[test]
+    fn sonderzeichen_und_lange_namen_bringen_nichts_zum_absturz() {
+        let c = db();
+        let mut r = zeile("Nordwand", 5);
+        r["profile"] = json!({ "uid": "aö1234" });
+        assert!(save(&c, &r, "T").unwrap_err().contains("USt-IdNr."), "kein Panic beim Schneiden mitten im Umlaut");
+        // lange Dateinamen behalten ihre Endung
+        let lang = format!("{}.pdf", "ä".repeat(150));
+        let n = dateiname(&lang);
+        assert_eq!(n.chars().count(), 120);
+        assert!(n.ends_with(".pdf"));
+        assert!(datei_pruefen(&lang, b"%PDF-1.4").is_ok());
+    }
+
+    #[test]
+    fn advarics_nummern_tauschen_sich_ohne_kollision() {
+        let c = db();
+        let mk = |id: &str, nr: i64, kn: &str| {
+            c.execute("INSERT INTO suppliers(id, name, active, created_at, updated_at, nr, customer_no) VALUES (?1, ?1, 1, 't', 't', ?2, ?3)", params![id, nr, kn]).unwrap();
+        };
+        c.execute("DELETE FROM suppliers", []).unwrap();
+        // Rangnummern aus der Übernahme: ADV-2 hat 1, ADV-1 hat 2, ein Demo-Lieferant die 3
+        mk("ADV-2", 1, "2");
+        mk("ADV-1", 2, "1");
+        mk("L-009", 3, "K-7");
+        advarics_nr(&c).unwrap();
+        let nr = |id: &str| c.query_row("SELECT nr FROM suppliers WHERE id = ?1", [id], |r| r.get::<_, i64>(0)).unwrap();
+        assert_eq!((nr("ADV-1"), nr("ADV-2"), nr("L-009")), (1, 2, 3));
+        let kn = |id: &str| c.query_row("SELECT customer_no FROM suppliers WHERE id = ?1", [id], |r| r.get::<_, String>(0)).unwrap();
+        assert_eq!((kn("ADV-1"), kn("ADV-2"), kn("L-009")), (String::new(), String::new(), "K-7".to_string()), "die früher abgelegte Nummer ist keine Kundennummer");
+        // ein Demo-Lieferant trägt die Wunschnummer eines Advarics-Lieferanten: er rückt auf die nächste freie
+        mk("ADV-3", 4, "");
+        c.execute("UPDATE suppliers SET nr = 3 WHERE id = 'L-009'", []).unwrap();
+        c.execute("UPDATE suppliers SET nr = 5 WHERE id = 'ADV-3'", []).unwrap();
+        advarics_nr(&c).unwrap();
+        assert_eq!((nr("ADV-1"), nr("ADV-2"), nr("ADV-3"), nr("L-009")), (1, 2, 3, 4));
+    }
+
+    #[test]
+    fn naechste_nr_bleibt_im_erlaubten_bereich() {
+        let c = db();
+        c.execute("DELETE FROM suppliers", []).unwrap();
+        assert_eq!(purchasing::naechste_nr(&c), 1);
+        c.execute("INSERT INTO suppliers(id, name, active, created_at, updated_at, nr) VALUES ('X','X',1,'t','t',999999)", []).unwrap();
+        c.execute("INSERT INTO suppliers(id, name, active, created_at, updated_at, nr) VALUES ('Y','Y',1,'t','t',1)", []).unwrap();
+        assert_eq!(purchasing::naechste_nr(&c), 2, "über 999 999 gibt es keine Nr.: die erste Lücke");
+        let s = Supplier { id: "ADV-5000000".into(), name: "Weit weg".into(), nr: 5_000_000, ..Default::default() };
+        purchasing::supplier_save(&c, &s).unwrap();
+        let n: i64 = c.query_row("SELECT nr FROM suppliers WHERE id = 'ADV-5000000'", [], |r| r.get(0)).unwrap();
+        assert!((1..=999_999).contains(&n), "die Nr. aus dem Import liegt im erlaubten Bereich: {n}");
+    }
+
+    #[test]
+    fn verweise_zaehlen_reklamationen_und_edi() {
+        let c = db();
+        let g = save(&c, &zeile("Nordwand", 5), "T").unwrap();
+        let sid = g["id"].as_str().unwrap().to_string();
+        assert_eq!(verweise(&c, &sid), (0, 0, 0));
+        c.execute("INSERT INTO docs(kind, no, status, partner, partner_name, date, total, open, data, created_at, updated_at, user) VALUES ('reklamation','RK1','erfasst',NULL,'Kunde','2026-01-01',0,0,?1,'t','t','u')", [json!({ "lieferant": sid }).to_string()]).unwrap();
+        assert_eq!(verweise(&c, &sid).1, 1, "Reklamation, die den Lieferanten nennt");
+        c.execute("INSERT INTO docs(kind, no, status, partner, partner_name, date, total, open, data, created_at, updated_at, user) VALUES ('edi','E1','neu',?1,'x','2026-01-01',0,0,'{}','t','t','u')", [&sid]).unwrap();
+        assert_eq!(verweise(&c, &sid).1, 2, "EDI-Nachricht des Lieferanten");
+        c.execute("INSERT INTO docs(kind, no, status, partner, partner_name, date, total, open, data, created_at, updated_at, user) VALUES ('rechnung','R1','offen',NULL,'x','2026-01-01',0,0,'kaputt{','t','t','u')", []).unwrap();
+        assert_eq!(verweise(&c, &sid).1, 2, "ungültiges JSON in einem anderen Beleg stört die Zählung nicht");
+        assert!(delete(&c, &sid, "T").unwrap_err().contains("2 Belege"));
     }
 }

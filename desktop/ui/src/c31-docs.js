@@ -110,7 +110,7 @@ const docRefresh = () => { const p = PAGES[S.view]; if (p) p.render(); };
 
 /* ── Partner (Lieferant / Kunde) ── */
 function partnerField(K, st, edit) {
-  if (K.partner === 'lieferant') return `<label class="field"><span>Lieferant</span><select class="input select" data-dp="sup" ${edit ? '' : 'disabled'}><option value="">– wählen –</option>${SUPPLIERS.map(s => `<option value="${esc(s.id)}" ${s.id === st.partner ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>`;
+  if (K.partner === 'lieferant') return `<label class="field"><span>Lieferant</span><select class="input select" data-dp="sup" ${edit ? '' : 'disabled'}><option value="">– wählen –</option>${lfOptionen(st.partner).map(([id, name]) => `<option value="${esc(id)}" ${id === st.partner ? 'selected' : ''}>${esc(name)}</option>`).join('')}</select></label>`;
   return `<label class="field" style="position:relative"><span>Kunde${K.optPartner ? ' / Name' : ''}</span><input class="input" data-dp="cust" value="${esc(st.partner_name)}" placeholder="Name, Kundennummer oder E-Mail" autocomplete="off" ${edit ? '' : 'readonly'}>${st.partner ? `<span class="muted" style="font-size:11.5px">${esc(st.partner)}${custById(st.partner)?.email ? ' · ' + esc(custById(st.partner).email) : ''}</span>` : ''}<div data-dpl style="position:absolute;left:0;right:0;top:62px;z-index:6"></div></label>`;
 }
 function custHits(q) { const n = norm(q.trim()); if (n.length < 2) return []; return CUSTOMERS.filter(c => norm(`${c.name} ${c.id} ${c.email} ${c.phone}`).includes(n)).slice(0, 7); }
@@ -125,7 +125,7 @@ function headField(f, st, edit, orders) {
   if (f.t === 'area') return `<label class="${cls}">${lbl}<textarea class="input" rows="3" data-dh="${f.k}" style="height:auto;padding:9px 12px" ${dis}>${esc(v || '')}</textarea></label>`;
   if (f.t === 'check') return `<label class="${cls}" style="flex-direction:row;align-items:center;gap:10px;display:flex"><input type="checkbox" data-dh="${f.k}" data-check ${v ? 'checked' : ''} ${dis}><span style="font-size:13px">${esc(f.l)}</span></label>`;
   if (f.t === 'select' || f.t === 'grund' || f.t === 'supplier') {
-    const opts = f.t === 'grund' ? retGruende().map(g => [g.text, g.text]) : f.t === 'supplier' ? [['', '–'], ...SUPPLIERS.map(s => [s.id, s.name])] : f.o.map(x => [x, x]);
+    const opts = f.t === 'grund' ? retGruende().map(g => [g.text, g.text]) : f.t === 'supplier' ? [['', '–'], ...lfOptionen(String(v ?? ''))] : f.o.map(x => [x, x]);
     return `<label class="${cls}">${lbl}<select class="input select" data-dh="${f.k}" ${dis}>${f.t === 'grund' ? '<option value="">–</option>' : ''}${opts.map(([a, b]) => `<option value="${esc(a)}" ${String(v ?? '') === a ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select></label>`;
   }
   if (f.t === 'order') return `<label class="${cls}">${lbl}<select class="input select" data-dh="${f.k}" data-int ${dis}><option value="">– ohne Bestellung –</option>${orders.map(p => `<option value="${p.id}" ${+v === p.id ? 'selected' : ''}>${esc(p.no)} · ${esc(PO_ST[p.status]?.[0] || p.status)} · ${num(p.qty - p.received)} offen</option>`).join('')}</select></label>`;
@@ -214,7 +214,7 @@ async function openDoc(kind, id, preset = {}) {
       setPath(st, i.dataset.dh, v);
     });
     if ($$('[data-dord]', box).length) st.data.bestellungen = $$('[data-dord]', box).filter(c => c.checked).map(c => +c.dataset.dord);
-    const sp = $('[data-dp="sup"]', box); if (sp) { st.partner = sp.value || null; st.partner_name = SUPPLIERS.find(s => s.id === sp.value)?.name || ''; }
+    const sp = $('[data-dp="sup"]', box); if (sp) { st.partner = sp.value || null; st.partner_name = lfSup(sp.value)?.name || ''; }
     const cp = $('[data-dp="cust"]', box); if (cp) { if (cp.value.trim() !== st.partner_name) { st.partner = null; } st.partner_name = cp.value.trim(); }
     (st.data.lines || []).forEach((l, i) => { const p = $(`[data-dlp="${i}"]`, box); if (p) { l.price = e2c(p.value); delete l._p; } });
   };

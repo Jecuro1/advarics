@@ -519,6 +519,8 @@ pub fn import(c: &mut Connection, data_dir: &Path, path: &Path, o: &Opts, user: 
             ohne_vk.push(format!("{} {}", first.nr, first.name));
             continue;
         };
+        // Merker für den Fall, dass dieser Artikel zurückgerollt wird: Lieferanten- und Marken-Zuordnung und Zähler gehören dann nicht in den Zwischenspeicher
+        let (cache0, marken0, sup_new0, wg_new0) = (sup_cache.clone(), sup_marken.clone(), sup_new, wg_new);
         let tx = c.transaction().map_err(|e| e.to_string())?;
         let id = {
             let base = format!("{}-{}", fedas::slug(&first.marke).to_uppercase().chars().take(4).collect::<String>(), fedas::slug(&first.nr).to_uppercase());
@@ -655,6 +657,7 @@ pub fn import(c: &mut Connection, data_dir: &Path, path: &Path, o: &Opts, user: 
             Err(e) => {
                 fehler.push(format!("{} {}: {e}", first.nr, first.name));
                 drop(tx);
+                (sup_cache, sup_marken, sup_new, wg_new) = (cache0, marken0, sup_new0, wg_new0);
             }
         }
     }

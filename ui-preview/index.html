@@ -2181,7 +2181,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.43.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.43.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -4841,7 +4841,7 @@ function openEditor(a) {
         <label class="field"><span>Aktionspreis €</span><input class="input num" data-f="sale" inputmode="decimal" value="${esc(st.sale)}" placeholder="leer = kein Aktionspreis"></label>
         <label class="field"><span>Steuersatz</span><select class="input select" data-f="vat">${[20, 13, 10, 0].map(r => `<option value="${r}" ${+st.vat === r ? 'selected' : ''}>${r} %</option>`).join('')}</select></label>
         <label class="field"><span>Einkaufspreis netto € <span class="muted" id="edMargin"></span></span><input class="input num" data-f="cost" inputmode="decimal" value="${esc(st.cost)}" placeholder="für Spanne & Bestellung"></label>
-        <label class="field"><span>Lieferant</span><select class="input select" data-f="supplierId"><option value="">–</option>${SUPPLIERS.map(x => `<option value="${esc(x.id)}" ${x.id === st.supplierId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
+        <label class="field"><span>Lieferant</span><select class="input select" data-f="supplierId"><option value="">–</option>${lfOptionen(st.supplierId).map(([id, name]) => `<option value="${esc(id)}" ${id === st.supplierId ? 'selected' : ''}>${esc(name)}</option>`).join('')}</select></label>
         <label class="field"><span>Mindestbestand je Variante</span><input class="input num" data-f="minStock" inputmode="numeric" value="${esc(st.minStock)}"></label>
         <label class="field"><span>Kennzeichnung</span><select class="input select" data-f="tag"><option value="" ${!st.tag ? 'selected' : ''}>keine</option><option ${st.tag === 'Neu' ? 'selected' : ''}>Neu</option><option ${st.tag === 'Bestseller' ? 'selected' : ''}>Bestseller</option><option ${st.tag === 'Auslauf' ? 'selected' : ''}>Auslauf</option></select></label>
       </div>
@@ -6287,7 +6287,8 @@ async function openPO(id, preset) {
   const mindestHint = () => {
     const p = supObj()?.profile || {}, menge = st.lines.reduce((a, l) => a + (parseInt(l.qty, 10) || 0), 0), alle = st.lines.length && st.lines.every(l => isFinite(parseAmt(l.costE)));
     const w = []; if (p.min_menge > 0 && menge < p.min_menge) w.push(`Mindestmenge ${num(p.min_menge)} Stück – es fehlen ${num(p.min_menge - menge)}`);
-    if (p.min_summe > 0 && alle && total() * 100 < p.min_summe) w.push(`Mindestauftragssumme ${eur(p.min_summe / 100)} – es fehlen ${eur(p.min_summe / 100 - total())}`);
+    const cent = Math.round(total() * 100);
+    if (p.min_summe > 0 && alle && cent < p.min_summe) w.push(`Mindestauftragssumme ${eur(p.min_summe / 100)} – es fehlen ${eur((p.min_summe - cent) / 100)}`);
     return w.length ? `<div class="prompt-hint blk" style="color:var(--warn)">${ic('alert', 'i-xs')}${esc(w.join(' · '))}</div>` : '';
   };
   const hits = () => { const toks = norm(st.q.trim()).split(/\s+/).filter(Boolean); if (!toks.length) return []; return ART.flatMap(a => a.variants.map(v => ({a, v}))).filter(({a, v}) => toks.every(t => a.hay.includes(t) || v.ean.startsWith(t) || norm(`${colorName(v.c)} ${v.s}`).includes(t))).slice(0, 8); };
@@ -6358,8 +6359,8 @@ async function openPO(id, preset) {
       return;
     }
     if (e.target.closest('#poRecv')) { closeLayer(el); openReceive(head, st.lines); }
-    if (e.target.closest('#poPrint')) { sync(); printHTML(poHTML(head ? {...head, note: st.note} : {no: 'Entwurf', note: st.note}, st.lines, SUPPLIERS.find(x => x.id === st.supplier)), `Bestellung ${head?.no || ''}`); }
-    if (e.target.closest('#poMail')) { sync(); mailPO(head ? {...head, note: st.note} : {no: 'Entwurf', note: st.note}, st.lines, SUPPLIERS.find(x => x.id === st.supplier)); }
+    if (e.target.closest('#poPrint')) { sync(); printHTML(poHTML(head ? {...head, note: st.note} : {no: 'Entwurf', note: st.note}, st.lines, lfSup(st.supplier)), `Bestellung ${head?.no || ''}`); }
+    if (e.target.closest('#poMail')) { sync(); mailPO(head ? {...head, note: st.note} : {no: 'Entwurf', note: st.note}, st.lines, lfSup(st.supplier)); }
   });
   render();
 }
@@ -9802,7 +9803,7 @@ const docRefresh = () => { const p = PAGES[S.view]; if (p) p.render(); };
 
 /* ── Partner (Lieferant / Kunde) ── */
 function partnerField(K, st, edit) {
-  if (K.partner === 'lieferant') return `<label class="field"><span>Lieferant</span><select class="input select" data-dp="sup" ${edit ? '' : 'disabled'}><option value="">– wählen –</option>${SUPPLIERS.map(s => `<option value="${esc(s.id)}" ${s.id === st.partner ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>`;
+  if (K.partner === 'lieferant') return `<label class="field"><span>Lieferant</span><select class="input select" data-dp="sup" ${edit ? '' : 'disabled'}><option value="">– wählen –</option>${lfOptionen(st.partner).map(([id, name]) => `<option value="${esc(id)}" ${id === st.partner ? 'selected' : ''}>${esc(name)}</option>`).join('')}</select></label>`;
   return `<label class="field" style="position:relative"><span>Kunde${K.optPartner ? ' / Name' : ''}</span><input class="input" data-dp="cust" value="${esc(st.partner_name)}" placeholder="Name, Kundennummer oder E-Mail" autocomplete="off" ${edit ? '' : 'readonly'}>${st.partner ? `<span class="muted" style="font-size:11.5px">${esc(st.partner)}${custById(st.partner)?.email ? ' · ' + esc(custById(st.partner).email) : ''}</span>` : ''}<div data-dpl style="position:absolute;left:0;right:0;top:62px;z-index:6"></div></label>`;
 }
 function custHits(q) { const n = norm(q.trim()); if (n.length < 2) return []; return CUSTOMERS.filter(c => norm(`${c.name} ${c.id} ${c.email} ${c.phone}`).includes(n)).slice(0, 7); }
@@ -9817,7 +9818,7 @@ function headField(f, st, edit, orders) {
   if (f.t === 'area') return `<label class="${cls}">${lbl}<textarea class="input" rows="3" data-dh="${f.k}" style="height:auto;padding:9px 12px" ${dis}>${esc(v || '')}</textarea></label>`;
   if (f.t === 'check') return `<label class="${cls}" style="flex-direction:row;align-items:center;gap:10px;display:flex"><input type="checkbox" data-dh="${f.k}" data-check ${v ? 'checked' : ''} ${dis}><span style="font-size:13px">${esc(f.l)}</span></label>`;
   if (f.t === 'select' || f.t === 'grund' || f.t === 'supplier') {
-    const opts = f.t === 'grund' ? retGruende().map(g => [g.text, g.text]) : f.t === 'supplier' ? [['', '–'], ...SUPPLIERS.map(s => [s.id, s.name])] : f.o.map(x => [x, x]);
+    const opts = f.t === 'grund' ? retGruende().map(g => [g.text, g.text]) : f.t === 'supplier' ? [['', '–'], ...lfOptionen(String(v ?? ''))] : f.o.map(x => [x, x]);
     return `<label class="${cls}">${lbl}<select class="input select" data-dh="${f.k}" ${dis}>${f.t === 'grund' ? '<option value="">–</option>' : ''}${opts.map(([a, b]) => `<option value="${esc(a)}" ${String(v ?? '') === a ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select></label>`;
   }
   if (f.t === 'order') return `<label class="${cls}">${lbl}<select class="input select" data-dh="${f.k}" data-int ${dis}><option value="">– ohne Bestellung –</option>${orders.map(p => `<option value="${p.id}" ${+v === p.id ? 'selected' : ''}>${esc(p.no)} · ${esc(PO_ST[p.status]?.[0] || p.status)} · ${num(p.qty - p.received)} offen</option>`).join('')}</select></label>`;
@@ -9906,7 +9907,7 @@ async function openDoc(kind, id, preset = {}) {
       setPath(st, i.dataset.dh, v);
     });
     if ($$('[data-dord]', box).length) st.data.bestellungen = $$('[data-dord]', box).filter(c => c.checked).map(c => +c.dataset.dord);
-    const sp = $('[data-dp="sup"]', box); if (sp) { st.partner = sp.value || null; st.partner_name = SUPPLIERS.find(s => s.id === sp.value)?.name || ''; }
+    const sp = $('[data-dp="sup"]', box); if (sp) { st.partner = sp.value || null; st.partner_name = lfSup(sp.value)?.name || ''; }
     const cp = $('[data-dp="cust"]', box); if (cp) { if (cp.value.trim() !== st.partner_name) { st.partner = null; } st.partner_name = cp.value.trim(); }
     (st.data.lines || []).forEach((l, i) => { const p = $(`[data-dlp="${i}"]`, box); if (p) { l.price = e2c(p.value); delete l._p; } });
   };
@@ -10199,7 +10200,7 @@ async function avisFromFile() {
   const r = parseOrderText(txt);
   if (!r.ok.length) return toast('Keine Positionen erkannt', {t2: r.bad[0]?.why || 'Spalten EAN und Menge nötig', type: 'warn'});
   if (r.bad.length) toast(`${r.bad.length} Zeilen nicht zugeordnet`, {t2: r.bad.slice(0, 3).map(b => b.why).join(' · '), type: 'warn', dur: 8000});
-  const sup = SUPPLIERS.find(s => s.id === r.ok[0].a.supplierId);
+  const sup = lfSup(r.ok[0].a.supplierId);
   openDoc('avis', null, {partner: sup?.id || null, partner_name: sup?.name || '', date: plusDays(1), data: {lines: r.ok.map(x => ({ean: x.v.ean, sku: x.a.id, name: lineName(x.a, x.v), qty: x.qty, price: x.cost || 0, vat: x.a.vat ?? 20}))}, focusSearch: false});
 }
 
@@ -10236,7 +10237,10 @@ async function wsBook() {
       const a = await invoke('doc_get', {id: WS.avis});
       const lines = Object.entries(cnt).map(([ean, qty]) => { const x = findEan(ean); const old = a.data.lines.find(l => l.ean === ean); return {ean, sku: x?.a.id, name: old?.name || (x ? lineName(x.a, x.v) : ean), qty, price: old?.price || 0, vat: old?.vat ?? 20}; });
       await invoke('doc_save', {doc: {...a, data: {...a.data, lines, gezaehlt: true}}, user: S.user.name});
-      const r = await invoke('doc_action', {id: a.id, action: 'buchen', payload: {}, user: S.user.name}); applyStocks(r.stocks);
+      let r;
+      try { r = await invoke('doc_action', {id: a.id, action: 'buchen', payload: {}, user: S.user.name}); }
+      catch (e) { await invoke('doc_save', {doc: {...a, data: {...a.data, lines, gezaehlt: false}}, user: S.user.name}).catch(() => {}); throw e; } // nicht gebucht: der Zählstand gilt nicht weiter
+      applyStocks(r.stocks);
       toast('Avis eingebucht', {t2: `${a.no} · ${WS.items.reduce((s, x) => s + x.qty, 0)} Stück`, type: 'pos', icon: 'boxes'});
     } else if (WS.po) {
       const lines = await invoke('po_lines', {id: WS.po}), items = [], rest = [];
@@ -10306,7 +10310,7 @@ async function renderZahlungen() {
   v.innerHTML = `<div class="cv">${pageHead('Zahlungen', 'Zahlungsvorschlag aus freigegebenen Rechnungen (mit Skonto), Zahlung erfassen, SEPA-Überweisungsdatei (pain.001) für das Online-Banking', `<button class="btn btn-secondary" data-zp="neu">${ic('plus', 'i-sm')}Zahlung erfassen</button>${notExp.length ? `<button class="btn btn-primary" data-zp="sepa">${ic('download', 'i-sm')}SEPA-Datei (${notExp.length})</button>` : ''}`)}
     ${kpiCards([[eur0(due.reduce((s, d) => s + d.open - skonto(d), 0) / 100), `Vorschlag (fällig in ${ZP.tage} Tagen)`], [eur0(due.reduce((s, d) => s + skonto(d), 0) / 100), 'Skonto möglich', 'pos'], [num(notExp.length), 'Zahlungen nicht exportiert', notExp.length ? 'warn' : ''], [eur0(zs.filter(z => z.status !== 'storniert' && z.date.slice(0, 7) === today().slice(0, 7)).reduce((s, z) => s + z.total, 0) / 100), 'bezahlt diesen Monat']])}
     <div class="card" style="margin-bottom:16px"><div class="set-row"><div><div class="set-l">Zahlungsvorschlag</div><div class="set-h">Freigegebene Rechnungen, fällig bzw. Skontofrist innerhalb von <select class="input select" id="zpTage" style="height:28px;width:auto;display:inline-block;padding:0 26px 0 8px">${[3, 7, 14, 30, 60].map(t => `<option ${t === ZP.tage ? 'selected' : ''}>${t}</option>`).join('')}</select> Tagen</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-zp="lauf" ${due.length ? '' : 'disabled'}>${ic('check', 'i-sm')}Ausgewählte bezahlen</button></div></div>
-      ${due.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:34px"></th><th>Rechnung</th><th>Lieferant</th><th>Fällig</th><th class="r">offen</th><th class="r">Skonto</th><th class="r" style="padding-right:16px">Zahlbetrag</th></tr></thead><tbody>${due.map(d => `<tr><td style="padding-left:16px"><input type="checkbox" checked data-zpe="${d.id}"></td><td><b class="mono">${esc(d.no)}</b><div class="muted" style="font-size:11.5px">${esc(d.data.rechnungsnr || '')}</div></td><td>${esc(d.partner_name)}${SUPPLIERS.find(s => s.id === d.partner)?.iban ? '' : ' <span class="pill warn" style="height:18px">IBAN fehlt</span>'}</td><td class="num">${esc(dDate(d.due))}</td><td class="r num">${cEur(d.open)}</td><td class="r num" style="color:var(--pos)">${skonto(d) ? cEur(skonto(d)) : '–'}</td><td class="r num" style="padding-right:16px;font-weight:600">${cEur(d.open - skonto(d))}</td></tr>`).join('')}</tbody></table>`
+      ${due.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:34px"></th><th>Rechnung</th><th>Lieferant</th><th>Fällig</th><th class="r">offen</th><th class="r">Skonto</th><th class="r" style="padding-right:16px">Zahlbetrag</th></tr></thead><tbody>${due.map(d => `<tr><td style="padding-left:16px"><input type="checkbox" checked data-zpe="${d.id}"></td><td><b class="mono">${esc(d.no)}</b><div class="muted" style="font-size:11.5px">${esc(d.data.rechnungsnr || '')}</div></td><td>${esc(d.partner_name)}${lfSup(d.partner)?.iban ? '' : ' <span class="pill warn" style="height:18px">IBAN fehlt</span>'}</td><td class="num">${esc(dDate(d.due))}</td><td class="r num">${cEur(d.open)}</td><td class="r num" style="color:var(--pos)">${skonto(d) ? cEur(skonto(d)) : '–'}</td><td class="r num" style="padding-right:16px;font-weight:600">${cEur(d.open - skonto(d))}</td></tr>`).join('')}</tbody></table>`
         : '<div class="empty" style="padding:28px"><p>Nichts fällig – Rechnungen müssen freigegeben sein.</p></div>'}</div>
     <div class="card">${zs.length ? `<table class="tbl art-tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Zahlung</th><th>Datum</th><th>Lieferant</th><th>Rechnungen</th><th>Art</th><th>Status</th><th class="r" style="padding-right:16px">Betrag</th></tr></thead><tbody>${zs.map(z => `<tr data-dopen="${z.id}" style="cursor:pointer"><td style="padding-left:16px"><b class="mono">${esc(z.no)}</b></td><td class="num muted">${esc(dDate(z.date))}</td><td>${esc(z.partner_name)}</td><td class="muted" style="font-size:12.5px">${esc((z.data.zuordnung || []).map(a => ers.find(e => e.id === a.er)?.no || a.er).join(', '))}</td><td>${esc(z.data.art || '')}</td><td>${dPill(z.status)}</td><td class="r num" style="padding-right:16px;font-weight:600">${cEur(z.total)}</td></tr>`).join('')}</tbody></table>`
       : `<div class="empty" style="padding:40px"><div class="empty-icon">${ic('cash')}</div><p>Noch keine Zahlungen erfasst.</p></div>`}</div></div>`;
@@ -10365,7 +10369,7 @@ async function sepaExport() {
   const zs = (await docLoad('zahlung')).filter(z => z.status === 'erfasst'); await loadSuppliers();
   const iban = (CFG['zahlung.iban'] || '').replace(/\s/g, '').toUpperCase(), bic = (CFG['zahlung.bic'] || '').trim().toUpperCase();
   if (!iban) { toast('Eigene IBAN fehlt', {t2: 'Einstellungen → Zahlungsarten → IBAN', type: 'warn'}); return setGo('zahlung'); }
-  const miss = zs.filter(z => !SUPPLIERS.find(s => s.id === z.partner)?.iban);
+  const miss = zs.filter(z => !lfSup(z.partner)?.iban);
   if (miss.length) return toast('IBAN der Lieferanten fehlt', {t2: miss.map(z => z.partner_name).join(', ') + ' – unter Lieferanten ergänzen', type: 'warn', dur: 9000});
   const x = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;'}[c])).replace(/[^\x20-\x7EÄÖÜäöüß]/g, ' ');
   const sum = zs.reduce((s, z) => s + z.total, 0), id = 'KONTOR-' + Date.now(), when = zs.map(z => z.date).sort()[0] < today() ? today() : zs.map(z => z.date).sort()[0];
@@ -10374,7 +10378,7 @@ async function sepaExport() {
 <GrpHdr><MsgId>${id}</MsgId><CreDtTm>${new Date().toISOString().slice(0, 19)}</CreDtTm><NbOfTxs>${zs.length}</NbOfTxs><CtrlSum>${(sum / 100).toFixed(2)}</CtrlSum><InitgPty><Nm>${x(CFG['firma.name']).slice(0, 70)}</Nm></InitgPty></GrpHdr>
 <PmtInf><PmtInfId>${id}-1</PmtInfId><PmtMtd>TRF</PmtMtd><BtchBookg>true</BtchBookg><NbOfTxs>${zs.length}</NbOfTxs><CtrlSum>${(sum / 100).toFixed(2)}</CtrlSum><PmtTpInf><SvcLvl><Cd>SEPA</Cd></SvcLvl></PmtTpInf><ReqdExctnDt>${when}</ReqdExctnDt>
 <Dbtr><Nm>${x(CFG['zahlung.empfaenger'] || CFG['firma.name']).slice(0, 70)}</Nm></Dbtr><DbtrAcct><Id><IBAN>${iban}</IBAN></Id></DbtrAcct><DbtrAgt><FinInstnId>${bic ? `<BIC>${bic}</BIC>` : '<Othr><Id>NOTPROVIDED</Id></Othr>'}</FinInstnId></DbtrAgt><ChrgBr>SLEV</ChrgBr>
-${zs.map(z => { const s = SUPPLIERS.find(y => y.id === z.partner); return `<CdtTrfTxInf><PmtId><EndToEndId>${x(z.no)}</EndToEndId></PmtId><Amt><InstdAmt Ccy="EUR">${(z.total / 100).toFixed(2)}</InstdAmt></Amt>${s.bic ? `<CdtrAgt><FinInstnId><BIC>${x(s.bic)}</BIC></FinInstnId></CdtrAgt>` : ''}<Cdtr><Nm>${x(s.name).slice(0, 70)}</Nm></Cdtr><CdtrAcct><Id><IBAN>${x(s.iban)}</IBAN></Id></CdtrAcct><RmtInf><Ustrd>${x(z.ref || z.no).slice(0, 140)}</Ustrd></RmtInf></CdtTrfTxInf>`; }).join('\n')}
+${zs.map(z => { const s = lfSup(z.partner); return `<CdtTrfTxInf><PmtId><EndToEndId>${x(z.no)}</EndToEndId></PmtId><Amt><InstdAmt Ccy="EUR">${(z.total / 100).toFixed(2)}</InstdAmt></Amt>${s.bic ? `<CdtrAgt><FinInstnId><BIC>${x(s.bic)}</BIC></FinInstnId></CdtrAgt>` : ''}<Cdtr><Nm>${x(s.name).slice(0, 70)}</Nm></Cdtr><CdtrAcct><Id><IBAN>${x(s.iban)}</IBAN></Id></CdtrAcct><RmtInf><Ustrd>${x(z.ref || z.no).slice(0, 140)}</Ustrd></RmtInf></CdtTrfTxInf>`; }).join('\n')}
 </PmtInf></CstmrCdtTrfInitn></Document>`;
   try {
     const p = await invoke('save_text', {name: `SEPA_${today()}.xml`, content: xml, title: 'SEPA-Überweisungsdatei speichern'}); if (!p) return;
@@ -10401,7 +10405,7 @@ DOC_CLICK.reklamation = async (e, st, h) => {
   await loadSuppliers();
   if (st.status !== 'lieferant') { try { await invoke('doc_action', {id: st.id, action: 'lieferant', payload: {}, user: S.user.name}); } catch { /* */ } }
   closeLayer(h.el); docRefresh();
-  openDoc('lretoure', null, {partner: sid || null, partner_name: SUPPLIERS.find(s => s.id === sid)?.name || '', ref: SUPPLIERS.find(s => s.id === sid)?.profile?.rma_pflicht ? '' : st.no, data: {grund: st.data.grund || 'Defekt / Mangel', notiz: `Reklamation ${st.no}: ${st.data.mangel || ''}`, lines: [{...l, qty: l.qty || 1, price: x?.a.cost != null ? Math.round(x.a.cost * 100) : 0}]}, focusSearch: false});
+  openDoc('lretoure', null, {partner: sid || null, partner_name: lfSup(sid)?.name || '', ref: lfSup(sid)?.profile?.rma_pflicht ? '' : st.no, data: {grund: st.data.grund || 'Defekt / Mangel', notiz: `Reklamation ${st.no}: ${st.data.mangel || ''}`, lines: [{...l, qty: l.qty || 1, price: x?.a.cost != null ? Math.round(x.a.cost * 100) : 0}]}, focusSearch: false});
 };
 docPage('lretouren', 'lretoure', {title: 'Retouren', newLabel: 'Neue Lieferantenretoure', tabs: [['offen', 'Offen', s => ['erfasst', 'versendet'].includes(s)], ['erledigt', 'Erledigt', s => ['gutgeschrieben', 'abgelehnt', 'storniert'].includes(s)], ['alle', 'Alle', () => true]],
   cols: [{l: 'Grund', f: d => esc(d.data.grund || '')}, {l: 'Stück', r: true, f: d => num((d.data.lines || []).reduce((s, l) => s + (+l.qty || 0), 0))}, {l: 'Gutschrift', r: true, f: d => d.data.gutschrift ? cEur(d.data.gutschrift.betrag) : '–'}],
@@ -10532,7 +10536,7 @@ async function renderBonus() {
   const agr = sid => docs.find(d => d.partner === sid && d.data.jahr === LB.year && d.status !== 'storniert');
   const bySup = {}; vol.forEach(r => { (bySup[r.lieferant] ||= {wert: 0, wg: {}}); bySup[r.lieferant].wert += r.wert; bySup[r.lieferant].wg[r.warengruppe] = (bySup[r.lieferant].wg[r.warengruppe] || 0) + r.wert; });
   const pct = (a, w) => { const st = (a?.data.staffel || []).slice().sort((x, y) => y.ab - x.ab).find(s => w >= s.ab); return st ? +st.pct : 0; };
-  const rows = SUPPLIERS.map(s => { const a = agr(s.id), w = bySup[s.id]?.wert || 0, p = pct(a, w); return {s, a, w, p, bonus: Math.round(w * p / 100)}; }).filter(r => r.a || r.w);
+  const rows = SUPPLIERS_ALL.map(s => { const a = agr(s.id), w = bySup[s.id]?.wert || 0, p = pct(a, w); return {s, a, w, p, bonus: Math.round(w * p / 100)}; }).filter(r => r.a || r.w);
   const catN = id => CATS.find(c => c.id === id)?.name || id;
   v.innerHTML = `<div class="cv">${pageHead('Umlage Lieferantenbonus', 'Bonusvereinbarungen (Staffel nach Einkaufsvolumen) – Bonus berechnen und auf Warengruppen umlegen (mindert den Wareneinsatz)', `<select class="input select" id="lbYear" style="width:auto">${[0, 1, 2].map(i => new Date().getFullYear() - i).map(y => `<option ${y === LB.year ? 'selected' : ''}>${y}</option>`).join('')}</select><button class="btn btn-primary" data-lb="neu">${ic('plus', 'i-sm')}Vereinbarung</button>`)}
     ${kpiCards([[eur0(vol.reduce((s, r) => s + r.wert, 0) / 100), `Einkaufsvolumen ${LB.year} (EK)`], [num(rows.filter(r => r.a).length), 'Vereinbarungen'], [eur0(rows.reduce((s, r) => s + r.bonus, 0) / 100), 'erwarteter Bonus', 'pos'], [num(rows.filter(r => r.a?.status === 'umgelegt').length), 'bereits umgelegt']])}
@@ -10542,7 +10546,7 @@ async function renderBonus() {
   v._rows = rows; v._bySup = bySup;
 }
 function openBonus(doc, sid) {
-  const st = doc ? JSON.parse(JSON.stringify(doc)) : {kind: 'bonus', partner: sid, partner_name: SUPPLIERS.find(s => s.id === sid)?.name || '', data: {jahr: LB.year, staffel: [{ab: 0, pct: 1}, {ab: 2000000, pct: 2}, {ab: 5000000, pct: 3}]}};
+  const st = doc ? JSON.parse(JSON.stringify(doc)) : {kind: 'bonus', partner: sid, partner_name: lfSup(sid)?.name || '', data: {jahr: LB.year, staffel: [{ab: 0, pct: 1}, {ab: 2000000, pct: 2}, {ab: 5000000, pct: 3}]}};
   const el = openLayer(`<div class="modal" style="width:min(560px,100%)" role="dialog" aria-modal="true"><div data-lbb></div></div>`);
   const box = $('[data-lbb]', el);
   const render = () => { box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('percent')}</div><div><h2>Bonusvereinbarung ${esc(st.partner_name)}</h2><p>Jahr ${st.data.jahr} · Staffel nach Einkaufsvolumen (EK netto)</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
@@ -12080,7 +12084,7 @@ const STAMM_DEF = {
   indikator: {t: 'Wert-Indikator-Sets', ic: 'target', sub: 'Ampeln für Kennzahlen in der Flexanalyse – grün ab, gelb ab, sonst rot', cols: [{k: 'name', l: 'Set'}, {k: 'kennzahl', l: 'Kennzahl', t: 'select', o: () => AN_MEAS.map(m => [m[0], m[1]])}, {k: 'gruen', l: 'grün ab', t: 'num'}, {k: 'gelb', l: 'gelb ab', t: 'num'}],
     seed: [{id: 'RE', name: 'Rohertrag', kennzahl: 'rohertrag', gruen: 1000, gelb: 200}]},
   // ── EDI / Webshop
-  edilieferant: {t: 'Lieferanten EDI-Einstellungen', ic: 'swap', sub: 'GLN, Format und Nachrichtentypen je Lieferant', cols: [{k: 'lieferant', l: 'Lieferant', t: 'select', o: supOpts}, {k: 'gln', l: 'GLN Lieferant'}, {k: 'nachrichten', l: 'Nachrichten', t: 'list', ph: 'PRICAT,ORDERS,ORDRSP,DESADV,INVOIC,SLSRPT,INVRPT'}, {k: 'anbindung', l: 'Anbindung', t: 'select', o: () => stOpts('edianbindung')}, {k: 'auto', l: 'automatisch verarbeiten', t: 'check'}]},
+  edilieferant: {t: 'Lieferanten EDI-Einstellungen', ic: 'swap', sub: 'Format und Nachrichtentypen je Lieferant (die GLN steht im Lieferanten unter Stammdaten › Lieferanten)', cols: [{k: 'lieferant', l: 'Lieferant', t: 'select', o: supOpts}, {k: 'gln', l: 'GLN (ersatzweise)'}, {k: 'nachrichten', l: 'Nachrichten', t: 'list', ph: 'PRICAT,ORDERS,ORDRSP,DESADV,INVOIC,SLSRPT,INVRPT'}, {k: 'anbindung', l: 'Anbindung', t: 'select', o: () => stOpts('edianbindung')}, {k: 'auto', l: 'automatisch verarbeiten', t: 'check'}]},
   edianbindung: {t: 'Anbindungen', ic: 'link', sub: 'Übertragungswege zu EDI-Partnern und Clearingstellen', cols: [{k: 'name', l: 'Anbindung'}, {k: 'typ', l: 'Typ', t: 'select', o: [['ordner', 'Ordner (Dateiaustausch)'], ['sftp', 'SFTP (über Sync-Tool)'], ['as2', 'AS2 (über Clearing)'], ['api', 'Web-API']]}, {k: 'adresse', l: 'Adresse / Pfad', w: 280}, {k: 'partner', l: 'Clearing / Partner'}],
     seed: [{id: 'ORDNER', name: 'Lokaler EDI-Ordner', typ: 'ordner', adresse: '', partner: ''}]},
   edijob: {t: 'Hintergrundjobs', ic: 'clock', sub: 'Automatische Aufgaben – laufen, solange Kontor geöffnet ist', cols: [{k: 'name', l: 'Job'}, {k: 'typ', l: 'Aufgabe', t: 'select', o: () => JOB_TYPES}, {k: 'minuten', l: 'alle … Minuten', t: 'num'}, {k: 'letzter', l: 'zuletzt', t: 'ro'}],
@@ -12788,7 +12792,7 @@ function edifactRead(raw) {
     if (s.tag === 'LIN') { pos = {ean: edVal(s, 2, 0), menge: 0}; out.positionen.push(pos); }
     if (!pos) continue;
     if (s.tag === 'PIA') { const q = edVal(s, 1, 1); if (q === 'SA') pos.artikelnr = edVal(s, 1, 0); if (q === 'GN') pos.wg = edVal(s, 1, 0); }
-    if (s.tag === 'IMD') { const q = edVal(s, 1), txt = edVal(s, 2, 3) || edVal(s, 2, 0); if (q === '35') pos.farbe = txt; else if (q === '98') pos.groesse = txt; else if (q === 'BRN') pos.marke = txt; else if (!pos.name) pos.name = txt; }
+    if (s.tag === 'IMD') { const q = edVal(s, 1), txt = edVal(s, 2, 3) || edVal(s, 2, 0); if (q === '35') pos.farbe = txt; else if (q === '98') pos.groesse = txt; else if (q === 'BRN') { pos.marke = txt; pos.marke_code = edVal(s, 2, 0); } else if (!pos.name) pos.name = txt; }
     if (s.tag === 'QTY') { const q = edVal(s, 0, 0); if (['12', '21', '47', '113', '153', '145', '1'].includes(q)) pos.menge = parseFloat(edVal(s, 0, 1)) || 0; }
     if (s.tag === 'PRI') { const q = edVal(s, 0, 0), p = parseFloat(edVal(s, 0, 1)) || 0; if (q === 'AAA' || q === 'AAB') pos.ek = p; if (q === 'AAE' || q === 'INF') pos.vk = p; }
     if (s.tag === 'MOA' && edVal(s, 0, 0) === '203') pos.betrag = parseFloat(edVal(s, 0, 1)) || 0;
@@ -12824,7 +12828,7 @@ async function ediImportFolder(auto) {
       const raw = await invoke('edi_read', {which: 'import', name: f.name});
       const d = await ediCreate(f.name, raw);
       await invoke('edi_done', {name: f.name}); n++;
-      const sup = SUPPLIERS.find(s => s.id === d.partner), cfg = stActive('edilieferant').find(x => x.lieferant === sup?.id);
+      const sup = lfSup(d.partner), cfg = stActive('edilieferant').find(x => x.lieferant === sup?.id);
       if (auto && cfg?.auto && ['DESADV', 'INVOIC', 'ORDRSP', 'PRICAT'].includes(d.data.typ)) { try { await ediProcess(await invoke('doc_get', {id: d.id})); } catch (e) { Hooks.emit('edi.fehler', {no: d.no, fehler: String(e)}); } }
     } catch (e) { Hooks.emit('edi.fehler', {datei: f.name, fehler: String(e)}); }
   }
@@ -12834,22 +12838,24 @@ async function ediImportFolder(auto) {
 }
 /** Nachricht verarbeiten: DESADV → Avis, INVOIC → Eingangsrechnung, ORDRSP → bestätigt, PRICAT → Katalog */
 async function ediProcess(d) {
-  const p = d.data.parsed || {}, sup = SUPPLIERS.find(s => s.id === d.partner);
+  const p = d.data.parsed || {}, sup = lfSup(d.partner);
   const lines = [], unknown = [];
   for (const x of p.positionen || []) { const f = findEan(x.ean); if (f) lines.push({...newLine(DK.avis, f.a, f.v, x.menge || 1), ...(x.ek ? {price: Math.round(x.ek * 100)} : {})}); else unknown.push(x.ean); }
   let info = '';
   if (p.typ === 'DESADV') {
-    if (!sup) throw new Error('Lieferant unbekannt – GLN unter EDI › Lieferanten EDI-Einstellungen hinterlegen');
+    if (!sup) throw new Error('Lieferant unbekannt – Haupt-GLN im Lieferanten (Stammdaten › Lieferanten) hinterlegen');
     if (unknown.length) throw new Error(`Unbekannte EAN: ${unknown.slice(0, 5).join(', ')}${unknown.length > 5 ? ' …' : ''} – erst per PRICAT/Artikel-Import anlegen`);
     const po = EK.pos.find(x => x.no === p.bestellung);
     const a = await invoke('doc_save', {doc: {kind: 'avis', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), data: {lines, order_id: po?.id || null, spedition: '', edi: d.no}}, user: S.user.name});
     info = `Avis ${a.no}`;
   } else if (p.typ === 'INVOIC') {
-    if (!sup) throw new Error('Lieferant unbekannt – GLN hinterlegen');
+    if (!sup) throw new Error('Lieferant unbekannt – Haupt-GLN im Lieferanten (Stammdaten › Lieferanten) hinterlegen');
     const betrag = Math.round((p.summe ?? (p.positionen || []).reduce((s, x) => s + (x.betrag ?? (x.ek || 0) * (x.menge || 0)), 0)) * 100);
     const po = EK.pos.find(x => x.no === p.bestellung);
-    const zb = stActive('zahlungsbedingung')[0];
-    const r = await invoke('doc_save', {doc: {kind: 'er', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), due: plusDays(+zb?.tage || 30), data: {rechnungsnr: p.nr, betrag, bestellungen: po ? [po.id] : [], notiz: `aus EDI ${d.no}`}}, user: S.user.name});
+    // Fälligkeit und Skonto wie bei der von Hand erfassten Rechnung: Valuta/Skonto des Lieferanten, sonst seine Zahlungs-Bed., sonst die erste Zahlungsbedingung
+    const sp = sup.profile || {}, zb = stRows('zahlungsbedingung').find(z => z.id === sp.zahlungsbed) || stActive('zahlungsbedingung')[0];
+    const valuta = +sp.valuta || +zb?.tage || 30, skonto = +sp.skonto || +zb?.skonto || 0, skTage = +zb?.skonto_tage || 0;
+    const r = await invoke('doc_save', {doc: {kind: 'er', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), due: plusDays(valuta), data: {rechnungsnr: p.nr, betrag, bestellungen: po ? [po.id] : [], notiz: `aus EDI ${d.no}`, ...(skonto ? {skonto_pct: skonto, skonto_bis: skTage ? plusDays(skTage) : ''} : {})}}, user: S.user.name});
     info = `Eingangsrechnung ${r.no}`;
   } else if (p.typ === 'ORDRSP') {
     info = `Bestätigung zu ${p.bestellung || '–'}: ${num((p.positionen || []).reduce((s, x) => s + (x.menge || 0), 0))} Teile`;
@@ -12868,7 +12874,7 @@ async function ediExport(type, sid, body, ref) {
   let pfad = '';
   if (CFG['edi.export_dir']) pfad = await invoke('edi_write', {which: 'export', name, content, user: S.user.name});
   else { const p = await invoke('save_text', {name, content, title: `${type} speichern`}); if (!p) return null; pfad = p; }
-  const sup = SUPPLIERS.find(s => s.id === sid);
+  const sup = lfSup(sid);
   const d = await invoke('doc_save', {doc: {kind: 'edi', partner: sid || null, partner_name: sup?.name || '', ref: name, date: today(), data: {typ: type, richtung: 'aus', datei: name, pfad, parsed: edifactRead(content), inhalt: content}}, user: S.user.name});
   await invoke('doc_action', {id: d.id, action: 'verarbeitet', payload: {ergebnis: pfad}, user: S.user.name});
   EDI.docs = null; toast(`${type} erstellt`, {t2: pfad, type: 'pos', icon: 'upload'}); return d;
@@ -12902,7 +12908,7 @@ async function ediInvrpt(sid) {
 /* ── PRICAT → Artikel ── */
 function ediCatalogItems(docs) {
   const out = [];
-  for (const d of docs.filter(x => x.data?.typ === 'PRICAT')) for (const x of d.data.parsed?.positionen || []) out.push({...x, marke: lfMarkeEigen(d.partner, x.marke, x.marke_gln || d.data.parsed?.marke_gln), doc: d.no, sid: d.partner, sup: d.partner_name});
+  for (const d of docs.filter(x => x.data?.typ === 'PRICAT')) for (const x of d.data.parsed?.positionen || []) out.push({...x, marke: lfMarkeEigen(d.partner, x.marke, x.marke_gln || d.data.parsed?.marke_gln, x.marke_code), doc: d.no, sid: d.partner, sup: d.partner_name});
   const by = {}; out.forEach(x => { by[x.ean] = x; }); // jüngste Übermittlung gewinnt
   return Object.values(by).map(x => { const f = findEan(x.ean); const conflict = f && ((f.a.supplierId && x.sid && f.a.supplierId !== x.sid) || (x.artikelnr && f.a.fields?.['Lieferanten-Art.-Nr.'] && f.a.fields['Lieferanten-Art.-Nr.'] !== x.artikelnr)); const preis = f && x.vk && Math.abs((f.a.price || 0) - x.vk) > 0.009; return {...x, known: !!f, art: f?.a, conflict: !!conflict, preis}; });
 }
@@ -13798,7 +13804,7 @@ function artEditorMount(host, a, tab0) {
           <label class="field"><span>MwSt.-Typ</span><select class="input select" data-f="vat">${[[20, 'Standard 20 %'], [13, 'Reduziert 13 %'], [10, 'Reduziert 10 %'], [0, 'Ohne MwSt. 0 %']].map(([r, l]) => `<option value="${r}" ${+st.vat === r ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
           <div class="muted" id="edMargin" style="font-size:12px"></div></div>
         <div class="ae-card"><h4>Lieferant & Bestand</h4>
-          <label class="field"><span>Lieferant</span><select class="input select" data-f="supplierId"><option value="">–</option>${SUPPLIERS.map(x => `<option value="${esc(x.id)}" ${x.id === st.supplierId ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
+          <label class="field"><span>Lieferant</span><select class="input select" data-f="supplierId"><option value="">–</option>${lfOptionen(st.supplierId).map(([id, name]) => `<option value="${esc(id)}" ${id === st.supplierId ? 'selected' : ''}>${esc(name)}</option>`).join('')}</select></label>
           <label class="field"><span>Mindestbestand je Variante</span><input class="input num" data-f="minStock" inputmode="numeric" value="${esc(st.minStock)}"></label>
           <label class="field"><span>Darstellung (ohne Bild)</span><select class="input select" data-f="g">${GLYPHS.map(([k, l]) => `<option value="${k}" ${k === st.g ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
         <div class="ae-card"><h4>Übersicht</h4>
@@ -14581,7 +14587,7 @@ const AE_GRIDS = {
   },
   zlief: {
     cfg: ctx => ({embed: true, title: 'Zusätzl. Lieferanten', cols: [{k: 'lnr', l: 'Lief.-Nr.', w: 100}, {k: 'lname', l: 'Lief.-Name', w: 240}, {k: 'ext_art', l: 'Ext. Art.-Nr.', w: 180}, {k: 'ext_farb', l: 'Ext. Farb-Nr.', w: 160}],
-      rows: () => aeList(ctx, 'zusatz_lieferanten'),
+      rows: () => aeList(ctx, 'zusatz_lieferanten').map(r => { const s = lfSup(r.lid); return s ? {...r, lnr: s.nr != null ? String(s.nr) : r.lnr, lname: s.name || r.lname} : r; }),
       extra: [{k: 'neu', l: 'Neu', icon: 'plus'}],
       actions: {neu: () => aeZlief(ctx, null)}, edit: id => aeZlief(ctx, id),
       remove: async ids => { ctx.st.d.zusatz_lieferanten = aeList(ctx, 'zusatz_lieferanten').filter(x => !ids.includes(x.id)); ctx.setTab('zlief'); }}),
@@ -14631,10 +14637,10 @@ const AE_GRIDS = {
 
 async function aeZlief(ctx, id) {
   const l = aeList(ctx, 'zusatz_lieferanten'), r = id ? l.find(x => x.id === id) : null;
-  const o = await aeForm(r ? 'Zusätzl. Lieferanten' : 'Zusätzl. Lieferanten [-1]', [{k: 'lid', l: 'Lieferant', t: 'select', o: SUPPLIERS.map(s => [s.id, s.name]), req: true, w: 'full'}, {k: 'ext_art', l: 'Ext. Art.-Nr.'}, {k: 'ext_farb', l: 'Ext. Farb-Nr.'}], r ? {...r} : {}, {del: !!r});
+  const o = await aeForm(r ? 'Zusätzl. Lieferanten' : 'Zusätzl. Lieferanten [-1]', [{k: 'lid', l: 'Lieferant', t: 'select', o: lfOptionen(r?.lid), req: true, w: 'full'}, {k: 'ext_art', l: 'Ext. Art.-Nr.'}, {k: 'ext_farb', l: 'Ext. Farb-Nr.'}], r ? {...r} : {}, {del: !!r});
   if (!o) return;
   if (o._del) ctx.st.d.zusatz_lieferanten = l.filter(x => x.id !== id);
-  else { const s = SUPPLIERS.find(x => x.id === o.lid); const row = {id: r?.id || aeUid(), lid: o.lid, lnr: s?.nr != null ? String(s.nr) : s?.id || o.lid, lname: s?.name || o.lid, ext_art: o.ext_art || '', ext_farb: o.ext_farb || ''}; if (r) Object.assign(r, row); else l.push(row); }
+  else { const s = lfSup(o.lid); const row = {id: r?.id || aeUid(), lid: o.lid, lnr: s?.nr != null ? String(s.nr) : s?.id || o.lid, lname: s?.name || o.lid, ext_art: o.ext_art || '', ext_farb: o.ext_farb || ''}; if (r) Object.assign(r, row); else l.push(row); }
   ctx.setTab('zlief');
 }
 async function aeMerk(ctx, id) {
@@ -14666,7 +14672,7 @@ for (const [k, spec] of Object.entries(AE_GRIDS)) AE_GRID_TABS[k] = ctx => `<div
 const aeField = (l, v, w) => `<label class="field" ${w ? `style="min-width:${w}px"` : ''}><span>${esc(l)}</span><input class="input" value="${esc(v ?? '')}" disabled></label>`;
 AE_GRID_TABS.karte = ctx => {
   const a = aeArt(ctx), st = ctx.st; if (!a) return '<div class="empty" style="padding:40px"><h3>Artikel noch nicht gespeichert</h3></div>';
-  const sup = SUPPLIERS.find(s => s.id === st.supplierId), m = (a.media || []).find(x => x.file), img = m ? imgUrl(m.file) : a.image ? imgUrl(a.image) : null;
+  const sup = lfSup(st.supplierId), m = (a.media || []).find(x => x.file), img = m ? imgUrl(m.file) : a.image ? imgUrl(a.image) : null;
   const d = st.d, today = new Date().toLocaleDateString('de-DE');
   const sizes = a.sizes.map(s => ({s, q: a.variants.filter(v => v.s === s).reduce((t, v) => t + v.q, 0)}));
   return `<div class="ae-pane"><div class="ae-cards">
@@ -17372,7 +17378,7 @@ const landName = id => { const x = String(id || '').toUpperCase(); return x ? (l
 const landEu = id => !!landListe().find(l => l.id === String(id || '').toUpperCase())?.eu;
 
 /** Maske anlegen. o: page, list, title, perm, st (Zustand {id, ids, d, orig, tab, dirty, show}), sub(st), load(), reload(), draft(id), tabs() → [[k, Titel, Zusatz-HTML]],
- *  body() → {html, mount}, errors(d) → [{k, t}], tabOf(k), locked(), bar() (zusätzliche Knöpfe), can() → {new, del, refresh}, save(), remove(ids, ausMaske), act(a, b, el), onSet(k, el), rerender(k) */
+ *  body() → {html, mount}, errors(d) → [{k, t}], tabOf(k), locked(), bar() (zusätzliche Knöpfe), can() → {new, del, refresh}, save(), remove(ids, ausMaske), act(a, b, el), onSet(k, el), rerender(k), onOpen(id) (nach dem Öffnen/Blättern) */
 function maskeNew(o) {
   const st = o.st, K = {o};
   const lock = () => !!o.locked?.();
@@ -17422,6 +17428,7 @@ function maskeNew(o) {
   K.open = (id, ids) => {
     st.id = id; st.ids = ids?.length ? ids : st.ids; st.d = o.draft(id); st.orig = mclone(st.d); st.tab = o.tabs()[0][0]; st.dirty = false; st.show = false;
     if (S.view === o.page) { K.render(); renderTopbar(); } else go(o.page);
+    o.onOpen?.(id);
   };
   K.reset = () => { st.d = o.draft(st.id); st.orig = mclone(st.d); st.dirty = false; st.show = false; };
   K.register = () => {
@@ -17734,7 +17741,7 @@ if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {mkGpsr, markenArtikel: ()
    Wirkung (nichts nur zum Anschauen):
    • Aktiv: inaktive Lieferanten verschwinden aus Auswahllisten, Bestellvorschlag und KI-Nachbestellung; „Order-Vorschläge nutzen“ steuert den Vorschlag je Lieferant
    • Nr., Land, Kunden-Nr., Filial-Kundennummern (die der bestellenden Filiale geht vor), Anschrift, Telefon, Fax und Vereinbarungen stehen auf der Bestellung;
-     Haupt-Adresse auch auf Avis, Retoure und Reklamation, Rechnungsadresse auf Eingangsrechnung und Zahlung; Info, Info 2 und Vereinbarungen erscheinen als Hinweis
+     Haupt-Adresse auch auf Avis und Retoure, Rechnungsadresse auf Eingangsrechnung und Zahlung; Info, Info 2 und Vereinbarungen erscheinen als Hinweis
      beim Bestellen; Min. Auftragssumme/-menge fragen beim Bestellen nach; Skonto, Valuta und Zahlungs-Bed. füllen die Eingangsrechnung vor
    • RMA Code Pflicht (Retoure ohne RMA-Nummer nicht versendbar), RMA Ablauf (Hinweis in der Retoure), Gegenscannen (Avis erst nach dem Scanner-Wareneingang)
    • Marken: neue Artikel einer Marke bekommen den Lieferanten vorgeschlagen; vorhandene Artikel ohne Lieferant lassen sich nachtragen
@@ -17742,7 +17749,7 @@ if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {mkGpsr, markenArtikel: ()
    Pflege nur in der Zentrale (und am Einzelplatz); die Prüfungen stehen hier und in lieferant.rs gleich (das Backend entscheidet).
    ═════════════════════════════════════════════════════════════════ */
 const LF = {rows: [], rolle: 'einzel', eigene: '', nr: 1, loaded: false};
-const LE = {id: null, ids: [], d: null, orig: null, tab: 'allg', dirty: false, show: false, files: [], filesFor: null};
+const LE = {id: null, ids: [], d: null, orig: null, tab: 'allg', dirty: false, show: false, files: [], filesFor: null, busy: false};
 const LF_TABS = [['allg', 'Allgemein'], ['marken', 'Marken'], ['dateien', 'Dateien'], ['haupt', 'Haupt-Adresse'], ['rechn', 'Rechnungsadresse'], ['fk', 'Filial-Kunden-Nummern']];
 const LF_ADR = ['adrzeile1', 'adrzeile2', 'strasse', 'hausnr', 'plz', 'ort', 'postfach', 'bundesland'];
 const LF_GLN_HERKUNFT = [['hersteller', 'Hersteller'], ['lieferant', 'Lieferant']];
@@ -17769,14 +17776,14 @@ function lfKundenNr(sup, store) {
 /** Anschrift als Zeilen (Adr.-Zeile 1/2, Straße Nr., Postfach, PLZ Ort, Land wenn nicht Österreich) */
 function lfAdrLines(a, land) {
   const l = String(land ?? a?.land ?? '').toUpperCase(), t = k => String(a?.[k] || '').trim();
-  return [t('adrzeile1'), t('adrzeile2'), [t('strasse'), t('hausnr')].filter(Boolean).join(' '), t('postfach') ? 'Postfach ' + t('postfach') : '', [t('plz'), t('ort')].filter(Boolean).join(' '), l && l !== 'AT' ? landName(l) : ''].filter(Boolean);
+  return [t('adrzeile1'), t('adrzeile2'), [t('strasse'), t('hausnr')].filter(Boolean).join(' '), t('postfach') ? 'Postfach ' + t('postfach') : '', [t('plz'), t('ort')].filter(Boolean).join(' '), t('bundesland'), l && l !== 'AT' ? landName(l) : ''].filter(Boolean);
 }
 /** Empfängerblock auf Bestellung und Belegen: Name, z. H., Anschrift (Rechnungsadresse bei Rechnungen), Telefon, E-Mail */
 function lfEmpfaenger(sup, art = 'haupt') {
   if (!sup) return [];
-  const p = sup.profile || {}, r = p.rechnung || {}, bill = art === 'rechn' && (r.strasse || r.postfach || r.ort || r.adrzeile1);
+  const p = sup.profile || {}, r = p.rechnung || {}, rn = art === 'rechn', bill = rn && (r.strasse || r.postfach || r.ort || r.adrzeile1);
   const adr = bill ? lfAdrLines(r, r.land || sup.country) : lfAdrLines(p.adresse || {}, p.adresse?.land || sup.country);
-  return [bill && r.name ? r.name : sup.name, sup.contact ? 'z. H. ' + sup.contact : '', ...adr, sup.phone ? 'Tel. ' + sup.phone : '', p.fax ? 'Fax ' + p.fax : '', sup.email].filter(Boolean);
+  return [rn && r.name ? r.name : sup.name, sup.contact ? 'z. H. ' + sup.contact : '', ...adr, sup.phone ? 'Tel. ' + sup.phone : '', p.fax ? 'Fax ' + p.fax : '', sup.email].filter(Boolean);
 }
 /** Hinweise zum Lieferanten (Info, Info 2, Vereinbarungen) beim Bestellen und in Belegen */
 function lfHinweis(sup) {
@@ -17791,11 +17798,11 @@ function lfMarkeSync(marke) {
   return ids.length === 1 ? ids[0] : '';
 }
 async function lfMarkeVorschlag(marke) { try { await Promise.all([lfLoad(), mkLoad()]); } catch { return ''; } return lfMarkeSync(marke); }
-/** PRICAT: Marke des Lieferanten (Name, EDI-Marken-Nr./-Name oder Hersteller-GLN) → eigene Marke laut Zuordnung am Lieferanten; ohne Treffer bleibt der Text */
-function lfMarkeEigen(sid, text, gln) {
+/** PRICAT: Marke des Lieferanten (Markenname oder Marken-Nr. der Nachricht, Hersteller-GLN) → eigene Marke laut Zuordnung am Lieferanten; ohne Treffer bleibt der Text */
+function lfMarkeEigen(sid, text, gln, code) {
   const r = lfRow(sid); if (!r) return text;
-  const n = mkNorm(text), g = String(gln || '').replace(/\s+/g, '');
-  const m = (r.marken || []).find(x => (n && (mkNorm(x.ext_name) === n || mkNorm(x.edi_name) === n || mkNorm(x.edi_nr) === n)) || (g && x.gln && x.gln === g && x.gln_src !== 'lieferant'));
+  const n = mkNorm(text), c = mkNorm(code), g = String(gln || '').replace(/\s+/g, '');
+  const m = (r.marken || []).find(x => (n && (mkNorm(x.ext_name) === n || mkNorm(x.edi_name) === n || mkNorm(x.edi_nr) === n)) || (c && (mkNorm(x.edi_nr) === c || mkNorm(x.ext_name) === c || mkNorm(x.edi_name) === c)) || (g && x.gln && x.gln === g && x.gln_src !== 'lieferant'));
   return m ? (m.name || mkRow(m.brand_id)?.name || text) : text;
 }
 /** Wohin mit „Lieferant öffnen“ aus anderen Seiten */
@@ -17863,16 +17870,16 @@ function lfNeu() {
 }
 
 /* ── Entwurf ── */
-const lfAdrBlank = () => ({name: '', ...Object.fromEntries(LF_ADR.map(k => [k, ''])), land: 'AT'});
+const lfAdrBlank = (land = 'AT') => ({name: '', ...Object.fromEntries(LF_ADR.map(k => [k, ''])), land});
 const lfProfileBlank = () => ({fax: '', web: '', steuernr: '', uid: '', gln: '', empfaenger_gln: '', info2: '', vereinbarung1: '', vereinbarung2: '', rma_ablauf: '', rma_pflicht: false, gegenscannen: false, order_vorschlag: true,
-  min_summe: 0, min_menge: 0, skonto: 0, valuta: 0, zahlungsbed: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank(), filial_kunden: {}});
+  min_summe: 0, min_menge: 0, skonto: 0, valuta: 0, zahlungsbed: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank(''), filial_kunden: {}});
 const lfBlank = () => ({id: '', nr: String(LF.nr), name: '', _aktiv: true, country: 'AT', contact: '', email: '', phone: '', customer_no: '', lead_days: '7', note: '', iban: '', bic: '', fields: {}, marken: [],
-  profile: {...lfProfileBlank(), min_summe: '', min_menge: '', skonto: '', valuta: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank()}});
+  profile: {...lfProfileBlank(), min_summe: '', min_menge: '', skonto: '', valuta: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank('')}});
 function lfDraft(id) {
   const r = id ? lfRow(id) : null; if (!r) return lfBlank();
   const p = {...lfProfileBlank(), ...mclone(r.profile || {})};
-  const adr = a => ({...lfAdrBlank(), ...Object.fromEntries(Object.entries(a || {}).map(([k, v]) => [k, String(v ?? '')]))});
-  p.adresse = adr(p.adresse); p.rechnung = adr(p.rechnung); p.adresse.land ||= r.country; p.filial_kunden = {...(p.filial_kunden || {})};
+  const adr = (a, land) => ({...lfAdrBlank(land), ...Object.fromEntries(Object.entries(a || {}).map(([k, v]) => [k, String(v ?? '')]))});
+  p.adresse = adr(p.adresse, 'AT'); p.rechnung = adr(p.rechnung, ''); p.adresse.land ||= r.country; p.filial_kunden = {...(p.filial_kunden || {})};
   p.min_summe = lfEuroText(p.min_summe); p.min_menge = p.min_menge ? String(p.min_menge) : ''; p.skonto = p.skonto ? String(p.skonto).replace('.', ',') : ''; p.valuta = p.valuta ? String(p.valuta) : '';
   for (const k of ['fax', 'web', 'steuernr', 'uid', 'gln', 'empfaenger_gln', 'info2', 'vereinbarung1', 'vereinbarung2', 'rma_ablauf', 'zahlungsbed']) p[k] = String(p[k] ?? '');
   return {id: r.id, nr: String(r.nr ?? ''), name: String(r.name ?? ''), _aktiv: r._aktiv !== false, country: r.country || 'AT', contact: String(r.contact ?? ''), email: String(r.email ?? ''), phone: String(r.phone ?? ''), customer_no: String(r.customer_no ?? ''),
@@ -17903,8 +17910,9 @@ function lfErrors(d) {
   for (const [k, l] of [['gln', 'Haupt-GLN'], ['empfaenger_gln', 'Empfänger-GLN']]) { const g = t(p[k]).replace(/\s+/g, ''); if (g && !lfGlnOk(g)) add(`profile.${k}`, `${l}: 13 Ziffern mit gültiger Prüfziffer`); }
   if (!flIbanOk(d.iban)) add('iban', 'IBAN: Prüfziffer stimmt nicht – bitte Eingabe kontrollieren');
   const bic = t(d.bic).replace(/\s+/g, ''); if (bic && !/^[A-Za-z0-9]{8}([A-Za-z0-9]{3})?$/.test(bic)) add('bic', 'BIC: 8 oder 11 Zeichen (z. B. BKAUATWW)');
-  const ms = lfCent(p.min_summe); if (!isFinite(ms) || ms < 0) add('profile.min_summe', 'Min. Auftragssumme: Betrag ab 0');
-  if (t(p.min_menge) !== '' && !/^\d+$/.test(t(p.min_menge))) add('profile.min_menge', 'Min. Auftragsmenge: ganze Zahl ab 0');
+  const ms = lfCent(p.min_summe); if (!isFinite(ms) || ms < 0 || ms > 999999999) add('profile.min_summe', 'Min. Auftragssumme: Betrag von 0 bis 9.999.999,99');
+  if (t(p.min_menge) !== '' && !(/^\d+$/.test(t(p.min_menge)) && +p.min_menge <= 9999999)) add('profile.min_menge', 'Min. Auftragsmenge: ganze Zahl von 0 bis 9.999.999');
+  if (t(p.zahlungsbed) && !stRows('zahlungsbedingung').some(z => z.id === p.zahlungsbed)) add('profile.zahlungsbed', 'Zahlungs-Bed.: diese Zahlungsbedingung gibt es nicht mehr – bitte neu wählen');
   if (t(p.skonto) !== '' && !(isFinite(lfPct(p.skonto)) && lfPct(p.skonto) >= 0 && lfPct(p.skonto) <= 100)) add('profile.skonto', 'Skonto: Prozentwert von 0 bis 100');
   if (t(p.valuta) !== '' && !(/^\d+$/.test(t(p.valuta)) && +p.valuta <= 365)) add('profile.valuta', 'Valuta: Tage von 0 bis 365');
   for (const [a, wo] of [['adresse', 'Haupt-Adresse'], ['rechnung', 'Rechnungsadresse']]) {
@@ -17930,6 +17938,7 @@ const LFK = maskeNew({
   onSet: (k, el) => { if (k === 'name' || k === 'nr') renderTopbar(); if (k === 'profile.zahlungsbed') lfZahlungsbedAnwenden(); if (k === 'name' || k === 'country' || /^profile\.(adresse|rechnung)\./.test(k)) lfPrevAktual(el); },
   rerender: k => k === 'country' || k === 'profile.zahlungsbed',
   save: () => lfSave(), remove: (ids, ausMaske) => lfRemove(ids, ausMaske),
+  onOpen: () => lfBeimOeffnen(),
   act: async (a, b, el) => {
     if (a === 'edi') return lfZuEdi();
     if (a === 'zbpage') { if (LE.dirty && !await confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen')) return; LE.dirty = false; return go('st-zahlungsbedingung'); }
@@ -17949,16 +17958,24 @@ function lfZahlungsbedAnwenden() {
   if (!String(LE.d.profile.skonto).trim() && z.skonto) LE.d.profile.skonto = String(z.skonto).replace('.', ',');
 }
 async function lfLoadFiles() {
-  if (!DESKTOP || !LE.id) { LE.files = []; LE.filesFor = LE.id; return; }
-  if (LE.filesFor === LE.id) return;
-  try { LE.files = await invoke('lieferant_datei_liste', {supplierId: LE.id}); } catch { LE.files = []; }
-  LE.filesFor = LE.id;
+  const id = LE.id;
+  if (!DESKTOP || !id) { LE.files = []; LE.filesFor = id; return; }
+  if (LE.filesFor === id) return;
+  let l = []; try { l = await invoke('lieferant_datei_liste', {supplierId: id}); } catch { /* keine Dokumente lesbar */ }
+  if (LE.id !== id) return; // inzwischen ist ein anderer Lieferant offen
+  LE.files = l; LE.filesFor = id;
+}
+/** Nach dem Öffnen/Blättern: die Dokumente des vorigen Lieferanten verwerfen und die des neuen nachladen */
+function lfBeimOeffnen() {
+  LE.files = []; LE.filesFor = null;
+  const id = LE.id; if (!DESKTOP || !id) return;
+  lfLoadFiles().then(() => { if (LE.id === id && S.view === 'lieferant-edit') LFK.render(); });
 }
 
 const lfLandOpts = () => landListe().map(l => [l.id, l.name]);
 function lfAllg() {
   const D = LE.d, K = LFK, P = 'profile.', zb = stActive('zahlungsbedingung');
-  const zbSel = `<label class="field"><span>Zahlungs-Bed.</span><div class="ea-cmb-row"><select class="input select" data-mf="${P}zahlungsbed" style="flex:1;min-width:0" ${lfLocked() ? 'disabled' : ''}><option value="">–</option>${zb.map(z => `<option value="${esc(z.id)}" ${z.id === D.profile.zahlungsbed ? 'selected' : ''}>${esc(z.name || z.id)}</option>`).join('')}</select><button type="button" class="ea-ib" data-mf-a="zbpage" title="Zahlungsbedingungen bearbeiten oder neu anlegen" aria-label="Zahlungsbedingungen bearbeiten">${ic('edit', 'i-sm')}</button></div><small class="ea-hint">Füllt Valuta und Skonto der Eingangsrechnung vor. Die Bedingungen pflegen Sie unter Stammdaten › Zahlungsbedingungen.</small></label>`;
+  const zbSel = `<label class="field"><span>Zahlungs-Bed.</span><div class="ea-cmb-row"><select class="input select" data-mf="${P}zahlungsbed" style="flex:1;min-width:0" ${lfLocked() ? 'disabled' : ''}><option value="">–</option>${zb.map(z => `<option value="${esc(z.id)}" ${z.id === D.profile.zahlungsbed ? 'selected' : ''}>${esc(z.name || z.id)}</option>`).join('')}${D.profile.zahlungsbed && !zb.some(z => z.id === D.profile.zahlungsbed) ? `<option value="${esc(D.profile.zahlungsbed)}" selected>${esc(stRows('zahlungsbedingung').find(z => z.id === D.profile.zahlungsbed)?.name || D.profile.zahlungsbed)} (inaktiv oder gelöscht)</option>` : ''}</select><button type="button" class="ea-ib" data-mf-a="zbpage" title="Zahlungsbedingungen bearbeiten oder neu anlegen" aria-label="Zahlungsbedingungen bearbeiten">${ic('edit', 'i-sm')}</button></div><small class="ea-hint">Füllt Valuta und Skonto der Eingangsrechnung vor. Die Bedingungen pflegen Sie unter Stammdaten › Zahlungsbedingungen.</small></label>`;
   const cf = typeof cfDefs === 'function' && cfDefs('lieferant').length ? K.card('Eigene Felder', `<div data-lf-cf>${cfHTML('lieferant', D.fields || {}, false, 'Felder')}</div>`, 'lf-wide') : '';
   return {html: `${lfNote()}<div class="fl-grid lf-allg">
     ${K.card('Profil', `${K.sw('_aktiv', 'Aktiv', 'Inaktive Lieferanten erscheinen nicht mehr in Bestellung, Wareneingang, Rechnungen und Artikelmaske und nicht im Bestellvorschlag; ihre Belege bleiben.')}
@@ -17977,7 +17994,13 @@ function lfAllg() {
       ${K.in('iban', 'IBAN', {mono: true, ph: 'AT61 1904 3002 3457 3201', hint: 'Für die SEPA-Zahlungsdatei. Änderungen verlangen die Freigabe eines Administrators.'})}${K.in('bic', 'BIC', {mono: true, ph: 'BKAUATWW'})}`)}</div>
     ${K.card('Zusatzinformationen', `<div class="lf-zus">${K.area('note', 'Info', 3, 'Interner Hinweis – erscheint beim Bestellen.')}${K.area(`${P}info2`, 'Info 2', 3, 'Zweiter interner Hinweis.')}${K.area(`${P}vereinbarung1`, 'Vereinbarung 1', 3, 'Erscheint beim Bestellen und auf der Bestellung.')}${K.area(`${P}vereinbarung2`, 'Vereinbarung 2', 3, 'Erscheint beim Bestellen und auf der Bestellung.')}${K.area(`${P}rma_ablauf`, 'RMA Ablauf', 3, 'Hinweis zum Ablauf einer Rücksendung – erscheint in der Retoure an diesen Lieferanten.')}</div>`, 'lf-wide')}
     ${cf}
-  </div>`, mount: null};
+  </div>`, mount: el => {
+      const box = $('[data-lf-cf]', el); if (!box) return;
+      if (lfLocked()) { box.style.pointerEvents = 'none'; box.style.opacity = '.6'; return; }
+      // Eigene Felder in den Entwurf spiegeln: sie überstehen Reiterwechsel, Aktualisieren der Ansicht und Sichern aus anderen Reitern
+      const upd = () => { LE.d.fields = cfRead(box, 'lieferant'); LFK.dirty(el); };
+      box.addEventListener('input', upd); box.addEventListener('change', upd); box.addEventListener('click', e => { if (e.target.closest('[data-cfsw]')) setTimeout(upd, 0); });
+    }};
 }
 
 /* ── Haupt-Adresse und Rechnungsadresse ── */
@@ -17991,7 +18014,7 @@ function lfAdresse(a) {
   const D = LE.d, K = LFK, P = `profile.${a}.`, bill = a === 'rechnung';
   const nameFeld = bill ? K.in(`${P}name`, 'Name', {hint: 'Leer = Name des Lieferanten.'}) : `<label class="field"><span>Name</span><input class="input ea-ro" readonly tabindex="-1" value="${esc(D.name)}"><small class="ea-hint">Aus „Name“ (Reiter Allgemein).</small></label>`;
   const landFeld = bill ? K.sel(`${P}land`, 'Land *', lfLandOpts(), {leer: 'wie Haupt-Adresse'}) : K.landSel('country', 'Land *', {leer: undefined, hint: 'Dasselbe Feld wie „Land“ im Reiter Allgemein.'});
-  const hint = bill ? 'Anschrift für Eingangsrechnung und Zahlung (Belegkopf). Leer = es gilt die Haupt-Adresse. Bestellung, Avis und Retoure gehen an die Haupt-Adresse.' : 'Anschrift der Bestellung, des Avis, der Retoure und der Reklamation (Empfängerblock).';
+  const hint = bill ? 'Anschrift für Eingangsrechnung und Zahlung (Belegkopf). Leer = es gilt die Haupt-Adresse. Bestellung, Avis und Retoure gehen an die Haupt-Adresse.' : 'Anschrift der Bestellung, des Avis und der Retoure (Empfängerblock).';
   return {html: `${lfNote()}<p class="ea-hint ue-note">${esc(hint)}</p><div class="fl-grid fl-2">
     ${K.card(bill ? 'Rechnungsadresse' : 'Haupt-Adresse', `${nameFeld}${K.in(`${P}adrzeile1`, 'Adr.-Zeile 1')}${K.in(`${P}adrzeile2`, 'Adr.-Zeile 2')}<div class="zp-pair">${K.in(`${P}strasse`, 'Straße')}${K.in(`${P}hausnr`, 'Haus-Nr.')}</div><div class="zp-pair">${K.in(`${P}plz`, 'PLZ')}${K.in(`${P}ort`, 'Ort')}</div>${K.in(`${P}postfach`, 'Postfach')}${landFeld}${K.in(`${P}bundesland`, 'Bundesland / Kanton / Provinz')}
       ${bill ? `<button type="button" class="btn btn-secondary" data-mf-a="adrkopie" ${lfLocked() ? 'disabled' : ''}>${ic('copy', 'i-sm')}Von Haupt-Adresse übernehmen</button>` : ''}`)}
@@ -18006,8 +18029,9 @@ function lfFk() {
     <div class="ae-pane"><div class="ae-card" style="flex:1 1 100%"><h4>Filial-Kundennummern</h4><div data-lf-fk></div></div></div>`,
     mount: el => {
       AG['lf-fk'] = agNew({embed: true, title: 'Filial-Kundennummern', cols: [{k: 'filiale', l: 'Filial-Name (Nr.)', w: 260}, {k: 'kundennr', l: 'Kunden-Nr.', w: 200}], sort: {k: 'filiale', dir: 1}, rows: lfFkRows,
-        toolbar: [], extra: lfLocked() ? [] : [{k: 'neu', l: 'Neu', icon: 'plus'}, {k: 'del', l: 'Löschen', icon: 'trash'}],
-        edit: id => lfLocked() ? null : lfFkDialog(id), actions: {neu: () => lfFkDialog(null), del: () => { const s = [...AG['lf-fk'].sel]; if (!s.length) return toast('Bitte Zeilen markieren', {icon: 'info'}); s.forEach(i => delete LE.d.profile.filial_kunden[i]); LFK.dirty(el); LFK.render(); }}});
+        toolbar: [], extra: lfLocked() ? [] : [{k: 'neu', l: 'Neu', icon: 'plus'}],
+        remove: lfLocked() ? undefined : async ids => { ids.forEach(i => delete LE.d.profile.filial_kunden[i]); LFK.dirty(el); LFK.render(); }, reload: () => {},
+        edit: id => lfLocked() ? null : lfFkDialog(id), actions: {neu: () => lfFkDialog(null)}});
       agMount('lf-fk', $('[data-lf-fk]', el));
     }};
 }
@@ -18096,9 +18120,10 @@ function lfDateien() {
       const can = DESKTOP && LE.id && !lfLocked();
       AG['lf-files'] = agNew({embed: true, title: 'Dokumente', rows: lfFileRows, sort: {k: 'am', dir: -1}, toolbar: [],
         cols: [{k: 'am', l: 'Hochgeladen am', w: 150, get: r => r.am, fmt: v => v ? fmtTs(v) : ''}, {k: 'name', l: 'Dateiname', w: 230}, {k: 'typ', l: 'Dateityp', w: 90}, {k: 'beschr', l: 'Beschreibung', w: 240}, {k: 'manr', l: 'Mitarbeiter-Nr.', w: 110}, {k: 'maname', l: 'Mitarbeiter-Name', w: 160}, {k: 'groesse', l: 'Größe', t: 'num', w: 90, fmt: v => v >= 1048576 ? `${num(v / 1048576, 1)} MB` : `${num(Math.max(1, Math.round(v / 1024)))} KB`}],
-        extra: [{k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, ...(can ? [{k: 'up', l: 'Hochladen', icon: 'upload'}] : []), {k: 'open', l: 'Öffnen', icon: 'arrow-right'}, {k: 'save', l: 'Speichern unter', icon: 'download'}, ...(can ? [{k: 'descr', l: 'Beschreibung', icon: 'edit'}, {k: 'del', l: 'Löschen', icon: 'trash'}] : [])],
+        extra: [{k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, ...(can ? [{k: 'up', l: 'Hochladen', icon: 'upload'}] : []), {k: 'open', l: 'Öffnen', icon: 'arrow-right'}, {k: 'save', l: 'Speichern unter', icon: 'download'}, ...(can ? [{k: 'descr', l: 'Beschreibung', icon: 'edit'}] : [])],
+        remove: can ? async ids => { await lfDateiLoeschen(ids); } : undefined, reload: () => {},
         edit: id => lfDateiOeffnen(id),
-        actions: {refresh: async () => { LE.filesFor = null; await lfLoadFiles(); LFK.render(); }, up: () => lfDateiHoch(), open: () => lfDateiAuswahl(lfDateiOeffnen), save: () => lfDateiAuswahl(lfDateiSpeichern), descr: () => lfDateiAuswahl(lfDateiBeschreiben), del: () => lfDateiAuswahl(lfDateiLoeschen, true)}});
+        actions: {refresh: async () => { LE.filesFor = null; await lfLoadFiles(); LFK.render(); }, up: () => lfDateiHoch(), open: () => lfDateiAuswahl(lfDateiOeffnen), save: () => lfDateiAuswahl(lfDateiSpeichern), descr: () => lfDateiAuswahl(lfDateiBeschreiben)}});
       agMount('lf-files', $('[data-lf-files]', el));
       if (can) fileDrop($('.ae-card', el), {multiple: true, hint: 'Dokumente hier ablegen', accept: /\.(pdf|jpe?g|png|webp|gif|tiff?|txt|csv|xlsx?|docx?|odt|ods|zip)$/i, onFiles: async files => { for (const f of files) await lfDateiB64Hoch(f); await lfDateiNeu(); }});
     }};
@@ -18120,7 +18145,10 @@ async function lfDateiB64Hoch(f) {
   try { const x = await invoke('lieferant_datei_hochladen_b64', {supplierId: LE.id, name: f.name, data: await lfB64(f), user: S.user.id}); toast('Dokument hochgeladen', {t2: x.name, type: 'pos', icon: 'upload', dur: 2000}); }
   catch (e) { toast('Hochladen fehlgeschlagen', {t2: `${f.name}: ${String(e.message || e)}`, type: 'warn', dur: 7000}); }
 }
-async function lfDateiOeffnen(id) { try { await invoke('lieferant_datei_oeffnen', {id: +id, by: S.user.name}); } catch (e) { toast('Öffnen nicht möglich', {t2: String(e.message || e), type: 'warn'}); } }
+async function lfDateiOeffnen(id) {
+  const f = LE.files.find(x => String(x.id) === String(id));
+  if (f && /\.(doc|xls)$/i.test(f.name) && !await confirmBox('Dokumente im alten Office-Format (.doc, .xls) können Makros enthalten. Trotzdem öffnen? („Speichern unter“ öffnet nichts.)', 'Öffnen')) return;
+  try { await invoke('lieferant_datei_oeffnen', {id: +id, by: S.user.name}); } catch (e) { toast('Öffnen nicht möglich', {t2: String(e.message || e), type: 'warn'}); } }
 async function lfDateiSpeichern(id) { try { const p = await invoke('lieferant_datei_speichern', {id: +id, by: S.user.name}); if (p) toast('Gespeichert', {t2: p, type: 'pos', icon: 'download'}); } catch (e) { toast('Speichern nicht möglich', {t2: String(e.message || e), type: 'warn'}); } }
 async function lfDateiBeschreiben(id) {
   const f = LE.files.find(x => String(x.id) === String(id)); if (!f) return;
@@ -18135,14 +18163,18 @@ async function lfDateiLoeschen(ids) {
 }
 
 /* ── Sichern und Löschen ── */
+/** Sichern – nie zweimal gleichzeitig (Doppelklick), Eingaben während des Sicherns bleiben erhalten */
 async function lfSave() {
+  if (LE.busy) return;
+  LE.busy = true;
+  try { await lfSaveEinmal(); } finally { LE.busy = false; }
+}
+async function lfSaveEinmal() {
   if (lfLocked()) return;
   const D = LE.d, O = LE.orig, isNew = !LE.id;
   if (!LFK.gate()) return;
-  const cfv = typeof cfDefs === 'function' && cfDefs('lieferant').length ? await cfCheck('lieferant', cfRead($('[data-lf-cf]') || document, 'lieferant')) : null;
-  if (cfv === undefined || (typeof cfDefs === 'function' && cfDefs('lieferant').length && !cfv)) return;
-  if (cfv) D.fields = cfv;
-  const row = lfToRow(D), name = row.name;
+  if (typeof cfDefs === 'function' && cfDefs('lieferant').length) { const cfv = await cfCheck('lieferant', D.fields || {}); if (!cfv) return; D.fields = cfv; }
+  const row = lfToRow(D), name = row.name, gesendet = JSON.stringify(D);
   const sens = DESKTOP && !isNew && ['iban', 'bic'].some(k => String(D[k]).replace(/\s+/g, '').toUpperCase() !== String(O[k]).replace(/\s+/g, '').toUpperCase());
   if (sens) { try { await stepUp({title: 'Administrator-Freigabe', text: `Bankverbindung des Lieferanten „${name}“ ändern`, admin: true}); } catch { return; } }
   const neuMarken = D.marken.map(m => m.brand_id).filter(b => !O.marken.some(m => m.brand_id === b));
@@ -18158,7 +18190,10 @@ async function lfSave() {
   } catch (err) { return toast('Speichern fehlgeschlagen', {t2: String(err.message || err), type: 'warn', dur: 7000}); }
   await Promise.all([lfLoad(true), loadSuppliers()]);
   if (typeof CF !== 'undefined' && saved.id) CF.sup[saved.id] = saved.fields || {};
-  const id = saved.id; LE.id = id; LE.d = lfDraft(id); LE.orig = mclone(LE.d); LE.dirty = false; LE.show = false; LE.filesFor = null; if (isNew) LE.ids = [...LE.ids, id];
+  const id = saved.id, weitergetippt = JSON.stringify(LE.d) !== gesendet, frisch = lfDraft(id);
+  LE.id = id; LE.orig = mclone(frisch); LE.filesFor = null; if (isNew) LE.ids = [...LE.ids, id];
+  if (weitergetippt) { LE.d.id = id; } // während des Sicherns weitergetippt: die neuen Eingaben bleiben, ungesichert
+  else { LE.d = frisch; LE.dirty = false; LE.show = false; }
   await lfLoadFiles();
   Hooks.emit('lieferant.saved', {lieferant: id, name, neu: isNew});
   toast(isNew ? 'Lieferant angelegt' : 'Gespeichert', {t2: `${row.nr} · ${name}`, type: 'pos', icon: 'building', dur: 2200});
@@ -18174,7 +18209,7 @@ async function lfArtikelNachtragen(id, brandIds, name) {
   try {
     if (DESKTOP) { const z = await invoke('lieferant_artikel_zuordnen', {supplierId: id, brandIds, by: S.user.name}); replaceCatalog(await invoke('catalog_list')); toast('Artikel zugeordnet', {t2: `${num(z)} Artikel · ${name}`, type: 'pos', icon: 'tag'}); }
     else { const names = new Set(brandIds.map(b => mkNorm(mkRow(b)?.name))); let z = 0; ART.forEach(a => { if (!a.supplierId && names.has(mkNorm(a.brand))) { a.supplierId = id; z++; } }); toast('Artikel zugeordnet', {t2: `${num(z)} Artikel · ${name}`, type: 'pos', icon: 'tag'}); }
-    await lfLoad(true); LE.d = lfDraft(id); LE.orig = mclone(LE.d); LFK.render();
+    await lfLoad(true); if (!LE.dirty) { LE.d = lfDraft(id); LE.orig = mclone(LE.d); } LFK.render();
   } catch (e) { toast('Nicht möglich', {t2: String(e.message || e), type: 'warn'}); }
 }
 async function lfRemove(ids, fromMask) {
@@ -18182,7 +18217,7 @@ async function lfRemove(ids, fromMask) {
   if (lfLocked()) { toast('Lieferanten löscht die Zentrale', {icon: 'lock'}); abort(); }
   const rs = ids.map(lfRow).filter(Boolean); if (!rs.length) abort();
   const wer = rs.length === 1 ? `Lieferant „${lfName(rs[0])}“` : `${rs.length} Lieferanten`;
-  if (!await confirmBox(`${wer} löschen? Lieferanten mit Bestellungen, Belegen oder Artikeln lassen sich nicht löschen – sie lassen sich nur deaktivieren (Schalter „Aktiv“).`, 'Löschen')) abort();
+  if (!await confirmBox(`${wer} löschen? Lieferanten mit Bestellungen, Belegen (auch EDI-Nachrichten, Reklamationen) oder Artikeln lassen sich nicht löschen – sie lassen sich nur deaktivieren (Schalter „Aktiv“). Beim Löschen entfallen auch Marken-Zuordnungen, hochgeladene Dokumente und die Einträge des Lieferanten unter EDI-Einstellungen.`, 'Löschen')) abort();
   if (DESKTOP) await stepUp({title: 'Administrator-Freigabe', text: `${wer} löschen`, admin: true}).catch(abort);
   const fehler = [];
   for (const r of rs) {
@@ -18199,6 +18234,12 @@ async function lfRemove(ids, fromMask) {
 
 /* ── Wirkung in den Belegen ── */
 const lfSup = id => SUPPLIERS_ALL.find(x => x.id === id) || SUPPLIERS.find(x => x.id === id);
+/** Lieferanten für Auswahllisten: die aktiven, dazu der aktuell gewählte – auch wenn er inzwischen inaktiv ist („(inaktiv)“), damit er beim Sichern nicht verloren geht */
+function lfOptionen(sel) {
+  const l = SUPPLIERS.map(s => [s.id, s.name]);
+  if (sel && !l.some(x => x[0] === sel)) { const a = SUPPLIERS_ALL.find(s => s.id === sel); if (a) l.push([a.id, `${a.name} (inaktiv)`]); }
+  return l;
+}
 /** Eingangsrechnung: Fälligkeit, Skonto und Skonto-Frist aus Valuta, Skonto und Zahlungs-Bed. des Lieferanten vorbelegen – nur Felder, die leer sind oder noch die frühere Vorgabe tragen */
 function lfEiVorgabe(st) {
   const sup = lfSup(st.partner), au = st._auto ||= {};
@@ -18217,10 +18258,10 @@ DOC_EXTRA.lretoure = st => {
 };
 DOC_EXTRA.reklamation = st => { const p = lfSup(st.data?.lieferant)?.profile || {}; return p.rma_ablauf ? `<div class="prompt-hint blk"><b>RMA Ablauf des Lieferanten:</b> <span style="white-space:pre-wrap">${esc(p.rma_ablauf)}</span></div>` : ''; };
 DOC_EXTRA.avis = st => { const s = lfSup(st.partner); return s?.profile?.gegenscannen && !['gebucht', 'storniert'].includes(st.status) ? `<div class="prompt-hint blk">${ic('barcode', 'i-xs')}<b>${esc(s.name)} verlangt das Gegenscannen:</b> eingebucht wird erst, nachdem die Ware mit „Mit Scanner prüfen“ gezählt wurde.</div>` : ''; };
-DOC_EXTRA.er = st => { const s = lfSup(st.partner); return s ? `${lfHinweis(s)}${s.profile?.uid ? `<div class="muted" style="font-size:12.5px">USt-IdNr. des Lieferanten: ${esc(s.profile.uid)}</div>` : ''}` : ''; };
+DOC_EXTRA.er = st => { const s = lfSup(st.partner), ids = s ? [['USt-IdNr.', s.profile?.uid], ['Steuernummer', s.profile?.steuernr]].filter(x => String(x[1] || '').trim()) : []; return s ? `${lfHinweis(s)}${ids.length ? `<div class="muted" style="font-size:12.5px">${ids.map(([l, v]) => `${l} des Lieferanten: ${esc(v)}`).join(' · ')}</div>` : ''}` : ''; };
 
 // nur lesend – für Prüfungen: Empfängerblock und Hinweise zu einem Lieferanten, Kunden-Nr. je Filiale
-if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {lfEmpfaenger: (id, art) => lfEmpfaenger(lfRow(id), art), lfKundenNr: (id, st) => lfKundenNr(lfRow(id), st), lfGlnOk, lfSichtbar: name => ({alle: SUPPLIERS_ALL.some(s => s.name === name), aktiv: SUPPLIERS.some(s => s.name === name)}), lfMarkeSync, lfMarkeEigen});
+if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {lfEmpfaenger: (id, art) => lfEmpfaenger(lfRow(id), art), lfKundenNr: (id, st) => lfKundenNr(lfRow(id), st), lfGlnOk, lfSichtbar: name => ({alle: SUPPLIERS_ALL.some(s => s.name === name), aktiv: SUPPLIERS.some(s => s.name === name)}), lfMarkeSync, lfMarkeEigen, lfOptionen: sel => lfOptionen(sel).map(x => x[1])});
 /* ═════════════════════════════════════════════════════════════════
    56 · MENÜPUNKTE UND RECHTE
    Wer ein Recht nicht hat – weder über seine Rolle noch über seine Benutzergruppe – sieht die zugehörigen Menüpunkte nicht

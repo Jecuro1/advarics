@@ -525,8 +525,15 @@ pub fn sync_once(c: &Connection) -> Result<Value, String> {
     // die eigene Filial-Zeile (Name, Adresse, UID, Bank …) gilt ab jetzt für Belege, Bon und Anzeige dieser Kasse
     crate::filiale::apply_own(&tx)?;
     if let Some(sp) = p["suppliers"].as_array() {
-        // Lieferanten der Zentrale: Fehler eines Lieferanten brechen den Abgleich nicht ab
-        let _ = crate::lieferant::uebernehmen(&tx, sp, p["supplier_brands"].as_array(), p["supplier_ids"].as_array());
+        // Lieferanten der Zentrale: ein Fehler bricht den Abgleich nicht ab, macht aber nur diesen Teil rückgängig und steht im Protokoll
+        tx.execute_batch("SAVEPOINT lieferanten").map_err(|e| e.to_string())?;
+        match crate::lieferant::uebernehmen(&tx, sp, p["supplier_brands"].as_array(), p["supplier_ids"].as_array()) {
+            Ok(()) => tx.execute_batch("RELEASE lieferanten").map_err(|e| e.to_string())?,
+            Err(e) => {
+                tx.execute_batch("ROLLBACK TO lieferanten; RELEASE lieferanten").map_err(|e| e.to_string())?;
+                let _ = db::audit_append(&tx, "lieferant.abgleich.fehler", &json!({ "fehler": e }));
+            }
+        }
     }
     if let Some(m) = p["stock"].as_object() {
         let own = own_store(c);

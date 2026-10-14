@@ -109,7 +109,7 @@ const AE_GRIDS = {
   },
   zlief: {
     cfg: ctx => ({embed: true, title: 'Zusätzl. Lieferanten', cols: [{k: 'lnr', l: 'Lief.-Nr.', w: 100}, {k: 'lname', l: 'Lief.-Name', w: 240}, {k: 'ext_art', l: 'Ext. Art.-Nr.', w: 180}, {k: 'ext_farb', l: 'Ext. Farb-Nr.', w: 160}],
-      rows: () => aeList(ctx, 'zusatz_lieferanten'),
+      rows: () => aeList(ctx, 'zusatz_lieferanten').map(r => { const s = lfSup(r.lid); return s ? {...r, lnr: s.nr != null ? String(s.nr) : r.lnr, lname: s.name || r.lname} : r; }),
       extra: [{k: 'neu', l: 'Neu', icon: 'plus'}],
       actions: {neu: () => aeZlief(ctx, null)}, edit: id => aeZlief(ctx, id),
       remove: async ids => { ctx.st.d.zusatz_lieferanten = aeList(ctx, 'zusatz_lieferanten').filter(x => !ids.includes(x.id)); ctx.setTab('zlief'); }}),
@@ -159,10 +159,10 @@ const AE_GRIDS = {
 
 async function aeZlief(ctx, id) {
   const l = aeList(ctx, 'zusatz_lieferanten'), r = id ? l.find(x => x.id === id) : null;
-  const o = await aeForm(r ? 'Zusätzl. Lieferanten' : 'Zusätzl. Lieferanten [-1]', [{k: 'lid', l: 'Lieferant', t: 'select', o: SUPPLIERS.map(s => [s.id, s.name]), req: true, w: 'full'}, {k: 'ext_art', l: 'Ext. Art.-Nr.'}, {k: 'ext_farb', l: 'Ext. Farb-Nr.'}], r ? {...r} : {}, {del: !!r});
+  const o = await aeForm(r ? 'Zusätzl. Lieferanten' : 'Zusätzl. Lieferanten [-1]', [{k: 'lid', l: 'Lieferant', t: 'select', o: lfOptionen(r?.lid), req: true, w: 'full'}, {k: 'ext_art', l: 'Ext. Art.-Nr.'}, {k: 'ext_farb', l: 'Ext. Farb-Nr.'}], r ? {...r} : {}, {del: !!r});
   if (!o) return;
   if (o._del) ctx.st.d.zusatz_lieferanten = l.filter(x => x.id !== id);
-  else { const s = SUPPLIERS.find(x => x.id === o.lid); const row = {id: r?.id || aeUid(), lid: o.lid, lnr: s?.nr != null ? String(s.nr) : s?.id || o.lid, lname: s?.name || o.lid, ext_art: o.ext_art || '', ext_farb: o.ext_farb || ''}; if (r) Object.assign(r, row); else l.push(row); }
+  else { const s = lfSup(o.lid); const row = {id: r?.id || aeUid(), lid: o.lid, lnr: s?.nr != null ? String(s.nr) : s?.id || o.lid, lname: s?.name || o.lid, ext_art: o.ext_art || '', ext_farb: o.ext_farb || ''}; if (r) Object.assign(r, row); else l.push(row); }
   ctx.setTab('zlief');
 }
 async function aeMerk(ctx, id) {
@@ -194,7 +194,7 @@ for (const [k, spec] of Object.entries(AE_GRIDS)) AE_GRID_TABS[k] = ctx => `<div
 const aeField = (l, v, w) => `<label class="field" ${w ? `style="min-width:${w}px"` : ''}><span>${esc(l)}</span><input class="input" value="${esc(v ?? '')}" disabled></label>`;
 AE_GRID_TABS.karte = ctx => {
   const a = aeArt(ctx), st = ctx.st; if (!a) return '<div class="empty" style="padding:40px"><h3>Artikel noch nicht gespeichert</h3></div>';
-  const sup = SUPPLIERS.find(s => s.id === st.supplierId), m = (a.media || []).find(x => x.file), img = m ? imgUrl(m.file) : a.image ? imgUrl(a.image) : null;
+  const sup = lfSup(st.supplierId), m = (a.media || []).find(x => x.file), img = m ? imgUrl(m.file) : a.image ? imgUrl(a.image) : null;
   const d = st.d, today = new Date().toLocaleDateString('de-DE');
   const sizes = a.sizes.map(s => ({s, q: a.variants.filter(v => v.s === s).reduce((t, v) => t + v.q, 0)}));
   return `<div class="ae-pane"><div class="ae-cards">

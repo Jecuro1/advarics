@@ -5,7 +5,7 @@
    Wirkung (nichts nur zum Anschauen):
    • Aktiv: inaktive Lieferanten verschwinden aus Auswahllisten, Bestellvorschlag und KI-Nachbestellung; „Order-Vorschläge nutzen“ steuert den Vorschlag je Lieferant
    • Nr., Land, Kunden-Nr., Filial-Kundennummern (die der bestellenden Filiale geht vor), Anschrift, Telefon, Fax und Vereinbarungen stehen auf der Bestellung;
-     Haupt-Adresse auch auf Avis, Retoure und Reklamation, Rechnungsadresse auf Eingangsrechnung und Zahlung; Info, Info 2 und Vereinbarungen erscheinen als Hinweis
+     Haupt-Adresse auch auf Avis und Retoure, Rechnungsadresse auf Eingangsrechnung und Zahlung; Info, Info 2 und Vereinbarungen erscheinen als Hinweis
      beim Bestellen; Min. Auftragssumme/-menge fragen beim Bestellen nach; Skonto, Valuta und Zahlungs-Bed. füllen die Eingangsrechnung vor
    • RMA Code Pflicht (Retoure ohne RMA-Nummer nicht versendbar), RMA Ablauf (Hinweis in der Retoure), Gegenscannen (Avis erst nach dem Scanner-Wareneingang)
    • Marken: neue Artikel einer Marke bekommen den Lieferanten vorgeschlagen; vorhandene Artikel ohne Lieferant lassen sich nachtragen
@@ -13,7 +13,7 @@
    Pflege nur in der Zentrale (und am Einzelplatz); die Prüfungen stehen hier und in lieferant.rs gleich (das Backend entscheidet).
    ═════════════════════════════════════════════════════════════════ */
 const LF = {rows: [], rolle: 'einzel', eigene: '', nr: 1, loaded: false};
-const LE = {id: null, ids: [], d: null, orig: null, tab: 'allg', dirty: false, show: false, files: [], filesFor: null};
+const LE = {id: null, ids: [], d: null, orig: null, tab: 'allg', dirty: false, show: false, files: [], filesFor: null, busy: false};
 const LF_TABS = [['allg', 'Allgemein'], ['marken', 'Marken'], ['dateien', 'Dateien'], ['haupt', 'Haupt-Adresse'], ['rechn', 'Rechnungsadresse'], ['fk', 'Filial-Kunden-Nummern']];
 const LF_ADR = ['adrzeile1', 'adrzeile2', 'strasse', 'hausnr', 'plz', 'ort', 'postfach', 'bundesland'];
 const LF_GLN_HERKUNFT = [['hersteller', 'Hersteller'], ['lieferant', 'Lieferant']];
@@ -40,14 +40,14 @@ function lfKundenNr(sup, store) {
 /** Anschrift als Zeilen (Adr.-Zeile 1/2, Straße Nr., Postfach, PLZ Ort, Land wenn nicht Österreich) */
 function lfAdrLines(a, land) {
   const l = String(land ?? a?.land ?? '').toUpperCase(), t = k => String(a?.[k] || '').trim();
-  return [t('adrzeile1'), t('adrzeile2'), [t('strasse'), t('hausnr')].filter(Boolean).join(' '), t('postfach') ? 'Postfach ' + t('postfach') : '', [t('plz'), t('ort')].filter(Boolean).join(' '), l && l !== 'AT' ? landName(l) : ''].filter(Boolean);
+  return [t('adrzeile1'), t('adrzeile2'), [t('strasse'), t('hausnr')].filter(Boolean).join(' '), t('postfach') ? 'Postfach ' + t('postfach') : '', [t('plz'), t('ort')].filter(Boolean).join(' '), t('bundesland'), l && l !== 'AT' ? landName(l) : ''].filter(Boolean);
 }
 /** Empfängerblock auf Bestellung und Belegen: Name, z. H., Anschrift (Rechnungsadresse bei Rechnungen), Telefon, E-Mail */
 function lfEmpfaenger(sup, art = 'haupt') {
   if (!sup) return [];
-  const p = sup.profile || {}, r = p.rechnung || {}, bill = art === 'rechn' && (r.strasse || r.postfach || r.ort || r.adrzeile1);
+  const p = sup.profile || {}, r = p.rechnung || {}, rn = art === 'rechn', bill = rn && (r.strasse || r.postfach || r.ort || r.adrzeile1);
   const adr = bill ? lfAdrLines(r, r.land || sup.country) : lfAdrLines(p.adresse || {}, p.adresse?.land || sup.country);
-  return [bill && r.name ? r.name : sup.name, sup.contact ? 'z. H. ' + sup.contact : '', ...adr, sup.phone ? 'Tel. ' + sup.phone : '', p.fax ? 'Fax ' + p.fax : '', sup.email].filter(Boolean);
+  return [rn && r.name ? r.name : sup.name, sup.contact ? 'z. H. ' + sup.contact : '', ...adr, sup.phone ? 'Tel. ' + sup.phone : '', p.fax ? 'Fax ' + p.fax : '', sup.email].filter(Boolean);
 }
 /** Hinweise zum Lieferanten (Info, Info 2, Vereinbarungen) beim Bestellen und in Belegen */
 function lfHinweis(sup) {
@@ -62,11 +62,11 @@ function lfMarkeSync(marke) {
   return ids.length === 1 ? ids[0] : '';
 }
 async function lfMarkeVorschlag(marke) { try { await Promise.all([lfLoad(), mkLoad()]); } catch { return ''; } return lfMarkeSync(marke); }
-/** PRICAT: Marke des Lieferanten (Name, EDI-Marken-Nr./-Name oder Hersteller-GLN) → eigene Marke laut Zuordnung am Lieferanten; ohne Treffer bleibt der Text */
-function lfMarkeEigen(sid, text, gln) {
+/** PRICAT: Marke des Lieferanten (Markenname oder Marken-Nr. der Nachricht, Hersteller-GLN) → eigene Marke laut Zuordnung am Lieferanten; ohne Treffer bleibt der Text */
+function lfMarkeEigen(sid, text, gln, code) {
   const r = lfRow(sid); if (!r) return text;
-  const n = mkNorm(text), g = String(gln || '').replace(/\s+/g, '');
-  const m = (r.marken || []).find(x => (n && (mkNorm(x.ext_name) === n || mkNorm(x.edi_name) === n || mkNorm(x.edi_nr) === n)) || (g && x.gln && x.gln === g && x.gln_src !== 'lieferant'));
+  const n = mkNorm(text), c = mkNorm(code), g = String(gln || '').replace(/\s+/g, '');
+  const m = (r.marken || []).find(x => (n && (mkNorm(x.ext_name) === n || mkNorm(x.edi_name) === n || mkNorm(x.edi_nr) === n)) || (c && (mkNorm(x.edi_nr) === c || mkNorm(x.ext_name) === c || mkNorm(x.edi_name) === c)) || (g && x.gln && x.gln === g && x.gln_src !== 'lieferant'));
   return m ? (m.name || mkRow(m.brand_id)?.name || text) : text;
 }
 /** Wohin mit „Lieferant öffnen“ aus anderen Seiten */
@@ -134,16 +134,16 @@ function lfNeu() {
 }
 
 /* ── Entwurf ── */
-const lfAdrBlank = () => ({name: '', ...Object.fromEntries(LF_ADR.map(k => [k, ''])), land: 'AT'});
+const lfAdrBlank = (land = 'AT') => ({name: '', ...Object.fromEntries(LF_ADR.map(k => [k, ''])), land});
 const lfProfileBlank = () => ({fax: '', web: '', steuernr: '', uid: '', gln: '', empfaenger_gln: '', info2: '', vereinbarung1: '', vereinbarung2: '', rma_ablauf: '', rma_pflicht: false, gegenscannen: false, order_vorschlag: true,
-  min_summe: 0, min_menge: 0, skonto: 0, valuta: 0, zahlungsbed: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank(), filial_kunden: {}});
+  min_summe: 0, min_menge: 0, skonto: 0, valuta: 0, zahlungsbed: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank(''), filial_kunden: {}});
 const lfBlank = () => ({id: '', nr: String(LF.nr), name: '', _aktiv: true, country: 'AT', contact: '', email: '', phone: '', customer_no: '', lead_days: '7', note: '', iban: '', bic: '', fields: {}, marken: [],
-  profile: {...lfProfileBlank(), min_summe: '', min_menge: '', skonto: '', valuta: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank()}});
+  profile: {...lfProfileBlank(), min_summe: '', min_menge: '', skonto: '', valuta: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank('')}});
 function lfDraft(id) {
   const r = id ? lfRow(id) : null; if (!r) return lfBlank();
   const p = {...lfProfileBlank(), ...mclone(r.profile || {})};
-  const adr = a => ({...lfAdrBlank(), ...Object.fromEntries(Object.entries(a || {}).map(([k, v]) => [k, String(v ?? '')]))});
-  p.adresse = adr(p.adresse); p.rechnung = adr(p.rechnung); p.adresse.land ||= r.country; p.filial_kunden = {...(p.filial_kunden || {})};
+  const adr = (a, land) => ({...lfAdrBlank(land), ...Object.fromEntries(Object.entries(a || {}).map(([k, v]) => [k, String(v ?? '')]))});
+  p.adresse = adr(p.adresse, 'AT'); p.rechnung = adr(p.rechnung, ''); p.adresse.land ||= r.country; p.filial_kunden = {...(p.filial_kunden || {})};
   p.min_summe = lfEuroText(p.min_summe); p.min_menge = p.min_menge ? String(p.min_menge) : ''; p.skonto = p.skonto ? String(p.skonto).replace('.', ',') : ''; p.valuta = p.valuta ? String(p.valuta) : '';
   for (const k of ['fax', 'web', 'steuernr', 'uid', 'gln', 'empfaenger_gln', 'info2', 'vereinbarung1', 'vereinbarung2', 'rma_ablauf', 'zahlungsbed']) p[k] = String(p[k] ?? '');
   return {id: r.id, nr: String(r.nr ?? ''), name: String(r.name ?? ''), _aktiv: r._aktiv !== false, country: r.country || 'AT', contact: String(r.contact ?? ''), email: String(r.email ?? ''), phone: String(r.phone ?? ''), customer_no: String(r.customer_no ?? ''),
@@ -174,8 +174,9 @@ function lfErrors(d) {
   for (const [k, l] of [['gln', 'Haupt-GLN'], ['empfaenger_gln', 'Empfänger-GLN']]) { const g = t(p[k]).replace(/\s+/g, ''); if (g && !lfGlnOk(g)) add(`profile.${k}`, `${l}: 13 Ziffern mit gültiger Prüfziffer`); }
   if (!flIbanOk(d.iban)) add('iban', 'IBAN: Prüfziffer stimmt nicht – bitte Eingabe kontrollieren');
   const bic = t(d.bic).replace(/\s+/g, ''); if (bic && !/^[A-Za-z0-9]{8}([A-Za-z0-9]{3})?$/.test(bic)) add('bic', 'BIC: 8 oder 11 Zeichen (z. B. BKAUATWW)');
-  const ms = lfCent(p.min_summe); if (!isFinite(ms) || ms < 0) add('profile.min_summe', 'Min. Auftragssumme: Betrag ab 0');
-  if (t(p.min_menge) !== '' && !/^\d+$/.test(t(p.min_menge))) add('profile.min_menge', 'Min. Auftragsmenge: ganze Zahl ab 0');
+  const ms = lfCent(p.min_summe); if (!isFinite(ms) || ms < 0 || ms > 999999999) add('profile.min_summe', 'Min. Auftragssumme: Betrag von 0 bis 9.999.999,99');
+  if (t(p.min_menge) !== '' && !(/^\d+$/.test(t(p.min_menge)) && +p.min_menge <= 9999999)) add('profile.min_menge', 'Min. Auftragsmenge: ganze Zahl von 0 bis 9.999.999');
+  if (t(p.zahlungsbed) && !stRows('zahlungsbedingung').some(z => z.id === p.zahlungsbed)) add('profile.zahlungsbed', 'Zahlungs-Bed.: diese Zahlungsbedingung gibt es nicht mehr – bitte neu wählen');
   if (t(p.skonto) !== '' && !(isFinite(lfPct(p.skonto)) && lfPct(p.skonto) >= 0 && lfPct(p.skonto) <= 100)) add('profile.skonto', 'Skonto: Prozentwert von 0 bis 100');
   if (t(p.valuta) !== '' && !(/^\d+$/.test(t(p.valuta)) && +p.valuta <= 365)) add('profile.valuta', 'Valuta: Tage von 0 bis 365');
   for (const [a, wo] of [['adresse', 'Haupt-Adresse'], ['rechnung', 'Rechnungsadresse']]) {
@@ -201,6 +202,7 @@ const LFK = maskeNew({
   onSet: (k, el) => { if (k === 'name' || k === 'nr') renderTopbar(); if (k === 'profile.zahlungsbed') lfZahlungsbedAnwenden(); if (k === 'name' || k === 'country' || /^profile\.(adresse|rechnung)\./.test(k)) lfPrevAktual(el); },
   rerender: k => k === 'country' || k === 'profile.zahlungsbed',
   save: () => lfSave(), remove: (ids, ausMaske) => lfRemove(ids, ausMaske),
+  onOpen: () => lfBeimOeffnen(),
   act: async (a, b, el) => {
     if (a === 'edi') return lfZuEdi();
     if (a === 'zbpage') { if (LE.dirty && !await confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen')) return; LE.dirty = false; return go('st-zahlungsbedingung'); }
@@ -220,16 +222,24 @@ function lfZahlungsbedAnwenden() {
   if (!String(LE.d.profile.skonto).trim() && z.skonto) LE.d.profile.skonto = String(z.skonto).replace('.', ',');
 }
 async function lfLoadFiles() {
-  if (!DESKTOP || !LE.id) { LE.files = []; LE.filesFor = LE.id; return; }
-  if (LE.filesFor === LE.id) return;
-  try { LE.files = await invoke('lieferant_datei_liste', {supplierId: LE.id}); } catch { LE.files = []; }
-  LE.filesFor = LE.id;
+  const id = LE.id;
+  if (!DESKTOP || !id) { LE.files = []; LE.filesFor = id; return; }
+  if (LE.filesFor === id) return;
+  let l = []; try { l = await invoke('lieferant_datei_liste', {supplierId: id}); } catch { /* keine Dokumente lesbar */ }
+  if (LE.id !== id) return; // inzwischen ist ein anderer Lieferant offen
+  LE.files = l; LE.filesFor = id;
+}
+/** Nach dem Öffnen/Blättern: die Dokumente des vorigen Lieferanten verwerfen und die des neuen nachladen */
+function lfBeimOeffnen() {
+  LE.files = []; LE.filesFor = null;
+  const id = LE.id; if (!DESKTOP || !id) return;
+  lfLoadFiles().then(() => { if (LE.id === id && S.view === 'lieferant-edit') LFK.render(); });
 }
 
 const lfLandOpts = () => landListe().map(l => [l.id, l.name]);
 function lfAllg() {
   const D = LE.d, K = LFK, P = 'profile.', zb = stActive('zahlungsbedingung');
-  const zbSel = `<label class="field"><span>Zahlungs-Bed.</span><div class="ea-cmb-row"><select class="input select" data-mf="${P}zahlungsbed" style="flex:1;min-width:0" ${lfLocked() ? 'disabled' : ''}><option value="">–</option>${zb.map(z => `<option value="${esc(z.id)}" ${z.id === D.profile.zahlungsbed ? 'selected' : ''}>${esc(z.name || z.id)}</option>`).join('')}</select><button type="button" class="ea-ib" data-mf-a="zbpage" title="Zahlungsbedingungen bearbeiten oder neu anlegen" aria-label="Zahlungsbedingungen bearbeiten">${ic('edit', 'i-sm')}</button></div><small class="ea-hint">Füllt Valuta und Skonto der Eingangsrechnung vor. Die Bedingungen pflegen Sie unter Stammdaten › Zahlungsbedingungen.</small></label>`;
+  const zbSel = `<label class="field"><span>Zahlungs-Bed.</span><div class="ea-cmb-row"><select class="input select" data-mf="${P}zahlungsbed" style="flex:1;min-width:0" ${lfLocked() ? 'disabled' : ''}><option value="">–</option>${zb.map(z => `<option value="${esc(z.id)}" ${z.id === D.profile.zahlungsbed ? 'selected' : ''}>${esc(z.name || z.id)}</option>`).join('')}${D.profile.zahlungsbed && !zb.some(z => z.id === D.profile.zahlungsbed) ? `<option value="${esc(D.profile.zahlungsbed)}" selected>${esc(stRows('zahlungsbedingung').find(z => z.id === D.profile.zahlungsbed)?.name || D.profile.zahlungsbed)} (inaktiv oder gelöscht)</option>` : ''}</select><button type="button" class="ea-ib" data-mf-a="zbpage" title="Zahlungsbedingungen bearbeiten oder neu anlegen" aria-label="Zahlungsbedingungen bearbeiten">${ic('edit', 'i-sm')}</button></div><small class="ea-hint">Füllt Valuta und Skonto der Eingangsrechnung vor. Die Bedingungen pflegen Sie unter Stammdaten › Zahlungsbedingungen.</small></label>`;
   const cf = typeof cfDefs === 'function' && cfDefs('lieferant').length ? K.card('Eigene Felder', `<div data-lf-cf>${cfHTML('lieferant', D.fields || {}, false, 'Felder')}</div>`, 'lf-wide') : '';
   return {html: `${lfNote()}<div class="fl-grid lf-allg">
     ${K.card('Profil', `${K.sw('_aktiv', 'Aktiv', 'Inaktive Lieferanten erscheinen nicht mehr in Bestellung, Wareneingang, Rechnungen und Artikelmaske und nicht im Bestellvorschlag; ihre Belege bleiben.')}
@@ -248,7 +258,13 @@ function lfAllg() {
       ${K.in('iban', 'IBAN', {mono: true, ph: 'AT61 1904 3002 3457 3201', hint: 'Für die SEPA-Zahlungsdatei. Änderungen verlangen die Freigabe eines Administrators.'})}${K.in('bic', 'BIC', {mono: true, ph: 'BKAUATWW'})}`)}</div>
     ${K.card('Zusatzinformationen', `<div class="lf-zus">${K.area('note', 'Info', 3, 'Interner Hinweis – erscheint beim Bestellen.')}${K.area(`${P}info2`, 'Info 2', 3, 'Zweiter interner Hinweis.')}${K.area(`${P}vereinbarung1`, 'Vereinbarung 1', 3, 'Erscheint beim Bestellen und auf der Bestellung.')}${K.area(`${P}vereinbarung2`, 'Vereinbarung 2', 3, 'Erscheint beim Bestellen und auf der Bestellung.')}${K.area(`${P}rma_ablauf`, 'RMA Ablauf', 3, 'Hinweis zum Ablauf einer Rücksendung – erscheint in der Retoure an diesen Lieferanten.')}</div>`, 'lf-wide')}
     ${cf}
-  </div>`, mount: null};
+  </div>`, mount: el => {
+      const box = $('[data-lf-cf]', el); if (!box) return;
+      if (lfLocked()) { box.style.pointerEvents = 'none'; box.style.opacity = '.6'; return; }
+      // Eigene Felder in den Entwurf spiegeln: sie überstehen Reiterwechsel, Aktualisieren der Ansicht und Sichern aus anderen Reitern
+      const upd = () => { LE.d.fields = cfRead(box, 'lieferant'); LFK.dirty(el); };
+      box.addEventListener('input', upd); box.addEventListener('change', upd); box.addEventListener('click', e => { if (e.target.closest('[data-cfsw]')) setTimeout(upd, 0); });
+    }};
 }
 
 /* ── Haupt-Adresse und Rechnungsadresse ── */
@@ -262,7 +278,7 @@ function lfAdresse(a) {
   const D = LE.d, K = LFK, P = `profile.${a}.`, bill = a === 'rechnung';
   const nameFeld = bill ? K.in(`${P}name`, 'Name', {hint: 'Leer = Name des Lieferanten.'}) : `<label class="field"><span>Name</span><input class="input ea-ro" readonly tabindex="-1" value="${esc(D.name)}"><small class="ea-hint">Aus „Name“ (Reiter Allgemein).</small></label>`;
   const landFeld = bill ? K.sel(`${P}land`, 'Land *', lfLandOpts(), {leer: 'wie Haupt-Adresse'}) : K.landSel('country', 'Land *', {leer: undefined, hint: 'Dasselbe Feld wie „Land“ im Reiter Allgemein.'});
-  const hint = bill ? 'Anschrift für Eingangsrechnung und Zahlung (Belegkopf). Leer = es gilt die Haupt-Adresse. Bestellung, Avis und Retoure gehen an die Haupt-Adresse.' : 'Anschrift der Bestellung, des Avis, der Retoure und der Reklamation (Empfängerblock).';
+  const hint = bill ? 'Anschrift für Eingangsrechnung und Zahlung (Belegkopf). Leer = es gilt die Haupt-Adresse. Bestellung, Avis und Retoure gehen an die Haupt-Adresse.' : 'Anschrift der Bestellung, des Avis und der Retoure (Empfängerblock).';
   return {html: `${lfNote()}<p class="ea-hint ue-note">${esc(hint)}</p><div class="fl-grid fl-2">
     ${K.card(bill ? 'Rechnungsadresse' : 'Haupt-Adresse', `${nameFeld}${K.in(`${P}adrzeile1`, 'Adr.-Zeile 1')}${K.in(`${P}adrzeile2`, 'Adr.-Zeile 2')}<div class="zp-pair">${K.in(`${P}strasse`, 'Straße')}${K.in(`${P}hausnr`, 'Haus-Nr.')}</div><div class="zp-pair">${K.in(`${P}plz`, 'PLZ')}${K.in(`${P}ort`, 'Ort')}</div>${K.in(`${P}postfach`, 'Postfach')}${landFeld}${K.in(`${P}bundesland`, 'Bundesland / Kanton / Provinz')}
       ${bill ? `<button type="button" class="btn btn-secondary" data-mf-a="adrkopie" ${lfLocked() ? 'disabled' : ''}>${ic('copy', 'i-sm')}Von Haupt-Adresse übernehmen</button>` : ''}`)}
@@ -277,8 +293,9 @@ function lfFk() {
     <div class="ae-pane"><div class="ae-card" style="flex:1 1 100%"><h4>Filial-Kundennummern</h4><div data-lf-fk></div></div></div>`,
     mount: el => {
       AG['lf-fk'] = agNew({embed: true, title: 'Filial-Kundennummern', cols: [{k: 'filiale', l: 'Filial-Name (Nr.)', w: 260}, {k: 'kundennr', l: 'Kunden-Nr.', w: 200}], sort: {k: 'filiale', dir: 1}, rows: lfFkRows,
-        toolbar: [], extra: lfLocked() ? [] : [{k: 'neu', l: 'Neu', icon: 'plus'}, {k: 'del', l: 'Löschen', icon: 'trash'}],
-        edit: id => lfLocked() ? null : lfFkDialog(id), actions: {neu: () => lfFkDialog(null), del: () => { const s = [...AG['lf-fk'].sel]; if (!s.length) return toast('Bitte Zeilen markieren', {icon: 'info'}); s.forEach(i => delete LE.d.profile.filial_kunden[i]); LFK.dirty(el); LFK.render(); }}});
+        toolbar: [], extra: lfLocked() ? [] : [{k: 'neu', l: 'Neu', icon: 'plus'}],
+        remove: lfLocked() ? undefined : async ids => { ids.forEach(i => delete LE.d.profile.filial_kunden[i]); LFK.dirty(el); LFK.render(); }, reload: () => {},
+        edit: id => lfLocked() ? null : lfFkDialog(id), actions: {neu: () => lfFkDialog(null)}});
       agMount('lf-fk', $('[data-lf-fk]', el));
     }};
 }
@@ -367,9 +384,10 @@ function lfDateien() {
       const can = DESKTOP && LE.id && !lfLocked();
       AG['lf-files'] = agNew({embed: true, title: 'Dokumente', rows: lfFileRows, sort: {k: 'am', dir: -1}, toolbar: [],
         cols: [{k: 'am', l: 'Hochgeladen am', w: 150, get: r => r.am, fmt: v => v ? fmtTs(v) : ''}, {k: 'name', l: 'Dateiname', w: 230}, {k: 'typ', l: 'Dateityp', w: 90}, {k: 'beschr', l: 'Beschreibung', w: 240}, {k: 'manr', l: 'Mitarbeiter-Nr.', w: 110}, {k: 'maname', l: 'Mitarbeiter-Name', w: 160}, {k: 'groesse', l: 'Größe', t: 'num', w: 90, fmt: v => v >= 1048576 ? `${num(v / 1048576, 1)} MB` : `${num(Math.max(1, Math.round(v / 1024)))} KB`}],
-        extra: [{k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, ...(can ? [{k: 'up', l: 'Hochladen', icon: 'upload'}] : []), {k: 'open', l: 'Öffnen', icon: 'arrow-right'}, {k: 'save', l: 'Speichern unter', icon: 'download'}, ...(can ? [{k: 'descr', l: 'Beschreibung', icon: 'edit'}, {k: 'del', l: 'Löschen', icon: 'trash'}] : [])],
+        extra: [{k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, ...(can ? [{k: 'up', l: 'Hochladen', icon: 'upload'}] : []), {k: 'open', l: 'Öffnen', icon: 'arrow-right'}, {k: 'save', l: 'Speichern unter', icon: 'download'}, ...(can ? [{k: 'descr', l: 'Beschreibung', icon: 'edit'}] : [])],
+        remove: can ? async ids => { await lfDateiLoeschen(ids); } : undefined, reload: () => {},
         edit: id => lfDateiOeffnen(id),
-        actions: {refresh: async () => { LE.filesFor = null; await lfLoadFiles(); LFK.render(); }, up: () => lfDateiHoch(), open: () => lfDateiAuswahl(lfDateiOeffnen), save: () => lfDateiAuswahl(lfDateiSpeichern), descr: () => lfDateiAuswahl(lfDateiBeschreiben), del: () => lfDateiAuswahl(lfDateiLoeschen, true)}});
+        actions: {refresh: async () => { LE.filesFor = null; await lfLoadFiles(); LFK.render(); }, up: () => lfDateiHoch(), open: () => lfDateiAuswahl(lfDateiOeffnen), save: () => lfDateiAuswahl(lfDateiSpeichern), descr: () => lfDateiAuswahl(lfDateiBeschreiben)}});
       agMount('lf-files', $('[data-lf-files]', el));
       if (can) fileDrop($('.ae-card', el), {multiple: true, hint: 'Dokumente hier ablegen', accept: /\.(pdf|jpe?g|png|webp|gif|tiff?|txt|csv|xlsx?|docx?|odt|ods|zip)$/i, onFiles: async files => { for (const f of files) await lfDateiB64Hoch(f); await lfDateiNeu(); }});
     }};
@@ -391,7 +409,10 @@ async function lfDateiB64Hoch(f) {
   try { const x = await invoke('lieferant_datei_hochladen_b64', {supplierId: LE.id, name: f.name, data: await lfB64(f), user: S.user.id}); toast('Dokument hochgeladen', {t2: x.name, type: 'pos', icon: 'upload', dur: 2000}); }
   catch (e) { toast('Hochladen fehlgeschlagen', {t2: `${f.name}: ${String(e.message || e)}`, type: 'warn', dur: 7000}); }
 }
-async function lfDateiOeffnen(id) { try { await invoke('lieferant_datei_oeffnen', {id: +id, by: S.user.name}); } catch (e) { toast('Öffnen nicht möglich', {t2: String(e.message || e), type: 'warn'}); } }
+async function lfDateiOeffnen(id) {
+  const f = LE.files.find(x => String(x.id) === String(id));
+  if (f && /\.(doc|xls)$/i.test(f.name) && !await confirmBox('Dokumente im alten Office-Format (.doc, .xls) können Makros enthalten. Trotzdem öffnen? („Speichern unter“ öffnet nichts.)', 'Öffnen')) return;
+  try { await invoke('lieferant_datei_oeffnen', {id: +id, by: S.user.name}); } catch (e) { toast('Öffnen nicht möglich', {t2: String(e.message || e), type: 'warn'}); } }
 async function lfDateiSpeichern(id) { try { const p = await invoke('lieferant_datei_speichern', {id: +id, by: S.user.name}); if (p) toast('Gespeichert', {t2: p, type: 'pos', icon: 'download'}); } catch (e) { toast('Speichern nicht möglich', {t2: String(e.message || e), type: 'warn'}); } }
 async function lfDateiBeschreiben(id) {
   const f = LE.files.find(x => String(x.id) === String(id)); if (!f) return;
@@ -406,14 +427,18 @@ async function lfDateiLoeschen(ids) {
 }
 
 /* ── Sichern und Löschen ── */
+/** Sichern – nie zweimal gleichzeitig (Doppelklick), Eingaben während des Sicherns bleiben erhalten */
 async function lfSave() {
+  if (LE.busy) return;
+  LE.busy = true;
+  try { await lfSaveEinmal(); } finally { LE.busy = false; }
+}
+async function lfSaveEinmal() {
   if (lfLocked()) return;
   const D = LE.d, O = LE.orig, isNew = !LE.id;
   if (!LFK.gate()) return;
-  const cfv = typeof cfDefs === 'function' && cfDefs('lieferant').length ? await cfCheck('lieferant', cfRead($('[data-lf-cf]') || document, 'lieferant')) : null;
-  if (cfv === undefined || (typeof cfDefs === 'function' && cfDefs('lieferant').length && !cfv)) return;
-  if (cfv) D.fields = cfv;
-  const row = lfToRow(D), name = row.name;
+  if (typeof cfDefs === 'function' && cfDefs('lieferant').length) { const cfv = await cfCheck('lieferant', D.fields || {}); if (!cfv) return; D.fields = cfv; }
+  const row = lfToRow(D), name = row.name, gesendet = JSON.stringify(D);
   const sens = DESKTOP && !isNew && ['iban', 'bic'].some(k => String(D[k]).replace(/\s+/g, '').toUpperCase() !== String(O[k]).replace(/\s+/g, '').toUpperCase());
   if (sens) { try { await stepUp({title: 'Administrator-Freigabe', text: `Bankverbindung des Lieferanten „${name}“ ändern`, admin: true}); } catch { return; } }
   const neuMarken = D.marken.map(m => m.brand_id).filter(b => !O.marken.some(m => m.brand_id === b));
@@ -429,7 +454,10 @@ async function lfSave() {
   } catch (err) { return toast('Speichern fehlgeschlagen', {t2: String(err.message || err), type: 'warn', dur: 7000}); }
   await Promise.all([lfLoad(true), loadSuppliers()]);
   if (typeof CF !== 'undefined' && saved.id) CF.sup[saved.id] = saved.fields || {};
-  const id = saved.id; LE.id = id; LE.d = lfDraft(id); LE.orig = mclone(LE.d); LE.dirty = false; LE.show = false; LE.filesFor = null; if (isNew) LE.ids = [...LE.ids, id];
+  const id = saved.id, weitergetippt = JSON.stringify(LE.d) !== gesendet, frisch = lfDraft(id);
+  LE.id = id; LE.orig = mclone(frisch); LE.filesFor = null; if (isNew) LE.ids = [...LE.ids, id];
+  if (weitergetippt) { LE.d.id = id; } // während des Sicherns weitergetippt: die neuen Eingaben bleiben, ungesichert
+  else { LE.d = frisch; LE.dirty = false; LE.show = false; }
   await lfLoadFiles();
   Hooks.emit('lieferant.saved', {lieferant: id, name, neu: isNew});
   toast(isNew ? 'Lieferant angelegt' : 'Gespeichert', {t2: `${row.nr} · ${name}`, type: 'pos', icon: 'building', dur: 2200});
@@ -445,7 +473,7 @@ async function lfArtikelNachtragen(id, brandIds, name) {
   try {
     if (DESKTOP) { const z = await invoke('lieferant_artikel_zuordnen', {supplierId: id, brandIds, by: S.user.name}); replaceCatalog(await invoke('catalog_list')); toast('Artikel zugeordnet', {t2: `${num(z)} Artikel · ${name}`, type: 'pos', icon: 'tag'}); }
     else { const names = new Set(brandIds.map(b => mkNorm(mkRow(b)?.name))); let z = 0; ART.forEach(a => { if (!a.supplierId && names.has(mkNorm(a.brand))) { a.supplierId = id; z++; } }); toast('Artikel zugeordnet', {t2: `${num(z)} Artikel · ${name}`, type: 'pos', icon: 'tag'}); }
-    await lfLoad(true); LE.d = lfDraft(id); LE.orig = mclone(LE.d); LFK.render();
+    await lfLoad(true); if (!LE.dirty) { LE.d = lfDraft(id); LE.orig = mclone(LE.d); } LFK.render();
   } catch (e) { toast('Nicht möglich', {t2: String(e.message || e), type: 'warn'}); }
 }
 async function lfRemove(ids, fromMask) {
@@ -453,7 +481,7 @@ async function lfRemove(ids, fromMask) {
   if (lfLocked()) { toast('Lieferanten löscht die Zentrale', {icon: 'lock'}); abort(); }
   const rs = ids.map(lfRow).filter(Boolean); if (!rs.length) abort();
   const wer = rs.length === 1 ? `Lieferant „${lfName(rs[0])}“` : `${rs.length} Lieferanten`;
-  if (!await confirmBox(`${wer} löschen? Lieferanten mit Bestellungen, Belegen oder Artikeln lassen sich nicht löschen – sie lassen sich nur deaktivieren (Schalter „Aktiv“).`, 'Löschen')) abort();
+  if (!await confirmBox(`${wer} löschen? Lieferanten mit Bestellungen, Belegen (auch EDI-Nachrichten, Reklamationen) oder Artikeln lassen sich nicht löschen – sie lassen sich nur deaktivieren (Schalter „Aktiv“). Beim Löschen entfallen auch Marken-Zuordnungen, hochgeladene Dokumente und die Einträge des Lieferanten unter EDI-Einstellungen.`, 'Löschen')) abort();
   if (DESKTOP) await stepUp({title: 'Administrator-Freigabe', text: `${wer} löschen`, admin: true}).catch(abort);
   const fehler = [];
   for (const r of rs) {
@@ -470,6 +498,12 @@ async function lfRemove(ids, fromMask) {
 
 /* ── Wirkung in den Belegen ── */
 const lfSup = id => SUPPLIERS_ALL.find(x => x.id === id) || SUPPLIERS.find(x => x.id === id);
+/** Lieferanten für Auswahllisten: die aktiven, dazu der aktuell gewählte – auch wenn er inzwischen inaktiv ist („(inaktiv)“), damit er beim Sichern nicht verloren geht */
+function lfOptionen(sel) {
+  const l = SUPPLIERS.map(s => [s.id, s.name]);
+  if (sel && !l.some(x => x[0] === sel)) { const a = SUPPLIERS_ALL.find(s => s.id === sel); if (a) l.push([a.id, `${a.name} (inaktiv)`]); }
+  return l;
+}
 /** Eingangsrechnung: Fälligkeit, Skonto und Skonto-Frist aus Valuta, Skonto und Zahlungs-Bed. des Lieferanten vorbelegen – nur Felder, die leer sind oder noch die frühere Vorgabe tragen */
 function lfEiVorgabe(st) {
   const sup = lfSup(st.partner), au = st._auto ||= {};
@@ -488,7 +522,7 @@ DOC_EXTRA.lretoure = st => {
 };
 DOC_EXTRA.reklamation = st => { const p = lfSup(st.data?.lieferant)?.profile || {}; return p.rma_ablauf ? `<div class="prompt-hint blk"><b>RMA Ablauf des Lieferanten:</b> <span style="white-space:pre-wrap">${esc(p.rma_ablauf)}</span></div>` : ''; };
 DOC_EXTRA.avis = st => { const s = lfSup(st.partner); return s?.profile?.gegenscannen && !['gebucht', 'storniert'].includes(st.status) ? `<div class="prompt-hint blk">${ic('barcode', 'i-xs')}<b>${esc(s.name)} verlangt das Gegenscannen:</b> eingebucht wird erst, nachdem die Ware mit „Mit Scanner prüfen“ gezählt wurde.</div>` : ''; };
-DOC_EXTRA.er = st => { const s = lfSup(st.partner); return s ? `${lfHinweis(s)}${s.profile?.uid ? `<div class="muted" style="font-size:12.5px">USt-IdNr. des Lieferanten: ${esc(s.profile.uid)}</div>` : ''}` : ''; };
+DOC_EXTRA.er = st => { const s = lfSup(st.partner), ids = s ? [['USt-IdNr.', s.profile?.uid], ['Steuernummer', s.profile?.steuernr]].filter(x => String(x[1] || '').trim()) : []; return s ? `${lfHinweis(s)}${ids.length ? `<div class="muted" style="font-size:12.5px">${ids.map(([l, v]) => `${l} des Lieferanten: ${esc(v)}`).join(' · ')}</div>` : ''}` : ''; };
 
 // nur lesend – für Prüfungen: Empfängerblock und Hinweise zu einem Lieferanten, Kunden-Nr. je Filiale
-if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {lfEmpfaenger: (id, art) => lfEmpfaenger(lfRow(id), art), lfKundenNr: (id, st) => lfKundenNr(lfRow(id), st), lfGlnOk, lfSichtbar: name => ({alle: SUPPLIERS_ALL.some(s => s.name === name), aktiv: SUPPLIERS.some(s => s.name === name)}), lfMarkeSync, lfMarkeEigen});
+if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {lfEmpfaenger: (id, art) => lfEmpfaenger(lfRow(id), art), lfKundenNr: (id, st) => lfKundenNr(lfRow(id), st), lfGlnOk, lfSichtbar: name => ({alle: SUPPLIERS_ALL.some(s => s.name === name), aktiv: SUPPLIERS.some(s => s.name === name)}), lfMarkeSync, lfMarkeEigen, lfOptionen: sel => lfOptionen(sel).map(x => x[1])});

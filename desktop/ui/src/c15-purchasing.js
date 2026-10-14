@@ -64,7 +64,8 @@ async function openPO(id, preset) {
   const mindestHint = () => {
     const p = supObj()?.profile || {}, menge = st.lines.reduce((a, l) => a + (parseInt(l.qty, 10) || 0), 0), alle = st.lines.length && st.lines.every(l => isFinite(parseAmt(l.costE)));
     const w = []; if (p.min_menge > 0 && menge < p.min_menge) w.push(`Mindestmenge ${num(p.min_menge)} Stück – es fehlen ${num(p.min_menge - menge)}`);
-    if (p.min_summe > 0 && alle && total() * 100 < p.min_summe) w.push(`Mindestauftragssumme ${eur(p.min_summe / 100)} – es fehlen ${eur(p.min_summe / 100 - total())}`);
+    const cent = Math.round(total() * 100);
+    if (p.min_summe > 0 && alle && cent < p.min_summe) w.push(`Mindestauftragssumme ${eur(p.min_summe / 100)} – es fehlen ${eur((p.min_summe - cent) / 100)}`);
     return w.length ? `<div class="prompt-hint blk" style="color:var(--warn)">${ic('alert', 'i-xs')}${esc(w.join(' · '))}</div>` : '';
   };
   const hits = () => { const toks = norm(st.q.trim()).split(/\s+/).filter(Boolean); if (!toks.length) return []; return ART.flatMap(a => a.variants.map(v => ({a, v}))).filter(({a, v}) => toks.every(t => a.hay.includes(t) || v.ean.startsWith(t) || norm(`${colorName(v.c)} ${v.s}`).includes(t))).slice(0, 8); };
@@ -135,8 +136,8 @@ async function openPO(id, preset) {
       return;
     }
     if (e.target.closest('#poRecv')) { closeLayer(el); openReceive(head, st.lines); }
-    if (e.target.closest('#poPrint')) { sync(); printHTML(poHTML(head ? {...head, note: st.note} : {no: 'Entwurf', note: st.note}, st.lines, SUPPLIERS.find(x => x.id === st.supplier)), `Bestellung ${head?.no || ''}`); }
-    if (e.target.closest('#poMail')) { sync(); mailPO(head ? {...head, note: st.note} : {no: 'Entwurf', note: st.note}, st.lines, SUPPLIERS.find(x => x.id === st.supplier)); }
+    if (e.target.closest('#poPrint')) { sync(); printHTML(poHTML(head ? {...head, note: st.note} : {no: 'Entwurf', note: st.note}, st.lines, lfSup(st.supplier)), `Bestellung ${head?.no || ''}`); }
+    if (e.target.closest('#poMail')) { sync(); mailPO(head ? {...head, note: st.note} : {no: 'Entwurf', note: st.note}, st.lines, lfSup(st.supplier)); }
   });
   render();
 }

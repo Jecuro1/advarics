@@ -34,7 +34,7 @@ const landName = id => { const x = String(id || '').toUpperCase(); return x ? (l
 const landEu = id => !!landListe().find(l => l.id === String(id || '').toUpperCase())?.eu;
 
 /** Maske anlegen. o: page, list, title, perm, st (Zustand {id, ids, d, orig, tab, dirty, show}), sub(st), load(), reload(), draft(id), tabs() → [[k, Titel, Zusatz-HTML]],
- *  body() → {html, mount}, errors(d) → [{k, t}], tabOf(k), locked(), bar() (zusätzliche Knöpfe), can() → {new, del, refresh}, save(), remove(ids, ausMaske), act(a, b, el), onSet(k, el), rerender(k) */
+ *  body() → {html, mount}, errors(d) → [{k, t}], tabOf(k), locked(), bar() (zusätzliche Knöpfe), can() → {new, del, refresh}, save(), remove(ids, ausMaske), act(a, b, el), onSet(k, el), rerender(k), onOpen(id) (nach dem Öffnen/Blättern) */
 function maskeNew(o) {
   const st = o.st, K = {o};
   const lock = () => !!o.locked?.();
@@ -84,6 +84,7 @@ function maskeNew(o) {
   K.open = (id, ids) => {
     st.id = id; st.ids = ids?.length ? ids : st.ids; st.d = o.draft(id); st.orig = mclone(st.d); st.tab = o.tabs()[0][0]; st.dirty = false; st.show = false;
     if (S.view === o.page) { K.render(); renderTopbar(); } else go(o.page);
+    o.onOpen?.(id);
   };
   K.reset = () => { st.d = o.draft(st.id); st.orig = mclone(st.d); st.dirty = false; st.show = false; };
   K.register = () => {
