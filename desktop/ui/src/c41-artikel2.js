@@ -126,7 +126,7 @@ function artEditorMount(host, a, tab0) {
         <div class="ae-card"><h4>Artikel</h4>
           <label class="field"><span>Artikelnummer</span><input class="input" data-f="id" value="${esc(st.id)}" ${isNew ? '' : 'readonly style="opacity:.65"'}></label>
           <label class="field"><span>Bezeichnung *</span><input class="input" data-f="name" value="${esc(st.name)}" placeholder="z. B. Grat Hardshell Jacke"></label>
-          <label class="field"><span>Marke</span><input class="input" data-f="brand" value="${esc(st.brand)}" list="brandList"></label><datalist id="brandList">${[...new Set(ART.map(x => x.brand).filter(Boolean))].map(b => `<option value="${esc(b)}">`).join('')}</datalist>
+          <label class="field"><span>Marke</span><input class="input" data-f="brand" value="${esc(st.brand)}" list="brandList"></label><datalist id="brandList">${mkAuswahl().map(b => `<option value="${esc(b)}">`).join('')}</datalist>
           <label class="field"><span>Warengruppe</span><select class="input select" data-f="cat">${catOpt}</select></label>
           <label class="field"><span>Kennzeichnung</span><select class="input select" data-f="tag">${tags}</select></label></div>
         <div class="ae-card"><h4>Preis</h4>
@@ -275,12 +275,20 @@ function artEditorMount(host, a, tab0) {
       Hooks.emit('catalog.article.saved', {sku: art.id, name: art.name, varianten: variants.length, neu: isNew});
     }
   });
+  /** Marke gewählt/vorbelegt und noch kein Lieferant: den Lieferanten vorschlagen, dem diese Marke zugeordnet ist */
+  const lfLieferantVorschlag = async marke => {
+    const sel = $('[data-f="supplierId"]', el); if (!sel || sel.value) return;
+    const id = await lfMarkeVorschlag(marke); const cur = $('[data-f="supplierId"]', el);
+    if (id && cur && !cur.value && [...cur.options].some(o => o.value === id)) { cur.value = id; st.supplierId = id; toast('Lieferant vorgeschlagen', {t2: lfName(lfSup(id)) + ' – laut Marken des Lieferanten', icon: 'truck', dur: 2200}); }
+  };
   el.addEventListener('change', async e => {
+    if (e.target.matches?.('[data-f="brand"]')) { lfLieferantVorschlag(e.target.value); return; }
     const c = e.target.closest('[data-mcol]'), cap = e.target.closest('[data-mcap]');
     if ((c || cap) && a) { try { await saveMediaOrder(); await refreshMedia(); } catch (err) { toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); } }
   });
   el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); $('#edSave', el).click(); } });
   render();
+  if (isNew && st.brand && !st.supplierId) lfLieferantVorschlag(st.brand);
 };
 { const st = document.createElement('style'); st.textContent = '.ed-tabs{display:flex;gap:4px;padding:0 20px;border-bottom:1px solid var(--line);overflow-x:auto;flex:none}.ed-tab{display:flex;align-items:center;gap:6px;height:40px;padding:0 12px;border:0;background:none;color:var(--text-3);font-weight:600;font-size:13px;border-bottom:2.5px solid transparent;white-space:nowrap;cursor:pointer}.ed-tab:hover{color:var(--text)}.ed-tab[aria-selected="true"]{color:var(--accent-strong,var(--accent));border-bottom-color:var(--accent)}.ed-tab .nav-badge{margin-left:2px}'; document.head.appendChild(st); }
 

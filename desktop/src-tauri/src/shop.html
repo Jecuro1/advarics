@@ -112,9 +112,10 @@ footer p{margin:0;white-space:pre-line}
   const pic = (a, mid) => a.bild ? `<img src="/shop/bild/${encodeURIComponent(a.id)}${mid ? '/' + mid : ''}" alt="" loading="lazy">` : `<svg viewBox="0 0 64 64" style="color:${col(a.farben?.[0])[1]};fill:currentColor">${meta().glyphs?.[a.glyph] || ''}</svg>`;
   /* Hersteller & Produktsicherheit (GPSR): nur gefüllte Angaben; Links nur für E-Mail und http(s) */
   const gLink = x => { x = String(x || '').trim(); if (/^https?:\/\/[^\s]+$/i.test(x)) return `<a href="${esc(x)}" target="_blank" rel="noopener noreferrer">${esc(x)}</a>`; if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x)) return `<a href="mailto:${esc(x)}">${esc(x)}</a>`; return esc(x); };
-  const gAdr = a => [a?.adresszeile1, a?.adresszeile2, [a?.strasse, a?.hausnummer].filter(Boolean).join(' '), a?.postfach ? 'Postfach ' + a.postfach : '', [a?.plz, a?.stadt].filter(Boolean).join(' '), a?.region, a?.land_iso].filter(Boolean).map(esc).join('<br>');
+  const gLand = iso => { try { return iso ? new Intl.DisplayNames(['de'], {type: 'region'}).of(String(iso).toUpperCase()) || iso : ''; } catch { return iso || ''; } };
+  const gAdr = a => [a?.adresszeile1, a?.adresszeile2, [a?.strasse, a?.hausnummer].filter(Boolean).join(' '), a?.postfach ? 'Postfach ' + a.postfach : '', [a?.plz, a?.stadt].filter(Boolean).join(' '), a?.region, gLand(a?.land_iso)].filter(Boolean).map(esc).join('<br>');
   const gBlock = (t, x) => x && (x.name || x.elektronische_adresse || gAdr(x.anschrift)) ? `<div><div class="lbl">${t}</div>${x.name ? `<b>${esc(x.name)}</b><br>` : ''}${gAdr(x.anschrift)}${x.elektronische_adresse ? `<br>${gLink(x.elektronische_adresse)}` : ''}</div>` : '';
-  const herstellerHTML = h => h ? `<details><summary style="cursor:pointer;font-weight:600">Hersteller &amp; Produktsicherheit</summary><div style="display:grid;gap:10px;margin-top:8px;font-size:13.5px;line-height:1.5">${gBlock('Hersteller', h)}${gBlock('Verantwortlicher in der EU', h.eu_verantwortlicher)}</div></details>` : '';
+  const herstellerHTML = h => h ? `<details><summary style="cursor:pointer;font-weight:600">Hersteller &amp; Produktsicherheit</summary><div style="display:grid;gap:10px;margin-top:8px;font-size:13.5px;line-height:1.5;overflow-wrap:anywhere">${gBlock('Hersteller', h)}${gBlock('Verantwortlicher in der EU', h.eu_verantwortlicher)}</div></details>` : '';
   const avail = a => { const vs = a.varianten; const free = vs.filter(v => v.frei).length; return free === 0 ? ['x', 'derzeit nicht verfügbar'] : vs.some(v => v.bestand === 'wenig') && free <= 2 ? ['w', 'nur noch wenige'] : ['', 'verfügbar']; };
   const priceHTML = a => a.preis == null ? '' : `<b class="${a.statt ? 'sale' : ''}">${eur(a.preis)}</b>${a.statt ? `<s>${eur(a.statt)}</s>` : ''}`;
   async function load() {
@@ -132,6 +133,7 @@ footer p{margin:0;white-space:pre-line}
     const cats = [...new Set(S.arts.map(a => a.kategorie))];
     $('#cats').innerHTML = [['', 'Alle'], ...cats.map(c => [c, catName(c)])].map(([k, l]) => `<button class="chip" data-c="${esc(k)}" aria-pressed="${S.cat === k}">${esc(l)}</button>`).join('');
     $('#foot').innerHTML = [i.adresse && `<div><h4>${esc(i.firma || '')}</h4><p>${esc(i.adresse)}</p></div>`, i.oeffnung && `<div><h4>Öffnungszeiten</h4><p>${esc(i.oeffnung)}</p></div>`, i.kontakt && `<div><h4>Kontakt</h4><p>${esc(i.kontakt)}</p></div>`, i.hinweis && `<div><h4>Hinweis</h4><p>${esc(i.hinweis)}</p></div>`].filter(Boolean).join('');
+    S.bag = S.bag.filter(b => S.arts.some(a => a.varianten.some(v => v.ean === b.ean)));   // ausgeblendete oder entfernte Artikel bleiben nicht im Warenkorb
     saveBag(); render();
     const h = location.hash.slice(1); if (h) { const a = S.arts.find(x => x.id === decodeURIComponent(h)); if (a) openArt(a); }
   }

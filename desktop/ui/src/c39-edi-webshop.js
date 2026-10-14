@@ -42,6 +42,7 @@ function edifactRead(raw) {
     if (s.tag === 'DTM' && edVal(s, 0, 0) === '2' && pos) pos.liefertermin = dt(edVal(s, 0, 1));
     if (s.tag === 'RFF' && edVal(s, 0, 0) === 'ON') out.bestellung = edVal(s, 0, 1);
     if (s.tag === 'NAD' && edVal(s, 0) === 'SU') out.lieferant_gln = edVal(s, 1);
+    if (s.tag === 'NAD' && edVal(s, 0) === 'MF') { if (pos) pos.marke_gln = edVal(s, 1); else out.marke_gln = edVal(s, 1); }
     if (s.tag === 'MOA' && ['77', '86', '39'].includes(edVal(s, 0, 0)) && out.summe == null) out.summe = parseFloat(edVal(s, 0, 1)) || 0;
     if (s.tag === 'LIN') { pos = {ean: edVal(s, 2, 0), menge: 0}; out.positionen.push(pos); }
     if (!pos) continue;
@@ -54,11 +55,15 @@ function edifactRead(raw) {
   return out;
 }
 const ED_TYP = {PRICAT: 'Preiskatalog', DESADV: 'Lieferavis', INVOIC: 'Rechnung', ORDRSP: 'Auftragsbestätigung', ORDERS: 'Bestellung', SLSRPT: 'Verkaufsbericht', INVRPT: 'Bestandsmeldung'};
-const supByGln = gln => { const m = stActive('edilieferant').find(x => x.gln && x.gln === gln); return m ? SUPPLIERS.find(s => s.id === m.lieferant) : null; };
-const supGln = sid => stActive('edilieferant').find(x => x.lieferant === sid)?.gln || '';
+/** GLN des Lieferanten: die Haupt-GLN aus Stammdaten › Lieferanten, ersatzweise die (frühere) Angabe in den EDI-Einstellungen */
+const supByGln = gln => { if (!gln) return null; const s = SUPPLIERS.find(x => x.profile?.gln === gln) || SUPPLIERS_ALL.find(x => x.profile?.gln === gln); if (s) return s; const mb = LF.rows.find(r => (r.marken || []).some(m => m.gln === gln && m.gln_src === 'lieferant')); if (mb) return SUPPLIERS.find(x => x.id === mb.id) || SUPPLIERS_ALL.find(x => x.id === mb.id); const m = stActive('edilieferant').find(x => x.gln && x.gln === gln); return m ? SUPPLIERS.find(x => x.id === m.lieferant) : null; };
+const supGln = sid => (SUPPLIERS_ALL.find(x => x.id === sid) || SUPPLIERS.find(x => x.id === sid))?.profile?.gln || stActive('edilieferant').find(x => x.lieferant === sid)?.gln || '';
+/** Empfänger der Nachricht (UNB): die Empfänger-GLN des Lieferanten (z. B. Clearingstelle), sonst seine Haupt-GLN */
+const supEmpfaenger = sid => (SUPPLIERS_ALL.find(x => x.id === sid) || SUPPLIERS.find(x => x.id === sid))?.profile?.empfaenger_gln || supGln(sid);
 const EDI = {docs: null};
 async function ediDocs(force) { if (!EDI.docs || force) EDI.docs = DESKTOP ? await invoke('doc_list', {kinds: ['edi'], status: null, limit: 5000}) : []; return EDI.docs; }
 async function ediCreate(name, raw, richtung = 'ein') {
+  try { await lfLoad(); } catch { /* ohne Marken-GLN weiter */ }
   let p; try { p = edifactRead(raw); } catch (e) { p = {typ: 'UNBEKANNT', fehler: String(e), positionen: []}; }
   const sup = supByGln(p.lieferant_gln) || supByGln(p.absender);
   const d = await invoke('doc_save', {doc: {kind: 'edi', partner: sup?.id || null, partner_name: sup?.name || p.lieferant_gln || p.absender || '', ref: name, date: p.datum || today(), data: {typ: p.typ, richtung, datei: name, parsed: p, inhalt: String(raw).slice(0, 400000)}}, user: S.user.name});
@@ -117,7 +122,7 @@ async function ediProcess(d) {
 
 /* ── Exporte ── */
 async function ediExport(type, sid, body, ref) {
-  const content = edifactBuild(type, ref, body, supGln(sid));
+  const content = edifactBuild(type, ref, body, supEmpfaenger(sid));
   const name = `${type}_${ref.replace(/\W+/g, '-')}_${Date.now().toString(36)}.edi`;
   let pfad = '';
   if (CFG['edi.export_dir']) pfad = await invoke('edi_write', {which: 'export', name, content, user: S.user.name});
@@ -129,7 +134,7 @@ async function ediExport(type, sid, body, ref) {
 }
 async function ediOrders(po) {
   const lines = await invoke('po_lines', {id: po.id});
-  const body = [`BGM+220+${edEsc(po.no)}+9`, `DTM+137:${today().replace(/-/g, '')}:102`, `NAD+BY+${edEsc(CFG['edi.gln'] || '')}::9`, `NAD+SU+${edEsc(supGln(po.supplier_id))}::9`, ...lines.flatMap((l, i) => { return [`LIN+${i + 1}++${edEsc(l.ean || '')}:EN`, `QTY+21:${l.qty}`, `PRI+AAA:${((l.cost ?? 0) / 100).toFixed(2)}`]; }), 'UNS+S', `CNT+2:${lines.length}`];
+  const body = [`BGM+220+${edEsc(po.no)}+9`, `DTM+137:${today().replace(/-/g, '')}:102`, `NAD+BY+${edEsc(CFG['edi.gln'] || '')}::9`, ...(lfKundenNr(lfSup(po.supplier_id)) ? [`RFF+IT:${edEsc(lfKundenNr(lfSup(po.supplier_id)))}`] : []), `NAD+SU+${edEsc(supGln(po.supplier_id))}::9`, ...lines.flatMap((l, i) => { return [`LIN+${i + 1}++${edEsc(l.ean || '')}:EN`, `QTY+21:${l.qty}`, `PRI+AAA:${((l.cost ?? 0) / 100).toFixed(2)}`]; }), 'UNS+S', `CNT+2:${lines.length}`];
   return ediExport('ORDERS', po.supplier_id, body, po.no);
 }
 async function ediSalesSince(sid) {
@@ -156,7 +161,7 @@ async function ediInvrpt(sid) {
 /* ── PRICAT → Artikel ── */
 function ediCatalogItems(docs) {
   const out = [];
-  for (const d of docs.filter(x => x.data?.typ === 'PRICAT')) for (const x of d.data.parsed?.positionen || []) out.push({...x, doc: d.no, sid: d.partner, sup: d.partner_name});
+  for (const d of docs.filter(x => x.data?.typ === 'PRICAT')) for (const x of d.data.parsed?.positionen || []) out.push({...x, marke: lfMarkeEigen(d.partner, x.marke, x.marke_gln || d.data.parsed?.marke_gln), doc: d.no, sid: d.partner, sup: d.partner_name});
   const by = {}; out.forEach(x => { by[x.ean] = x; }); // jüngste Übermittlung gewinnt
   return Object.values(by).map(x => { const f = findEan(x.ean); const conflict = f && ((f.a.supplierId && x.sid && f.a.supplierId !== x.sid) || (x.artikelnr && f.a.fields?.['Lieferanten-Art.-Nr.'] && f.a.fields['Lieferanten-Art.-Nr.'] !== x.artikelnr)); const preis = f && x.vk && Math.abs((f.a.price || 0) - x.vk) > 0.009; return {...x, known: !!f, art: f?.a, conflict: !!conflict, preis}; });
 }
@@ -262,7 +267,7 @@ function ediCatPage(id, title, sub, mode) {
   registerPage(id, {title, sub: () => sub.split(' – ')[0], render: async () => {
     const v = $('#view-' + id);
     if (!DESKTOP) { v.innerHTML = desktopEmpty('swap', title); return; }
-    await loadSuppliers(); await loadStamm();
+    await loadSuppliers(); await loadStamm(); await Promise.all([lfLoad(), mkLoad()]);
     const all = ediCatalogItems(await ediDocs(true)), n = norm(EAI.q);
     const list = all.filter(x => mode === 'konflikte' ? x.conflict || x.preis : mode === 'import' ? (EAI.f === 'alle' || (EAI.f === 'neu' ? !x.known : x.known)) : true).filter(x => !n || norm(`${x.ean} ${x.name} ${x.artikelnr} ${x.marke} ${x.sup}`).includes(n));
     v.innerHTML = `<div class="cv">${pageHead(title, sub, mode === 'import' ? `<label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" data-eaiu ${EAI.upd ? 'checked' : ''}>Preise bekannter Artikel aktualisieren</label><button class="btn btn-primary" data-eaigo>${ic('download', 'i-sm')}Ausgewählte übernehmen</button>` : '')}

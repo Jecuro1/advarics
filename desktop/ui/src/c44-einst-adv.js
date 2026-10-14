@@ -2,7 +2,7 @@
    44 · STANDARDWERTE (Einstellungen › Standardwerte) – nur Einstellungen, die tatsächlich wirken
    ═════════════════════════════════════════════════════════════════ */
 const EA_DEFAULTS = {'edi.gln': '', 'gutschein.jahre': 3, 'allg.spediteur': '', 'allg.warengruppe': '', 'allg.marke': '', 'allg.mwst': '', 'allg.groessenschluessel': '', 'allg.mailfuss': ''};
-const eaMarken = () => { const r = stActive('marke'); return r.length ? r.map(x => [x.name || x.id, x.name || x.id]) : [...new Set(ART.map(a => a.brand).filter(Boolean))].sort().map(x => [x, x]); };
+const eaMarken = () => mkAuswahl().map(x => [x, x]);
 const eaOpt = (kind, nr = true) => () => stActive(kind).map(r => [r.id, `${r.name || r.id}${nr && r.nr != null && r.nr !== '' ? ` (${r.nr})` : ''}`]);
 /* Feld: k = Einstellungsschlüssel, t = text | num | combo, o = Auswahl, hint = Erklärung */
 const EA_GROUPS = () => [
@@ -70,7 +70,7 @@ INVOKE_HOOKS.mail_send = a => {
 /* 2) Standardwerte beim Anlegen eines Artikels (siehe artEditorMount) */
 const eaNeuArtikel = st => {
   const wg = CFG['allg.warengruppe']; if (wg && CATS.some(c => c.id === wg) && (typeof AV === 'undefined' || AV.cat === 'alle')) st.cat = wg;
-  if (CFG['allg.marke']) st.brand = CFG['allg.marke'];
+  if (CFG['allg.marke']) { st.brand = CFG['allg.marke']; st.supplierId = st.supplierId || lfMarkeSync(st.brand); }
   const m = stRows('mwsttyp').find(x => x.id === CFG['allg.mwst']); if (m) st.vat = +m.satz || 0;
   const g = stRows('groessenschluessel').find(x => x.id === CFG['allg.groessenschluessel']); if (g?.groessen?.length) st.sizes = g.groessen.join(', ');
   return st;

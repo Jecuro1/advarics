@@ -506,6 +506,7 @@ pub fn import(c: &mut Connection, data_dir: &Path, path: &Path, o: &Opts, user: 
     let mut ohne_vk: Vec<String> = vec![];
     let mut fehler: Vec<String> = vec![];
     let mut sup_cache: HashMap<String, String> = HashMap::new();
+    let mut sup_marken: std::collections::HashSet<String> = std::collections::HashSet::new();
     let mut wg_new = 0usize;
     let mut sup_new = 0usize;
     let mut pending_imgs: Vec<(String, String, String)> = vec![]; // (Artikel, Farbschlüssel, Archivpfad)
@@ -536,7 +537,7 @@ pub fn import(c: &mut Connection, data_dir: &Path, path: &Path, o: &Opts, user: 
                     let sid = format!("ADV-{}", if first.lief_nr.is_empty() { fedas::slug(&first.lief).to_uppercase() } else { first.lief_nr.clone() });
                     let exists: bool = tx.query_row("SELECT 1 FROM suppliers WHERE id = ?1", [&sid], |_| Ok(true)).optional().map_err(|e| e.to_string())?.unwrap_or(false);
                     if !exists {
-                        purchasing::supplier_save(&tx, &purchasing::Supplier { id: sid.clone(), name: first.lief.clone(), customer_no: first.lief_nr.clone(), lead_days: 7, ..Default::default() })?;
+                        purchasing::supplier_save(&tx, &purchasing::Supplier { id: sid.clone(), name: first.lief.clone(), nr: first.lief_nr.trim().parse().unwrap_or(0), lead_days: 7, ..Default::default() })?;
                         sup_new += 1;
                     }
                     sup_cache.insert(sup_key, sid.clone());
@@ -544,6 +545,12 @@ pub fn import(c: &mut Connection, data_dir: &Path, path: &Path, o: &Opts, user: 
                 }
             })
         };
+        // Marke gehört zu diesem Lieferanten (Reiter „Marken“ des Lieferanten) – je Paar einmal
+        if let Some(sid) = &supplier {
+            if !first.marke.trim().is_empty() && sup_marken.insert(format!("{sid}|{}", first.marke)) {
+                crate::lieferant::marke_zuordnen(&tx, sid, &first.marke);
+            }
+        }
         // Warengruppe → Stammdaten
         let cat = if first.wg.is_empty() { "acc".to_string() } else {
             let cid = if first.wg_nr.is_empty() || first.wg_nr == "0" { format!("adv-{}", fedas::slug(&first.wg)) } else { format!("adv-{}", first.wg_nr) };

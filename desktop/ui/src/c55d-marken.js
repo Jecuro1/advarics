@@ -70,8 +70,15 @@ async function mkLoad(force) {
   MK.loaded = true;
   STAMM.data.marke = MK.rows.map(r => ({...r}));   // Auswahl in Artikelmaske, Einstellungen und Bonus nutzt die Stammdaten
 }
+/** Markennamen für Auswahllisten (Artikelmaske, Standard-Marke, Bonus-Filter): die aktiven Marken; ohne Markentabelle die der Artikel */
+const mkAuswahl = () => { const a = stActive('marke').map(r => r.name || r.id).filter(Boolean), l = a.length ? a : ART.map(x => x.brand).filter(Boolean); return [...new Set(l)].sort((x, y) => x.localeCompare(y, 'de')); };
 /** Marke zu einem Artikel-Markennamen (nach der Vergleichsform) – aus der Markenliste, sonst aus den Stammdaten */
-const mkFuer = brand => (MK.loaded ? MK.rows : stRows('marke')).find(r => mkNorm(r.name) === mkNorm(brand));
+const MK_IDX = {src: null, map: new Map()};
+function mkFuer(brand) {
+  const rows = MK.loaded ? MK.rows : stRows('marke');
+  if (MK_IDX.src !== rows || MK_IDX.n !== rows.length) { MK_IDX.src = rows; MK_IDX.n = rows.length; MK_IDX.map = new Map(); for (const r of rows) { const k = mkNorm(r.name); if (k && !MK_IDX.map.has(k)) MK_IDX.map.set(k, r); } }
+  return MK_IDX.map.get(mkNorm(brand));
+}
 /** Herstellerangaben und GPSR-Stufe zu einem Artikel-Markennamen (für Artikelliste, Artikelmaske, Schaufenster) */
 function mkArtikelInfo(brand) {
   const m = mkFuer(brand), g = mkGpsr(m || {}), h = m?.hersteller || {}, e = m?.eu || {};
@@ -133,9 +140,9 @@ function mkToRow(d) {
 }
 /** Prüfungen wie im Backend (marke.rs); k = Pfad des Feldes */
 function mkErrors(d) {
-  const m = [], add = (k, t) => m.push({k, t}), name = String(d.name).trim();
-  if (!name) add('name', 'Name angeben'); else if (name.length > 120) add('name', 'Name: höchstens 120 Zeichen');
-  else { const o = MK.rows.find(r => mkNorm(r.name) === mkNorm(name) && String(r.id).toLowerCase() !== String(d.id || '').toLowerCase()); if (o) add('name', `Die Marke „${o.name}“ gibt es schon`); }
+  const m = [], add = (k, t) => m.push({k, t}), name = String(d.name).trim(), alt = d.id ? mkRow(d.id) : null;
+  if (!name) add('name', 'Name angeben'); else if (name.length > 120) add('name', 'Name: höchstens 120 Zeichen'); else if (!mkNorm(name)) add('name', 'Name: mindestens ein Buchstabe oder eine Ziffer');
+  else if (!(alt && mkNorm(alt.name) === mkNorm(name))) { const o = MK.rows.find(r => mkNorm(r.name) === mkNorm(name) && String(r.id).toLowerCase() !== String(d.id || '').toLowerCase()); if (o) add('name', `Die Marke „${o.name}“ gibt es schon`); }
   for (const [p, wo] of [['hersteller', 'Hersteller'], ['eu', 'Verantwortlicher in der EU']]) {
     const v = d[p];
     for (const k of MK_ADR) { const max = k === 'name' || k === 'email' ? 120 : 80; if (String(v[k] ?? '').trim().length > max) add(`${p}.${k}`, `Höchstens ${max} Zeichen`); }
@@ -167,7 +174,7 @@ function mkOpen(id, ids) { MKK.open(id, ids); }
 const mkStatusHTML = () => {
   const r = ME.id ? mkRow(ME.id) : null, g = mkGpsr(mkToRow(ME.d)), n = r?._artikel || 0;
   return `<div class="ge-facts"><div class="ge-fact"><span>GPSR-Angaben</span><b><span class="pill ${mkStufeTon(g.stufe)}" style="height:22px">${mkStufeText(g.stufe)}</span></b></div>
-    <div class="ge-fact"><span>Artikel</span><b>${n ? `${num(n)} Artikel tragen diese Marke` : 'noch kein Artikel'}</b></div></div>
+    <div class="ge-fact"><span>Artikel</span><b>${n ? `${num(n)} Artikel tragen diese Marke${r?._artikel_aktiv != null && r._artikel_aktiv !== n ? ` (davon ${num(r._artikel_aktiv)} aktiv)` : ''}` : 'noch kein Artikel'}</b></div></div>
     ${g.fehlt.length && g.stufe !== 'ok' ? `<p class="ea-hint" style="margin:8px 0 0">Es fehlt: ${esc(g.fehlt.join(', '))}.</p>` : ''}
     <p class="ea-hint" style="margin:8px 0 0">Online-Angebote brauchen nach der Produktsicherheitsverordnung (GPSR) den Hersteller mit Anschrift und elektronischer Adresse – bei einem Hersteller außerhalb der EU zusätzlich den Verantwortlichen in der EU. Die Angaben erscheinen im Schaufenster (Abschnitt „Hersteller &amp; Produktsicherheit“) und in der Schnittstelle.</p>`;
 };
@@ -178,7 +185,7 @@ function mkAllg() {
     ${K.card('Allgemein', `${K.in('name', 'Name *', {hint: n ? `Name der Marke an den Artikeln. Umbenennen ändert die ${num(n)} Artikel und alle Aktionen, Regeln und Filter, die die Marke nennen.` : 'Name der Marke an den Artikeln – eindeutig.'})}
       ${K.in('hersteller.name', 'Name des Herstellers', {hint: 'Rechtlicher Hersteller (Firma) – nicht die Marke.'})}${K.in('hersteller.email', 'Elektronische Adresse', {hint: 'E-Mail oder Web-Adresse des Herstellers.'})}
       ${K.in('eu.name', 'Verantwortlicher in EU', {hint: 'Pflicht, wenn der Hersteller außerhalb der EU sitzt.'})}${K.in('eu.email', 'Elektronische Adresse in der EU')}
-      ${K.sw('_aktiv', 'Aktiv', 'Inaktive Marken erscheinen nicht mehr in der Auswahl für neue Artikel; die Herstellerangaben bleiben für vorhandene Artikel erhalten.')}`)}
+      ${K.sw('_aktiv', 'Aktiv', 'Inaktive Marken erscheinen nicht mehr in den Auswahllisten (Artikel, Standard-Marke, Bonus-Filter); die Herstellerangaben bleiben für vorhandene Artikel erhalten.')}`)}
     ${K.card('Herstellerangaben (GPSR)', `<div data-mk-status>${mkStatusHTML()}</div>`)}
   </div>`;
 }
@@ -216,7 +223,7 @@ async function mkSave() {
       if (umbenannt) ART.forEach(a => { if (mkNorm(a.brand) === mkNorm(alt.name)) a.brand = row.name; });
     }
   } catch (err) { return toast('Speichern fehlgeschlagen', {t2: String(err.message || err), type: 'warn', dur: 7000}); }
-  if (DESKTOP && umbenannt) { try { replaceCatalog(await invoke('catalog_list')); } catch { /* */ } try { await loadSettings(); } catch { /* */ } }
+  if (DESKTOP && umbenannt) { try { replaceCatalog(await invoke('catalog_list')); } catch { /* */ } try { await loadSettings(); } catch { /* */ } try { await loadPromos(); } catch { /* */ } }
   await Promise.all([mkLoad(true), DESKTOP ? loadStamm(true) : Promise.resolve()]);
   const id = saved.id; ME.id = id; ME.d = mkDraft(id); ME.orig = mclone(ME.d); ME.dirty = false; ME.show = false; if (isNew) ME.ids = [...ME.ids, id];
   Hooks.emit('marke.saved', {marke: row.name, neu: isNew});

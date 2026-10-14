@@ -295,6 +295,10 @@ pub fn action(tx: &Transaction, id: i64, act: &str, payload: &Value, user: &str)
     let mut detail = payload.clone();
     match (k.id, act) {
         ("avis", "buchen") => {
+            // Lieferant verlangt Gegenscannen (Stammdaten › Lieferanten): nur nach dem Scanner-Wareneingang
+            if crate::lieferant::profil(tx, d["partner"].as_str().unwrap_or(""))["gegenscannen"].as_bool().unwrap_or(false) && !data["gezaehlt"].as_bool().unwrap_or(false) {
+                return Err("Dieser Lieferant verlangt das Gegenscannen: bitte die Ware im Wareneingang mit dem Scanner prüfen".into());
+            }
             // gegen die Bestellung (falls verknüpft) und Rest als freier Zugang
             let mut rest: Vec<Value> = vec![];
             let order = data["order_id"].as_i64();
@@ -347,7 +351,13 @@ pub fn action(tx: &Transaction, id: i64, act: &str, payload: &Value, user: &str)
         ("zahlung", "stornieren") => {
             allocate(tx, &data, -1, &no)?;
         }
-        ("lretoure", "versenden") => stocks = book_lines(tx, &lines, -1, "Lieferantenretoure", &no, user)?,
+        ("lretoure", "versenden") => {
+            // Lieferant verlangt einen RMA-Code (Stammdaten › Lieferanten): ohne RMA-/Rücksendenummer wird nicht versendet
+            if crate::lieferant::profil(tx, d["partner"].as_str().unwrap_or(""))["rma_pflicht"].as_bool().unwrap_or(false) && d["ref"].as_str().map(str::trim).unwrap_or("").is_empty() {
+                return Err("Dieser Lieferant verlangt einen RMA-Code – bitte die RMA-/Rücksendenummer im Beleg eintragen".into());
+            }
+            stocks = book_lines(tx, &lines, -1, "Lieferantenretoure", &no, user)?
+        }
         ("lretoure", "ablehnen") => stocks = book_lines(tx, &lines, 1, "Lieferantenretoure abgelehnt", &no, user)?,
         ("lretoure", "gutschrift") => {
             data["gutschrift"] = json!({ "betrag": cents(&payload["betrag"]), "beleg": payload["beleg"], "datum": payload["datum"] });
@@ -696,6 +706,30 @@ mod tests {
         assert_eq!(stock(&tx), 10);
         // Protokoll
         assert!(log_list(&tx, &["lretoure".into()], 10).unwrap().len() >= 3);
+    }
+
+    #[test]
+    fn lieferant_verlangt_rma_code_und_gegenscannen() {
+        let c = setup();
+        let sup = crate::lieferant::save(&c, &json!({ "name": "Firn Sports", "nr": 1, "country": "AT", "profile": { "rma_pflicht": true, "gegenscannen": true } }), "T").unwrap();
+        let sid = sup["id"].as_str().unwrap();
+        let tx = c.unchecked_transaction().unwrap();
+        // Retoure: ohne RMA-/Rücksendenummer nicht versendet, mit Nummer geht es
+        let d = save(&tx, &json!({ "kind": "lretoure", "partner": sid, "partner_name": "Firn", "data": { "lines": [{ "ean": "2000000000015", "name": "Test", "qty": 1, "price": 500 }] } }), "t").unwrap();
+        let id = d["id"].as_i64().unwrap();
+        assert!(action(&tx, id, "versenden", &json!({}), "t").unwrap_err().contains("RMA-Code"));
+        assert_eq!(stock(&tx), 10, "nichts gebucht");
+        save(&tx, &json!({ "id": id, "kind": "lretoure", "partner": sid, "partner_name": "Firn", "ref": "RMA-4711", "data": { "lines": [{ "ean": "2000000000015", "name": "Test", "qty": 1, "price": 500 }] } }), "t").unwrap();
+        action(&tx, id, "versenden", &json!({}), "t").unwrap();
+        assert_eq!(stock(&tx), 9);
+        // Avis: ohne Scanner-Prüfung nicht einbuchen
+        let a = save(&tx, &json!({ "kind": "avis", "partner": sid, "partner_name": "Firn", "data": { "lines": [{ "ean": "2000000000015", "name": "Test", "qty": 2 }] } }), "t").unwrap();
+        let aid = a["id"].as_i64().unwrap();
+        assert!(action(&tx, aid, "buchen", &json!({}), "t").unwrap_err().contains("Gegenscannen"));
+        assert_eq!(stock(&tx), 9);
+        save(&tx, &json!({ "id": aid, "kind": "avis", "partner": sid, "partner_name": "Firn", "data": { "gezaehlt": true, "lines": [{ "ean": "2000000000015", "name": "Test", "qty": 2 }] } }), "t").unwrap();
+        action(&tx, aid, "buchen", &json!({}), "t").unwrap();
+        assert_eq!(stock(&tx), 11);
     }
 
     #[test]

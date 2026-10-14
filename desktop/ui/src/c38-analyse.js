@@ -307,7 +307,7 @@ async function renderIntrastat() {
   const agg = {};
   for (const m of moves) {
     const a = artById(m.article_id); if (!a) continue;
-    const land = lands[a.supplierId] || '';
+    const land = SUPPLIERS_ALL.find(x => x.id === a.supplierId)?.country || lands[a.supplierId] || '';
     if (!land || !eu.has(land) || land === home) continue;
     const wg = stRows('warengruppe').find(x => x.id === a.cat);
     const tarif = a.fields?.Zolltarifnummer || a.fields?.Zolltarif || wg?.zolltarif || '–';
@@ -320,10 +320,10 @@ async function renderIntrastat() {
   v.innerHTML = `<div class="cv">${pageHead('Intrastat Auswertung', 'Eingänge aus anderen EU-Staaten je Land und Zolltarifnummer (Feld „Zolltarifnummer“ am Artikel oder an der Warengruppe; Gewicht aus Feld „Gewicht“)', `<button class="btn btn-secondary" data-isp>${ic('printer', 'i-sm')}Drucken</button><button class="btn btn-secondary" data-isx>${ic('upload', 'i-sm')}CSV</button>`)}
     <div class="filters"><input class="input" type="month" data-ism value="${IS.mon}" style="width:auto"><span class="muted">${num(moves.length)} Eingangsbuchungen · Schwelle Eingänge AT: € 1.100.000 p. a.</span></div>
     ${kpiCards([[eur0(sum), 'Rechnungsbetrag EU-Eingänge'], [num(rows.length), 'Meldezeilen'], [num(rows.reduce((s, r) => s + r.menge, 0)), 'Stück']])}
-    <div class="card" style="margin-bottom:14px"><div class="set-row"><div><div class="set-l">Versendungsland je Lieferant</div><div class="set-h">Einmal festlegen – wird gespeichert</div></div></div><div style="display:flex;flex-wrap:wrap;gap:10px;padding:0 16px 14px">${SUPPLIERS.map(s => `<label class="field" style="min-width:200px"><span>${esc(s.name)}</span><select class="input select" data-isl="${esc(s.id)}"><option value="">–</option>${stActive('land').map(l => `<option value="${esc(l.id)}" ${lands[s.id] === l.id ? 'selected' : ''}>${esc(l.id)} · ${esc(l.name)}</option>`).join('')}</select></label>`).join('')}</div></div>
+    <div class="card" style="margin-bottom:14px"><div class="set-row"><div><div class="set-l">Versendungsland je Lieferant</div><div class="set-h">Das Land des Lieferanten (Stammdaten › Lieferanten › Allgemein) gilt als Versendungsland; Lieferanten aus Österreich und aus Nicht-EU-Ländern werden nicht gemeldet.</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" data-isgo>${ic('building', 'i-sm')}Lieferanten öffnen</button></div></div><div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 14px">${Object.entries(SUPPLIERS_ALL.reduce((m, s) => { const k = s.country || 'AT'; m[k] = (m[k] || 0) + 1; return m; }, {})).sort().map(([k, n]) => `<span class="pill ${eu.has(k) && k !== home ? 'info' : ''}" style="height:24px">${esc(landName(k))}: ${n} ${n === 1 ? 'Lieferant' : 'Lieferanten'}</span>`).join('')}</div></div>
     <div class="card" style="overflow:auto">${rows.length ? tbl : '<div class="empty" style="padding:40px 20px"><h3>Keine meldepflichtigen Eingänge</h3><p>Monat wählen und Versendungsland der Lieferanten festlegen.</p></div>'}</div></div>`;
   $('[data-ism]', v).onchange = e => { IS.mon = e.target.value; renderIntrastat(); };
-  $$('[data-isl]', v).forEach(s => { s.onchange = async () => { await saveSettings({'intrastat.laender': {...(CFG['intrastat.laender'] || {}), [s.dataset.isl]: s.value}}, true); renderIntrastat(); }; });
+  $('[data-isgo]', v).onclick = () => go('lieferanten');
   $('[data-isp]', v).onclick = () => anPrint(`Intrastat ${IS.mon}`, tbl);
   $('[data-isx]', v).onclick = async () => { const csv = '﻿Land;Warennummer;Geschäftsart;Menge;Eigenmasse kg;Rechnungsbetrag\r\n' + rows.map(r => [r.land, r.tarif, 11, r.menge, String(Math.round(r.kg * 10) / 10).replace('.', ','), String(Math.round(r.wert * 100) / 100).replace('.', ',')].join(';')).join('\r\n'); try { const p = await invoke('save_text', {name: `Intrastat_${IS.mon}.csv`, content: csv, title: 'Intrastat exportieren'}); if (p) toast('Exportiert', {t2: p, type: 'pos', icon: 'download'}); } catch (err) { toast('Export fehlgeschlagen', {t2: String(err), type: 'warn'}); } };
 }

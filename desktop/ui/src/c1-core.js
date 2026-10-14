@@ -202,7 +202,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.42.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.43.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -341,7 +341,6 @@ const NAV = [
   {label: 'Retourenmanagement', icon: 'undo', kids: [{label: 'Vorerfassung Reklamation', icon: 'edit', kids: [{id: 'reklamationen', label: 'Vorerfassung Reklamation', icon: 'edit'}, {id: 'reklamation-neu', label: 'Reklamation erfassen (erweitert)', icon: 'plus'}]}, {id: 'lretouren', label: 'Retouren', icon: 'undo'}, {id: 'retouren-protokoll', label: 'Protokoll Retourenmanagement', icon: 'history'}, {id: 'rueckgabegruende', label: 'Rückgabegrund', icon: 'list'}]},
   {label: 'Wareneingangs-Verteilung', icon: 'swap', kids: [{id: 'verteilung-konfig', label: 'Wareneingangs-Verteilungs-Konfiguration', icon: 'sliders'}, {id: 'disposition', label: 'Wareneingangs-Disposition', icon: 'list'}]},
   {id: 'lieferantenbonus', label: 'Umlage Lieferantenbonus', icon: 'percent'},
-  {id: 'lieferanten', label: 'Lieferanten', icon: 'building'},
   {g: 'Kunden'},
   {id: 'kunden', label: 'Kunden', icon: 'users'},
   {id: 'kundenerfassung', label: 'Kundenerfassung', icon: 'user-plus'},
@@ -387,6 +386,7 @@ const NAV = [
   {g: 'Stammdaten'},
   {label: 'Benutzer', icon: 'users', kids: [{id: 'benutzer', label: 'Benutzer', icon: 'user'}, {id: 'rollen', label: 'Rollen & Rechte', icon: 'shield'}, {id: 'st-benutzergruppe', label: 'Benutzergruppen', icon: 'users'}, {id: 'st-zugangsprofil', label: 'Zugangsprofil', icon: 'lock'}, {id: 'zeiterfassung', label: 'Zeiterfassung', icon: 'clock'}, {id: 'st-meldung', label: 'Zuordnung Meldungen', icon: 'bell'}]},
   {label: 'Filialen', icon: 'store', kids: [{id: 'st-filiale', label: 'Filialen', icon: 'store'}]},
+  {id: 'lieferanten', label: 'Lieferanten', icon: 'building'},
   {id: 'st-marke', label: 'Marken', icon: 'star'},
   {id: 'demo-marken', label: 'Marken-Demosortiment', icon: 'star'},
   {label: 'Warengruppen', icon: 'tag', kids: [{id: 'st-warengruppe', label: 'Warengruppen', icon: 'tag'}, {id: 'st-abteilung', label: 'Abteilungen', icon: 'layers'}, {id: 'st-hauptabteilung', label: 'Hauptabteilungen', icon: 'layers'}, {id: 'st-bereich', label: 'Bereiche', icon: 'layers'}, {id: 'st-hauptbereich', label: 'Hauptbereiche', icon: 'layers'}, {id: 'st-preislage', label: 'Preislagen', icon: 'tag'}, {label: 'FEDAS', icon: 'sync', kids: [{id: 'fedas-sync', label: 'FEDAS-Sync', icon: 'sync'}, {id: 'fedas-verbindung', label: 'Verbindung & Automatik', icon: 'link'}, {id: 'fedas-import', label: 'Datei-Import (CSV/JSON)', icon: 'download'}, {id: 'st-fedasklasse', label: 'FEDAS-Klassifikation', icon: 'list'}, {id: 'fedas-protokoll', label: 'Sync-Protokoll', icon: 'history'}]}]},

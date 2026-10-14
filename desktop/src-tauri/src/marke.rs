@@ -50,6 +50,20 @@ fn slug(x: &str) -> String {
     if t.is_empty() { "marke".into() } else { t.chars().take(40).collect() }
 }
 
+/// EU-Kennzeichen einer Länder-Zeile: Bool, „ja/true/1“, „nein/false/0“ oder Zahl; alles andere = nicht gesetzt (dann gilt die eingebaute Liste)
+pub fn eu_flag(v: &Value) -> Option<bool> {
+    match v {
+        Value::Bool(b) => Some(*b),
+        Value::Number(n) => n.as_f64().map(|x| x != 0.0),
+        Value::String(t) => match t.trim().to_lowercase().as_str() {
+            "true" | "ja" | "1" | "yes" | "wahr" => Some(true),
+            "false" | "nein" | "0" | "no" | "falsch" => Some(false),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 /// Länder der EU: Länder-Tabelle (Spalte „EU“) vor der eingebauten Liste
 pub fn eu_laender(c: &Connection) -> HashSet<String> {
     let mut set: HashSet<String> = EU27.iter().map(|x| x.to_string()).collect();
@@ -59,10 +73,14 @@ pub fn eu_laender(c: &Connection) -> HashSet<String> {
             if id.is_empty() {
                 continue;
             }
-            if r["eu"].as_bool().unwrap_or(false) {
-                set.insert(id);
-            } else if !r["eu"].is_null() {
-                set.remove(&id);
+            match eu_flag(&r["eu"]) {
+                Some(true) => {
+                    set.insert(id);
+                }
+                Some(false) => {
+                    set.remove(&id);
+                }
+                None => {}
             }
         }
     }
@@ -123,6 +141,9 @@ pub fn pruefen(row: &Value) -> Result<Value, String> {
     if name.chars().count() > 120 {
         return Err("Name: höchstens 120 Zeichen".into());
     }
+    if norm(&name).is_empty() {
+        return Err("Name: mindestens ein Buchstabe oder eine Ziffer".into());
+    }
     let mut o = row.as_object().cloned().unwrap_or_default();
     o.retain(|k, _| !k.starts_with('_'));
     o.insert("name".into(), json!(name));
@@ -180,6 +201,9 @@ pub fn artikel_je_marke(c: &Connection) -> HashMap<String, (i64, i64)> {
     if let Ok(mut st) = c.prepare("SELECT brand, COUNT(*), COALESCE(SUM(active), 0) FROM articles GROUP BY brand") {
         if let Ok(rows) = st.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?, r.get::<_, i64>(2)?))) {
             for (b, n, a) in rows.flatten() {
+                if norm(&b).is_empty() {
+                    continue;   // Artikel ohne Marke gehören zu keiner Marke
+                }
                 let e = m.entry(norm(&b)).or_default();
                 e.0 += n;
                 e.1 += a;
@@ -289,6 +313,9 @@ pub fn ensure_alle(c: &Connection) -> usize {
 /// Webshop-Filter, Statistikfilter, Bonus-Systeme und die Standard-Marke für neue Artikel
 fn umbenennen(c: &Connection, alt: &str, neu: &str) -> Result<(), String> {
     let na = norm(alt);
+    if na.is_empty() {
+        return Ok(());   // Zeile ohne verwertbaren alten Namen (Altbestand): es gibt keine Verweise, die mitzuziehen wären – Artikel ohne Marke bleiben ohne Marke
+    }
     let gleich = |x: &str| norm(x) == na;
     let now = db::now();
     // Artikel (auch Schreibweisen wie „Marke®“) – updated_at, damit der Filialabgleich die Änderung bekommt
@@ -374,6 +401,18 @@ fn umbenennen(c: &Connection, alt: &str, neu: &str) -> Result<(), String> {
             stamm::write_rows(c, kind, &rows)?;
         }
     }
+    // gespeicherte Analyse-Vorlagen (Filter auf eine Marke)
+    let mut vorl = stamm::list(c, "analysevorlage")?;
+    let mut vch = false;
+    for r in vorl.iter_mut() {
+        if r["params"]["filter"]["marke"].as_str().map(gleich).unwrap_or(false) {
+            r["params"]["filter"]["marke"] = json!(neu);
+            vch = true;
+        }
+    }
+    if vch {
+        stamm::write_rows(c, "analysevorlage", &vorl)?;
+    }
     let mut bonus = stamm::list(c, "bonussystem")?;
     let mut ch = false;
     for r in bonus.iter_mut() {
@@ -402,7 +441,9 @@ pub fn save(c: &Connection, row: &Value, by: &str) -> Result<Value, String> {
     let alle = stamm::list(c, KIND)?;
     let id_in = s(&row["id"]);
     let alt = if id_in.is_empty() { None } else { alle.iter().find(|x| s(&x["id"]).eq_ignore_ascii_case(&id_in)) };
-    if let Some(d) = alle.iter().find(|x| norm(&s(&x["name"])) == norm(&name) && !s(&x["id"]).eq_ignore_ascii_case(&id_in)) {
+    // Dubletten aus der Zeit der generischen Tabelle („Salomon“ und „SALOMON®“) lassen sich weiter speichern, solange der Name gleich bleibt
+    let unveraendert = alt.map(|a| norm(&s(&a["name"])) == norm(&name)).unwrap_or(false);
+    if let Some(d) = alle.iter().find(|x| !unveraendert && norm(&s(&x["name"])) == norm(&name) && !s(&x["id"]).eq_ignore_ascii_case(&id_in)) {
         return Err(format!("Die Marke „{}“ gibt es schon", s(&d["name"])));
     }
     if !id_in.is_empty() && alt.is_none() {
@@ -440,11 +481,13 @@ pub fn delete(c: &Connection, id: &str, by: &str) -> Result<(), String> {
     let r = stamm::list(c, KIND)?.into_iter().find(|x| s(&x["id"]).eq_ignore_ascii_case(id.trim())).ok_or("Diese Marke gibt es nicht mehr")?;
     let name = s(&r["name"]);
     let n = artikel_je_marke(c).get(&norm(&name)).copied().unwrap_or((0, 0));
-    if n.0 > 0 {
-        return Err(format!("Zur Marke „{name}“ gehören {} Artikel – sie lässt sich nicht löschen, aber deaktivieren (Schalter „Aktiv“)", n.0));
+    let teilt = stamm::list(c, KIND)?.iter().any(|x| !s(&x["id"]).eq_ignore_ascii_case(&s(&r["id"])) && norm(&s(&x["name"])) == norm(&name));   // gleiche Vergleichsform bei einer anderen Zeile: die Artikel gehören dieser mit
+    if n.0 > 0 && !teilt {
+        return Err(format!("Zur Marke „{name}“ gehören {} Artikel (davon {} aktiv) – sie lässt sich nicht löschen, aber deaktivieren (Schalter „Aktiv“)", n.0, n.1));
     }
     let tx = c.unchecked_transaction().map_err(|e| e.to_string())?;
     tx.execute("DELETE FROM stamm WHERE kind = ?1 AND id = ?2", params![KIND, s(&r["id"])]).map_err(|e| e.to_string())?;
+    let _ = tx.execute("DELETE FROM supplier_brands WHERE brand_id = ?1", [s(&r["id"])]);   // Zuordnungen zu Lieferanten entfallen mit der Marke
     db::audit_append(&tx, "marke.deleted", &json!({ "marke": name, "durch": by })).map_err(|e| e.to_string())?;
     tx.commit().map_err(|e| e.to_string())
 }
@@ -556,7 +599,7 @@ mod tests {
         let l = list(&c).unwrap();
         let nw = l.iter().find(|r| r["name"] == "Nordwand").unwrap();
         assert_eq!(nw["_artikel"], 2);
-        assert!(delete(&c, "mk-nordwand", "T").unwrap_err().contains("2 Artikel"));
+        assert!(delete(&c, "mk-nordwand", "T").unwrap_err().contains("2 Artikel (davon 2 aktiv)"));
         delete(&c, "mk-neu", "T").unwrap();
         assert_eq!(stamm::list(&c, KIND).unwrap().len(), 2);
         // auf einer Filialkasse wird nichts angelegt, nichts geändert
@@ -616,6 +659,48 @@ mod tests {
         let t = s.to_string();
         assert!(!t.contains("L-001") && !t.contains("geheim"), "keine internen Angaben: {t}");
         assert!(s.get("eu_verantwortlicher").is_none());
+    }
+
+    #[test]
+    fn altzeilen_ohne_namen_und_dubletten_richten_keinen_schaden_an() {
+        let c = db();
+        artikel(&c, "A1", "");
+        artikel(&c, "A2", "Talwind");
+        stamm::write_rows(&c, KIND, &[json!({ "id": "MAR3", "name": "" }), json!({ "id": "SAL", "name": "Salomon" }), json!({ "id": "SAL2", "name": "SALOMON®" })]).unwrap();
+        artikel(&c, "A3", "Salomon");
+        let l = list(&c).unwrap();
+        assert_eq!(l.iter().find(|r| r["id"] == "MAR3").unwrap()["_artikel"], 0, "Artikel ohne Marke zählen zu keiner Marke");
+        // Zeile ohne Namen bekommt einen Namen: Artikel ohne Marke bleiben ohne Marke
+        save(&c, &json!({ "id": "MAR3", "name": "Neu benannt" }), "T").unwrap();
+        let b: String = c.query_row("SELECT brand FROM articles WHERE id = 'A1'", [], |r| r.get(0)).unwrap();
+        assert_eq!(b, "");
+        // ein Name ohne Buchstaben und Ziffern wird abgelehnt
+        assert!(save(&c, &json!({ "name": "®" }), "T").unwrap_err().contains("Buchstabe"));
+        // Dubletten aus der alten Tabelle lassen sich weiter speichern (Name gleich) und löschen
+        save(&c, &json!({ "id": "SAL2", "name": "SALOMON®", "hersteller": { "name": "X" } }), "T").unwrap();
+        assert!(save(&c, &json!({ "id": "SAL2", "name": "Talwind" }), "T").is_ok());
+        assert!(delete(&c, "SAL", "T").is_ok(), "die andere Zeile mit gleicher Vergleichsform trägt die Artikel weiter");
+        // „SAL2“ heißt jetzt Talwind und trägt Artikel
+        assert!(delete(&c, "SAL2", "T").unwrap_err().contains("Artikel"));
+    }
+
+    #[test]
+    fn eu_kennzeichen_tolerant_gelesen() {
+        let c = db();
+        stamm::write_rows(&c, "land", &[json!({ "id": "AT", "eu": "ja" }), json!({ "id": "DE", "eu": 1 }), json!({ "id": "FR", "eu": "nein" }), json!({ "id": "CH", "eu": "true" }), json!({ "id": "IT", "eu": "vielleicht" })]).unwrap();
+        let eu = eu_laender(&c);
+        assert!(eu.contains("AT") && eu.contains("DE") && !eu.contains("FR") && eu.contains("CH") && eu.contains("IT"), "{eu:?}");
+    }
+
+    #[test]
+    fn analysevorlagen_ziehen_beim_umbenennen_mit() {
+        let c = db();
+        artikel(&c, "A1", "Nordwand");
+        ensure_alle(&c);
+        stamm::write_rows(&c, "analysevorlage", &[json!({ "id": "V1", "name": "Nordwand-Monate", "params": { "filter": { "marke": "Nordwand", "warengruppe": "jacken" } } })]).unwrap();
+        save(&c, &json!({ "id": "mk-nordwand", "name": "Nordwand Alpin" }), "T").unwrap();
+        let v = stamm::list(&c, "analysevorlage").unwrap();
+        assert_eq!((v[0]["params"]["filter"]["marke"].as_str(), v[0]["params"]["filter"]["warengruppe"].as_str()), (Some("Nordwand Alpin"), Some("jacken")));
     }
 
     #[test]

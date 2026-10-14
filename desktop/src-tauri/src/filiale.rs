@@ -404,6 +404,8 @@ pub fn rekey_own(c: &Connection, alt: &str, neu: &str) -> Result<(), String> {
         if ch {
             stamm::save(c, "filialgruppe", &gr)?;
         }
+        // Filial-Kundennummern bei den Lieferanten ziehen mit
+        crate::lieferant::filiale_umbenannt(c, &alt, &neu)?;
     }
     Ok(())
 }
@@ -563,6 +565,7 @@ pub fn delete(c: &Connection, id: &str, by: &str) -> Result<(), String> {
     tx.execute("DELETE FROM stores WHERE id = ?1", [&id]).map_err(|e| e.to_string())?;
     tx.execute("DELETE FROM store_stock WHERE store = ?1", [&id]).map_err(|e| e.to_string())?;
     tx.execute("DELETE FROM store_points WHERE store = ?1", [&id]).map_err(|e| e.to_string())?;
+    crate::lieferant::filiale_entfernt(&tx, &id)?;
     // aus den Filialgruppen entfernen
     let mut gr = stamm::list(&tx, "filialgruppe")?;
     let mut ch = false;

@@ -108,20 +108,6 @@ function renderGsList() {
     : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('gift')}</div><h3>Keine Gutscheine</h3><p>Gutscheine verkaufen Sie an der Kasse („Gutschein verkaufen“).</p></div>`;
 }
 
-/* ── Lieferanten ── */
-registerPage('lieferanten', {title: 'Lieferanten', sub: () => `${SUPPLIERS.length} Lieferanten`, render: renderLieferanten});
-async function renderLieferanten() {
-  const v = $('#view-lieferanten');
-  if (!DESKTOP) { v.innerHTML = desktopEmpty('building', 'Lieferanten'); return; }
-  if (!EK.loaded) { v.innerHTML = `<div class="cv">${loadingCard('Lade Lieferanten')}</div>`; await loadPurchasing(); }
-  const cfs = cfDefs('lieferant').slice(0, 3);
-  const openPos = id => EK.pos.filter(p => p.supplier_id === id && ['bestellt', 'teilgeliefert'].includes(p.status));
-  v.innerHTML = `<div class="cv">${pageHead('Lieferanten', 'Kontakte, Lieferzeiten, Sortiment und offene Bestellungen', `<button class="btn btn-secondary" data-lf="po">${ic('truck', 'i-sm')}Neue Bestellung</button><button class="btn btn-primary" data-lf="neu">${ic('plus', 'i-sm')}Neuer Lieferant</button>`)}
-    ${kpiCards([[num(SUPPLIERS.length), 'Lieferanten'], [num(EK.pos.filter(p => ['bestellt', 'teilgeliefert'].includes(p.status)).length), 'offene Bestellungen'], [eur0(EK.pos.filter(p => ['bestellt', 'teilgeliefert'].includes(p.status)).reduce((a, p) => a + p.value, 0) / 100), 'offener Bestellwert (EK)'], [num(ART.filter(a => !a.supplierId).length), 'Artikel ohne Lieferant', ART.some(a => !a.supplierId) ? 'warn' : '']])}
-    <div class="card">${SUPPLIERS.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Lieferant</th><th>Kontakt</th><th>Kundennr.</th><th class="r">Lieferzeit</th><th class="r">Artikel</th><th class="r">offen</th>${cfs.map(d => `<th>${esc(d.label)}</th>`).join('')}</tr></thead><tbody>${SUPPLIERS.map(s => `<tr data-lfs="${esc(s.id)}" style="cursor:pointer"><td style="padding-left:16px"><b>${esc(s.name)}</b><div class="muted" style="font-size:11.5px">${esc(s.id)}</div></td><td>${esc(s.contact || '')}<div class="muted" style="font-size:12px">${esc([s.email, s.phone].filter(Boolean).join(' · '))}</div></td><td>${esc(s.customer_no || '–')}</td><td class="r num">${num(s.lead_days || 0)} T</td><td class="r num">${num(ART.filter(a => a.supplierId === s.id).length)}</td><td class="r num">${num(openPos(s.id).length)}</td>${cfs.map(d => `<td>${esc(cfShow(d, CF.sup[s.id]?.[d.key]))}</td>`).join('')}</tr>`).join('')}</tbody></table>`
-      : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('building')}</div><h3>Noch keine Lieferanten</h3><p>Lieferanten im Artikel hinterlegen – dann funktionieren Bestellvorschlag und KI-Nachbestellung je Lieferant.</p></div>`}</div></div>`;
-}
-
 /* ── Wareneingang ── */
 const WE = {log: []};
 registerPage('wareneingang', {title: 'Wareneingang', sub: () => 'Lieferungen einbuchen', render: renderWareneingang});
@@ -318,7 +304,6 @@ function bindPages() {
   on('kassenbuch', e => { const b = e.target.closest('[data-kb]'); if (b) return ({move: openCashBook, x: xReport, z: openClosing})[b.dataset.kb](); const z = e.target.closest('[data-kbz]'); if (z) showClosing($('#kbBody')._z[+z.dataset.kbz]); });
   on('gutscheine', e => { if (e.target.closest('[data-gs="neu"]')) { go('kasse'); return setTimeout(openVoucherSale, 120); } const s = e.target.closest('[data-gssale]'); if (s) openSaleView(s.dataset.gssale); });
   $('#view-gutscheine').addEventListener('input', e => { if (e.target.id === 'gsQ') { GS.q = e.target.value; renderGsList(); } });
-  on('lieferanten', e => { const b = e.target.closest('[data-lf]'); if (b) return b.dataset.lf === 'neu' ? openSupplier(null) : (go('einkauf'), setTimeout(() => openPO(null), 150)); const r = e.target.closest('[data-lfs]'); if (r) openSupplier(SUPPLIERS.find(s => s.id === r.dataset.lfs)); });
   on('wareneingang', async e => {
     const p = e.target.closest('[data-wepo]');
     if (p) { const head = EK.pos.find(x => x.id === +p.dataset.wepo); try { await needPerm('einkauf', 'Wareneingang'); const lines = await invoke('po_lines', {id: head.id}); openReceive(head, lines); } catch (err) { if (err?.message !== 'abgebrochen') toast('Nicht möglich', {t2: String(err), type: 'warn'}); } return; }

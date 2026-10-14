@@ -7,7 +7,9 @@ function bonusLineOk(sys, l) {
   const a = l.art, wg = stRows('warengruppe').find(r => r.id === a.cat);
   const ab = wg && stRows('abteilung').find(r => r.id === wg.abteilung), ha = ab && stRows('hauptabteilung').find(r => r.id === ab.parent), be = ha && stRows('bereich').find(r => r.id === ha.parent);
   const val = {marke: a.brand, warengruppe: a.cat, abteilung: ab?.id, hauptabteilung: ha?.id, bereich: be?.id};
-  const hit = f => String(val[f.typ] ?? '') === String(f.wert);
+  // Filter „Marke“: früher wurde die Kennung der Marke gespeichert – die Kennung wird über die Markentabelle in den Namen aufgelöst
+  const wert = f => f.typ === 'marke' ? (stRows('marke').find(r => r.id === f.wert)?.name ?? f.wert) : f.wert;
+  const hit = f => f.typ === 'marke' ? mkNorm(val.marke) === mkNorm(wert(f)) : String(val[f.typ] ?? '') === String(f.wert);
   const incl = (sys.filter || []).filter(f => f.einschl), excl = (sys.filter || []).filter(f => !f.einschl);
   if (incl.length && !incl.some(hit)) return false;
   return !excl.some(hit);

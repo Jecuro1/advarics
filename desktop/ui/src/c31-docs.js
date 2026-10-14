@@ -170,6 +170,7 @@ async function openDoc(kind, id, preset = {}) {
   if (!d && kind === 'reservierung') { st.due ||= plusDays(3); st.data.quelle ||= 'Geschäft'; }
   if (!d && kind === 'warenkorb') st.due ||= plusDays(7);
   if (!d && kind === 'angebot') st.due ||= plusDays(30);
+  if (!d && kind === 'er' && st.partner) lfEiVorgabe(st);
   if (!d && kind === 'auswahl') st.due ||= plusDays(3);
   if (!d && kind === 'rechnung') { st.data.zahlungsziel ??= 14; st.data.bestand ??= true; }
   const edit = () => !st.id || (DOC_EDIT[kind] || []).includes(st.status);
@@ -260,7 +261,7 @@ async function openDoc(kind, id, preset = {}) {
   box.addEventListener('keydown', e => {
     if (e.target.matches('[data-dlq]') && e.key === 'Enter') { e.preventDefault(); const x = findEan(e.target.value); if (x) { collect(); addL(x.a, x.v); } else { const b = $('[data-dladd]', box); b?.click(); } }
   });
-  box.addEventListener('change', async e => { if (e.target.matches('[data-dp="sup"]')) { collect(); await loadOrders(); render(); } });
+  box.addEventListener('change', async e => { if (e.target.matches('[data-dp="sup"]')) { collect(); if (kind === 'er' && !st.id) lfEiVorgabe(st); await loadOrders(); render(); } });
   const addL = (a, v) => { const L = st.data.lines; const ex = L.find(l => l.ean === v.ean); if (ex) ex.qty = String((+ex.qty || 0) + 1); else L.push(newLine(K, a, v)); st._q = ''; st._focusQ = true; render(); };
   box.addEventListener('click', async e => {
     const t = e.target;
@@ -316,11 +317,11 @@ async function docConvert(st, to) {
 
 /* ── A4-Druck und E-Mail ── */
 function docHTML(st) {
-  const K = DK[st.kind], c = st.partner ? custById(st.partner) : null, sup = K.partner === 'lieferant' ? SUPPLIERS.find(s => s.id === st.partner) : null;
-  const rcpt = sup ? [sup.name, sup.contact ? 'z. H. ' + sup.contact : '', sup.email].filter(Boolean).map(esc).join('<br>') : c ? custAddr(c) : esc(st.partner_name || '');
+  const K = DK[st.kind], c = st.partner ? custById(st.partner) : null, sup = K.partner === 'lieferant' ? (SUPPLIERS.find(s => s.id === st.partner) || SUPPLIERS_ALL.find(s => s.id === st.partner)) : null;
+  const rcpt = sup ? lfEmpfaenger(sup, ['er', 'zahlung'].includes(st.kind) ? 'rechn' : 'haupt').map(esc).join('<br>') : c ? custAddr(c) : esc(st.partner_name || '');
   const L = st.data.lines || [], vk = K.price === 'vk';
   const title = st.kind === 'rechnung' && st.data.mahnstufe && st.status !== 'bezahlt' && st._mahnung ? `${st.data.mahnstufe}. Mahnung` : K.print || K.one;
-  const meta = [[`${K.one}-Nr.`, st.no], ['Datum', dDate(st.date)], ...(c ? [['Kundennummer', c.id]] : []), ...(st.ref ? [['Bezug', st.ref]] : []), ...(st.due ? [[st.kind === 'angebot' ? 'Gültig bis' : st.kind === 'reservierung' ? 'Abholen bis' : st.kind === 'auswahl' ? 'Rückgabe bis' : 'Fällig', dDate(st.due)]] : [])];
+  const meta = [[`${K.one}-Nr.`, st.no], ['Datum', dDate(st.date)], ...(c ? [['Kundennummer', c.id]] : []), ...(sup ? [...(sup.nr ? [['Lieferanten-Nr.', sup.nr]] : []), ...(lfKundenNr(sup) ? [['Unsere Kundennr.', lfKundenNr(sup)]] : []), ...(['er', 'zahlung'].includes(st.kind) && sup.profile?.uid ? [['USt-IdNr. Lieferant', sup.profile.uid]] : [])] : []), ...(st.ref ? [['Bezug', st.ref]] : []), ...(st.due ? [[st.kind === 'angebot' ? 'Gültig bis' : st.kind === 'reservierung' ? 'Abholen bis' : st.kind === 'auswahl' ? 'Rückgabe bis' : 'Fällig', dDate(st.due)]] : [])];
   const rows = L.map((l, i) => { const g = Math.round((+l.qty || 0) * (+l.price || 0)), net = Math.round(g * (1 - (+l.disc || 0) / 100)); return `<tr><td>${i + 1}</td><td><b>${esc(l.name)}</b>${l.ean ? `<br><span class="muted">EAN ${esc(l.ean)}${l.sku ? ' · Art.-Nr. ' + esc(l.sku) : ''}</span>` : ''}${l.disc ? `<br><span class="muted">Rabatt ${l.disc} %</span>` : ''}</td><td class="r">${l.qty}</td>${K.price && st.kind !== 'lieferschein' ? `<td class="r">${num((l.price || 0) / 100, 2)}</td>${vk ? `<td class="r">${l.vat ?? 20} %</td>` : ''}<td class="r">${num(net / 100, 2)}</td>` : ''}</tr>`; }).join('');
   const byVat = {}; L.forEach(l => { const net = Math.round((+l.qty || 0) * (+l.price || 0) * (1 - (+l.disc || 0) / 100)); byVat[l.vat ?? 20] = (byVat[l.vat ?? 20] || 0) + net; });
   const priced = K.price && st.kind !== 'lieferschein';

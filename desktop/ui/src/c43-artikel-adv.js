@@ -162,7 +162,7 @@ async function aeZlief(ctx, id) {
   const o = await aeForm(r ? 'Zusätzl. Lieferanten' : 'Zusätzl. Lieferanten [-1]', [{k: 'lid', l: 'Lieferant', t: 'select', o: SUPPLIERS.map(s => [s.id, s.name]), req: true, w: 'full'}, {k: 'ext_art', l: 'Ext. Art.-Nr.'}, {k: 'ext_farb', l: 'Ext. Farb-Nr.'}], r ? {...r} : {}, {del: !!r});
   if (!o) return;
   if (o._del) ctx.st.d.zusatz_lieferanten = l.filter(x => x.id !== id);
-  else { const s = SUPPLIERS.find(x => x.id === o.lid); const row = {id: r?.id || aeUid(), lid: o.lid, lnr: s?.customer_no || s?.id || o.lid, lname: s?.name || o.lid, ext_art: o.ext_art || '', ext_farb: o.ext_farb || ''}; if (r) Object.assign(r, row); else l.push(row); }
+  else { const s = SUPPLIERS.find(x => x.id === o.lid); const row = {id: r?.id || aeUid(), lid: o.lid, lnr: s?.nr != null ? String(s.nr) : s?.id || o.lid, lname: s?.name || o.lid, ext_art: o.ext_art || '', ext_farb: o.ext_farb || ''}; if (r) Object.assign(r, row); else l.push(row); }
   ctx.setTab('zlief');
 }
 async function aeMerk(ctx, id) {

@@ -341,7 +341,7 @@ DOC_CLICK.reklamation = async (e, st, h) => {
   await loadSuppliers();
   if (st.status !== 'lieferant') { try { await invoke('doc_action', {id: st.id, action: 'lieferant', payload: {}, user: S.user.name}); } catch { /* */ } }
   closeLayer(h.el); docRefresh();
-  openDoc('lretoure', null, {partner: sid || null, partner_name: SUPPLIERS.find(s => s.id === sid)?.name || '', ref: st.no, data: {grund: st.data.grund || 'Defekt / Mangel', notiz: `Reklamation ${st.no}: ${st.data.mangel || ''}`, lines: [{...l, qty: l.qty || 1, price: x?.a.cost != null ? Math.round(x.a.cost * 100) : 0}]}, focusSearch: false});
+  openDoc('lretoure', null, {partner: sid || null, partner_name: SUPPLIERS.find(s => s.id === sid)?.name || '', ref: SUPPLIERS.find(s => s.id === sid)?.profile?.rma_pflicht ? '' : st.no, data: {grund: st.data.grund || 'Defekt / Mangel', notiz: `Reklamation ${st.no}: ${st.data.mangel || ''}`, lines: [{...l, qty: l.qty || 1, price: x?.a.cost != null ? Math.round(x.a.cost * 100) : 0}]}, focusSearch: false});
 };
 docPage('lretouren', 'lretoure', {title: 'Retouren', newLabel: 'Neue Lieferantenretoure', tabs: [['offen', 'Offen', s => ['erfasst', 'versendet'].includes(s)], ['erledigt', 'Erledigt', s => ['gutgeschrieben', 'abgelehnt', 'storniert'].includes(s)], ['alle', 'Alle', () => true]],
   cols: [{l: 'Grund', f: d => esc(d.data.grund || '')}, {l: 'Stück', r: true, f: d => num((d.data.lines || []).reduce((s, l) => s + (+l.qty || 0), 0))}, {l: 'Gutschrift', r: true, f: d => d.data.gutschrift ? cEur(d.data.gutschrift.betrag) : '–'}],
@@ -506,16 +506,6 @@ async function bonusUmlegen(id) {
     await invoke('save_text', {name: `Bonus_${r.s.name.replace(/\W+/g, '-')}_${LB.year}.csv`, content: csv, title: 'Bonusumlage exportieren'});
     toast('Bonus umgelegt', {t2: `${cEur(r.bonus)} · ${wg.length} Warengruppen`, type: 'pos', icon: 'percent'}); renderBonus();
   } catch (e) { toast('Nicht möglich', {t2: String(e), type: 'warn'}); }
-}
-
-/* ── Lieferant: Bankdaten im Formular ── */
-{
-  const _os = openSupplier;
-  openSupplier = function (s) {
-    _os(s);
-    const g = $('.ed-grid', $$('.layer').pop() || document); if (!g || $('[data-sf="iban"]', g)) return;
-    g.insertAdjacentHTML('beforeend', `<label class="field"><span>IBAN (für SEPA-Zahlungen)</span><input class="input mono" data-sf="iban" value="${esc(s?.iban || '')}"></label><label class="field"><span>BIC</span><input class="input mono" data-sf="bic" value="${esc(s?.bic || '')}"></label>`);
-  };
 }
 
 function bindEinkauf2() {

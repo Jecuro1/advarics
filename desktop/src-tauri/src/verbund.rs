@@ -360,7 +360,7 @@ pub fn handle(c: &Connection, method: &str, path: &str, key: &str, body: &Value,
                     .collect();
                 r
             };
-            let suppliers = crate::purchasing::suppliers(c).map_err(|e| e5(e.to_string()))?;
+            let (suppliers, supplier_brands, supplier_ids) = crate::lieferant::fuer_abgleich(c, &store).map_err(e5)?;
             let umsatz = overview(c).map_err(e5)?["stores"].clone();
             let mut stores_list = umsatz.clone();
             if let Some(a) = stores_list.as_array_mut() {
@@ -370,7 +370,7 @@ pub fn handle(c: &Connection, method: &str, path: &str, key: &str, body: &Value,
             }
             // Die Filialkasse sieht von den anderen Filialen nur Umsatzzahlen und Programmversion – Bank-, Steuer- und Firmenangaben aus „info“ und die IP-Adressen bleiben in der Zentrale
             let umsatz_pub = umsatz_fuer_filiale(&umsatz);
-            Ok(json!({ "now": db::now(), "articles": arts, "inactive": gone, "customers": custs, "promotions": promos, "suppliers": suppliers,
+            Ok(json!({ "now": db::now(), "articles": arts, "inactive": gone, "customers": custs, "promotions": promos, "suppliers": suppliers, "supplier_brands": supplier_brands, "supplier_ids": supplier_ids,
                 "stores": stores_list, "stock": stock_matrix(c).map_err(e5)?, "transfers": transfers(c, Some(&store)).map_err(|e| e5(e.to_string()))?,
                 "firma": { "name": s(c, "firma.name") }, "umsatz": umsatz_pub,
                 "einstellungen": SHARED.iter().filter_map(|k| db::setting_get(c, k).map(|v| (k.to_string(), v))).collect::<serde_json::Map<String, Value>>(),
@@ -525,11 +525,8 @@ pub fn sync_once(c: &Connection) -> Result<Value, String> {
     // die eigene Filial-Zeile (Name, Adresse, UID, Bank …) gilt ab jetzt für Belege, Bon und Anzeige dieser Kasse
     crate::filiale::apply_own(&tx)?;
     if let Some(sp) = p["suppliers"].as_array() {
-        for x in sp {
-            if let Ok(su) = serde_json::from_value::<crate::purchasing::Supplier>(x.clone()) {
-                let _ = crate::purchasing::supplier_save(&tx, &su);
-            }
-        }
+        // Lieferanten der Zentrale: Fehler eines Lieferanten brechen den Abgleich nicht ab
+        let _ = crate::lieferant::uebernehmen(&tx, sp, p["supplier_brands"].as_array(), p["supplier_ids"].as_array());
     }
     if let Some(m) = p["stock"].as_object() {
         let own = own_store(c);

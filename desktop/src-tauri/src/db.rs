@@ -569,6 +569,41 @@ const MIGRATIONS: &[&str] = &[
     UPDATE users SET nr = 1000 + (SELECT COUNT(*) FROM users u2 WHERE u2.rowid <= users.rowid) WHERE nr IS NULL;
     CREATE UNIQUE INDEX users_nr ON users(nr);
     "#,
+    // 13 · Lieferanten: Nummer, Land, Profil (Einstellungen, Adressen, Filial-Kundennummern), Marken je Lieferant, Dokumente
+    r#"
+    ALTER TABLE suppliers ADD COLUMN nr INTEGER;
+    ALTER TABLE suppliers ADD COLUMN country TEXT NOT NULL DEFAULT 'AT';
+    ALTER TABLE suppliers ADD COLUMN profile TEXT NOT NULL DEFAULT '{}';
+    UPDATE suppliers SET nr = (SELECT COUNT(*) FROM suppliers s2 WHERE s2.rowid <= suppliers.rowid) WHERE nr IS NULL;
+    CREATE UNIQUE INDEX suppliers_nr ON suppliers(nr);
+    CREATE TABLE supplier_brands (
+        supplier_id TEXT NOT NULL,
+        brand_id    TEXT NOT NULL,
+        ext_name    TEXT NOT NULL DEFAULT '',
+        gln_src     TEXT NOT NULL DEFAULT '',
+        gln         TEXT NOT NULL DEFAULT '',
+        edi_nr      TEXT NOT NULL DEFAULT '',
+        edi_name    TEXT NOT NULL DEFAULT '',
+        comment     TEXT NOT NULL DEFAULT '',
+        PRIMARY KEY (supplier_id, brand_id)
+    );
+    CREATE INDEX supplier_brands_brand ON supplier_brands(brand_id);
+    CREATE TABLE supplier_files (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        supplier_id TEXT NOT NULL,
+        name        TEXT NOT NULL,
+        mime        TEXT NOT NULL DEFAULT '',
+        size        INTEGER NOT NULL DEFAULT 0,
+        descr       TEXT NOT NULL DEFAULT '',
+        uploaded_at TEXT NOT NULL,
+        user_id     TEXT NOT NULL DEFAULT '',
+        user_nr     TEXT NOT NULL DEFAULT '',
+        user_name   TEXT NOT NULL DEFAULT '',
+        sha256      TEXT NOT NULL DEFAULT '',
+        data        BLOB NOT NULL
+    );
+    CREATE INDEX supplier_files_sup ON supplier_files(supplier_id);
+    "#,
 ];
 
 pub fn schema_version() -> i64 {

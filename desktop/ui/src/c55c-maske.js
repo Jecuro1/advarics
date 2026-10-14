@@ -19,11 +19,16 @@ const LAENDER_BASIS = [['AT', 'Österreich', 1], ['BE', 'Belgien', 1], ['BG', 'B
   ['CN', 'China', 0], ['HK', 'Hongkong', 0], ['TW', 'Taiwan', 0], ['JP', 'Japan', 0], ['KR', 'Südkorea', 0], ['VN', 'Vietnam', 0], ['TH', 'Thailand', 0], ['ID', 'Indonesien', 0], ['IN', 'Indien', 0], ['BD', 'Bangladesch', 0], ['KH', 'Kambodscha', 0], ['PK', 'Pakistan', 0], ['LK', 'Sri Lanka', 0],
   ['MY', 'Malaysia', 0], ['PH', 'Philippinen', 0], ['SG', 'Singapur', 0], ['TR', 'Türkei', 0], ['IL', 'Israel', 0], ['AE', 'Vereinigte Arabische Emirate', 0], ['RS', 'Serbien', 0], ['BA', 'Bosnien und Herzegowina', 0], ['ME', 'Montenegro', 0], ['MK', 'Nordmazedonien', 0], ['AL', 'Albanien', 0],
   ['UA', 'Ukraine', 0], ['MD', 'Moldau', 0], ['BY', 'Belarus', 0], ['RU', 'Russland', 0], ['MA', 'Marokko', 0], ['TN', 'Tunesien', 0], ['EG', 'Ägypten', 0], ['ZA', 'Südafrika', 0], ['AU', 'Australien', 0], ['NZ', 'Neuseeland', 0]];
+/** EU-Kennzeichen einer Länder-Zeile wie im Backend (marke.rs eu_flag): Bool, „ja/true/1“, „nein/false/0“ oder Zahl; sonst undefined */
+const euFlag = v => typeof v === 'boolean' ? v : typeof v === 'number' ? v !== 0 : typeof v === 'string' ? (['true', 'ja', '1', 'yes', 'wahr'].includes(v.trim().toLowerCase()) ? true : ['false', 'nein', '0', 'no', 'falsch'].includes(v.trim().toLowerCase()) ? false : undefined) : undefined;
 /** Alle Länder als {id (ISO-2), name, eu}; die Länder-Tabelle ergänzt und überschreibt Name und EU-Kennzeichen */
+let LAND_CACHE = {src: null, n: -1, list: null};
 function landListe() {
+  const src = stRows('land'); if (LAND_CACHE.src === src && LAND_CACHE.n === src.length && LAND_CACHE.list) return LAND_CACHE.list;
   const m = new Map(LAENDER_BASIS.map(([id, name, eu]) => [id, {id, name, eu: !!eu}]));
-  for (const r of stRows('land')) { const id = String(r.id || '').toUpperCase(); if (!id) continue; const p = m.get(id); m.set(id, {id, name: r.name || p?.name || id, eu: r.eu == null ? !!p?.eu : !!r.eu}); }
-  return [...m.values()].sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  for (const r of stRows('land')) { const id = String(r.id || '').toUpperCase(); if (!id) continue; const p = m.get(id); m.set(id, {id, name: r.name || p?.name || id, eu: euFlag(r.eu) ?? !!p?.eu}); }
+  LAND_CACHE = {src, n: src.length, list: [...m.values()].sort((a, b) => a.name.localeCompare(b.name, 'de'))};
+  return LAND_CACHE.list;
 }
 const landName = id => { const x = String(id || '').toUpperCase(); return x ? (landListe().find(l => l.id === x)?.name || x) : ''; };
 const landEu = id => !!landListe().find(l => l.id === String(id || '').toUpperCase())?.eu;
@@ -101,7 +106,7 @@ function maskeNew(o) {
     if (!o.tabs().some(([k]) => k === st.tab)) st.tab = o.tabs()[0][0];
     const body = o.body();
     el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', `Übersicht: ${o.title}`)}${btn('refresh', 'sync', 'Aktualisieren', !can.refresh)}${btn('save', 'check', 'Sichern', lk || !st.dirty)}${btn('new', 'plus', 'Neu', !can.new)}${btn('undo', 'undo', 'Änderungen zurücknehmen', lk || !st.dirty)}${btn('del', 'trash', 'Löschen', !can.del)}${o.bar?.() || ''}
-      <span class="sp"></span>${st.id && st.ids.length > 1 ? `${btn('prev', 'chevron-left', 'Vorheriger Eintrag', pos <= 0, false)}<span class="ae-nr">${pos + 1}/${st.ids.length}</span>${btn('next', 'chevron-right', 'Nächster Eintrag', pos >= st.ids.length - 1, false)}` : ''}</div>
+      <span class="sp"></span>${st.id && st.ids.length > 1 ? `<span class="ae-nav">${btn('prev', 'chevron-left', 'Vorheriger Eintrag', pos <= 0, false)}<span class="ae-nr">${pos + 1}/${st.ids.length}</span>${btn('next', 'chevron-right', 'Nächster Eintrag', pos >= st.ids.length - 1, false)}</span>` : ''}</div>
       <div class="ae-tabsw"><div class="ed-tabs" role="tablist">${o.tabs().map(tab).join('')}</div></div>
       <div class="ae-body"><div id="edBody">${body.html}</div></div>`;
     el.addEventListener('input', e => { const t = e.target.closest('[data-mf]'); if (t && t.type !== 'color' && t.tagName !== 'SELECT') { K.set(t, el); K.fields(el); } });

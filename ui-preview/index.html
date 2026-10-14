@@ -1736,6 +1736,7 @@ button.ge-caret:hover{background:var(--surface-3);color:var(--text)}
 .fl-grid.fl-2{grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),520px))}
 .fl-grid.fl-3{grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))}
 .fl-stack{display:grid;gap:16px;align-content:start;min-width:0}
+.lf-allg>.lf-wide{grid-column:1/-1;max-width:none}.lf-zus{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px 18px;align-items:start}.lf-zus>*{min-width:0}
 .fl-colorrow{display:flex;align-items:center;gap:10px;min-height:38px}
 .fl-color{width:46px;height:34px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer}
 .fl-color.none{opacity:.45}
@@ -2180,7 +2181,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.42.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.43.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2319,7 +2320,6 @@ const NAV = [
   {label: 'Retourenmanagement', icon: 'undo', kids: [{label: 'Vorerfassung Reklamation', icon: 'edit', kids: [{id: 'reklamationen', label: 'Vorerfassung Reklamation', icon: 'edit'}, {id: 'reklamation-neu', label: 'Reklamation erfassen (erweitert)', icon: 'plus'}]}, {id: 'lretouren', label: 'Retouren', icon: 'undo'}, {id: 'retouren-protokoll', label: 'Protokoll Retourenmanagement', icon: 'history'}, {id: 'rueckgabegruende', label: 'Rückgabegrund', icon: 'list'}]},
   {label: 'Wareneingangs-Verteilung', icon: 'swap', kids: [{id: 'verteilung-konfig', label: 'Wareneingangs-Verteilungs-Konfiguration', icon: 'sliders'}, {id: 'disposition', label: 'Wareneingangs-Disposition', icon: 'list'}]},
   {id: 'lieferantenbonus', label: 'Umlage Lieferantenbonus', icon: 'percent'},
-  {id: 'lieferanten', label: 'Lieferanten', icon: 'building'},
   {g: 'Kunden'},
   {id: 'kunden', label: 'Kunden', icon: 'users'},
   {id: 'kundenerfassung', label: 'Kundenerfassung', icon: 'user-plus'},
@@ -2365,6 +2365,7 @@ const NAV = [
   {g: 'Stammdaten'},
   {label: 'Benutzer', icon: 'users', kids: [{id: 'benutzer', label: 'Benutzer', icon: 'user'}, {id: 'rollen', label: 'Rollen & Rechte', icon: 'shield'}, {id: 'st-benutzergruppe', label: 'Benutzergruppen', icon: 'users'}, {id: 'st-zugangsprofil', label: 'Zugangsprofil', icon: 'lock'}, {id: 'zeiterfassung', label: 'Zeiterfassung', icon: 'clock'}, {id: 'st-meldung', label: 'Zuordnung Meldungen', icon: 'bell'}]},
   {label: 'Filialen', icon: 'store', kids: [{id: 'st-filiale', label: 'Filialen', icon: 'store'}]},
+  {id: 'lieferanten', label: 'Lieferanten', icon: 'building'},
   {id: 'st-marke', label: 'Marken', icon: 'star'},
   {id: 'demo-marken', label: 'Marken-Demosortiment', icon: 'star'},
   {label: 'Warengruppen', icon: 'tag', kids: [{id: 'st-warengruppe', label: 'Warengruppen', icon: 'tag'}, {id: 'st-abteilung', label: 'Abteilungen', icon: 'layers'}, {id: 'st-hauptabteilung', label: 'Hauptabteilungen', icon: 'layers'}, {id: 'st-bereich', label: 'Bereiche', icon: 'layers'}, {id: 'st-hauptbereich', label: 'Hauptbereiche', icon: 'layers'}, {id: 'st-preislage', label: 'Preislagen', icon: 'tag'}, {label: 'FEDAS', icon: 'sync', kids: [{id: 'fedas-sync', label: 'FEDAS-Sync', icon: 'sync'}, {id: 'fedas-verbindung', label: 'Verbindung & Automatik', icon: 'link'}, {id: 'fedas-import', label: 'Datei-Import (CSV/JSON)', icon: 'download'}, {id: 'st-fedasklasse', label: 'FEDAS-Klassifikation', icon: 'list'}, {id: 'fedas-protokoll', label: 'Sync-Protokoll', icon: 'history'}]}]},
@@ -6227,13 +6228,14 @@ function testOps() {
 const SUPPLIERS = [];
 const EK = {tab: 'bestellungen', pos: [], sug: [], loaded: false};
 const PO_ST = {entwurf: ['Entwurf', ''], bestellt: ['Bestellt', 'info'], teilgeliefert: ['Teilgeliefert', 'warn'], geliefert: ['Geliefert', 'pos'], storniert: ['Storniert', 'neg']};
-const supName = id => SUPPLIERS.find(s => s.id === id)?.name || 'ohne Lieferant';
+const SUPPLIERS_ALL = [];   // alle Lieferanten, auch inaktive (Namen alter Belege)
+const supName = id => SUPPLIERS.find(s => s.id === id)?.name || SUPPLIERS_ALL.find(s => s.id === id)?.name || 'ohne Lieferant';
 const varById = vid => { for (const a of ART) { const v = a.variants.find(x => x.vid === vid); if (v) return {a, v}; } return null; };
 const colorName = c => COLORS[c]?.[0] || c;
 
 async function loadSuppliers() {
-  if (!DESKTOP) return;
-  try { const l = await invoke('suppliers_list'); SUPPLIERS.length = 0; SUPPLIERS.push(...l); } catch (e) { console.error(e); }
+  if (!DESKTOP) { lfPreviewSync(); return; }
+  try { const [l, alle] = await Promise.all([invoke('suppliers_list'), invoke('suppliers_all')]); SUPPLIERS.length = 0; SUPPLIERS.push(...l); SUPPLIERS_ALL.length = 0; SUPPLIERS_ALL.push(...alle); } catch (e) { console.error(e); }
 }
 async function loadPurchasing() {
   if (!DESKTOP) return;
@@ -6251,7 +6253,7 @@ async function renderEinkauf() {
       <button class="btn btn-primary" id="poNew">${ic('plus', 'i-sm')}Neue Bestellung</button></div>
     <div class="kpis"><div class="card"><b class="num">${num(open.length)}</b><span>offene Bestellungen</span></div><div class="card"><b>${eur0(open.reduce((s, p) => s + p.value, 0) / 100)}</b><span>offener Bestellwert (EK)</span></div>
       <div class="card"><b class="num">${num(drafts.length)}</b><span>Entwürfe</span></div><div class="card"><b class="num" style="color:${EK.sug.length ? 'var(--warn)' : 'inherit'}">${num(EK.sug.length)}</b><span>Varianten unter Mindestbestand</span></div><div class="card"><b class="num">${num(SUPPLIERS.length)}</b><span>Lieferanten</span></div></div>
-    <div class="cv-tools"><div class="seg" id="ekSeg">${[['bestellungen', 'Bestellungen'], ['vorschlag', `Bestellvorschlag${EK.sug.length ? ` (${EK.sug.length})` : ''}`], ['lieferanten', 'Lieferanten']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${EK.tab === k}">${l}</button>`).join('')}</div></div>
+    <div class="cv-tools"><div class="seg" id="ekSeg">${[['bestellungen', 'Bestellungen'], ['vorschlag', `Bestellvorschlag${EK.sug.length ? ` (${EK.sug.length})` : ''}`]].map(([k, l]) => `<button data-v="${k}" aria-pressed="${EK.tab === k}">${l}</button>`).join('')}</div></div>
     <div id="ekBody"></div></div>`;
   initSeg($('#ekSeg', v), b => { EK.tab = b.dataset.v; renderEkBody(); });
   renderEkBody();
@@ -6267,38 +6269,7 @@ function renderEkBody() {
       <div class="set-row"><div><div class="set-l">${esc(supName(sid))}</div><div class="set-h">${rows.length} Varianten · Vorschlag = Mindestbestand + Abverkauf der letzten 4 Wochen − Bestand − offene Bestellungen</div></div><div class="set-c"><button class="btn btn-primary btn-sm" data-sgo="${esc(sid)}" ${sid ? '' : 'disabled title="Lieferant im Artikel hinterlegen"'}>${ic('plus', 'i-sm')}Bestellung anlegen</button></div></div>
       <table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px;width:40px"></th><th>Artikel</th><th class="r">Bestand</th><th class="r">Min.</th><th class="r">offen bestellt</th><th class="r">verk. 4 Wo.</th><th class="r" style="padding-right:16px">Menge</th></tr></thead><tbody>${rows.map(r => `<tr><td style="padding-left:16px"><input type="checkbox" checked data-sv="${r.variant_id}"></td><td><b>${esc(r.name)}</b><div class="muted" style="font-size:12px">${esc(colorName(r.color))} · ${esc(r.size)}</div></td><td class="r num" style="color:${r.stock <= 0 ? 'var(--neg)' : 'inherit'}">${r.stock}</td><td class="r num">${r.min}</td><td class="r num">${r.open}</td><td class="r num">${r.sold28}</td><td class="r" style="padding-right:16px"><input class="input num" data-sq="${r.variant_id}" value="${r.qty}" inputmode="numeric" style="width:70px;height:32px;text-align:right"></td></tr>`).join('')}</tbody></table></div>`).join('')
       : `<div class="card"><div class="empty" style="padding:56px 20px"><div class="empty-icon" style="color:var(--pos)">${ic('check')}</div><h3>Kein Nachschub nötig</h3><p>Alle Varianten liegen über dem Mindestbestand (inkl. offener Bestellungen).</p></div></div>`;
-  } else {
-    b.innerHTML = `<div class="card"><table class="tbl art-tbl"><thead><tr><th style="padding-left:16px">Lieferant</th><th>Kontakt</th><th>Kundennr.</th><th class="r">Lieferzeit</th><th class="r">offene Bestellungen</th><th></th></tr></thead><tbody>${SUPPLIERS.map(s => `<tr data-sup="${esc(s.id)}"><td style="padding-left:16px"><b>${esc(s.name)}</b><div class="muted" style="font-size:12px">${esc(s.id)}${s.note ? ' · ' + esc(s.note) : ''}</div></td><td class="muted" style="font-size:12.5px">${esc(s.contact || '–')}${s.email ? `<br>${esc(s.email)}` : ''}${s.phone ? ` · ${esc(s.phone)}` : ''}</td><td>${esc(s.customer_no || '–')}</td><td class="r">${s.lead_days} Tage</td><td class="r num">${s.open_orders}</td><td class="r" style="padding-right:14px;color:var(--text-3)">${ic('chevron-right', 'i-sm')}</td></tr>`).join('')}
-      <tr data-sup=""><td colspan="6" style="padding-left:16px;color:var(--accent);font-weight:550">${ic('plus', 'i-sm')} Neuer Lieferant</td></tr></tbody></table></div>`;
   }
-}
-
-function openSupplier(s) {
-  const st = {...{name: '', contact: '', email: '', phone: '', customer_no: '', lead_days: 7, note: ''}, ...(s || {})};
-  const el = openLayer(`<div class="modal" style="width:min(560px,100%)" role="dialog" aria-modal="true" aria-label="Lieferant">
-    <div class="m-head"><div class="m-ic">${ic('truck')}</div><div><h2>${s ? esc(s.name) : 'Neuer Lieferant'}</h2><p>${s ? esc(s.id) : 'Nummer wird vergeben'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
-    <div class="m-body"><div class="ed-grid">
-      <label class="field full"><span>Name</span><input class="input" data-sf="name" value="${esc(st.name)}"></label>
-      <label class="field"><span>Ansprechperson</span><input class="input" data-sf="contact" value="${esc(st.contact)}"></label>
-      <label class="field"><span>Unsere Kundennummer</span><input class="input" data-sf="customer_no" value="${esc(st.customer_no)}"></label>
-      <label class="field"><span>E-Mail</span><input class="input" data-sf="email" value="${esc(st.email)}"></label>
-      <label class="field"><span>Telefon</span><input class="input" data-sf="phone" value="${esc(st.phone)}"></label>
-      <label class="field"><span>Lieferzeit (Tage)</span><input class="input num" data-sf="lead_days" inputmode="numeric" value="${esc(st.lead_days)}"></label>
-      <label class="field full"><span>Notiz</span><input class="input" data-sf="note" value="${esc(st.note)}"></label></div>${cfHTML('lieferant', CF.sup[s?.id] || {}, false, 'Felder')}</div>
-    <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="sfSave">${ic('check', 'i-sm')}Speichern</button></div></div>`, {focus: '[data-sf="name"]'});
-  $('#sfSave', el).onclick = async () => {
-    $$('[data-sf]', el).forEach(i => { st[i.dataset.sf] = i.value; });
-    st.lead_days = parseInt(st.lead_days, 10) || 0;
-    const cfv = await cfCheck('lieferant', cfRead(el, 'lieferant')); if (!cfv) return;
-    try {
-      const before = new Set(SUPPLIERS.map(x => x.id));
-      const l = await invoke('supplier_save', {supplier: {...st, id: s?.id || ''}}); SUPPLIERS.length = 0; SUPPLIERS.push(...l);
-      const id = s?.id || l.find(x => !before.has(x.id))?.id;
-      if (id && cfDefs('lieferant').length) { await invoke('supplier_fields_set', {id, fields: cfv}); CF.sup[id] = cfv; }
-    }
-    catch (e) { return toast('Speichern fehlgeschlagen', {t2: String(e), type: 'warn'}); }
-    closeLayer(el); toast('Lieferant gespeichert', {t2: st.name, type: 'pos', icon: 'truck'}); if (S.view === 'einkauf') renderEinkauf(); if (S.view === 'lieferanten') PAGES.lieferanten.render();
-  };
 }
 
 /* ── Bestellung ── */
@@ -6311,13 +6282,22 @@ async function openPO(id, preset) {
   const el = openLayer(`<div class="drawer-panel" style="width:min(760px,100%)" role="dialog" aria-modal="true" aria-label="Bestellung"><div id="poBody" style="display:flex;flex-direction:column;min-height:0;flex:1"></div></div>`, {cls: 'drawer'});
   const box = $('#poBody', el);
   const total = () => st.lines.reduce((s, l) => s + (parseAmt(l.costE) || 0) * (parseInt(l.qty, 10) || 0), 0);
+  const supObj = () => SUPPLIERS_ALL.find(x => x.id === st.supplier) || SUPPLIERS.find(x => x.id === st.supplier);
+  /** Mindestauftragssumme/-menge des Lieferanten: Hinweis, solange die Bestellung darunter liegt (die Summe nur, wenn alle Positionen einen Preis haben) */
+  const mindestHint = () => {
+    const p = supObj()?.profile || {}, menge = st.lines.reduce((a, l) => a + (parseInt(l.qty, 10) || 0), 0), alle = st.lines.length && st.lines.every(l => isFinite(parseAmt(l.costE)));
+    const w = []; if (p.min_menge > 0 && menge < p.min_menge) w.push(`Mindestmenge ${num(p.min_menge)} Stück – es fehlen ${num(p.min_menge - menge)}`);
+    if (p.min_summe > 0 && alle && total() * 100 < p.min_summe) w.push(`Mindestauftragssumme ${eur(p.min_summe / 100)} – es fehlen ${eur(p.min_summe / 100 - total())}`);
+    return w.length ? `<div class="prompt-hint blk" style="color:var(--warn)">${ic('alert', 'i-xs')}${esc(w.join(' · '))}</div>` : '';
+  };
   const hits = () => { const toks = norm(st.q.trim()).split(/\s+/).filter(Boolean); if (!toks.length) return []; return ART.flatMap(a => a.variants.map(v => ({a, v}))).filter(({a, v}) => toks.every(t => a.hay.includes(t) || v.ean.startsWith(t) || norm(`${colorName(v.c)} ${v.s}`).includes(t))).slice(0, 8); };
   const render = () => {
     box.innerHTML = `<div class="m-head" style="padding-bottom:12px"><div class="m-ic">${ic('truck')}</div><div><h2>${head ? esc(head.no) : 'Neue Bestellung'}</h2><p>${head ? `${PO_ST[head.status][0]} · angelegt ${esc(fmtTs(head.created_at))}${head.user ? ' von ' + esc(head.user) : ''}` : 'Entwurf – wird erst mit „Bestellen“ verbindlich'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
       <div class="drawer-body" style="display:grid;gap:14px;align-content:start">
-        <div class="ed-grid"><label class="field"><span>Lieferant</span><select class="input select" id="poSup" ${draft ? '' : 'disabled'}>${SUPPLIERS.map(s => `<option value="${esc(s.id)}" ${s.id === st.supplier ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>
+        <div class="ed-grid"><label class="field"><span>Lieferant</span><select class="input select" id="poSup" ${draft ? '' : 'disabled'}>${(SUPPLIERS.some(x => x.id === st.supplier) ? SUPPLIERS : [...SUPPLIERS_ALL.filter(x => x.id === st.supplier), ...SUPPLIERS]).map(s => `<option value="${esc(s.id)}" ${s.id === st.supplier ? 'selected' : ''}>${esc(s.name)}${s.active === false ? ' (inaktiv)' : ''}</option>`).join('')}</select></label>
           <label class="field"><span>Order-Typ</span><select class="input select" id="poType" ${draft ? '' : 'disabled'}><option value="">–</option>${orderTypes().map(t => `<option ${t.name === st.type ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
           <label class="field full"><span>Notiz</span><input class="input" id="poNote" value="${esc(st.note)}" ${draft ? '' : 'readonly'} placeholder="z. B. Saisonvororder"></label></div>
+        ${lfHinweis(supObj())}
         ${draft ? `<div style="position:relative"><label class="search-field" style="height:42px">${ic('search')}<input id="poQ" placeholder="Artikel, Farbe, Größe oder EAN hinzufügen …" value="${esc(st.q)}" autocomplete="off"></label>
           ${st.q ? `<div class="card" style="position:absolute;left:0;right:0;top:46px;z-index:5;overflow:hidden;box-shadow:var(--shadow-3)">${hits().map(({a, v}) => `<button class="pal-i" style="height:46px;border-radius:0" data-addv="${v.vid}"><span style="flex:1;text-align:left"><b>${esc(a.name)}</b> <span class="muted">· ${esc(colorName(v.c))} · ${esc(v.s)} · Bestand ${v.q}</span></span><span class="muted">${a.cost != null ? eur(a.cost) : ''}</span></button>`).join('') || '<div class="muted" style="padding:12px">Kein Treffer</div>'}</div>` : ''}</div>` : ''}
         <div class="card" style="overflow:hidden">${st.lines.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:14px">Artikel</th><th class="r">Bestand</th><th class="r">${draft ? 'Menge' : 'geliefert / bestellt'}</th><th class="r">EK netto</th><th class="r" style="padding-right:14px">Summe</th>${draft ? '<th></th>' : ''}</tr></thead><tbody>${st.lines.map((l, i) => { const x = varById(l.variant_id); return `<tr><td style="padding-left:14px"><b>${esc(l.name || x?.a.name || '')}</b><div class="muted" style="font-size:12px">${esc(colorName(l.color || x?.v.c))} · ${esc(l.size || x?.v.s)}</div></td><td class="r num">${x ? x.v.q : l.stock ?? '–'}</td>
@@ -6326,6 +6306,7 @@ async function openPO(id, preset) {
             <td class="r num" style="padding-right:14px">${eur((parseAmt(l.costE) || 0) * (parseInt(l.qty, 10) || 0))}</td>${draft ? `<td><button class="btn btn-ghost btn-icon btn-sm" data-rml="${i}" aria-label="Entfernen">${ic('x', 'i-sm')}</button></td>` : ''}</tr>`; }).join('')}</tbody></table>`
           : '<div class="empty" style="padding:28px"><p>Noch keine Positionen – oben suchen und hinzufügen.</p></div>'}</div>
         <div class="preview-box"><span>Bestellwert (EK netto)<br><span class="muted" style="font-size:12px">${st.lines.reduce((s, l) => s + (parseInt(l.qty, 10) || 0), 0)} Stück</span></span><b id="poTotal">${eur(total())}</b></div>
+        ${draft ? `<div id="poMin">${mindestHint()}</div>` : ''}
       </div>
       <div class="m-foot" style="border-top:1px solid var(--line);padding-top:14px">
         ${head && ['entwurf', 'bestellt'].includes(head.status) ? `<button class="btn btn-danger" id="poCancel">${ic('x', 'i-sm')}Stornieren</button>` : ''}
@@ -6348,15 +6329,23 @@ async function openPO(id, preset) {
     const q = e.target.dataset.lq, c = e.target.dataset.lc;
     if (q != null) st.lines[q].qty = e.target.value.replace(/\D/g, '');
     if (c != null) st.lines[c].costE = e.target.value;
-    if (q != null || c != null) $('#poTotal', box).textContent = eur(total());
+    if (q != null || c != null) { $('#poTotal', box).textContent = eur(total()); const mh = $('#poMin', box); if (mh) mh.innerHTML = mindestHint(); }
   });
+  box.addEventListener('change', e => { if (e.target.id === 'poSup') { sync(); render(); } });
   box.addEventListener('click', async e => {
     const add = e.target.closest('[data-addv]'); if (add) { sync(); const x = varById(+add.dataset.addv); const ex = st.lines.find(l => l.variant_id === x.v.vid); if (ex) ex.qty = String((parseInt(ex.qty, 10) || 0) + 1); else st.lines.push({variant_id: x.v.vid, name: x.a.name, color: x.v.c, size: x.v.s, qty: '1', costE: x.a.cost != null ? num(x.a.cost, 2) : ''}); st.q = ''; return render(); }
     const rm = e.target.closest('[data-rml]'); if (rm) { sync(); st.lines.splice(+rm.dataset.rml, 1); return render(); }
     if (e.target.closest('#poSave')) { if (await save()) { closeLayer(el); EK.tab = 'bestellungen'; toast('Entwurf gespeichert', {t2: head?.no, type: 'pos', icon: 'truck'}); renderEinkauf(); } return; }
     if (e.target.closest('#poOrder')) {
       const nid = await save(); if (!nid) return;
-      try { await invoke('po_status', {id: nid, status: 'bestellt', user: S.user.name}); } catch (err) { return toast('Nicht möglich', {t2: String(err), type: 'warn'}); }
+      try {
+        try { await invoke('po_status', {id: nid, status: 'bestellt', user: S.user.name}); }
+        catch (err) {
+          const m = /^MINDEST\|(.*)$/.exec(String(err)); if (!m) throw err;
+          if (!await confirmBox(`${m[1]}. Trotzdem bestellen?`, 'Trotzdem bestellen')) return;
+          await invoke('po_status', {id: nid, status: 'bestellt', user: S.user.name, force: true});
+        }
+      } catch (err) { return toast('Nicht möglich', {t2: String(err), type: 'warn'}); }
       await loadPurchasing(); EK.tab = 'bestellungen'; closeLayer(el); toast('Bestellt', {t2: `${head.no} · ${supName(st.supplier)} · ${eur(total())}`, type: 'pos', icon: 'truck'}); Hooks.emit('purchasing.order.placed', {bestellung: head.no}); renderEinkauf(); return;
     }
     if (e.target.closest('#poCancel')) {
@@ -6398,7 +6387,6 @@ function bindPurchasing() {
   v.addEventListener('click', async e => {
     if (e.target.closest('#poNew')) return openPO(null);
     const po = e.target.closest('[data-po]'); if (po) return openPO(+po.dataset.po);
-    const sp = e.target.closest('[data-sup]'); if (sp) return openSupplier(SUPPLIERS.find(s => s.id === sp.dataset.sup) || null);
     const sg = e.target.closest('[data-sgo]');
     if (sg) {
       const card = sg.closest('[data-sg]'), sid = sg.dataset.sgo;
@@ -6629,10 +6617,10 @@ function poHTML(head, lines, sup) {
   const s = sup || {};
   const rows = lines.map((l, i) => { const x = varById(l.variant_id); const cost = parseAmt(l.costE ?? (l.cost != null ? num(l.cost / 100, 2) : '')); return `<tr><td>${i + 1}</td><td><b>${esc(l.name || x?.a.name || '')}</b><br><span class="muted">${esc(colorName(l.color || x?.v.c))} · ${esc(l.size || x?.v.s)} · EAN ${esc(l.ean || x?.v.ean || '')}</span></td><td class="r">${esc(l.qty)}</td><td class="r">${isFinite(cost) ? num(cost, 2) : '–'}</td><td class="r">${isFinite(cost) ? num(cost * (parseInt(l.qty, 10) || 0), 2) : '–'}</td></tr>`; }).join('');
   const total = lines.reduce((t, l) => { const c = parseAmt(l.costE ?? (l.cost != null ? String(l.cost / 100) : '')); return t + (isFinite(c) ? c * (parseInt(l.qty, 10) || 0) : 0); }, 0);
-  return letterHead('Bestellung', [s.name, s.contact ? 'z. H. ' + s.contact : '', s.email].filter(Boolean).map(esc).join('<br>'), [['Bestellnummer', head?.no || 'Entwurf'], ['Datum', new Date().toLocaleDateString('de-AT')], ...(s.customer_no ? [['Unsere Kundennr.', s.customer_no]] : [])])
+  return letterHead('Bestellung', lfEmpfaenger(s).map(esc).join('<br>'), [['Bestellnummer', head?.no || 'Entwurf'], ['Datum', new Date().toLocaleDateString('de-AT')], ...(s.nr ? [['Lieferanten-Nr.', s.nr]] : []), ...(lfKundenNr(s) ? [['Unsere Kundennr.', lfKundenNr(s)]] : [])])
     + `${(() => { const l = typeof flZusatz === 'function' ? flZusatz('liefer') : null, r = typeof flZusatz === 'function' ? flZusatz('rechnung') : null; return l || r ? `<table class="meta" style="margin:0 0 4mm"><tr>${l ? `<td style="vertical-align:top;padding-right:10mm"><span class="muted">Lieferadresse</span><br>${l.map(esc).join('<br>')}</td>` : ''}${r ? `<td style="vertical-align:top"><span class="muted">Rechnungsadresse</span><br>${r.map(esc).join('<br>')}</td>` : ''}</tr></table>` : ''; })()}<p>Wir bestellen zu den vereinbarten Konditionen:</p><table><thead><tr><th style="width:8mm">#</th><th>Artikel</th><th class="r">Menge</th><th class="r">EK netto €</th><th class="r">Summe €</th></tr></thead><tbody>${rows}</tbody></table>
     <table class="sum" style="width:70mm;margin:5mm 0 0 auto"><tr class="tot"><td>Summe netto EUR</td><td class="r">${num(total, 2)}</td></tr></table>
-    ${head?.note ? `<p><b>Hinweis:</b> ${esc(head.note)}</p>` : ''}<p>Bitte Lieferschein mit Bestellnummer beilegen. Vielen Dank!</p><div class="foot">${esc(firmLine())}${fussA4() ? '<br>' + esc(fussA4()).replace(/\n/g, '<br>') : ''}</div>`;
+    ${(() => { const v = [s.profile?.vereinbarung1, s.profile?.vereinbarung2].map(x => String(x || '').trim()).filter(Boolean); return v.length ? `<p><b>Vereinbarungen:</b><br>${v.map(x => esc(x).replace(/\n/g, '<br>')).join('<br>')}</p>` : ''; })()}${head?.note ? `<p><b>Hinweis:</b> ${esc(head.note)}</p>` : ''}<p>Bitte Lieferschein mit Bestellnummer beilegen. Vielen Dank!</p><div class="foot">${esc(firmLine())}${fussA4() ? '<br>' + esc(fussA4()).replace(/\n/g, '<br>') : ''}</div>`;
 }
 
 /* ── EAN-13 als SVG ── */
@@ -8395,20 +8383,6 @@ function renderGsList() {
     : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('gift')}</div><h3>Keine Gutscheine</h3><p>Gutscheine verkaufen Sie an der Kasse („Gutschein verkaufen“).</p></div>`;
 }
 
-/* ── Lieferanten ── */
-registerPage('lieferanten', {title: 'Lieferanten', sub: () => `${SUPPLIERS.length} Lieferanten`, render: renderLieferanten});
-async function renderLieferanten() {
-  const v = $('#view-lieferanten');
-  if (!DESKTOP) { v.innerHTML = desktopEmpty('building', 'Lieferanten'); return; }
-  if (!EK.loaded) { v.innerHTML = `<div class="cv">${loadingCard('Lade Lieferanten')}</div>`; await loadPurchasing(); }
-  const cfs = cfDefs('lieferant').slice(0, 3);
-  const openPos = id => EK.pos.filter(p => p.supplier_id === id && ['bestellt', 'teilgeliefert'].includes(p.status));
-  v.innerHTML = `<div class="cv">${pageHead('Lieferanten', 'Kontakte, Lieferzeiten, Sortiment und offene Bestellungen', `<button class="btn btn-secondary" data-lf="po">${ic('truck', 'i-sm')}Neue Bestellung</button><button class="btn btn-primary" data-lf="neu">${ic('plus', 'i-sm')}Neuer Lieferant</button>`)}
-    ${kpiCards([[num(SUPPLIERS.length), 'Lieferanten'], [num(EK.pos.filter(p => ['bestellt', 'teilgeliefert'].includes(p.status)).length), 'offene Bestellungen'], [eur0(EK.pos.filter(p => ['bestellt', 'teilgeliefert'].includes(p.status)).reduce((a, p) => a + p.value, 0) / 100), 'offener Bestellwert (EK)'], [num(ART.filter(a => !a.supplierId).length), 'Artikel ohne Lieferant', ART.some(a => !a.supplierId) ? 'warn' : '']])}
-    <div class="card">${SUPPLIERS.length ? `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Lieferant</th><th>Kontakt</th><th>Kundennr.</th><th class="r">Lieferzeit</th><th class="r">Artikel</th><th class="r">offen</th>${cfs.map(d => `<th>${esc(d.label)}</th>`).join('')}</tr></thead><tbody>${SUPPLIERS.map(s => `<tr data-lfs="${esc(s.id)}" style="cursor:pointer"><td style="padding-left:16px"><b>${esc(s.name)}</b><div class="muted" style="font-size:11.5px">${esc(s.id)}</div></td><td>${esc(s.contact || '')}<div class="muted" style="font-size:12px">${esc([s.email, s.phone].filter(Boolean).join(' · '))}</div></td><td>${esc(s.customer_no || '–')}</td><td class="r num">${num(s.lead_days || 0)} T</td><td class="r num">${num(ART.filter(a => a.supplierId === s.id).length)}</td><td class="r num">${num(openPos(s.id).length)}</td>${cfs.map(d => `<td>${esc(cfShow(d, CF.sup[s.id]?.[d.key]))}</td>`).join('')}</tr>`).join('')}</tbody></table>`
-      : `<div class="empty" style="padding:48px 20px"><div class="empty-icon">${ic('building')}</div><h3>Noch keine Lieferanten</h3><p>Lieferanten im Artikel hinterlegen – dann funktionieren Bestellvorschlag und KI-Nachbestellung je Lieferant.</p></div>`}</div></div>`;
-}
-
 /* ── Wareneingang ── */
 const WE = {log: []};
 registerPage('wareneingang', {title: 'Wareneingang', sub: () => 'Lieferungen einbuchen', render: renderWareneingang});
@@ -8605,7 +8579,6 @@ function bindPages() {
   on('kassenbuch', e => { const b = e.target.closest('[data-kb]'); if (b) return ({move: openCashBook, x: xReport, z: openClosing})[b.dataset.kb](); const z = e.target.closest('[data-kbz]'); if (z) showClosing($('#kbBody')._z[+z.dataset.kbz]); });
   on('gutscheine', e => { if (e.target.closest('[data-gs="neu"]')) { go('kasse'); return setTimeout(openVoucherSale, 120); } const s = e.target.closest('[data-gssale]'); if (s) openSaleView(s.dataset.gssale); });
   $('#view-gutscheine').addEventListener('input', e => { if (e.target.id === 'gsQ') { GS.q = e.target.value; renderGsList(); } });
-  on('lieferanten', e => { const b = e.target.closest('[data-lf]'); if (b) return b.dataset.lf === 'neu' ? openSupplier(null) : (go('einkauf'), setTimeout(() => openPO(null), 150)); const r = e.target.closest('[data-lfs]'); if (r) openSupplier(SUPPLIERS.find(s => s.id === r.dataset.lfs)); });
   on('wareneingang', async e => {
     const p = e.target.closest('[data-wepo]');
     if (p) { const head = EK.pos.find(x => x.id === +p.dataset.wepo); try { await needPerm('einkauf', 'Wareneingang'); const lines = await invoke('po_lines', {id: head.id}); openReceive(head, lines); } catch (err) { if (err?.message !== 'abgebrochen') toast('Nicht möglich', {t2: String(err), type: 'warn'}); } return; }
@@ -9889,6 +9862,7 @@ async function openDoc(kind, id, preset = {}) {
   if (!d && kind === 'reservierung') { st.due ||= plusDays(3); st.data.quelle ||= 'Geschäft'; }
   if (!d && kind === 'warenkorb') st.due ||= plusDays(7);
   if (!d && kind === 'angebot') st.due ||= plusDays(30);
+  if (!d && kind === 'er' && st.partner) lfEiVorgabe(st);
   if (!d && kind === 'auswahl') st.due ||= plusDays(3);
   if (!d && kind === 'rechnung') { st.data.zahlungsziel ??= 14; st.data.bestand ??= true; }
   const edit = () => !st.id || (DOC_EDIT[kind] || []).includes(st.status);
@@ -9979,7 +9953,7 @@ async function openDoc(kind, id, preset = {}) {
   box.addEventListener('keydown', e => {
     if (e.target.matches('[data-dlq]') && e.key === 'Enter') { e.preventDefault(); const x = findEan(e.target.value); if (x) { collect(); addL(x.a, x.v); } else { const b = $('[data-dladd]', box); b?.click(); } }
   });
-  box.addEventListener('change', async e => { if (e.target.matches('[data-dp="sup"]')) { collect(); await loadOrders(); render(); } });
+  box.addEventListener('change', async e => { if (e.target.matches('[data-dp="sup"]')) { collect(); if (kind === 'er' && !st.id) lfEiVorgabe(st); await loadOrders(); render(); } });
   const addL = (a, v) => { const L = st.data.lines; const ex = L.find(l => l.ean === v.ean); if (ex) ex.qty = String((+ex.qty || 0) + 1); else L.push(newLine(K, a, v)); st._q = ''; st._focusQ = true; render(); };
   box.addEventListener('click', async e => {
     const t = e.target;
@@ -10035,11 +10009,11 @@ async function docConvert(st, to) {
 
 /* ── A4-Druck und E-Mail ── */
 function docHTML(st) {
-  const K = DK[st.kind], c = st.partner ? custById(st.partner) : null, sup = K.partner === 'lieferant' ? SUPPLIERS.find(s => s.id === st.partner) : null;
-  const rcpt = sup ? [sup.name, sup.contact ? 'z. H. ' + sup.contact : '', sup.email].filter(Boolean).map(esc).join('<br>') : c ? custAddr(c) : esc(st.partner_name || '');
+  const K = DK[st.kind], c = st.partner ? custById(st.partner) : null, sup = K.partner === 'lieferant' ? (SUPPLIERS.find(s => s.id === st.partner) || SUPPLIERS_ALL.find(s => s.id === st.partner)) : null;
+  const rcpt = sup ? lfEmpfaenger(sup, ['er', 'zahlung'].includes(st.kind) ? 'rechn' : 'haupt').map(esc).join('<br>') : c ? custAddr(c) : esc(st.partner_name || '');
   const L = st.data.lines || [], vk = K.price === 'vk';
   const title = st.kind === 'rechnung' && st.data.mahnstufe && st.status !== 'bezahlt' && st._mahnung ? `${st.data.mahnstufe}. Mahnung` : K.print || K.one;
-  const meta = [[`${K.one}-Nr.`, st.no], ['Datum', dDate(st.date)], ...(c ? [['Kundennummer', c.id]] : []), ...(st.ref ? [['Bezug', st.ref]] : []), ...(st.due ? [[st.kind === 'angebot' ? 'Gültig bis' : st.kind === 'reservierung' ? 'Abholen bis' : st.kind === 'auswahl' ? 'Rückgabe bis' : 'Fällig', dDate(st.due)]] : [])];
+  const meta = [[`${K.one}-Nr.`, st.no], ['Datum', dDate(st.date)], ...(c ? [['Kundennummer', c.id]] : []), ...(sup ? [...(sup.nr ? [['Lieferanten-Nr.', sup.nr]] : []), ...(lfKundenNr(sup) ? [['Unsere Kundennr.', lfKundenNr(sup)]] : []), ...(['er', 'zahlung'].includes(st.kind) && sup.profile?.uid ? [['USt-IdNr. Lieferant', sup.profile.uid]] : [])] : []), ...(st.ref ? [['Bezug', st.ref]] : []), ...(st.due ? [[st.kind === 'angebot' ? 'Gültig bis' : st.kind === 'reservierung' ? 'Abholen bis' : st.kind === 'auswahl' ? 'Rückgabe bis' : 'Fällig', dDate(st.due)]] : [])];
   const rows = L.map((l, i) => { const g = Math.round((+l.qty || 0) * (+l.price || 0)), net = Math.round(g * (1 - (+l.disc || 0) / 100)); return `<tr><td>${i + 1}</td><td><b>${esc(l.name)}</b>${l.ean ? `<br><span class="muted">EAN ${esc(l.ean)}${l.sku ? ' · Art.-Nr. ' + esc(l.sku) : ''}</span>` : ''}${l.disc ? `<br><span class="muted">Rabatt ${l.disc} %</span>` : ''}</td><td class="r">${l.qty}</td>${K.price && st.kind !== 'lieferschein' ? `<td class="r">${num((l.price || 0) / 100, 2)}</td>${vk ? `<td class="r">${l.vat ?? 20} %</td>` : ''}<td class="r">${num(net / 100, 2)}</td>` : ''}</tr>`; }).join('');
   const byVat = {}; L.forEach(l => { const net = Math.round((+l.qty || 0) * (+l.price || 0) * (1 - (+l.disc || 0) / 100)); byVat[l.vat ?? 20] = (byVat[l.vat ?? 20] || 0) + net; });
   const priced = K.price && st.kind !== 'lieferschein';
@@ -10427,7 +10401,7 @@ DOC_CLICK.reklamation = async (e, st, h) => {
   await loadSuppliers();
   if (st.status !== 'lieferant') { try { await invoke('doc_action', {id: st.id, action: 'lieferant', payload: {}, user: S.user.name}); } catch { /* */ } }
   closeLayer(h.el); docRefresh();
-  openDoc('lretoure', null, {partner: sid || null, partner_name: SUPPLIERS.find(s => s.id === sid)?.name || '', ref: st.no, data: {grund: st.data.grund || 'Defekt / Mangel', notiz: `Reklamation ${st.no}: ${st.data.mangel || ''}`, lines: [{...l, qty: l.qty || 1, price: x?.a.cost != null ? Math.round(x.a.cost * 100) : 0}]}, focusSearch: false});
+  openDoc('lretoure', null, {partner: sid || null, partner_name: SUPPLIERS.find(s => s.id === sid)?.name || '', ref: SUPPLIERS.find(s => s.id === sid)?.profile?.rma_pflicht ? '' : st.no, data: {grund: st.data.grund || 'Defekt / Mangel', notiz: `Reklamation ${st.no}: ${st.data.mangel || ''}`, lines: [{...l, qty: l.qty || 1, price: x?.a.cost != null ? Math.round(x.a.cost * 100) : 0}]}, focusSearch: false});
 };
 docPage('lretouren', 'lretoure', {title: 'Retouren', newLabel: 'Neue Lieferantenretoure', tabs: [['offen', 'Offen', s => ['erfasst', 'versendet'].includes(s)], ['erledigt', 'Erledigt', s => ['gutgeschrieben', 'abgelehnt', 'storniert'].includes(s)], ['alle', 'Alle', () => true]],
   cols: [{l: 'Grund', f: d => esc(d.data.grund || '')}, {l: 'Stück', r: true, f: d => num((d.data.lines || []).reduce((s, l) => s + (+l.qty || 0), 0))}, {l: 'Gutschrift', r: true, f: d => d.data.gutschrift ? cEur(d.data.gutschrift.betrag) : '–'}],
@@ -10592,16 +10566,6 @@ async function bonusUmlegen(id) {
     await invoke('save_text', {name: `Bonus_${r.s.name.replace(/\W+/g, '-')}_${LB.year}.csv`, content: csv, title: 'Bonusumlage exportieren'});
     toast('Bonus umgelegt', {t2: `${cEur(r.bonus)} · ${wg.length} Warengruppen`, type: 'pos', icon: 'percent'}); renderBonus();
   } catch (e) { toast('Nicht möglich', {t2: String(e), type: 'warn'}); }
-}
-
-/* ── Lieferant: Bankdaten im Formular ── */
-{
-  const _os = openSupplier;
-  openSupplier = function (s) {
-    _os(s);
-    const g = $('.ed-grid', $$('.layer').pop() || document); if (!g || $('[data-sf="iban"]', g)) return;
-    g.insertAdjacentHTML('beforeend', `<label class="field"><span>IBAN (für SEPA-Zahlungen)</span><input class="input mono" data-sf="iban" value="${esc(s?.iban || '')}"></label><label class="field"><span>BIC</span><input class="input mono" data-sf="bic" value="${esc(s?.bic || '')}"></label>`);
-  };
 }
 
 function bindEinkauf2() {
@@ -11241,7 +11205,7 @@ async function renderSchaufenster() {
           ${sw('shop.preise', 'Preise anzeigen', 'Aus = nur Sortiment und Verfügbarkeit')}
           <div class="set-row"><div><div class="set-l">Verfügbarkeit</div><div class="set-h">Wie genau der Bestand gezeigt wird (reservierte Ware ist abgezogen)</div></div><div class="set-c"><div class="seg" id="shBest">${[['ampel', 'verfügbar / wenige'], ['genau', 'Stückzahl'], ['aus', 'nur ja/nein']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${(CFG['shop.bestand'] || 'ampel') === k}">${l}</button>`).join('')}</div></div></div>
           ${sw('shop.nur_lagernd', 'Nur lagernde Artikel', 'Ausverkaufte Artikel ausblenden')}
-          ${sw('shop.gpsr_ausblenden', 'Nur Artikel mit vollständigen Herstellerangaben', `Produktsicherheitsverordnung (GPSR): Artikel, deren Marke keine vollständigen Angaben zu Hersteller und – bei Herstellern außerhalb der EU – Verantwortlichem in der EU hat, werden nicht angezeigt (aktuell ${num(mkArtikelOhneGpsr().length)} von ${num(ART.length)} Artikeln). Die Angaben pflegen Sie unter Stammdaten › Marken; sonst erscheinen sie im Artikel unter „Hersteller & Produktsicherheit“.`)}
+          ${sw('shop.gpsr_ausblenden', 'Nur Artikel mit vollständigen Herstellerangaben', `Produktsicherheitsverordnung (GPSR): Artikel, deren Marke keine vollständigen Angaben zu Hersteller und – bei Herstellern außerhalb der EU – Verantwortlichem in der EU hat, werden nicht angezeigt – auch Artikel ohne Marke (aktuell ${num(mkArtikelOhneGpsr().length)} von ${num(ART.length)} Artikeln). Die Angaben pflegen Sie unter Stammdaten › Marken; sonst erscheinen sie im Artikel unter „Hersteller & Produktsicherheit“.`)}
           ${sw('shop.reservieren', 'Online reservieren', 'Click & Reserve – Bezahlung bei Abholung')}
           <div class="set-row"><div><div class="set-l">Reservierung gilt</div><div class="set-h">Tage bis zur Abholung</div></div><div class="set-c"><input class="input num" data-shf="shop.abholtage" value="${esc(CFG['shop.abholtage'] ?? 3)}" style="width:80px;text-align:right"> Tage</div></div>
           ${tf('shop.oeffnung', 'Öffnungszeiten', 'erscheinen in der Fußzeile', true)}
@@ -12636,7 +12600,7 @@ async function renderIntrastat() {
   const agg = {};
   for (const m of moves) {
     const a = artById(m.article_id); if (!a) continue;
-    const land = lands[a.supplierId] || '';
+    const land = SUPPLIERS_ALL.find(x => x.id === a.supplierId)?.country || lands[a.supplierId] || '';
     if (!land || !eu.has(land) || land === home) continue;
     const wg = stRows('warengruppe').find(x => x.id === a.cat);
     const tarif = a.fields?.Zolltarifnummer || a.fields?.Zolltarif || wg?.zolltarif || '–';
@@ -12649,10 +12613,10 @@ async function renderIntrastat() {
   v.innerHTML = `<div class="cv">${pageHead('Intrastat Auswertung', 'Eingänge aus anderen EU-Staaten je Land und Zolltarifnummer (Feld „Zolltarifnummer“ am Artikel oder an der Warengruppe; Gewicht aus Feld „Gewicht“)', `<button class="btn btn-secondary" data-isp>${ic('printer', 'i-sm')}Drucken</button><button class="btn btn-secondary" data-isx>${ic('upload', 'i-sm')}CSV</button>`)}
     <div class="filters"><input class="input" type="month" data-ism value="${IS.mon}" style="width:auto"><span class="muted">${num(moves.length)} Eingangsbuchungen · Schwelle Eingänge AT: € 1.100.000 p. a.</span></div>
     ${kpiCards([[eur0(sum), 'Rechnungsbetrag EU-Eingänge'], [num(rows.length), 'Meldezeilen'], [num(rows.reduce((s, r) => s + r.menge, 0)), 'Stück']])}
-    <div class="card" style="margin-bottom:14px"><div class="set-row"><div><div class="set-l">Versendungsland je Lieferant</div><div class="set-h">Einmal festlegen – wird gespeichert</div></div></div><div style="display:flex;flex-wrap:wrap;gap:10px;padding:0 16px 14px">${SUPPLIERS.map(s => `<label class="field" style="min-width:200px"><span>${esc(s.name)}</span><select class="input select" data-isl="${esc(s.id)}"><option value="">–</option>${stActive('land').map(l => `<option value="${esc(l.id)}" ${lands[s.id] === l.id ? 'selected' : ''}>${esc(l.id)} · ${esc(l.name)}</option>`).join('')}</select></label>`).join('')}</div></div>
+    <div class="card" style="margin-bottom:14px"><div class="set-row"><div><div class="set-l">Versendungsland je Lieferant</div><div class="set-h">Das Land des Lieferanten (Stammdaten › Lieferanten › Allgemein) gilt als Versendungsland; Lieferanten aus Österreich und aus Nicht-EU-Ländern werden nicht gemeldet.</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" data-isgo>${ic('building', 'i-sm')}Lieferanten öffnen</button></div></div><div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 14px">${Object.entries(SUPPLIERS_ALL.reduce((m, s) => { const k = s.country || 'AT'; m[k] = (m[k] || 0) + 1; return m; }, {})).sort().map(([k, n]) => `<span class="pill ${eu.has(k) && k !== home ? 'info' : ''}" style="height:24px">${esc(landName(k))}: ${n} ${n === 1 ? 'Lieferant' : 'Lieferanten'}</span>`).join('')}</div></div>
     <div class="card" style="overflow:auto">${rows.length ? tbl : '<div class="empty" style="padding:40px 20px"><h3>Keine meldepflichtigen Eingänge</h3><p>Monat wählen und Versendungsland der Lieferanten festlegen.</p></div>'}</div></div>`;
   $('[data-ism]', v).onchange = e => { IS.mon = e.target.value; renderIntrastat(); };
-  $$('[data-isl]', v).forEach(s => { s.onchange = async () => { await saveSettings({'intrastat.laender': {...(CFG['intrastat.laender'] || {}), [s.dataset.isl]: s.value}}, true); renderIntrastat(); }; });
+  $('[data-isgo]', v).onclick = () => go('lieferanten');
   $('[data-isp]', v).onclick = () => anPrint(`Intrastat ${IS.mon}`, tbl);
   $('[data-isx]', v).onclick = async () => { const csv = '﻿Land;Warennummer;Geschäftsart;Menge;Eigenmasse kg;Rechnungsbetrag\r\n' + rows.map(r => [r.land, r.tarif, 11, r.menge, String(Math.round(r.kg * 10) / 10).replace('.', ','), String(Math.round(r.wert * 100) / 100).replace('.', ',')].join(';')).join('\r\n'); try { const p = await invoke('save_text', {name: `Intrastat_${IS.mon}.csv`, content: csv, title: 'Intrastat exportieren'}); if (p) toast('Exportiert', {t2: p, type: 'pos', icon: 'download'}); } catch (err) { toast('Export fehlgeschlagen', {t2: String(err), type: 'warn'}); } };
 }
@@ -12819,6 +12783,7 @@ function edifactRead(raw) {
     if (s.tag === 'DTM' && edVal(s, 0, 0) === '2' && pos) pos.liefertermin = dt(edVal(s, 0, 1));
     if (s.tag === 'RFF' && edVal(s, 0, 0) === 'ON') out.bestellung = edVal(s, 0, 1);
     if (s.tag === 'NAD' && edVal(s, 0) === 'SU') out.lieferant_gln = edVal(s, 1);
+    if (s.tag === 'NAD' && edVal(s, 0) === 'MF') { if (pos) pos.marke_gln = edVal(s, 1); else out.marke_gln = edVal(s, 1); }
     if (s.tag === 'MOA' && ['77', '86', '39'].includes(edVal(s, 0, 0)) && out.summe == null) out.summe = parseFloat(edVal(s, 0, 1)) || 0;
     if (s.tag === 'LIN') { pos = {ean: edVal(s, 2, 0), menge: 0}; out.positionen.push(pos); }
     if (!pos) continue;
@@ -12831,11 +12796,15 @@ function edifactRead(raw) {
   return out;
 }
 const ED_TYP = {PRICAT: 'Preiskatalog', DESADV: 'Lieferavis', INVOIC: 'Rechnung', ORDRSP: 'Auftragsbestätigung', ORDERS: 'Bestellung', SLSRPT: 'Verkaufsbericht', INVRPT: 'Bestandsmeldung'};
-const supByGln = gln => { const m = stActive('edilieferant').find(x => x.gln && x.gln === gln); return m ? SUPPLIERS.find(s => s.id === m.lieferant) : null; };
-const supGln = sid => stActive('edilieferant').find(x => x.lieferant === sid)?.gln || '';
+/** GLN des Lieferanten: die Haupt-GLN aus Stammdaten › Lieferanten, ersatzweise die (frühere) Angabe in den EDI-Einstellungen */
+const supByGln = gln => { if (!gln) return null; const s = SUPPLIERS.find(x => x.profile?.gln === gln) || SUPPLIERS_ALL.find(x => x.profile?.gln === gln); if (s) return s; const mb = LF.rows.find(r => (r.marken || []).some(m => m.gln === gln && m.gln_src === 'lieferant')); if (mb) return SUPPLIERS.find(x => x.id === mb.id) || SUPPLIERS_ALL.find(x => x.id === mb.id); const m = stActive('edilieferant').find(x => x.gln && x.gln === gln); return m ? SUPPLIERS.find(x => x.id === m.lieferant) : null; };
+const supGln = sid => (SUPPLIERS_ALL.find(x => x.id === sid) || SUPPLIERS.find(x => x.id === sid))?.profile?.gln || stActive('edilieferant').find(x => x.lieferant === sid)?.gln || '';
+/** Empfänger der Nachricht (UNB): die Empfänger-GLN des Lieferanten (z. B. Clearingstelle), sonst seine Haupt-GLN */
+const supEmpfaenger = sid => (SUPPLIERS_ALL.find(x => x.id === sid) || SUPPLIERS.find(x => x.id === sid))?.profile?.empfaenger_gln || supGln(sid);
 const EDI = {docs: null};
 async function ediDocs(force) { if (!EDI.docs || force) EDI.docs = DESKTOP ? await invoke('doc_list', {kinds: ['edi'], status: null, limit: 5000}) : []; return EDI.docs; }
 async function ediCreate(name, raw, richtung = 'ein') {
+  try { await lfLoad(); } catch { /* ohne Marken-GLN weiter */ }
   let p; try { p = edifactRead(raw); } catch (e) { p = {typ: 'UNBEKANNT', fehler: String(e), positionen: []}; }
   const sup = supByGln(p.lieferant_gln) || supByGln(p.absender);
   const d = await invoke('doc_save', {doc: {kind: 'edi', partner: sup?.id || null, partner_name: sup?.name || p.lieferant_gln || p.absender || '', ref: name, date: p.datum || today(), data: {typ: p.typ, richtung, datei: name, parsed: p, inhalt: String(raw).slice(0, 400000)}}, user: S.user.name});
@@ -12894,7 +12863,7 @@ async function ediProcess(d) {
 
 /* ── Exporte ── */
 async function ediExport(type, sid, body, ref) {
-  const content = edifactBuild(type, ref, body, supGln(sid));
+  const content = edifactBuild(type, ref, body, supEmpfaenger(sid));
   const name = `${type}_${ref.replace(/\W+/g, '-')}_${Date.now().toString(36)}.edi`;
   let pfad = '';
   if (CFG['edi.export_dir']) pfad = await invoke('edi_write', {which: 'export', name, content, user: S.user.name});
@@ -12906,7 +12875,7 @@ async function ediExport(type, sid, body, ref) {
 }
 async function ediOrders(po) {
   const lines = await invoke('po_lines', {id: po.id});
-  const body = [`BGM+220+${edEsc(po.no)}+9`, `DTM+137:${today().replace(/-/g, '')}:102`, `NAD+BY+${edEsc(CFG['edi.gln'] || '')}::9`, `NAD+SU+${edEsc(supGln(po.supplier_id))}::9`, ...lines.flatMap((l, i) => { return [`LIN+${i + 1}++${edEsc(l.ean || '')}:EN`, `QTY+21:${l.qty}`, `PRI+AAA:${((l.cost ?? 0) / 100).toFixed(2)}`]; }), 'UNS+S', `CNT+2:${lines.length}`];
+  const body = [`BGM+220+${edEsc(po.no)}+9`, `DTM+137:${today().replace(/-/g, '')}:102`, `NAD+BY+${edEsc(CFG['edi.gln'] || '')}::9`, ...(lfKundenNr(lfSup(po.supplier_id)) ? [`RFF+IT:${edEsc(lfKundenNr(lfSup(po.supplier_id)))}`] : []), `NAD+SU+${edEsc(supGln(po.supplier_id))}::9`, ...lines.flatMap((l, i) => { return [`LIN+${i + 1}++${edEsc(l.ean || '')}:EN`, `QTY+21:${l.qty}`, `PRI+AAA:${((l.cost ?? 0) / 100).toFixed(2)}`]; }), 'UNS+S', `CNT+2:${lines.length}`];
   return ediExport('ORDERS', po.supplier_id, body, po.no);
 }
 async function ediSalesSince(sid) {
@@ -12933,7 +12902,7 @@ async function ediInvrpt(sid) {
 /* ── PRICAT → Artikel ── */
 function ediCatalogItems(docs) {
   const out = [];
-  for (const d of docs.filter(x => x.data?.typ === 'PRICAT')) for (const x of d.data.parsed?.positionen || []) out.push({...x, doc: d.no, sid: d.partner, sup: d.partner_name});
+  for (const d of docs.filter(x => x.data?.typ === 'PRICAT')) for (const x of d.data.parsed?.positionen || []) out.push({...x, marke: lfMarkeEigen(d.partner, x.marke, x.marke_gln || d.data.parsed?.marke_gln), doc: d.no, sid: d.partner, sup: d.partner_name});
   const by = {}; out.forEach(x => { by[x.ean] = x; }); // jüngste Übermittlung gewinnt
   return Object.values(by).map(x => { const f = findEan(x.ean); const conflict = f && ((f.a.supplierId && x.sid && f.a.supplierId !== x.sid) || (x.artikelnr && f.a.fields?.['Lieferanten-Art.-Nr.'] && f.a.fields['Lieferanten-Art.-Nr.'] !== x.artikelnr)); const preis = f && x.vk && Math.abs((f.a.price || 0) - x.vk) > 0.009; return {...x, known: !!f, art: f?.a, conflict: !!conflict, preis}; });
 }
@@ -13039,7 +13008,7 @@ function ediCatPage(id, title, sub, mode) {
   registerPage(id, {title, sub: () => sub.split(' – ')[0], render: async () => {
     const v = $('#view-' + id);
     if (!DESKTOP) { v.innerHTML = desktopEmpty('swap', title); return; }
-    await loadSuppliers(); await loadStamm();
+    await loadSuppliers(); await loadStamm(); await Promise.all([lfLoad(), mkLoad()]);
     const all = ediCatalogItems(await ediDocs(true)), n = norm(EAI.q);
     const list = all.filter(x => mode === 'konflikte' ? x.conflict || x.preis : mode === 'import' ? (EAI.f === 'alle' || (EAI.f === 'neu' ? !x.known : x.known)) : true).filter(x => !n || norm(`${x.ean} ${x.name} ${x.artikelnr} ${x.marke} ${x.sup}`).includes(n));
     v.innerHTML = `<div class="cv">${pageHead(title, sub, mode === 'import' ? `<label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" data-eaiu ${EAI.upd ? 'checked' : ''}>Preise bekannter Artikel aktualisieren</label><button class="btn btn-primary" data-eaigo>${ic('download', 'i-sm')}Ausgewählte übernehmen</button>` : '')}
@@ -13819,7 +13788,7 @@ function artEditorMount(host, a, tab0) {
         <div class="ae-card"><h4>Artikel</h4>
           <label class="field"><span>Artikelnummer</span><input class="input" data-f="id" value="${esc(st.id)}" ${isNew ? '' : 'readonly style="opacity:.65"'}></label>
           <label class="field"><span>Bezeichnung *</span><input class="input" data-f="name" value="${esc(st.name)}" placeholder="z. B. Grat Hardshell Jacke"></label>
-          <label class="field"><span>Marke</span><input class="input" data-f="brand" value="${esc(st.brand)}" list="brandList"></label><datalist id="brandList">${[...new Set(ART.map(x => x.brand).filter(Boolean))].map(b => `<option value="${esc(b)}">`).join('')}</datalist>
+          <label class="field"><span>Marke</span><input class="input" data-f="brand" value="${esc(st.brand)}" list="brandList"></label><datalist id="brandList">${mkAuswahl().map(b => `<option value="${esc(b)}">`).join('')}</datalist>
           <label class="field"><span>Warengruppe</span><select class="input select" data-f="cat">${catOpt}</select></label>
           <label class="field"><span>Kennzeichnung</span><select class="input select" data-f="tag">${tags}</select></label></div>
         <div class="ae-card"><h4>Preis</h4>
@@ -13968,12 +13937,20 @@ function artEditorMount(host, a, tab0) {
       Hooks.emit('catalog.article.saved', {sku: art.id, name: art.name, varianten: variants.length, neu: isNew});
     }
   });
+  /** Marke gewählt/vorbelegt und noch kein Lieferant: den Lieferanten vorschlagen, dem diese Marke zugeordnet ist */
+  const lfLieferantVorschlag = async marke => {
+    const sel = $('[data-f="supplierId"]', el); if (!sel || sel.value) return;
+    const id = await lfMarkeVorschlag(marke); const cur = $('[data-f="supplierId"]', el);
+    if (id && cur && !cur.value && [...cur.options].some(o => o.value === id)) { cur.value = id; st.supplierId = id; toast('Lieferant vorgeschlagen', {t2: lfName(lfSup(id)) + ' – laut Marken des Lieferanten', icon: 'truck', dur: 2200}); }
+  };
   el.addEventListener('change', async e => {
+    if (e.target.matches?.('[data-f="brand"]')) { lfLieferantVorschlag(e.target.value); return; }
     const c = e.target.closest('[data-mcol]'), cap = e.target.closest('[data-mcap]');
     if ((c || cap) && a) { try { await saveMediaOrder(); await refreshMedia(); } catch (err) { toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); } }
   });
   el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); $('#edSave', el).click(); } });
   render();
+  if (isNew && st.brand && !st.supplierId) lfLieferantVorschlag(st.brand);
 };
 { const st = document.createElement('style'); st.textContent = '.ed-tabs{display:flex;gap:4px;padding:0 20px;border-bottom:1px solid var(--line);overflow-x:auto;flex:none}.ed-tab{display:flex;align-items:center;gap:6px;height:40px;padding:0 12px;border:0;background:none;color:var(--text-3);font-weight:600;font-size:13px;border-bottom:2.5px solid transparent;white-space:nowrap;cursor:pointer}.ed-tab:hover{color:var(--text)}.ed-tab[aria-selected="true"]{color:var(--accent-strong,var(--accent));border-bottom-color:var(--accent)}.ed-tab .nav-badge{margin-left:2px}'; document.head.appendChild(st); }
 
@@ -14657,7 +14634,7 @@ async function aeZlief(ctx, id) {
   const o = await aeForm(r ? 'Zusätzl. Lieferanten' : 'Zusätzl. Lieferanten [-1]', [{k: 'lid', l: 'Lieferant', t: 'select', o: SUPPLIERS.map(s => [s.id, s.name]), req: true, w: 'full'}, {k: 'ext_art', l: 'Ext. Art.-Nr.'}, {k: 'ext_farb', l: 'Ext. Farb-Nr.'}], r ? {...r} : {}, {del: !!r});
   if (!o) return;
   if (o._del) ctx.st.d.zusatz_lieferanten = l.filter(x => x.id !== id);
-  else { const s = SUPPLIERS.find(x => x.id === o.lid); const row = {id: r?.id || aeUid(), lid: o.lid, lnr: s?.customer_no || s?.id || o.lid, lname: s?.name || o.lid, ext_art: o.ext_art || '', ext_farb: o.ext_farb || ''}; if (r) Object.assign(r, row); else l.push(row); }
+  else { const s = SUPPLIERS.find(x => x.id === o.lid); const row = {id: r?.id || aeUid(), lid: o.lid, lnr: s?.nr != null ? String(s.nr) : s?.id || o.lid, lname: s?.name || o.lid, ext_art: o.ext_art || '', ext_farb: o.ext_farb || ''}; if (r) Object.assign(r, row); else l.push(row); }
   ctx.setTab('zlief');
 }
 async function aeMerk(ctx, id) {
@@ -14953,7 +14930,7 @@ VIEW_PERM['st-groessenschluessel-edit'] = 'einstellungen';
    44 · STANDARDWERTE (Einstellungen › Standardwerte) – nur Einstellungen, die tatsächlich wirken
    ═════════════════════════════════════════════════════════════════ */
 const EA_DEFAULTS = {'edi.gln': '', 'gutschein.jahre': 3, 'allg.spediteur': '', 'allg.warengruppe': '', 'allg.marke': '', 'allg.mwst': '', 'allg.groessenschluessel': '', 'allg.mailfuss': ''};
-const eaMarken = () => { const r = stActive('marke'); return r.length ? r.map(x => [x.name || x.id, x.name || x.id]) : [...new Set(ART.map(a => a.brand).filter(Boolean))].sort().map(x => [x, x]); };
+const eaMarken = () => mkAuswahl().map(x => [x, x]);
 const eaOpt = (kind, nr = true) => () => stActive(kind).map(r => [r.id, `${r.name || r.id}${nr && r.nr != null && r.nr !== '' ? ` (${r.nr})` : ''}`]);
 /* Feld: k = Einstellungsschlüssel, t = text | num | combo, o = Auswahl, hint = Erklärung */
 const EA_GROUPS = () => [
@@ -15021,7 +14998,7 @@ INVOKE_HOOKS.mail_send = a => {
 /* 2) Standardwerte beim Anlegen eines Artikels (siehe artEditorMount) */
 const eaNeuArtikel = st => {
   const wg = CFG['allg.warengruppe']; if (wg && CATS.some(c => c.id === wg) && (typeof AV === 'undefined' || AV.cat === 'alle')) st.cat = wg;
-  if (CFG['allg.marke']) st.brand = CFG['allg.marke'];
+  if (CFG['allg.marke']) { st.brand = CFG['allg.marke']; st.supplierId = st.supplierId || lfMarkeSync(st.brand); }
   const m = stRows('mwsttyp').find(x => x.id === CFG['allg.mwst']); if (m) st.vat = +m.satz || 0;
   const g = stRows('groessenschluessel').find(x => x.id === CFG['allg.groessenschluessel']); if (g?.groessen?.length) st.sizes = g.groessen.join(', ');
   return st;
@@ -15096,8 +15073,8 @@ const bsNeu = () => ({name: '', kundenfilter: false, von: 0, bis: 0, nurReg: fal
 const bsStaffel = () => ({name: '', ab: 0, pLauf: 0, pLaufU: '%', bLauf: 0, pGesp: 0, pGespU: '%', bGesp: 0});
 const BS = {id: null, ids: [], draft: null, tab: 'allg', dirty: false};
 const bsLoad = id => { const r = id ? stRows('bonussystem').find(x => x.id === id) : null; return r ? JSON.parse(JSON.stringify({...bsNeu(), ...r})) : bsNeu(); };
-const bsOpt = kind => kind === 'marke' ? [...new Set([...stActive('marke').map(r => r.name || r.id), ...ART.map(a => a.brand)].filter(Boolean))].sort((x, y) => x.localeCompare(y, 'de')).map(x => [x, x]) : stActive(kind).map(r => [r.id, `${r.name || r.id}${r.nr != null && r.nr !== '' ? ` (${r.nr})` : ''}`]);
-const bsLabel = (typ, id) => { const h = bsOpt(typ).find(x => x[0] === id); return h ? h[1] : ''; };
+const bsOpt = kind => kind === 'marke' ? mkAuswahl().map(x => [x, x]) : stActive(kind).map(r => [r.id, `${r.name || r.id}${r.nr != null && r.nr !== '' ? ` (${r.nr})` : ''}`]);
+const bsLabel = (typ, id) => { const h = bsOpt(typ).find(x => x[0] === id) || (typ === 'marke' ? bsOpt(typ).find(x => x[0] === (stRows('marke').find(r => r.id === id)?.name ?? id)) : null); return h ? h[1] : ''; };
 function bsOpen(id, ids) {
   BS.id = id; BS.ids = ids || BS.ids; BS.draft = bsLoad(id); BS.tab = 'allg'; BS.dirty = false;
   if (S.view === 'st-bonussystem-edit') PAGES['st-bonussystem-edit'].render(); else go('st-bonussystem-edit');
@@ -15787,7 +15764,9 @@ function bonusLineOk(sys, l) {
   const a = l.art, wg = stRows('warengruppe').find(r => r.id === a.cat);
   const ab = wg && stRows('abteilung').find(r => r.id === wg.abteilung), ha = ab && stRows('hauptabteilung').find(r => r.id === ab.parent), be = ha && stRows('bereich').find(r => r.id === ha.parent);
   const val = {marke: a.brand, warengruppe: a.cat, abteilung: ab?.id, hauptabteilung: ha?.id, bereich: be?.id};
-  const hit = f => String(val[f.typ] ?? '') === String(f.wert);
+  // Filter „Marke“: früher wurde die Kennung der Marke gespeichert – die Kennung wird über die Markentabelle in den Namen aufgelöst
+  const wert = f => f.typ === 'marke' ? (stRows('marke').find(r => r.id === f.wert)?.name ?? f.wert) : f.wert;
+  const hit = f => f.typ === 'marke' ? mkNorm(val.marke) === mkNorm(wert(f)) : String(val[f.typ] ?? '') === String(f.wert);
   const incl = (sys.filter || []).filter(f => f.einschl), excl = (sys.filter || []).filter(f => !f.einschl);
   if (incl.length && !incl.some(hit)) return false;
   return !excl.some(hit);
@@ -17378,11 +17357,16 @@ const LAENDER_BASIS = [['AT', 'Österreich', 1], ['BE', 'Belgien', 1], ['BG', 'B
   ['CN', 'China', 0], ['HK', 'Hongkong', 0], ['TW', 'Taiwan', 0], ['JP', 'Japan', 0], ['KR', 'Südkorea', 0], ['VN', 'Vietnam', 0], ['TH', 'Thailand', 0], ['ID', 'Indonesien', 0], ['IN', 'Indien', 0], ['BD', 'Bangladesch', 0], ['KH', 'Kambodscha', 0], ['PK', 'Pakistan', 0], ['LK', 'Sri Lanka', 0],
   ['MY', 'Malaysia', 0], ['PH', 'Philippinen', 0], ['SG', 'Singapur', 0], ['TR', 'Türkei', 0], ['IL', 'Israel', 0], ['AE', 'Vereinigte Arabische Emirate', 0], ['RS', 'Serbien', 0], ['BA', 'Bosnien und Herzegowina', 0], ['ME', 'Montenegro', 0], ['MK', 'Nordmazedonien', 0], ['AL', 'Albanien', 0],
   ['UA', 'Ukraine', 0], ['MD', 'Moldau', 0], ['BY', 'Belarus', 0], ['RU', 'Russland', 0], ['MA', 'Marokko', 0], ['TN', 'Tunesien', 0], ['EG', 'Ägypten', 0], ['ZA', 'Südafrika', 0], ['AU', 'Australien', 0], ['NZ', 'Neuseeland', 0]];
+/** EU-Kennzeichen einer Länder-Zeile wie im Backend (marke.rs eu_flag): Bool, „ja/true/1“, „nein/false/0“ oder Zahl; sonst undefined */
+const euFlag = v => typeof v === 'boolean' ? v : typeof v === 'number' ? v !== 0 : typeof v === 'string' ? (['true', 'ja', '1', 'yes', 'wahr'].includes(v.trim().toLowerCase()) ? true : ['false', 'nein', '0', 'no', 'falsch'].includes(v.trim().toLowerCase()) ? false : undefined) : undefined;
 /** Alle Länder als {id (ISO-2), name, eu}; die Länder-Tabelle ergänzt und überschreibt Name und EU-Kennzeichen */
+let LAND_CACHE = {src: null, n: -1, list: null};
 function landListe() {
+  const src = stRows('land'); if (LAND_CACHE.src === src && LAND_CACHE.n === src.length && LAND_CACHE.list) return LAND_CACHE.list;
   const m = new Map(LAENDER_BASIS.map(([id, name, eu]) => [id, {id, name, eu: !!eu}]));
-  for (const r of stRows('land')) { const id = String(r.id || '').toUpperCase(); if (!id) continue; const p = m.get(id); m.set(id, {id, name: r.name || p?.name || id, eu: r.eu == null ? !!p?.eu : !!r.eu}); }
-  return [...m.values()].sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  for (const r of stRows('land')) { const id = String(r.id || '').toUpperCase(); if (!id) continue; const p = m.get(id); m.set(id, {id, name: r.name || p?.name || id, eu: euFlag(r.eu) ?? !!p?.eu}); }
+  LAND_CACHE = {src, n: src.length, list: [...m.values()].sort((a, b) => a.name.localeCompare(b.name, 'de'))};
+  return LAND_CACHE.list;
 }
 const landName = id => { const x = String(id || '').toUpperCase(); return x ? (landListe().find(l => l.id === x)?.name || x) : ''; };
 const landEu = id => !!landListe().find(l => l.id === String(id || '').toUpperCase())?.eu;
@@ -17460,7 +17444,7 @@ function maskeNew(o) {
     if (!o.tabs().some(([k]) => k === st.tab)) st.tab = o.tabs()[0][0];
     const body = o.body();
     el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', `Übersicht: ${o.title}`)}${btn('refresh', 'sync', 'Aktualisieren', !can.refresh)}${btn('save', 'check', 'Sichern', lk || !st.dirty)}${btn('new', 'plus', 'Neu', !can.new)}${btn('undo', 'undo', 'Änderungen zurücknehmen', lk || !st.dirty)}${btn('del', 'trash', 'Löschen', !can.del)}${o.bar?.() || ''}
-      <span class="sp"></span>${st.id && st.ids.length > 1 ? `${btn('prev', 'chevron-left', 'Vorheriger Eintrag', pos <= 0, false)}<span class="ae-nr">${pos + 1}/${st.ids.length}</span>${btn('next', 'chevron-right', 'Nächster Eintrag', pos >= st.ids.length - 1, false)}` : ''}</div>
+      <span class="sp"></span>${st.id && st.ids.length > 1 ? `<span class="ae-nav">${btn('prev', 'chevron-left', 'Vorheriger Eintrag', pos <= 0, false)}<span class="ae-nr">${pos + 1}/${st.ids.length}</span>${btn('next', 'chevron-right', 'Nächster Eintrag', pos >= st.ids.length - 1, false)}</span>` : ''}</div>
       <div class="ae-tabsw"><div class="ed-tabs" role="tablist">${o.tabs().map(tab).join('')}</div></div>
       <div class="ae-body"><div id="edBody">${body.html}</div></div>`;
     el.addEventListener('input', e => { const t = e.target.closest('[data-mf]'); if (t && t.type !== 'color' && t.tagName !== 'SELECT') { K.set(t, el); K.fields(el); } });
@@ -17561,8 +17545,15 @@ async function mkLoad(force) {
   MK.loaded = true;
   STAMM.data.marke = MK.rows.map(r => ({...r}));   // Auswahl in Artikelmaske, Einstellungen und Bonus nutzt die Stammdaten
 }
+/** Markennamen für Auswahllisten (Artikelmaske, Standard-Marke, Bonus-Filter): die aktiven Marken; ohne Markentabelle die der Artikel */
+const mkAuswahl = () => { const a = stActive('marke').map(r => r.name || r.id).filter(Boolean), l = a.length ? a : ART.map(x => x.brand).filter(Boolean); return [...new Set(l)].sort((x, y) => x.localeCompare(y, 'de')); };
 /** Marke zu einem Artikel-Markennamen (nach der Vergleichsform) – aus der Markenliste, sonst aus den Stammdaten */
-const mkFuer = brand => (MK.loaded ? MK.rows : stRows('marke')).find(r => mkNorm(r.name) === mkNorm(brand));
+const MK_IDX = {src: null, map: new Map()};
+function mkFuer(brand) {
+  const rows = MK.loaded ? MK.rows : stRows('marke');
+  if (MK_IDX.src !== rows || MK_IDX.n !== rows.length) { MK_IDX.src = rows; MK_IDX.n = rows.length; MK_IDX.map = new Map(); for (const r of rows) { const k = mkNorm(r.name); if (k && !MK_IDX.map.has(k)) MK_IDX.map.set(k, r); } }
+  return MK_IDX.map.get(mkNorm(brand));
+}
 /** Herstellerangaben und GPSR-Stufe zu einem Artikel-Markennamen (für Artikelliste, Artikelmaske, Schaufenster) */
 function mkArtikelInfo(brand) {
   const m = mkFuer(brand), g = mkGpsr(m || {}), h = m?.hersteller || {}, e = m?.eu || {};
@@ -17624,9 +17615,9 @@ function mkToRow(d) {
 }
 /** Prüfungen wie im Backend (marke.rs); k = Pfad des Feldes */
 function mkErrors(d) {
-  const m = [], add = (k, t) => m.push({k, t}), name = String(d.name).trim();
-  if (!name) add('name', 'Name angeben'); else if (name.length > 120) add('name', 'Name: höchstens 120 Zeichen');
-  else { const o = MK.rows.find(r => mkNorm(r.name) === mkNorm(name) && String(r.id).toLowerCase() !== String(d.id || '').toLowerCase()); if (o) add('name', `Die Marke „${o.name}“ gibt es schon`); }
+  const m = [], add = (k, t) => m.push({k, t}), name = String(d.name).trim(), alt = d.id ? mkRow(d.id) : null;
+  if (!name) add('name', 'Name angeben'); else if (name.length > 120) add('name', 'Name: höchstens 120 Zeichen'); else if (!mkNorm(name)) add('name', 'Name: mindestens ein Buchstabe oder eine Ziffer');
+  else if (!(alt && mkNorm(alt.name) === mkNorm(name))) { const o = MK.rows.find(r => mkNorm(r.name) === mkNorm(name) && String(r.id).toLowerCase() !== String(d.id || '').toLowerCase()); if (o) add('name', `Die Marke „${o.name}“ gibt es schon`); }
   for (const [p, wo] of [['hersteller', 'Hersteller'], ['eu', 'Verantwortlicher in der EU']]) {
     const v = d[p];
     for (const k of MK_ADR) { const max = k === 'name' || k === 'email' ? 120 : 80; if (String(v[k] ?? '').trim().length > max) add(`${p}.${k}`, `Höchstens ${max} Zeichen`); }
@@ -17658,7 +17649,7 @@ function mkOpen(id, ids) { MKK.open(id, ids); }
 const mkStatusHTML = () => {
   const r = ME.id ? mkRow(ME.id) : null, g = mkGpsr(mkToRow(ME.d)), n = r?._artikel || 0;
   return `<div class="ge-facts"><div class="ge-fact"><span>GPSR-Angaben</span><b><span class="pill ${mkStufeTon(g.stufe)}" style="height:22px">${mkStufeText(g.stufe)}</span></b></div>
-    <div class="ge-fact"><span>Artikel</span><b>${n ? `${num(n)} Artikel tragen diese Marke` : 'noch kein Artikel'}</b></div></div>
+    <div class="ge-fact"><span>Artikel</span><b>${n ? `${num(n)} Artikel tragen diese Marke${r?._artikel_aktiv != null && r._artikel_aktiv !== n ? ` (davon ${num(r._artikel_aktiv)} aktiv)` : ''}` : 'noch kein Artikel'}</b></div></div>
     ${g.fehlt.length && g.stufe !== 'ok' ? `<p class="ea-hint" style="margin:8px 0 0">Es fehlt: ${esc(g.fehlt.join(', '))}.</p>` : ''}
     <p class="ea-hint" style="margin:8px 0 0">Online-Angebote brauchen nach der Produktsicherheitsverordnung (GPSR) den Hersteller mit Anschrift und elektronischer Adresse – bei einem Hersteller außerhalb der EU zusätzlich den Verantwortlichen in der EU. Die Angaben erscheinen im Schaufenster (Abschnitt „Hersteller &amp; Produktsicherheit“) und in der Schnittstelle.</p>`;
 };
@@ -17669,7 +17660,7 @@ function mkAllg() {
     ${K.card('Allgemein', `${K.in('name', 'Name *', {hint: n ? `Name der Marke an den Artikeln. Umbenennen ändert die ${num(n)} Artikel und alle Aktionen, Regeln und Filter, die die Marke nennen.` : 'Name der Marke an den Artikeln – eindeutig.'})}
       ${K.in('hersteller.name', 'Name des Herstellers', {hint: 'Rechtlicher Hersteller (Firma) – nicht die Marke.'})}${K.in('hersteller.email', 'Elektronische Adresse', {hint: 'E-Mail oder Web-Adresse des Herstellers.'})}
       ${K.in('eu.name', 'Verantwortlicher in EU', {hint: 'Pflicht, wenn der Hersteller außerhalb der EU sitzt.'})}${K.in('eu.email', 'Elektronische Adresse in der EU')}
-      ${K.sw('_aktiv', 'Aktiv', 'Inaktive Marken erscheinen nicht mehr in der Auswahl für neue Artikel; die Herstellerangaben bleiben für vorhandene Artikel erhalten.')}`)}
+      ${K.sw('_aktiv', 'Aktiv', 'Inaktive Marken erscheinen nicht mehr in den Auswahllisten (Artikel, Standard-Marke, Bonus-Filter); die Herstellerangaben bleiben für vorhandene Artikel erhalten.')}`)}
     ${K.card('Herstellerangaben (GPSR)', `<div data-mk-status>${mkStatusHTML()}</div>`)}
   </div>`;
 }
@@ -17707,7 +17698,7 @@ async function mkSave() {
       if (umbenannt) ART.forEach(a => { if (mkNorm(a.brand) === mkNorm(alt.name)) a.brand = row.name; });
     }
   } catch (err) { return toast('Speichern fehlgeschlagen', {t2: String(err.message || err), type: 'warn', dur: 7000}); }
-  if (DESKTOP && umbenannt) { try { replaceCatalog(await invoke('catalog_list')); } catch { /* */ } try { await loadSettings(); } catch { /* */ } }
+  if (DESKTOP && umbenannt) { try { replaceCatalog(await invoke('catalog_list')); } catch { /* */ } try { await loadSettings(); } catch { /* */ } try { await loadPromos(); } catch { /* */ } }
   await Promise.all([mkLoad(true), DESKTOP ? loadStamm(true) : Promise.resolve()]);
   const id = saved.id; ME.id = id; ME.d = mkDraft(id); ME.orig = mclone(ME.d); ME.dirty = false; ME.show = false; if (isNew) ME.ids = [...ME.ids, id];
   Hooks.emit('marke.saved', {marke: row.name, neu: isNew});
@@ -17736,6 +17727,500 @@ async function mkRemove(ids, fromMask) {
 
 // nur lesend – für Prüfungen: Markennamen der Artikel und Artikelzahl je Marke
 if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {mkGpsr, markenArtikel: () => [...new Set(ART.map(a => a.brand).filter(Boolean))], artikelJeMarke: b => ART.filter(a => a.brand === b).length});
+/* ═════════════════════════════════════════════════════════════════
+   55e · LIEFERANTEN (Stammdaten › Lieferanten) – Liste und Maske mit Reitern
+   Allgemein (Profil, Liefer-, Finanzeinstellungen, Kontaktdaten, Zusatzinformationen, eigene Felder), Marken (zugeordnete / angelegte Marken per
+   Ziehen, „Zuordnen“ oder Dialog), Dateien (Dokumente zum Lieferanten), Haupt-Adresse, Rechnungsadresse, Filial-Kunden-Nummern.
+   Wirkung (nichts nur zum Anschauen):
+   • Aktiv: inaktive Lieferanten verschwinden aus Auswahllisten, Bestellvorschlag und KI-Nachbestellung; „Order-Vorschläge nutzen“ steuert den Vorschlag je Lieferant
+   • Nr., Land, Kunden-Nr., Filial-Kundennummern (die der bestellenden Filiale geht vor), Anschrift, Telefon, Fax und Vereinbarungen stehen auf der Bestellung;
+     Haupt-Adresse auch auf Avis, Retoure und Reklamation, Rechnungsadresse auf Eingangsrechnung und Zahlung; Info, Info 2 und Vereinbarungen erscheinen als Hinweis
+     beim Bestellen; Min. Auftragssumme/-menge fragen beim Bestellen nach; Skonto, Valuta und Zahlungs-Bed. füllen die Eingangsrechnung vor
+   • RMA Code Pflicht (Retoure ohne RMA-Nummer nicht versendbar), RMA Ablauf (Hinweis in der Retoure), Gegenscannen (Avis erst nach dem Scanner-Wareneingang)
+   • Marken: neue Artikel einer Marke bekommen den Lieferanten vorgeschlagen; vorhandene Artikel ohne Lieferant lassen sich nachtragen
+   • Haupt-GLN / Empfänger-GLN: EDI-Nachrichten (Lieferantenerkennung, Bestellung) – siehe c39-edi-webshop.js; Land: Versendungsland der Intrastat-Meldung
+   Pflege nur in der Zentrale (und am Einzelplatz); die Prüfungen stehen hier und in lieferant.rs gleich (das Backend entscheidet).
+   ═════════════════════════════════════════════════════════════════ */
+const LF = {rows: [], rolle: 'einzel', eigene: '', nr: 1, loaded: false};
+const LE = {id: null, ids: [], d: null, orig: null, tab: 'allg', dirty: false, show: false, files: [], filesFor: null};
+const LF_TABS = [['allg', 'Allgemein'], ['marken', 'Marken'], ['dateien', 'Dateien'], ['haupt', 'Haupt-Adresse'], ['rechn', 'Rechnungsadresse'], ['fk', 'Filial-Kunden-Nummern']];
+const LF_ADR = ['adrzeile1', 'adrzeile2', 'strasse', 'hausnr', 'plz', 'ort', 'postfach', 'bundesland'];
+const LF_GLN_HERKUNFT = [['hersteller', 'Hersteller'], ['lieferant', 'Lieferant']];
+const lfRow = id => LF.rows.find(r => r.id === id);
+const lfLocked = () => LF.rolle === 'filiale';
+const lfName = r => r?.name || r?.id || '';
+function lfGlnOk(x) {
+  x = String(x || '').replace(/\s+/g, ''); if (!/^\d{13}$/.test(x)) return false;
+  const d = [...x].map(Number), s = d.slice(0, 12).reduce((a, v, i) => a + (i % 2 ? v * 3 : v), 0);
+  return (10 - s % 10) % 10 === d[12];
+}
+const lfEmailOk = x => { x = String(x || '').trim(); const i = x.indexOf('@'); return i > 0 && !/\s/.test(x) && x.slice(i + 1).includes('.') && !x.slice(i + 1).startsWith('.') && !x.endsWith('.') && !x.slice(i + 1).includes('@'); };
+const lfCent = t => { const s = String(t ?? '').trim(); if (!s) return 0; const v = parseAmt(s); return isFinite(v) ? Math.round(v * 100) : NaN; };
+const lfEuroText = c => c > 0 ? num(c / 100, 2) : '';
+const lfPct = t => { const s = String(t ?? '').trim().replace(',', '.'); return s === '' ? 0 : +s; };
+
+/* ── Wirkung an anderen Stellen ── */
+/** Eigene Kunden-Nr. beim Lieferanten: die der bestellenden Filiale, sonst die allgemeine */
+function lfKundenNr(sup, store) {
+  const fk = sup?.profile?.filial_kunden || {}, st = String(store || (typeof FIL !== 'undefined' ? FIL.eigene : '') || '').toUpperCase();
+  const k = Object.keys(fk).find(x => x.toUpperCase() === st);
+  return (k && String(fk[k]).trim()) || sup?.customer_no || '';
+}
+/** Anschrift als Zeilen (Adr.-Zeile 1/2, Straße Nr., Postfach, PLZ Ort, Land wenn nicht Österreich) */
+function lfAdrLines(a, land) {
+  const l = String(land ?? a?.land ?? '').toUpperCase(), t = k => String(a?.[k] || '').trim();
+  return [t('adrzeile1'), t('adrzeile2'), [t('strasse'), t('hausnr')].filter(Boolean).join(' '), t('postfach') ? 'Postfach ' + t('postfach') : '', [t('plz'), t('ort')].filter(Boolean).join(' '), l && l !== 'AT' ? landName(l) : ''].filter(Boolean);
+}
+/** Empfängerblock auf Bestellung und Belegen: Name, z. H., Anschrift (Rechnungsadresse bei Rechnungen), Telefon, E-Mail */
+function lfEmpfaenger(sup, art = 'haupt') {
+  if (!sup) return [];
+  const p = sup.profile || {}, r = p.rechnung || {}, bill = art === 'rechn' && (r.strasse || r.postfach || r.ort || r.adrzeile1);
+  const adr = bill ? lfAdrLines(r, r.land || sup.country) : lfAdrLines(p.adresse || {}, p.adresse?.land || sup.country);
+  return [bill && r.name ? r.name : sup.name, sup.contact ? 'z. H. ' + sup.contact : '', ...adr, sup.phone ? 'Tel. ' + sup.phone : '', p.fax ? 'Fax ' + p.fax : '', sup.email].filter(Boolean);
+}
+/** Hinweise zum Lieferanten (Info, Info 2, Vereinbarungen) beim Bestellen und in Belegen */
+function lfHinweis(sup) {
+  if (!sup) return '';
+  const p = sup.profile || {}, t = [['Info', sup.note], ['Info 2', p.info2], ['Vereinbarung 1', p.vereinbarung1], ['Vereinbarung 2', p.vereinbarung2]].filter(([, v]) => String(v || '').trim());
+  return t.length ? `<div class="prompt-hint blk" style="display:grid;gap:4px">${t.map(([l, v]) => `<div><b>${esc(l)}:</b> <span style="white-space:pre-wrap">${esc(v)}</span></div>`).join('')}</div>` : '';
+}
+/** Neue Artikel einer Marke: der Lieferant, dem genau diese Marke zugeordnet ist (nur wenn eindeutig, nur aktive) */
+function lfMarkeSync(marke) {
+  const n = mkNorm(marke); if (!n) return '';
+  const ids = LF.rows.filter(r => r._aktiv !== false && (r.marken || []).some(m => mkNorm(m.name || mkRow(m.brand_id)?.name) === n)).map(r => r.id);
+  return ids.length === 1 ? ids[0] : '';
+}
+async function lfMarkeVorschlag(marke) { try { await Promise.all([lfLoad(), mkLoad()]); } catch { return ''; } return lfMarkeSync(marke); }
+/** PRICAT: Marke des Lieferanten (Name, EDI-Marken-Nr./-Name oder Hersteller-GLN) → eigene Marke laut Zuordnung am Lieferanten; ohne Treffer bleibt der Text */
+function lfMarkeEigen(sid, text, gln) {
+  const r = lfRow(sid); if (!r) return text;
+  const n = mkNorm(text), g = String(gln || '').replace(/\s+/g, '');
+  const m = (r.marken || []).find(x => (n && (mkNorm(x.ext_name) === n || mkNorm(x.edi_name) === n || mkNorm(x.edi_nr) === n)) || (g && x.gln && x.gln === g && x.gln_src !== 'lieferant'));
+  return m ? (m.name || mkRow(m.brand_id)?.name || text) : text;
+}
+/** Wohin mit „Lieferant öffnen“ aus anderen Seiten */
+function openSupplier(s) { lfOeffnen(s?.id || null); }
+async function lfOeffnen(id) { await Promise.all([lfLoad(), mkLoad()]); if (id && !lfRow(id)) return toast('Diesen Lieferanten gibt es nicht mehr', {type: 'warn'}); lfOpen(id, LF.rows.map(r => r.id)); }
+
+/* ── Laden ── */
+const LF_DEMO = [['Nordwand Outdoor GmbH', 10, ['Nordwand']], ['Firn Sports AG', 14, ['Firn']], ['Talwind Distribution', 7, ['Talwind']], ['Alpin Handelsagentur', 5, ['Lodenwerk', 'Seilschaft', 'Kammlinie']]];
+function lfPreviewRows() {
+  let l = persist.get('lieferanten', null);
+  if (!l) {
+    l = LF_DEMO.map(([name, lead, brands], i) => ({id: `L-${String(i + 1).padStart(3, '0')}`, nr: i + 1, name, _aktiv: true, country: 'AT', contact: '', email: '', phone: '', customer_no: '', lead_days: lead, note: '', iban: '', bic: '', profile: lfProfileBlank(), fields: {},
+      marken: brands.map(b => ({brand_id: mkFuer(b)?.id || 'mk-' + mkSlug(b), ext_name: '', gln_src: '', gln: '', edi_nr: '', edi_name: '', comment: ''}))}));
+    persist.set('lieferanten', l);
+  }
+  return l;
+}
+function lfDecorate(r) {
+  const n = ART.filter(a => a.supplierId === r.id);
+  return {...r, profile: {...lfProfileBlank(), ...(r.profile || {})}, _artikel: n.length, _offen: 0, _dateien: 0, _geaendert: r._geaendert || '',
+    marken: (r.marken || []).map(m => { const name = mkRow(m.brand_id)?.name || m.name || ''; return {...m, name, _artikel: n.filter(a => mkNorm(a.brand) === mkNorm(name)).length}; })};
+}
+/** Browser-Vorschau: die Auswahllisten der übrigen Seiten (SUPPLIERS) aus den gespeicherten Lieferanten füllen */
+function lfPreviewSync() {
+  const rows = lfPreviewRows().map(r => { const { marken, _geaendert, ...o } = r; return {...o, active: r._aktiv !== false, open_orders: 0, profile: {...lfProfileBlank(), ...(r.profile || {})}}; });
+  SUPPLIERS_ALL.length = 0; SUPPLIERS_ALL.push(...rows); SUPPLIERS.length = 0; SUPPLIERS.push(...rows.filter(r => r.active));
+}
+async function lfLoad(force) {
+  if (LF.loaded && !force) return;
+  if (DESKTOP) {
+    try { const r = await invoke('lieferant_list'); LF.rows = r.zeilen || []; LF.rolle = r.rolle; LF.eigene = r.eigene; LF.nr = r.naechste_nr || 1; } catch (e) { console.error(e); }
+  } else {
+    await mkLoad(); lfPreviewSync(); LF.rows = lfPreviewRows().map(lfDecorate); LF.rolle = 'zentrale'; LF.eigene = typeof FIL !== 'undefined' ? FIL.eigene : ''; LF.nr = Math.max(0, ...LF.rows.map(r => +r.nr || 0)) + 1;
+  }
+  LF.loaded = true;
+}
+
+/* ── Liste ── */
+const lfLandX = iso => landName(iso);
+function lfListRows() {
+  return LF.rows.map(r => {
+    const p = r.profile || {}, a = p.adresse || {};
+    return {id: r.id, nr: +r.nr || 0, name: r.name || '', marken: (r.marken || []).map(m => m.name).filter(Boolean).join(', '), land: lfLandX(r.country), strasse: a.strasse || '', hausnr: a.hausnr || '', plz: a.plz || '', ort: a.ort || '',
+      tel: r.phone || '', gln: p.gln || '', email: r.email || '', egln: p.empfaenger_gln || '', aktiv: r._aktiv !== false, kundennr: r.customer_no || '', bundesland: a.bundesland || '', web: p.web || '', uid: p.uid || '', kontakte: r.contact || '',
+      geaendert: r._geaendert ? fmtTs(r._geaendert) : '', waehrung: 'EUR', artikel: r._artikel || 0, offen: r._offen || 0, dateien: r._dateien || 0};
+  });
+}
+agridPage('lieferanten', {
+  title: 'Lieferanten', rows: lfListRows, count: () => LF.rows.length, sort: {k: 'nr', dir: 1}, rowH: 44,
+  toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}],
+  cols: [{k: 'nr', l: 'Nr.', t: 'num', w: 70}, {k: 'name', l: 'Name', w: 230}, {k: 'marken', l: 'Marken', w: 200}, {k: 'land', l: 'Land', w: 120}, {k: 'strasse', l: 'Str.', w: 160}, {k: 'hausnr', l: 'Haus-Nr.', w: 80}, {k: 'plz', l: 'PLZ', w: 80}, {k: 'ort', l: 'Ort', w: 130},
+    {k: 'tel', l: 'Tel.', w: 130}, {k: 'gln', l: 'GLN', w: 130}, {k: 'email', l: 'E-Mail', w: 200}, {k: 'egln', l: 'Empfänger-GLN', w: 130},
+    {k: 'aktiv', l: 'Aktiv', t: 'check', w: 70, show: false}, {k: 'kundennr', l: 'Kunden-Nr.', w: 110}, {k: 'bundesland', l: 'Bundesland/Kanton/Provinz', w: 150, show: false}, {k: 'web', l: 'Webseite', w: 160, show: false}, {k: 'uid', l: 'USt-IdNr.', w: 130, show: false},
+    {k: 'kontakte', l: 'Kontakte', w: 150, show: false}, {k: 'geaendert', l: 'Geändert am', w: 140, show: false}, {k: 'waehrung', l: 'Währung', w: 80, show: false},
+    {k: 'artikel', l: 'Artikel', t: 'num', w: 80, show: false}, {k: 'offen', l: 'Offene Bestellungen', t: 'num', w: 110, show: false}, {k: 'dateien', l: 'Dokumente', t: 'num', w: 90, show: false}],
+  remove: ids => lfRemove(ids),
+  actions: {back: () => e2Back(), refresh: () => PAGES.lieferanten.render(true), new: () => lfNeu()},
+  edit: id => lfOpen(id, (AG.lieferanten.filtered || []).map(r => r.id)),
+});
+{ const p = PAGES.lieferanten, _r = p.render; p.render = async fresh => { await Promise.all([loadStamm(fresh === true), mkLoad(true), lfLoad(true), typeof filLoad === 'function' ? filLoad() : null]); await _r(); renderTopbar(); }; }
+VIEW_PERM.lieferanten = 'einkauf';
+function lfNeu() {
+  if (lfLocked()) return toast('Lieferanten pflegt die Zentrale', {t2: 'Diese Kasse bekommt die Angaben beim Abgleich', icon: 'lock'});
+  lfOpen(null, LE.ids);
+}
+
+/* ── Entwurf ── */
+const lfAdrBlank = () => ({name: '', ...Object.fromEntries(LF_ADR.map(k => [k, ''])), land: 'AT'});
+const lfProfileBlank = () => ({fax: '', web: '', steuernr: '', uid: '', gln: '', empfaenger_gln: '', info2: '', vereinbarung1: '', vereinbarung2: '', rma_ablauf: '', rma_pflicht: false, gegenscannen: false, order_vorschlag: true,
+  min_summe: 0, min_menge: 0, skonto: 0, valuta: 0, zahlungsbed: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank(), filial_kunden: {}});
+const lfBlank = () => ({id: '', nr: String(LF.nr), name: '', _aktiv: true, country: 'AT', contact: '', email: '', phone: '', customer_no: '', lead_days: '7', note: '', iban: '', bic: '', fields: {}, marken: [],
+  profile: {...lfProfileBlank(), min_summe: '', min_menge: '', skonto: '', valuta: '', adresse: lfAdrBlank(), rechnung: lfAdrBlank()}});
+function lfDraft(id) {
+  const r = id ? lfRow(id) : null; if (!r) return lfBlank();
+  const p = {...lfProfileBlank(), ...mclone(r.profile || {})};
+  const adr = a => ({...lfAdrBlank(), ...Object.fromEntries(Object.entries(a || {}).map(([k, v]) => [k, String(v ?? '')]))});
+  p.adresse = adr(p.adresse); p.rechnung = adr(p.rechnung); p.adresse.land ||= r.country; p.filial_kunden = {...(p.filial_kunden || {})};
+  p.min_summe = lfEuroText(p.min_summe); p.min_menge = p.min_menge ? String(p.min_menge) : ''; p.skonto = p.skonto ? String(p.skonto).replace('.', ',') : ''; p.valuta = p.valuta ? String(p.valuta) : '';
+  for (const k of ['fax', 'web', 'steuernr', 'uid', 'gln', 'empfaenger_gln', 'info2', 'vereinbarung1', 'vereinbarung2', 'rma_ablauf', 'zahlungsbed']) p[k] = String(p[k] ?? '');
+  return {id: r.id, nr: String(r.nr ?? ''), name: String(r.name ?? ''), _aktiv: r._aktiv !== false, country: r.country || 'AT', contact: String(r.contact ?? ''), email: String(r.email ?? ''), phone: String(r.phone ?? ''), customer_no: String(r.customer_no ?? ''),
+    lead_days: String(r.lead_days ?? ''), note: String(r.note ?? ''), iban: flFormatIban(r.iban), bic: String(r.bic ?? ''), fields: mclone(r.fields || {}), marken: (r.marken || []).map(m => ({brand_id: m.brand_id, ext_name: m.ext_name || '', gln_src: m.gln_src || '', gln: m.gln || '', edi_nr: m.edi_nr || '', edi_name: m.edi_name || '', comment: m.comment || ''})), profile: p};
+}
+function lfToRow(d) {
+  const t = v => String(v ?? '').trim(), p = d.profile, adr = a => Object.fromEntries(Object.entries(a).map(([k, v]) => [k, t(v)]));
+  const prof = {...p, min_summe: lfCent(p.min_summe), min_menge: p.min_menge === '' ? 0 : +p.min_menge, skonto: lfPct(p.skonto), valuta: p.valuta === '' ? 0 : +p.valuta, adresse: adr(p.adresse), rechnung: adr(p.rechnung), filial_kunden: {...p.filial_kunden}};
+  prof.adresse.land = t(d.country).toUpperCase(); prof.rechnung.land = t(prof.rechnung.land).toUpperCase();
+  for (const k of ['fax', 'web', 'steuernr', 'info2', 'vereinbarung1', 'vereinbarung2', 'rma_ablauf', 'zahlungsbed']) prof[k] = t(prof[k]);
+  prof.uid = t(prof.uid).replace(/\s+/g, '').toUpperCase(); prof.gln = t(prof.gln).replace(/\s+/g, ''); prof.empfaenger_gln = t(prof.empfaenger_gln).replace(/\s+/g, '');
+  return {id: d.id || '', nr: parseInt(d.nr, 10), name: t(d.name), _aktiv: d._aktiv !== false, country: t(d.country).toUpperCase(), contact: t(d.contact), email: t(d.email), phone: t(d.phone), customer_no: t(d.customer_no),
+    lead_days: d.lead_days === '' ? 0 : +d.lead_days, note: t(d.note), iban: t(d.iban).replace(/\s+/g, '').toUpperCase(), bic: t(d.bic).replace(/\s+/g, '').toUpperCase(), fields: d.fields || {}, profile: prof,
+    marken: d.marken.map(m => ({brand_id: m.brand_id, ext_name: t(m.ext_name), gln_src: t(m.gln_src), gln: t(m.gln).replace(/\s+/g, ''), edi_nr: t(m.edi_nr), edi_name: t(m.edi_name), comment: t(m.comment)}))};
+}
+/** Prüfungen wie im Backend (lieferant.rs); k = Pfad des Feldes */
+function lfErrors(d) {
+  const m = [], add = (k, t) => m.push({k, t}), t = v => String(v ?? '').trim(), p = d.profile;
+  const name = t(d.name); if (name.length < 2) add('name', 'Name angeben (mindestens 2 Zeichen)'); else if (name.length > 120) add('name', 'Name: höchstens 120 Zeichen');
+  const nr = t(d.nr);
+  if (!/^\d+$/.test(nr) || +nr < 1 || +nr > 999999) add('nr', 'Nr.: ganze Zahl ab 1');
+  else { const o = LF.rows.find(r => +r.nr === +nr && r.id !== (d.id || '')); if (o) add('nr', `Die Nr. ${nr} hat schon der Lieferant „${lfName(o)}“`); }
+  if (!/^[A-Za-z]{2}$/.test(t(d.country))) add('country', 'Land wählen');
+  const em = t(d.email); if (em && (!lfEmailOk(em) || em.length > 120)) add('email', 'E-Mail-Adresse wie name@firma.at');
+  for (const [k, l, mx] of [['contact', 'Ansprechperson', 80], ['phone', 'Telefon', 60], ['customer_no', 'Kunden-Nr.', 60], ['note', 'Info', 2000], ['profile.fax', 'Fax', 60], ['profile.web', 'Webseite', 120], ['profile.steuernr', 'Steuernummer', 60], ['profile.info2', 'Info 2', 2000], ['profile.vereinbarung1', 'Vereinbarung 1', 2000], ['profile.vereinbarung2', 'Vereinbarung 2', 2000], ['profile.rma_ablauf', 'RMA Ablauf', 2000]]) if (t(mgetp(d, k)).length > mx) add(k, `${l}: höchstens ${mx} Zeichen`);
+  if (t(d.lead_days) !== '' && !(/^\d+$/.test(t(d.lead_days)) && +d.lead_days <= 365)) add('lead_days', 'Lieferzeit: Tage von 0 bis 365');
+  const uid = t(p.uid).replace(/\s+/g, ''); if (uid && !/^[A-Za-z]{2}[A-Za-z0-9]{2,12}$/.test(uid)) add('profile.uid', 'USt-IdNr.: Länderkennung und Nummer (z. B. ATU12345678)');
+  for (const [k, l] of [['gln', 'Haupt-GLN'], ['empfaenger_gln', 'Empfänger-GLN']]) { const g = t(p[k]).replace(/\s+/g, ''); if (g && !lfGlnOk(g)) add(`profile.${k}`, `${l}: 13 Ziffern mit gültiger Prüfziffer`); }
+  if (!flIbanOk(d.iban)) add('iban', 'IBAN: Prüfziffer stimmt nicht – bitte Eingabe kontrollieren');
+  const bic = t(d.bic).replace(/\s+/g, ''); if (bic && !/^[A-Za-z0-9]{8}([A-Za-z0-9]{3})?$/.test(bic)) add('bic', 'BIC: 8 oder 11 Zeichen (z. B. BKAUATWW)');
+  const ms = lfCent(p.min_summe); if (!isFinite(ms) || ms < 0) add('profile.min_summe', 'Min. Auftragssumme: Betrag ab 0');
+  if (t(p.min_menge) !== '' && !/^\d+$/.test(t(p.min_menge))) add('profile.min_menge', 'Min. Auftragsmenge: ganze Zahl ab 0');
+  if (t(p.skonto) !== '' && !(isFinite(lfPct(p.skonto)) && lfPct(p.skonto) >= 0 && lfPct(p.skonto) <= 100)) add('profile.skonto', 'Skonto: Prozentwert von 0 bis 100');
+  if (t(p.valuta) !== '' && !(/^\d+$/.test(t(p.valuta)) && +p.valuta <= 365)) add('profile.valuta', 'Valuta: Tage von 0 bis 365');
+  for (const [a, wo] of [['adresse', 'Haupt-Adresse'], ['rechnung', 'Rechnungsadresse']]) {
+    const v = p[a]; for (const k of LF_ADR) if (t(v[k]).length > 80) add(`profile.${a}.${k}`, 'Höchstens 80 Zeichen');
+    if (a === 'rechnung') { if (t(v.name).length > 120) add('profile.rechnung.name', 'Höchstens 120 Zeichen'); const land = t(v.land); if (land && !/^[A-Za-z]{2}$/.test(land)) add('profile.rechnung.land', 'Land als zweistelliger ISO-Code'); }
+  }
+  return m;
+}
+const lfTabOf = k => /^profile\.adresse\./.test(k) ? 'haupt' : /^profile\.rechnung\./.test(k) ? 'rechn' : 'allg';
+
+/* ── Maske ── */
+const lfNote = () => lfLocked() ? `<div class="zp-note">${ic('lock', 'i-sm')}<span><b>Lieferanten pflegt die Zentrale.</b> Diese Kasse bekommt die Angaben beim Abgleich; hier sind sie nur lesbar.</span></div>` : '';
+const LFK = maskeNew({
+  page: 'lieferant-edit', list: 'lieferanten', title: 'Lieferanten', perm: 'einkauf', st: LE,
+  sub: st => st.id ? `${lfRow(st.id)?.nr ?? ''} ${lfName(lfRow(st.id)) || st.d.name}`.trim() : 'neuer Lieferant',
+  load: async () => { await Promise.all([lfLoad(), mkLoad(), loadStamm(), typeof filLoad === 'function' ? filLoad() : null]); await lfLoadFiles(); },
+  reload: async () => { await Promise.all([lfLoad(true), mkLoad(true), loadStamm(true), typeof filLoad === 'function' ? filLoad(true) : null]); LE.filesFor = null; await lfLoadFiles(); },
+  draft: lfDraft, tabs: () => LF_TABS.map(([k, l]) => [k, l, k === 'marken' && LE.d?.marken.length ? ` <span class="ed-badge" style="background:var(--surface-3);color:var(--text-2)">${LE.d.marken.length}</span>` : k === 'fk' && LE.d && Object.keys(LE.d.profile.filial_kunden).length ? ` <span class="ed-badge" style="background:var(--surface-3);color:var(--text-2)">${Object.keys(LE.d.profile.filial_kunden).length}</span>` : k === 'dateien' && LE.files.length ? ` <span class="ed-badge" style="background:var(--surface-3);color:var(--text-2)">${LE.files.length}</span>` : '']),
+  errors: lfErrors, tabOf: lfTabOf, locked: lfLocked,
+  can: () => ({new: !lfLocked(), del: !!LE.id && !lfLocked(), refresh: true}),
+  bar: () => `<button class="ag-btn" data-mf-a="edi" title="Lieferanten EDI-Einstellungen" aria-label="Lieferanten EDI-Einstellungen" ${LE.id ? '' : 'disabled'}>${ic('truck', 'i-sm')}</button>`,
+  body: () => ({allg: lfAllg, marken: lfMarken, dateien: lfDateien, haupt: () => lfAdresse('adresse'), rechn: () => lfAdresse('rechnung'), fk: lfFk}[LE.tab] || lfAllg)(),
+  onSet: (k, el) => { if (k === 'name' || k === 'nr') renderTopbar(); if (k === 'profile.zahlungsbed') lfZahlungsbedAnwenden(); if (k === 'name' || k === 'country' || /^profile\.(adresse|rechnung)\./.test(k)) lfPrevAktual(el); },
+  rerender: k => k === 'country' || k === 'profile.zahlungsbed',
+  save: () => lfSave(), remove: (ids, ausMaske) => lfRemove(ids, ausMaske),
+  act: async (a, b, el) => {
+    if (a === 'edi') return lfZuEdi();
+    if (a === 'zbpage') { if (LE.dirty && !await confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen')) return; LE.dirty = false; return go('st-zahlungsbedingung'); }
+    if (a === 'adrkopie' && !lfLocked()) { const h = LE.d.profile.adresse; LE.d.profile.rechnung = {...LE.d.profile.rechnung, ...Object.fromEntries(LF_ADR.map(k => [k, h[k]])), land: String(LE.d.country || '').toUpperCase()}; LFK.dirty(el); LFK.render(); }
+  },
+});
+LFK.register();
+function lfOpen(id, ids) { LFK.open(id, ids); }
+async function lfZuEdi() {
+  if (LE.dirty && !await confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen')) return;
+  LE.dirty = false; STE.edilieferant = {rows: null, q: LE.id || '', dirty: false}; go('st-edilieferant');
+}
+/** Zahlungs-Bed. gewählt: Skonto und Valuta vorbelegen, wenn noch leer (überschreibbar) */
+function lfZahlungsbedAnwenden() {
+  const z = stRows('zahlungsbedingung').find(r => r.id === LE.d.profile.zahlungsbed); if (!z) return;
+  if (!String(LE.d.profile.valuta).trim() && z.tage) LE.d.profile.valuta = String(z.tage);
+  if (!String(LE.d.profile.skonto).trim() && z.skonto) LE.d.profile.skonto = String(z.skonto).replace('.', ',');
+}
+async function lfLoadFiles() {
+  if (!DESKTOP || !LE.id) { LE.files = []; LE.filesFor = LE.id; return; }
+  if (LE.filesFor === LE.id) return;
+  try { LE.files = await invoke('lieferant_datei_liste', {supplierId: LE.id}); } catch { LE.files = []; }
+  LE.filesFor = LE.id;
+}
+
+const lfLandOpts = () => landListe().map(l => [l.id, l.name]);
+function lfAllg() {
+  const D = LE.d, K = LFK, P = 'profile.', zb = stActive('zahlungsbedingung');
+  const zbSel = `<label class="field"><span>Zahlungs-Bed.</span><div class="ea-cmb-row"><select class="input select" data-mf="${P}zahlungsbed" style="flex:1;min-width:0" ${lfLocked() ? 'disabled' : ''}><option value="">–</option>${zb.map(z => `<option value="${esc(z.id)}" ${z.id === D.profile.zahlungsbed ? 'selected' : ''}>${esc(z.name || z.id)}</option>`).join('')}</select><button type="button" class="ea-ib" data-mf-a="zbpage" title="Zahlungsbedingungen bearbeiten oder neu anlegen" aria-label="Zahlungsbedingungen bearbeiten">${ic('edit', 'i-sm')}</button></div><small class="ea-hint">Füllt Valuta und Skonto der Eingangsrechnung vor. Die Bedingungen pflegen Sie unter Stammdaten › Zahlungsbedingungen.</small></label>`;
+  const cf = typeof cfDefs === 'function' && cfDefs('lieferant').length ? K.card('Eigene Felder', `<div data-lf-cf>${cfHTML('lieferant', D.fields || {}, false, 'Felder')}</div>`, 'lf-wide') : '';
+  return {html: `${lfNote()}<div class="fl-grid lf-allg">
+    ${K.card('Profil', `${K.sw('_aktiv', 'Aktiv', 'Inaktive Lieferanten erscheinen nicht mehr in Bestellung, Wareneingang, Rechnungen und Artikelmaske und nicht im Bestellvorschlag; ihre Belege bleiben.')}
+      ${K.in('nr', 'Nr. *', {inputmode: 'numeric', hint: 'Lieferantennummer – eindeutig. Die interne Kennung der Belege ändert sich nicht.'})}${K.in('name', 'Name *')}${K.landSel('country', 'Land *', {leer: undefined, hint: 'Versendungsland für die Intrastat-Meldung und Land der Haupt-Adresse.'})}
+      ${K.in(`${P}gln`, 'Haupt-GLN', {mono: true, inputmode: 'numeric', max: 13, hint: '13-stellige GLN: erkennt Lieferungen aus EDI-Nachrichten und steht in der Bestellung.'})}${K.in(`${P}empfaenger_gln`, 'Empfänger-GLN', {mono: true, inputmode: 'numeric', max: 13, hint: 'Nur wenn Nachrichten an einen anderen Empfänger gehen (z. B. Clearingstelle); leer = Haupt-GLN.'})}
+      ${K.in('customer_no', 'Kunden-Nr.', {hint: 'Unsere Kundennummer beim Lieferanten – steht auf der Bestellung. Je Filiale anders: Reiter „Filial-Kunden-Nummern“.'})}
+      ${K.sw(`${P}rma_pflicht`, 'RMA Code Pflicht', 'Retouren an diesen Lieferanten lassen sich nur mit RMA-/Rücksendenummer versenden.')}`)}
+    <div class="fl-stack">${K.card('Liefereinstellungen', `${K.sw(`${P}gegenscannen`, 'Gegenscannen bei WE-Avis erforderlich', 'Das Avis lässt sich erst einbuchen, nachdem die Ware im Scanner-Wareneingang gezählt wurde.')}
+      ${K.sw(`${P}order_vorschlag`, 'Order-Vorschläge nutzen', 'Aus = Artikel dieses Lieferanten erscheinen nicht im Bestellvorschlag und in der KI-Nachbestellung.')}
+      ${K.in('lead_days', 'Lief.-Term. 1 Offset (Tage)', {num: true, inputmode: 'numeric', hint: 'Lieferzeit – Grundlage der KI-Nachbestellung.'})}`)}
+      ${K.card('Kontaktdaten', `${K.in('contact', 'Ansprechperson', {hint: 'Steht auf der Bestellung als „z. H.“.'})}${K.in('email', 'E-Mail', {type: 'email', hint: 'Empfänger der Bestellung per E-Mail.'})}${K.in(`${P}web`, 'Webseite')}${K.in('phone', 'Telefon')}${K.in(`${P}fax`, 'Fax')}`)}</div>
+    <div class="fl-stack">${K.card('Finanzeinstellungen', `${K.in(`${P}uid`, 'USt-IdNr.', {mono: true, ph: 'ATU12345678', hint: 'Erscheint auf der Eingangsrechnung.'})}${K.in(`${P}steuernr`, 'Steuernummer')}
+      ${K.in(`${P}min_summe`, 'Min. Auftragssumme (€)', {num: true, inputmode: 'decimal', hint: 'Beim Bestellen fragt Kontor nach, wenn die Bestellung darunter liegt.'})}${K.in(`${P}min_menge`, 'Min. Auftragsmenge', {num: true, inputmode: 'numeric', hint: 'Stückzahl der ganzen Bestellung.'})}
+      <label class="field"><span>Währung</span><select class="input select" disabled><option>EUR – Euro</option></select><small class="ea-hint">Alle Beträge in Kontor sind in Euro.</small></label>
+      <div class="zp-pair">${K.in(`${P}skonto`, 'Skonto (%)', {num: true, inputmode: 'decimal'})}${K.in(`${P}valuta`, 'Valuta (Tage)', {num: true, inputmode: 'numeric'})}</div>${zbSel}
+      ${K.in('iban', 'IBAN', {mono: true, ph: 'AT61 1904 3002 3457 3201', hint: 'Für die SEPA-Zahlungsdatei. Änderungen verlangen die Freigabe eines Administrators.'})}${K.in('bic', 'BIC', {mono: true, ph: 'BKAUATWW'})}`)}</div>
+    ${K.card('Zusatzinformationen', `<div class="lf-zus">${K.area('note', 'Info', 3, 'Interner Hinweis – erscheint beim Bestellen.')}${K.area(`${P}info2`, 'Info 2', 3, 'Zweiter interner Hinweis.')}${K.area(`${P}vereinbarung1`, 'Vereinbarung 1', 3, 'Erscheint beim Bestellen und auf der Bestellung.')}${K.area(`${P}vereinbarung2`, 'Vereinbarung 2', 3, 'Erscheint beim Bestellen und auf der Bestellung.')}${K.area(`${P}rma_ablauf`, 'RMA Ablauf', 3, 'Hinweis zum Ablauf einer Rücksendung – erscheint in der Retoure an diesen Lieferanten.')}</div>`, 'lf-wide')}
+    ${cf}
+  </div>`, mount: null};
+}
+
+/* ── Haupt-Adresse und Rechnungsadresse ── */
+/** Druck-Ansicht des Empfängers (Name + Anschrift) – wird beim Tippen nachgeführt */
+function lfPrevHTML(a) {
+  const D = LE.d, v = D.profile[a], bill = a === 'rechnung', lines = lfAdrLines(v, bill ? v.land : D.country), nm = bill ? (String(v.name || '').trim() || D.name) : D.name;
+  return lines.length || nm ? [`<b>${esc(nm)}</b>`, ...lines.map(esc)].join('<br>') : '<span class="muted">Noch keine Adresse</span>';
+}
+function lfPrevAktual(el) { const a = LE.tab === 'haupt' ? 'adresse' : LE.tab === 'rechn' ? 'rechnung' : null, f = a && $('.fl-prev', el); if (f) f.innerHTML = lfPrevHTML(a); }
+function lfAdresse(a) {
+  const D = LE.d, K = LFK, P = `profile.${a}.`, bill = a === 'rechnung';
+  const nameFeld = bill ? K.in(`${P}name`, 'Name', {hint: 'Leer = Name des Lieferanten.'}) : `<label class="field"><span>Name</span><input class="input ea-ro" readonly tabindex="-1" value="${esc(D.name)}"><small class="ea-hint">Aus „Name“ (Reiter Allgemein).</small></label>`;
+  const landFeld = bill ? K.sel(`${P}land`, 'Land *', lfLandOpts(), {leer: 'wie Haupt-Adresse'}) : K.landSel('country', 'Land *', {leer: undefined, hint: 'Dasselbe Feld wie „Land“ im Reiter Allgemein.'});
+  const hint = bill ? 'Anschrift für Eingangsrechnung und Zahlung (Belegkopf). Leer = es gilt die Haupt-Adresse. Bestellung, Avis und Retoure gehen an die Haupt-Adresse.' : 'Anschrift der Bestellung, des Avis, der Retoure und der Reklamation (Empfängerblock).';
+  return {html: `${lfNote()}<p class="ea-hint ue-note">${esc(hint)}</p><div class="fl-grid fl-2">
+    ${K.card(bill ? 'Rechnungsadresse' : 'Haupt-Adresse', `${nameFeld}${K.in(`${P}adrzeile1`, 'Adr.-Zeile 1')}${K.in(`${P}adrzeile2`, 'Adr.-Zeile 2')}<div class="zp-pair">${K.in(`${P}strasse`, 'Straße')}${K.in(`${P}hausnr`, 'Haus-Nr.')}</div><div class="zp-pair">${K.in(`${P}plz`, 'PLZ')}${K.in(`${P}ort`, 'Ort')}</div>${K.in(`${P}postfach`, 'Postfach')}${landFeld}${K.in(`${P}bundesland`, 'Bundesland / Kanton / Provinz')}
+      ${bill ? `<button type="button" class="btn btn-secondary" data-mf-a="adrkopie" ${lfLocked() ? 'disabled' : ''}>${ic('copy', 'i-sm')}Von Haupt-Adresse übernehmen</button>` : ''}`)}
+    ${K.card('Druck-Ansicht', `<div class="fl-prev">${lfPrevHTML(a)}</div><small class="ea-hint">So steht der Empfänger auf dem Beleg${bill ? ' (Eingangsrechnung, Zahlung)' : ' (Bestellung, Avis, Retoure)'}.</small>`)}
+  </div>`};
+}
+
+/* ── Filial-Kunden-Nummern ── */
+const lfFkRows = () => Object.entries(LE.d.profile.filial_kunden).map(([st, nr]) => { const r = typeof flRow === 'function' ? flRow(st) : null; return {id: st, filiale: r ? `${flName(r)} (${r.nr})` : st, kundennr: nr}; });
+function lfFk() {
+  return {html: `${lfNote()}<p class="ea-hint ue-note">Hat Ihr Unternehmen bei diesem Lieferanten je Filiale eine eigene Kundennummer, tragen Sie sie hier ein. Bestellt eine Filiale, steht ihre Nummer auf der Bestellung (und in der EDI-Bestellung); ohne Eintrag gilt die „Kunden-Nr.“ aus dem Reiter Allgemein. Jede Filiale bekommt nur ihre eigene Nummer.</p>
+    <div class="ae-pane"><div class="ae-card" style="flex:1 1 100%"><h4>Filial-Kundennummern</h4><div data-lf-fk></div></div></div>`,
+    mount: el => {
+      AG['lf-fk'] = agNew({embed: true, title: 'Filial-Kundennummern', cols: [{k: 'filiale', l: 'Filial-Name (Nr.)', w: 260}, {k: 'kundennr', l: 'Kunden-Nr.', w: 200}], sort: {k: 'filiale', dir: 1}, rows: lfFkRows,
+        toolbar: [], extra: lfLocked() ? [] : [{k: 'neu', l: 'Neu', icon: 'plus'}, {k: 'del', l: 'Löschen', icon: 'trash'}],
+        edit: id => lfLocked() ? null : lfFkDialog(id), actions: {neu: () => lfFkDialog(null), del: () => { const s = [...AG['lf-fk'].sel]; if (!s.length) return toast('Bitte Zeilen markieren', {icon: 'info'}); s.forEach(i => delete LE.d.profile.filial_kunden[i]); LFK.dirty(el); LFK.render(); }}});
+      agMount('lf-fk', $('[data-lf-fk]', el));
+    }};
+}
+function lfFkDialog(id) {
+  const D = LE.d, fil = (typeof FIL !== 'undefined' ? FIL.rows : []).filter(r => r._aktiv !== false), frei = fil.filter(r => id ? flSame(r.id, id) : !Object.keys(D.profile.filial_kunden).some(k => flSame(k, r.id)));
+  const cur = id ? D.profile.filial_kunden[id] : '';
+  const el = openLayer(`<div class="modal" style="width:min(520px,100%)" role="dialog" aria-modal="true" aria-label="Filial-Kundennummer"><div class="m-head"><div class="m-ic">${ic('store')}</div><div><h2>Filial-Kundennummer</h2><p>Lieferant „${esc(D.name || 'neu')}“</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body"><div class="ed-grid"><label class="field full"><span>Filial-Name (Nr.)</span><select class="input select" id="fkSt" ${id ? 'disabled' : ''}>${id ? '' : '<option value="">– wählen –</option>'}${frei.map(r => `<option value="${esc(r.id)}" ${flSame(r.id, id) ? 'selected' : ''}>${esc(flName(r))} (${esc(r.nr)})</option>`).join('')}</select></label>
+      <label class="field full"><span>Kunden-Nr.</span><input class="input" id="fkNr" value="${esc(cur)}" maxlength="40" autocomplete="off"></label></div>${!frei.length && !id ? '<p class="ea-hint">Für alle aktiven Filialen gibt es schon eine Nummer.</p>' : ''}</div>
+    <div class="m-foot">${id ? `<button class="btn btn-danger" id="fkDel">${ic('trash', 'i-sm')}Löschen</button>` : ''}<span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="fkOk">${ic('check', 'i-sm')}Übernehmen</button></div></div>`, {focus: id ? '#fkNr' : '#fkSt'});
+  $('#fkOk', el).onclick = () => {
+    const st = id || $('#fkSt', el).value, nr = $('#fkNr', el).value.trim();
+    if (!st) return toast('Bitte eine Filiale wählen', {type: 'warn'});
+    if (!nr) return toast('Bitte die Kunden-Nr. eintragen', {type: 'warn'});
+    D.profile.filial_kunden[st] = nr; closeLayer(el); LE.dirty = true; LFK.render();
+  };
+  if (id) $('#fkDel', el).onclick = () => { delete D.profile.filial_kunden[id]; closeLayer(el); LE.dirty = true; LFK.render(); };
+}
+
+/* ── Marken: zugeordnet (links) und angelegt (rechts) ── */
+const lfMarkeName = bid => mkRow(bid)?.name || bid;
+function lfMarkenRows(on) {
+  const D = LE.d, set = new Set(D.marken.map(m => m.brand_id)), n = ART.filter(a => LE.id && a.supplierId === LE.id);
+  if (on) return D.marken.map(m => { const name = lfMarkeName(m.brand_id); return {id: m.brand_id, name, ext: m.ext_name, herkunft: LF_GLN_HERKUNFT.find(h => h[0] === m.gln_src)?.[1] || m.gln_src, gln: m.gln, edinr: m.edi_nr, edinameb: m.edi_name, art: n.filter(a => mkNorm(a.brand) === mkNorm(name)).length, kommentar: m.comment}; });
+  return MK.rows.filter(r => !set.has(r.id) && r._aktiv !== false).map(r => ({id: r.id, name: r.name}));
+}
+function lfMarken() {
+  return {html: `${lfNote()}<p class="ea-hint ue-note">Links stehen die Marken, die dieser Lieferant liefert, rechts alle angelegten Marken. Zuordnen per Ziehen, Doppelklick, „Zuordnen“ oder „Neu“ (mit Externem Marken-Namen und EDI-Angaben). Beim Anlegen eines Artikels dieser Marke wird der Lieferant vorgeschlagen; nach dem Sichern lassen sich vorhandene Artikel ohne Lieferant nachtragen. Externer Marken-Name, EDI Marken-Nr. und -Name sowie die GLN (Herkunft „Hersteller“) ordnen beim PRICAT-Import die Marke des Lieferanten Ihrer eigenen Marke zu; eine GLN mit Herkunft „Lieferant“ erkennt den Lieferanten in EDI-Nachrichten. Marken legen Sie unter Stammdaten › Marken an.</p>
+    <div class="ae-pane ae-two"><div class="ae-card"><h4>Zugeordnete Marken</h4><div data-lf-ma="a"></div></div><div class="ae-card"><h4>Angelegte Marken</h4><div data-lf-ma="b"></div></div></div>`,
+    mount: el => {
+      const locked = lfLocked();
+      const mv = (ids, add) => {
+        if (locked) return;
+        const D = LE.d;
+        if (add) ids.forEach(i => { if (!D.marken.some(m => m.brand_id === i)) D.marken.push({brand_id: i, ext_name: '', gln_src: '', gln: '', edi_nr: '', edi_name: '', comment: ''}); });
+        else D.marken = D.marken.filter(m => !ids.includes(m.brand_id));
+        LFK.dirty(el); LFK.render();
+      };
+      const [da, db] = agDual('lf-ma-a', 'lf-ma-b', mv);
+      AG['lf-ma-a'] = agNew({embed: true, title: 'Zugeordnete Marken', rows: () => lfMarkenRows(true), dnd: locked ? null : da, sort: {k: 'name', dir: 1},
+        cols: [{k: 'name', l: 'Marken-Name', w: 150}, {k: 'ext', l: 'Externer Marken-Name', w: 150}, {k: 'herkunft', l: 'GLN-Herkunft', w: 110}, {k: 'gln', l: 'GLN', w: 120}, {k: 'edinr', l: 'EDI Marken-Nr.', w: 110}, {k: 'edinameb', l: 'EDI Marken-Name', w: 130}, {k: 'art', l: 'Anz. Art.', t: 'num', w: 80}, {k: 'kommentar', l: 'Kommentar', w: 160}],
+        extra: locked ? [] : [{k: 'neu', l: 'Neu', icon: 'plus'}, {k: 'rm', l: 'Entfernen', icon: 'x'}], edit: id => lfMarkeDialog(id),
+        actions: {neu: () => lfMarkeDialog(null), rm: () => { const s = [...AG['lf-ma-a'].sel]; if (s.length) mv(s, false); }}});
+      AG['lf-ma-b'] = agNew({embed: true, title: 'Angelegte Marken', rows: () => lfMarkenRows(false), dnd: locked ? null : db, sort: {k: 'name', dir: 1}, cols: [{k: 'name', l: 'Name', w: 200}],
+        extra: locked ? [] : [{k: 'neu', l: 'Neu', icon: 'plus'}, {k: 'add', l: 'Zuordnen', icon: 'plus'}], edit: id => locked ? null : mv([id], true),
+        actions: {neu: () => go('st-marke'), add: () => { const s = [...AG['lf-ma-b'].sel]; if (s.length) mv(s, true); }}});
+      agMount('lf-ma-a', $('[data-lf-ma="a"]', el)); agMount('lf-ma-b', $('[data-lf-ma="b"]', el));
+    }};
+}
+function lfMarkeDialog(id) {
+  const D = LE.d, ex = id ? D.marken.find(m => m.brand_id === id) : null;
+  if (id && !ex) return;
+  const frei = MK.rows.filter(r => r._aktiv !== false && !D.marken.some(m => m.brand_id === r.id));
+  const v = ex || {brand_id: '', ext_name: '', gln_src: '', gln: '', edi_nr: '', edi_name: '', comment: ''};
+  const ro = lfLocked();
+  const el = openLayer(`<div class="modal" style="width:min(560px,100%)" role="dialog" aria-modal="true" aria-label="Marke zuordnen"><div class="m-head"><div class="m-ic">${ic('star')}</div><div><h2>Marke zuordnen</h2><p>Lieferant „${esc(D.name || 'neu')}“</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body"><div class="ed-grid"><label class="field full"><span>Lieferant</span><input class="input ea-ro" readonly tabindex="-1" value="${esc(D.name)}"></label>
+      <label class="field full"><span>Marke *</span><select class="input select" id="lmMarke" ${id || ro ? 'disabled' : ''}>${id ? '' : '<option value="">– wählen –</option>'}${(id ? MK.rows.filter(r => r.id === id) : frei).map(r => `<option value="${esc(r.id)}" ${r.id === v.brand_id ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}</select></label>
+      <label class="field full"><span>Externer Marken-Name</span><input class="input" id="lmExt" value="${esc(v.ext_name)}" maxlength="80" ${ro ? 'disabled' : ''}><small class="ea-hint">So nennt der Lieferant die Marke (z. B. in PRICAT-Dateien).</small></label>
+      <label class="field"><span>GLN-Herkunft</span><select class="input select" id="lmHk" ${ro ? 'disabled' : ''}><option value="">–</option>${LF_GLN_HERKUNFT.map(([k, l]) => `<option value="${k}" ${k === v.gln_src ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="field"><span>GLN</span><input class="input mono" id="lmGln" value="${esc(v.gln)}" maxlength="13" inputmode="numeric" ${ro ? 'disabled' : ''}></label>
+      <label class="field"><span>EDI Marken-Nr.</span><input class="input" id="lmEn" value="${esc(v.edi_nr)}" maxlength="40" ${ro ? 'disabled' : ''}></label><label class="field"><span>EDI Marken-Name</span><input class="input" id="lmEm" value="${esc(v.edi_name)}" maxlength="80" ${ro ? 'disabled' : ''}></label>
+      <label class="field full"><span>Kommentar</span><input class="input" id="lmKo" value="${esc(v.comment)}" maxlength="300" ${ro ? 'disabled' : ''}></label></div>${!id && !frei.length ? '<p class="ea-hint">Alle angelegten Marken sind schon zugeordnet – neue Marken legen Sie unter Stammdaten › Marken an.</p>' : ''}</div>
+    <div class="m-foot">${id && !ro ? `<button class="btn btn-danger" id="lmDel">${ic('trash', 'i-sm')}Entfernen</button>` : ''}<span class="sp"></span><button class="btn btn-secondary" data-close>${ro ? 'Schließen' : 'Abbrechen'}</button>${ro ? '' : `<button class="btn btn-primary" id="lmOk">${ic('check', 'i-sm')}Übernehmen</button>`}</div></div>`, {focus: id ? '#lmExt' : '#lmMarke'});
+  if (ro) return;
+  $('#lmOk', el).onclick = () => {
+    const bid = id || $('#lmMarke', el).value, gln = $('#lmGln', el).value.replace(/\s+/g, '');
+    if (!bid) return toast('Bitte eine Marke wählen', {type: 'warn'});
+    if (gln && !lfGlnOk(gln)) return toast('GLN: 13 Ziffern mit gültiger Prüfziffer', {type: 'warn'});
+    const z = {brand_id: bid, ext_name: $('#lmExt', el).value.trim(), gln_src: $('#lmHk', el).value, gln, edi_nr: $('#lmEn', el).value.trim(), edi_name: $('#lmEm', el).value.trim(), comment: $('#lmKo', el).value.trim()};
+    const i = D.marken.findIndex(m => m.brand_id === bid); if (i >= 0) D.marken[i] = z; else D.marken.push(z);
+    closeLayer(el); LE.dirty = true; LFK.render();
+  };
+  if (id) $('#lmDel', el).onclick = () => { D.marken = D.marken.filter(m => m.brand_id !== id); closeLayer(el); LE.dirty = true; LFK.render(); };
+}
+
+/* ── Dateien ── */
+const lfDateiTyp = n => { const e = String(n).split('.').pop(); return e && e !== n ? e.toUpperCase() : ''; };
+const lfFileRows = () => LE.files.map(f => ({id: String(f.id), am: f.uploaded_at, name: f.name, typ: lfDateiTyp(f.name), beschr: f.descr || '', manr: f.user_nr || '', maname: f.user_name || '', groesse: f.size}));
+const lfB64 = file => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = () => rej(new Error('Datei nicht lesbar')); r.readAsDataURL(file); });
+function lfDateien() {
+  const hint = !DESKTOP ? 'Dokumente lassen sich nur in der Desktop-App ablegen.' : !LE.id ? 'Bitte den Lieferanten zuerst sichern – dann lassen sich Dokumente hochladen.' : lfLocked() ? 'Die Dokumente liegen in der Zentrale.' : '';
+  return {html: `${lfNote()}<p class="ea-hint ue-note">Preislisten, Konditionen, RMA-Bedingungen, Zertifikate und andere Unterlagen zum Lieferanten. Die Dateien liegen in der Datenbank dieser Kasse (und damit in der Datensicherung); sie gehen nicht an die Filialen. Erlaubt sind PDF, Bilder, Text/CSV, Excel, Word, OpenDocument und ZIP bis 15 MB. ${esc(hint)}</p>
+    <div class="ae-pane"><div class="ae-card" style="flex:1 1 100%"><h4>Dokumente</h4><div data-lf-files></div></div></div>`,
+    mount: el => {
+      const can = DESKTOP && LE.id && !lfLocked();
+      AG['lf-files'] = agNew({embed: true, title: 'Dokumente', rows: lfFileRows, sort: {k: 'am', dir: -1}, toolbar: [],
+        cols: [{k: 'am', l: 'Hochgeladen am', w: 150, get: r => r.am, fmt: v => v ? fmtTs(v) : ''}, {k: 'name', l: 'Dateiname', w: 230}, {k: 'typ', l: 'Dateityp', w: 90}, {k: 'beschr', l: 'Beschreibung', w: 240}, {k: 'manr', l: 'Mitarbeiter-Nr.', w: 110}, {k: 'maname', l: 'Mitarbeiter-Name', w: 160}, {k: 'groesse', l: 'Größe', t: 'num', w: 90, fmt: v => v >= 1048576 ? `${num(v / 1048576, 1)} MB` : `${num(Math.max(1, Math.round(v / 1024)))} KB`}],
+        extra: [{k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, ...(can ? [{k: 'up', l: 'Hochladen', icon: 'upload'}] : []), {k: 'open', l: 'Öffnen', icon: 'arrow-right'}, {k: 'save', l: 'Speichern unter', icon: 'download'}, ...(can ? [{k: 'descr', l: 'Beschreibung', icon: 'edit'}, {k: 'del', l: 'Löschen', icon: 'trash'}] : [])],
+        edit: id => lfDateiOeffnen(id),
+        actions: {refresh: async () => { LE.filesFor = null; await lfLoadFiles(); LFK.render(); }, up: () => lfDateiHoch(), open: () => lfDateiAuswahl(lfDateiOeffnen), save: () => lfDateiAuswahl(lfDateiSpeichern), descr: () => lfDateiAuswahl(lfDateiBeschreiben), del: () => lfDateiAuswahl(lfDateiLoeschen, true)}});
+      agMount('lf-files', $('[data-lf-files]', el));
+      if (can) fileDrop($('.ae-card', el), {multiple: true, hint: 'Dokumente hier ablegen', accept: /\.(pdf|jpe?g|png|webp|gif|tiff?|txt|csv|xlsx?|docx?|odt|ods|zip)$/i, onFiles: async files => { for (const f of files) await lfDateiB64Hoch(f); await lfDateiNeu(); }});
+    }};
+}
+async function lfDateiNeu() { LE.filesFor = null; await lfLoadFiles(); LFK.render(); }
+function lfDateiAuswahl(fn, mehrere) {
+  const s = [...AG['lf-files'].sel]; if (!s.length) return toast('Bitte ein Dokument markieren', {icon: 'info'});
+  return mehrere ? fn(s) : fn(s[0]);
+}
+async function lfDateiHoch() {
+  try {
+    const r = await invoke('lieferant_datei_hochladen', {supplierId: LE.id, user: S.user.id});
+    if (r.fehler?.length) toast('Nicht alle Dokumente übernommen', {t2: r.fehler.join(' · '), type: 'warn', dur: 9000});
+    if (r.dateien?.length) toast(r.dateien.length === 1 ? 'Dokument hochgeladen' : `${r.dateien.length} Dokumente hochgeladen`, {t2: r.dateien.map(x => x.name).join(', '), type: 'pos', icon: 'upload', dur: 2400});
+  } catch (e) { toast('Hochladen fehlgeschlagen', {t2: String(e.message || e), type: 'warn', dur: 7000}); }
+  await lfDateiNeu();
+}
+async function lfDateiB64Hoch(f) {
+  try { const x = await invoke('lieferant_datei_hochladen_b64', {supplierId: LE.id, name: f.name, data: await lfB64(f), user: S.user.id}); toast('Dokument hochgeladen', {t2: x.name, type: 'pos', icon: 'upload', dur: 2000}); }
+  catch (e) { toast('Hochladen fehlgeschlagen', {t2: `${f.name}: ${String(e.message || e)}`, type: 'warn', dur: 7000}); }
+}
+async function lfDateiOeffnen(id) { try { await invoke('lieferant_datei_oeffnen', {id: +id, by: S.user.name}); } catch (e) { toast('Öffnen nicht möglich', {t2: String(e.message || e), type: 'warn'}); } }
+async function lfDateiSpeichern(id) { try { const p = await invoke('lieferant_datei_speichern', {id: +id, by: S.user.name}); if (p) toast('Gespeichert', {t2: p, type: 'pos', icon: 'download'}); } catch (e) { toast('Speichern nicht möglich', {t2: String(e.message || e), type: 'warn'}); } }
+async function lfDateiBeschreiben(id) {
+  const f = LE.files.find(x => String(x.id) === String(id)); if (!f) return;
+  const el = openLayer(`<div class="modal" style="width:min(520px,100%)" role="dialog" aria-modal="true" aria-label="Beschreibung"><div class="m-head"><div class="m-ic">${ic('edit')}</div><div><h2>Beschreibung</h2><p>${esc(f.name)}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body"><label class="field"><span>Beschreibung</span><input class="input" id="dsT" value="${esc(f.descr || '')}" maxlength="300" autocomplete="off"></label></div><div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="dsOk">${ic('check', 'i-sm')}Übernehmen</button></div></div>`, {focus: '#dsT'});
+  $('#dsOk', el).onclick = async () => { try { await invoke('lieferant_datei_beschreiben', {id: +id, descr: $('#dsT', el).value}); closeLayer(el); await lfDateiNeu(); } catch (e) { toast('Nicht möglich', {t2: String(e.message || e), type: 'warn'}); } };
+}
+async function lfDateiLoeschen(ids) {
+  if (!await confirmBox(ids.length === 1 ? 'Dieses Dokument löschen?' : `${ids.length} Dokumente löschen?`, 'Löschen')) return;
+  for (const i of ids) { try { await invoke('lieferant_datei_loeschen', {id: +i, by: S.user.name}); } catch (e) { toast('Löschen nicht möglich', {t2: String(e.message || e), type: 'warn'}); } }
+  await lfDateiNeu();
+}
+
+/* ── Sichern und Löschen ── */
+async function lfSave() {
+  if (lfLocked()) return;
+  const D = LE.d, O = LE.orig, isNew = !LE.id;
+  if (!LFK.gate()) return;
+  const cfv = typeof cfDefs === 'function' && cfDefs('lieferant').length ? await cfCheck('lieferant', cfRead($('[data-lf-cf]') || document, 'lieferant')) : null;
+  if (cfv === undefined || (typeof cfDefs === 'function' && cfDefs('lieferant').length && !cfv)) return;
+  if (cfv) D.fields = cfv;
+  const row = lfToRow(D), name = row.name;
+  const sens = DESKTOP && !isNew && ['iban', 'bic'].some(k => String(D[k]).replace(/\s+/g, '').toUpperCase() !== String(O[k]).replace(/\s+/g, '').toUpperCase());
+  if (sens) { try { await stepUp({title: 'Administrator-Freigabe', text: `Bankverbindung des Lieferanten „${name}“ ändern`, admin: true}); } catch { return; } }
+  const neuMarken = D.marken.map(m => m.brand_id).filter(b => !O.marken.some(m => m.brand_id === b));
+  let saved;
+  try {
+    if (DESKTOP) saved = await invoke('lieferant_save', {row, by: S.user.name});
+    else {
+      const l = persist.get('lieferanten', lfPreviewRows()).slice(), i = l.findIndex(r => r.id === row.id);
+      const rec = {...row, _geaendert: new Date().toISOString()};
+      if (i < 0) { let id = `L-${String(row.nr).padStart(3, '0')}`, k = 1; while (l.some(r => r.id === id)) id = `L-${String(row.nr + 1000 * k++).padStart(3, '0')}`; rec.id = id; l.push(rec); } else l[i] = {...l[i], ...rec};
+      persist.set('lieferanten', l); saved = lfDecorate(rec);
+    }
+  } catch (err) { return toast('Speichern fehlgeschlagen', {t2: String(err.message || err), type: 'warn', dur: 7000}); }
+  await Promise.all([lfLoad(true), loadSuppliers()]);
+  if (typeof CF !== 'undefined' && saved.id) CF.sup[saved.id] = saved.fields || {};
+  const id = saved.id; LE.id = id; LE.d = lfDraft(id); LE.orig = mclone(LE.d); LE.dirty = false; LE.show = false; LE.filesFor = null; if (isNew) LE.ids = [...LE.ids, id];
+  await lfLoadFiles();
+  Hooks.emit('lieferant.saved', {lieferant: id, name, neu: isNew});
+  toast(isNew ? 'Lieferant angelegt' : 'Gespeichert', {t2: `${row.nr} · ${name}`, type: 'pos', icon: 'building', dur: 2200});
+  LFK.render(); renderTopbar();
+  if (neuMarken.length) await lfArtikelNachtragen(id, neuMarken, name);
+}
+/** Artikel der neu zugeordneten Marken ohne Lieferant: dem Lieferanten zuordnen? (nie überschreiben) */
+async function lfArtikelNachtragen(id, brandIds, name) {
+  let n = 0;
+  if (DESKTOP) { try { n = await invoke('lieferant_artikel_offen', {brandIds}); } catch { return; } }
+  else { const names = new Set(brandIds.map(b => mkNorm(mkRow(b)?.name))); n = ART.filter(a => !a.supplierId && names.has(mkNorm(a.brand))).length; }
+  if (!n || !await confirmBox(`${num(n)} Artikel dieser Marken haben noch keinen Lieferanten. Dem Lieferanten „${name}“ zuordnen? (Artikel mit anderem Lieferanten bleiben unverändert.)`, 'Zuordnen')) return;
+  try {
+    if (DESKTOP) { const z = await invoke('lieferant_artikel_zuordnen', {supplierId: id, brandIds, by: S.user.name}); replaceCatalog(await invoke('catalog_list')); toast('Artikel zugeordnet', {t2: `${num(z)} Artikel · ${name}`, type: 'pos', icon: 'tag'}); }
+    else { const names = new Set(brandIds.map(b => mkNorm(mkRow(b)?.name))); let z = 0; ART.forEach(a => { if (!a.supplierId && names.has(mkNorm(a.brand))) { a.supplierId = id; z++; } }); toast('Artikel zugeordnet', {t2: `${num(z)} Artikel · ${name}`, type: 'pos', icon: 'tag'}); }
+    await lfLoad(true); LE.d = lfDraft(id); LE.orig = mclone(LE.d); LFK.render();
+  } catch (e) { toast('Nicht möglich', {t2: String(e.message || e), type: 'warn'}); }
+}
+async function lfRemove(ids, fromMask) {
+  const abort = () => { throw new Error('abgebrochen'); };
+  if (lfLocked()) { toast('Lieferanten löscht die Zentrale', {icon: 'lock'}); abort(); }
+  const rs = ids.map(lfRow).filter(Boolean); if (!rs.length) abort();
+  const wer = rs.length === 1 ? `Lieferant „${lfName(rs[0])}“` : `${rs.length} Lieferanten`;
+  if (!await confirmBox(`${wer} löschen? Lieferanten mit Bestellungen, Belegen oder Artikeln lassen sich nicht löschen – sie lassen sich nur deaktivieren (Schalter „Aktiv“).`, 'Löschen')) abort();
+  if (DESKTOP) await stepUp({title: 'Administrator-Freigabe', text: `${wer} löschen`, admin: true}).catch(abort);
+  const fehler = [];
+  for (const r of rs) {
+    try {
+      if (DESKTOP) await invoke('lieferant_delete', {id: r.id, by: S.user.name});
+      else { if (r._artikel) throw `Zum Lieferanten „${lfName(r)}“ gehören ${r._artikel} Artikel – er lässt sich nicht löschen, aber deaktivieren (Schalter „Aktiv“)`; persist.set('lieferanten', persist.get('lieferanten', []).filter(x => x.id !== r.id)); }
+    } catch (e) { fehler.push(String(e.message || e)); }
+  }
+  await Promise.all([lfLoad(true), loadSuppliers()]);
+  if (fehler.length) { toast('Nicht alles gelöscht', {t2: fehler.join(' · '), type: 'warn', dur: 9000}); if (fehler.length === rs.length) abort(); return; }
+  toast(rs.length === 1 ? 'Lieferant gelöscht' : `${rs.length} Lieferanten gelöscht`, {t2: rs.map(lfName).join(', '), icon: 'building', dur: 2400});
+  if (fromMask) { LE.dirty = false; LE.d = null; go('lieferanten'); }
+}
+
+/* ── Wirkung in den Belegen ── */
+const lfSup = id => SUPPLIERS_ALL.find(x => x.id === id) || SUPPLIERS.find(x => x.id === id);
+/** Eingangsrechnung: Fälligkeit, Skonto und Skonto-Frist aus Valuta, Skonto und Zahlungs-Bed. des Lieferanten vorbelegen – nur Felder, die leer sind oder noch die frühere Vorgabe tragen */
+function lfEiVorgabe(st) {
+  const sup = lfSup(st.partner), au = st._auto ||= {};
+  if (!sup) return;
+  const p = sup.profile || {}, z = stRows('zahlungsbedingung').find(r => r.id === p.zahlungsbed);
+  const valuta = +p.valuta || +z?.tage || 0, skonto = +p.skonto || +z?.skonto || 0, skTage = +z?.skonto_tage || 0;
+  const base = st.date ? new Date(st.date + 'T12:00:00') : new Date(), add = n => dIso(new Date(base.getTime() + n * 864e5));
+  const frei = (cur, k) => cur == null || cur === '' || cur === au[k];
+  if (frei(st.due, 'due')) { st.due = valuta ? add(valuta) : null; au.due = st.due; }
+  if (frei(st.data.skonto_pct, 'pct')) { st.data.skonto_pct = skonto || ''; au.pct = st.data.skonto_pct; }
+  if (frei(st.data.skonto_bis, 'bis')) { st.data.skonto_bis = skonto && skTage ? add(skTage) : ''; au.bis = st.data.skonto_bis; }
+}
+DOC_EXTRA.lretoure = st => {
+  const s = lfSup(st.partner), p = s?.profile || {}; if (!p.rma_pflicht && !p.rma_ablauf) return '';
+  return `<div class="prompt-hint blk" style="display:grid;gap:4px">${p.rma_pflicht ? `<div>${ic('alert', 'i-xs')}<b>${esc(s.name)} verlangt einen RMA-Code</b> – bitte oben unter „RMA- / Rücksendenummer“ eintragen; ohne Nummer lässt sich die Retoure nicht versenden.</div>` : ''}${p.rma_ablauf ? `<div><b>RMA Ablauf:</b> <span style="white-space:pre-wrap">${esc(p.rma_ablauf)}</span></div>` : ''}</div>`;
+};
+DOC_EXTRA.reklamation = st => { const p = lfSup(st.data?.lieferant)?.profile || {}; return p.rma_ablauf ? `<div class="prompt-hint blk"><b>RMA Ablauf des Lieferanten:</b> <span style="white-space:pre-wrap">${esc(p.rma_ablauf)}</span></div>` : ''; };
+DOC_EXTRA.avis = st => { const s = lfSup(st.partner); return s?.profile?.gegenscannen && !['gebucht', 'storniert'].includes(st.status) ? `<div class="prompt-hint blk">${ic('barcode', 'i-xs')}<b>${esc(s.name)} verlangt das Gegenscannen:</b> eingebucht wird erst, nachdem die Ware mit „Mit Scanner prüfen“ gezählt wurde.</div>` : ''; };
+DOC_EXTRA.er = st => { const s = lfSup(st.partner); return s ? `${lfHinweis(s)}${s.profile?.uid ? `<div class="muted" style="font-size:12.5px">USt-IdNr. des Lieferanten: ${esc(s.profile.uid)}</div>` : ''}` : ''; };
+
+// nur lesend – für Prüfungen: Empfängerblock und Hinweise zu einem Lieferanten, Kunden-Nr. je Filiale
+if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {lfEmpfaenger: (id, art) => lfEmpfaenger(lfRow(id), art), lfKundenNr: (id, st) => lfKundenNr(lfRow(id), st), lfGlnOk, lfSichtbar: name => ({alle: SUPPLIERS_ALL.some(s => s.name === name), aktiv: SUPPLIERS.some(s => s.name === name)}), lfMarkeSync, lfMarkeEigen});
 /* ═════════════════════════════════════════════════════════════════
    56 · MENÜPUNKTE UND RECHTE
    Wer ein Recht nicht hat – weder über seine Rolle noch über seine Benutzergruppe – sieht die zugehörigen Menüpunkte nicht

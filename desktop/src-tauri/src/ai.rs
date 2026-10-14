@@ -86,7 +86,8 @@ pub fn reorder(c: &Connection) -> Result<Vec<Value>, String> {
         .prepare(
             "SELECT v.id, a.id, a.name, v.color, v.size, v.stock, COALESCE(s.lead_days, 7), COALESCE(a.supplier_id,''),
                (SELECT COALESCE(SUM(l.qty - l.received),0) FROM po_lines l JOIN purchase_orders p ON p.id = l.po_id WHERE l.variant_id = v.id AND p.status IN ('entwurf','bestellt','teilgeliefert'))
-             FROM variants v JOIN articles a ON a.id = v.article_id LEFT JOIN suppliers s ON s.id = a.supplier_id WHERE v.active = 1 AND a.active = 1",
+             FROM variants v JOIN articles a ON a.id = v.article_id LEFT JOIN suppliers s ON s.id = a.supplier_id
+             WHERE v.active = 1 AND a.active = 1 AND COALESCE(s.active, 1) = 1 AND COALESCE(json_extract(s.profile, '$.order_vorschlag'), 1) <> 0",
         )
         .map_err(|e| e.to_string())?;
     let vars: Vec<(i64, String, String, String, String, i64, i64, String, i64)> = st

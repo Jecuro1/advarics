@@ -68,8 +68,8 @@ const bsNeu = () => ({name: '', kundenfilter: false, von: 0, bis: 0, nurReg: fal
 const bsStaffel = () => ({name: '', ab: 0, pLauf: 0, pLaufU: '%', bLauf: 0, pGesp: 0, pGespU: '%', bGesp: 0});
 const BS = {id: null, ids: [], draft: null, tab: 'allg', dirty: false};
 const bsLoad = id => { const r = id ? stRows('bonussystem').find(x => x.id === id) : null; return r ? JSON.parse(JSON.stringify({...bsNeu(), ...r})) : bsNeu(); };
-const bsOpt = kind => kind === 'marke' ? [...new Set([...stActive('marke').map(r => r.name || r.id), ...ART.map(a => a.brand)].filter(Boolean))].sort((x, y) => x.localeCompare(y, 'de')).map(x => [x, x]) : stActive(kind).map(r => [r.id, `${r.name || r.id}${r.nr != null && r.nr !== '' ? ` (${r.nr})` : ''}`]);
-const bsLabel = (typ, id) => { const h = bsOpt(typ).find(x => x[0] === id); return h ? h[1] : ''; };
+const bsOpt = kind => kind === 'marke' ? mkAuswahl().map(x => [x, x]) : stActive(kind).map(r => [r.id, `${r.name || r.id}${r.nr != null && r.nr !== '' ? ` (${r.nr})` : ''}`]);
+const bsLabel = (typ, id) => { const h = bsOpt(typ).find(x => x[0] === id) || (typ === 'marke' ? bsOpt(typ).find(x => x[0] === (stRows('marke').find(r => r.id === id)?.name ?? id)) : null); return h ? h[1] : ''; };
 function bsOpen(id, ids) {
   BS.id = id; BS.ids = ids || BS.ids; BS.draft = bsLoad(id); BS.tab = 'allg'; BS.dirty = false;
   if (S.view === 'st-bonussystem-edit') PAGES['st-bonussystem-edit'].render(); else go('st-bonussystem-edit');

@@ -38,6 +38,7 @@ mod fedas;
 mod demo;
 mod advarics;
 mod filiale;
+mod lieferant;
 mod marke;
 mod nummern;
 mod msg;
@@ -859,13 +860,107 @@ fn promotion_delete(db: State<db::Db>, id: i64) -> Res<Vec<promotions::Promotion
 fn suppliers_list(db: State<db::Db>) -> Res<Vec<purchasing::Supplier>> {
     purchasing::suppliers(&db.conn.lock().unwrap()).map_err(err)
 }
-
+/// Alle Lieferanten, auch inaktive (Namen alter Belege)
 #[tauri::command]
-fn supplier_save(db: State<db::Db>, supplier: purchasing::Supplier) -> Res<Vec<purchasing::Supplier>> {
+fn suppliers_all(db: State<db::Db>) -> Res<Vec<purchasing::Supplier>> {
+    purchasing::suppliers_alle(&db.conn.lock().unwrap()).map_err(err)
+}
+
+/// Lieferanten für Liste und Maske (auch inaktive), mit Marken, Dokumentzahl und der nächsten freien Nr.
+#[tauri::command]
+fn lieferant_list(db: State<db::Db>) -> Res<Value> {
     let c = db.conn.lock().unwrap();
-    let id = purchasing::supplier_save(&c, &supplier)?;
-    db::audit_append(&c, "purchasing.supplier.saved", &json!({ "lieferant": id })).map_err(err)?;
-    purchasing::suppliers(&c).map_err(err)
+    let rows = lieferant::list(&c).map_err(err)?;
+    Ok(json!({ "rolle": verbund::rolle(&c), "eigene": verbund::own_store(&c), "naechste_nr": purchasing::naechste_nr(&c), "zeilen": rows }))
+}
+#[tauri::command]
+fn lieferant_save(db: State<db::Db>, row: Value, by: Option<String>) -> Res<Value> {
+    lieferant::save(&db.conn.lock().unwrap(), &row, by.as_deref().unwrap_or("")).map_err(err)
+}
+#[tauri::command]
+fn lieferant_delete(db: State<db::Db>, id: String, by: Option<String>) -> Res<()> {
+    lieferant::delete(&db.conn.lock().unwrap(), &id, by.as_deref().unwrap_or("")).map_err(err)
+}
+/// Wie viele Artikel dieser Marken haben noch keinen Lieferanten (für die Rückfrage nach dem Zuordnen von Marken)
+#[tauri::command]
+fn lieferant_artikel_offen(db: State<db::Db>, brand_ids: Vec<String>) -> Res<i64> {
+    Ok(lieferant::artikel_offen(&db.conn.lock().unwrap(), &brand_ids))
+}
+#[tauri::command]
+fn lieferant_artikel_zuordnen(db: State<db::Db>, supplier_id: String, brand_ids: Vec<String>, by: Option<String>) -> Res<i64> {
+    lieferant::artikel_zuordnen(&db.conn.lock().unwrap(), &supplier_id, &brand_ids, by.as_deref().unwrap_or("")).map_err(err)
+}
+#[tauri::command]
+fn lieferant_datei_liste(db: State<db::Db>, supplier_id: String) -> Res<Vec<Value>> {
+    lieferant::datei_liste(&db.conn.lock().unwrap(), &supplier_id).map_err(err)
+}
+/// Dokumente über den Dateidialog wählen und beim Lieferanten ablegen (jede Datei einzeln geprüft; Fehler je Datei in „fehler“)
+#[tauri::command]
+async fn lieferant_datei_hochladen(app: AppHandle, supplier_id: String, user: Option<String>) -> Res<Value> {
+    let Some(files) = app.dialog().file().set_title("Dokumente zum Lieferanten wählen").blocking_pick_files() else { return Ok(json!({ "dateien": [], "fehler": [] })) };
+    let (mut ok, mut fehler) = (vec![], vec![]);
+    for f in files {
+        let Ok(p) = f.into_path() else { continue };
+        let name = p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+        if std::fs::metadata(&p).map(|m| m.len() as usize).unwrap_or(0) > lieferant::DATEI_MAX {
+            fehler.push(format!("{name}: größer als {} MB", lieferant::DATEI_MAX / 1024 / 1024));
+            continue;
+        }
+        match std::fs::read(&p).map_err(|e| format!("nicht lesbar: {e}")).and_then(|b| lieferant::datei_add(&app.state::<db::Db>().conn.lock().unwrap(), &supplier_id, &name, &b, user.as_deref().unwrap_or(""))) {
+            Ok(v) => ok.push(v),
+            Err(e) => fehler.push(format!("{name}: {e}")),
+        }
+    }
+    Ok(json!({ "dateien": ok, "fehler": fehler }))
+}
+/// Dokument aus dem Fenster (Ablegen per Maus): Inhalt als Base64
+#[tauri::command]
+fn lieferant_datei_hochladen_b64(db: State<db::Db>, supplier_id: String, name: String, data: String, user: Option<String>) -> Res<Value> {
+    if data.len() > lieferant::DATEI_MAX / 3 * 4 + 16 {
+        return Err(format!("Die Datei ist größer als {} MB", lieferant::DATEI_MAX / 1024 / 1024));
+    }
+    let bytes = base64::engine::general_purpose::STANDARD.decode(data.trim()).map_err(|_| "Datei nicht lesbar".to_string())?;
+    lieferant::datei_add(&db.conn.lock().unwrap(), &supplier_id, &name, &bytes, user.as_deref().unwrap_or("")).map_err(err)
+}
+/// Dokument mit dem Standardprogramm öffnen (als Kopie im Temp-Ordner; nur erlaubte Dateitypen)
+#[tauri::command]
+fn lieferant_datei_oeffnen(db: State<db::Db>, id: i64, by: Option<String>) -> Res<()> {
+    let (name, bytes) = {
+        let c = db.conn.lock().unwrap();
+        let r = lieferant::datei_lesen(&c, id).map_err(err)?;
+        let _ = db::audit_append(&c, "lieferant.datei.opened", &json!({ "datei": r.0, "durch": by }));
+        r
+    };
+    let (n, _) = lieferant::datei_pruefen(&name, &bytes).map_err(err)?;
+    let dir = std::env::temp_dir().join("kontor-dokumente");
+    std::fs::create_dir_all(&dir).map_err(err)?;
+    let p = dir.join(format!("{id}-{n}"));
+    std::fs::write(&p, &bytes).map_err(err)?;
+    #[cfg(target_os = "windows")]
+    let cmd = "explorer";
+    #[cfg(target_os = "macos")]
+    let cmd = "open";
+    #[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
+    let cmd = "xdg-open";
+    std::process::Command::new(cmd).arg(&p).spawn().map(|_| ()).map_err(err)
+}
+/// Dokument unter einem gewählten Namen speichern
+#[tauri::command]
+async fn lieferant_datei_speichern(app: AppHandle, id: i64, by: Option<String>) -> Res<Option<String>> {
+    let (name, bytes) = lieferant::datei_lesen(&app.state::<db::Db>().conn.lock().unwrap(), id).map_err(err)?;
+    let Some(path) = app.dialog().file().set_title("Dokument speichern").set_file_name(&name).blocking_save_file() else { return Ok(None) };
+    let p = path.into_path().map_err(err)?;
+    std::fs::write(&p, bytes).map_err(err)?;
+    let _ = db::audit_append(&app.state::<db::Db>().conn.lock().unwrap(), "lieferant.datei.downloaded", &json!({ "datei": name, "durch": by }));
+    Ok(Some(p.display().to_string()))
+}
+#[tauri::command]
+fn lieferant_datei_loeschen(db: State<db::Db>, id: i64, by: Option<String>) -> Res<()> {
+    lieferant::datei_loeschen(&db.conn.lock().unwrap(), id, by.as_deref().unwrap_or("")).map_err(err)
+}
+#[tauri::command]
+fn lieferant_datei_beschreiben(db: State<db::Db>, id: i64, descr: String) -> Res<()> {
+    lieferant::datei_beschreiben(&db.conn.lock().unwrap(), id, &descr).map_err(err)
 }
 
 #[tauri::command]
@@ -889,10 +984,20 @@ fn po_save(db: State<db::Db>, id: Option<i64>, supplier: String, note: String, l
 }
 
 #[tauri::command]
-fn po_status(db: State<db::Db>, id: i64, status: String, user: Option<String>) -> Res<()> {
+fn po_status(db: State<db::Db>, id: i64, status: String, user: Option<String>, force: Option<bool>) -> Res<()> {
     let c = db.conn.lock().unwrap();
+    // Mindestauftragssumme/-menge des Lieferanten: Rückfrage „MINDEST|…“, mit force wird bewusst übersteuert (protokolliert)
+    let mut uebersteuert = None;
+    if status == "bestellt" {
+        if let Some(w) = purchasing::po_mindest(&c, id)? {
+            if !force.unwrap_or(false) {
+                return Err(format!("MINDEST|{w}"));
+            }
+            uebersteuert = Some(w);
+        }
+    }
     purchasing::po_status(&c, id, &status)?;
-    db::audit_append(&c, "purchasing.order.status", &json!({ "bestellung": id, "status": status, "benutzer": user })).map_err(err)?;
+    db::audit_append(&c, "purchasing.order.status", &json!({ "bestellung": id, "status": status, "benutzer": user, "mindest_uebersteuert": uebersteuert })).map_err(err)?;
     Ok(())
 }
 
@@ -2182,6 +2287,9 @@ fn main() {
             let _ = advarics::groessen_g1(&mut conn);
             if db::count(&conn, "articles") > 0 {
                 purchasing::supplier_seed(&conn).map_err(|e| format!("Lieferanten: {e}"))?;
+                if let Err(e) = lieferant::migrieren(&conn) {
+                    eprintln!("Lieferanten: Übernahme früherer Angaben nicht abgeschlossen: {e}");
+                }
             }
             // Hintergrund-Dienste: Webhook-Zustellung, lokale REST-API (falls eingeschaltet)
             automation::start_worker(path.clone());
@@ -2421,7 +2529,19 @@ fn main() {
             printer_print,
             printer_list,
             suppliers_list,
-            supplier_save,
+            suppliers_all,
+            lieferant_list,
+            lieferant_save,
+            lieferant_delete,
+            lieferant_artikel_offen,
+            lieferant_artikel_zuordnen,
+            lieferant_datei_liste,
+            lieferant_datei_hochladen,
+            lieferant_datei_hochladen_b64,
+            lieferant_datei_oeffnen,
+            lieferant_datei_speichern,
+            lieferant_datei_loeschen,
+            lieferant_datei_beschreiben,
             po_list,
             po_lines,
             po_save,
