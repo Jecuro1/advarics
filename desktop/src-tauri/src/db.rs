@@ -604,6 +604,11 @@ const MIGRATIONS: &[&str] = &[
     );
     CREATE INDEX supplier_files_sup ON supplier_files(supplier_id);
     "#,
+    // 14 · Bestellungen: Rabatt des Lieferanten (Bezeichnung und Prozentsatz zum Zeitpunkt der Bestellung)
+    r#"
+    ALTER TABLE purchase_orders ADD COLUMN disc_name TEXT NOT NULL DEFAULT '';
+    ALTER TABLE purchase_orders ADD COLUMN disc_pct REAL NOT NULL DEFAULT 0;
+    "#,
 ];
 
 pub fn schema_version() -> i64 {

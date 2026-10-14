@@ -186,6 +186,16 @@ pub fn po_save(tx: &Transaction, id: Option<i64>, supplier: &str, note: &str, li
     Ok(id)
 }
 
+/// Rabatt des Lieferanten (Stammdaten › Lieferanten › Rabatte) an einen Entwurf hängen; Bezeichnung und Prozent werden mit der Bestellung festgehalten, leer = kein Rabatt
+pub fn po_rabatt(tx: &Transaction, id: i64, supplier: &str, rabatt: Option<&str>) -> Result<(), String> {
+    let (name, pct) = match rabatt.map(str::trim).filter(|r| !r.is_empty()) {
+        None => (String::new(), 0.0),
+        Some(rid) => crate::lieferant::rabatt_finden(tx, supplier, rid).ok_or("Dieser Rabatt gehört nicht (mehr) zum Lieferanten – bitte neu wählen")?,
+    };
+    tx.execute("UPDATE purchase_orders SET disc_name = ?2, disc_pct = ?3 WHERE id = ?1 AND status = 'entwurf'", params![id, name, pct]).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 /// Unterschreitet die Bestellung die Mindestauftragssumme oder -menge des Lieferanten (Stammdaten › Lieferanten)? Text der Warnung.
 /// Die Summe wird nur geprüft, wenn alle Positionen einen Einkaufspreis haben (sonst wäre sie zu klein berechnet).
 pub fn po_mindest(c: &Connection, id: i64) -> Result<Option<String>, String> {
@@ -272,14 +282,16 @@ pub fn po_set_type(c: &Connection, id: i64, t: &str) -> Result<(), String> {
 pub fn po_list(c: &Connection) -> rusqlite::Result<Vec<Value>> {
     let mut st = c.prepare(
         "SELECT p.id, p.no, p.supplier_id, s.name, p.status, p.note, p.created_at, p.ordered_at, p.user,
-           COALESCE(SUM(l.qty), 0), COALESCE(SUM(l.received), 0), COALESCE(SUM(l.qty * COALESCE(l.cost, 0)), 0), COUNT(l.id), p.order_type
+           COALESCE(SUM(l.qty), 0), COALESCE(SUM(l.received), 0), CAST(ROUND(COALESCE(SUM(l.qty * COALESCE(l.cost, 0)), 0) * (1 - p.disc_pct / 100.0)) AS INTEGER), COUNT(l.id), p.order_type,
+           COALESCE(SUM(l.qty * COALESCE(l.cost, 0)), 0), p.disc_name, p.disc_pct
          FROM purchase_orders p JOIN suppliers s ON s.id = p.supplier_id LEFT JOIN po_lines l ON l.po_id = p.id
          GROUP BY p.id ORDER BY p.id DESC LIMIT 300",
     )?;
     let rows = st.query_map([], |r| {
         Ok(json!({ "id": r.get::<_, i64>(0)?, "no": r.get::<_, String>(1)?, "supplier_id": r.get::<_, String>(2)?, "supplier": r.get::<_, String>(3)?,
             "status": r.get::<_, String>(4)?, "note": r.get::<_, String>(5)?, "created_at": r.get::<_, String>(6)?, "ordered_at": r.get::<_, Option<String>>(7)?,
-            "user": r.get::<_, Option<String>>(8)?, "qty": r.get::<_, i64>(9)?, "received": r.get::<_, i64>(10)?, "value": r.get::<_, i64>(11)?, "lines": r.get::<_, i64>(12)?, "order_type": r.get::<_, String>(13)? }))
+            "user": r.get::<_, Option<String>>(8)?, "qty": r.get::<_, i64>(9)?, "received": r.get::<_, i64>(10)?, "value": r.get::<_, i64>(11)?, "lines": r.get::<_, i64>(12)?, "order_type": r.get::<_, String>(13)?,
+            "gross": r.get::<_, i64>(14)?, "disc_name": r.get::<_, String>(15)?, "disc_pct": r.get::<_, f64>(16)? }))
     })?;
     rows.collect()
 }
@@ -430,5 +442,70 @@ mod tests {
         let id4 = po_save(&tx, None, frei["id"].as_str().unwrap(), "", &[PoLineIn { variant_id: 1, qty: 1, cost: Some(100) }], "T").unwrap();
         tx.commit().unwrap();
         assert_eq!(po_mindest(&c, id4).unwrap(), None);
+    }
+
+    #[test]
+    fn lieferantenrabatt_wirkt_auf_bestellwert_rechnungspruefung_und_bonusbasis() {
+        let mut c = Connection::open_in_memory().unwrap();
+        db::migrate(&c).unwrap();
+        let a: catalog::Article = serde_json::from_value(json!({ "id": "A1", "name": "Jacke", "brand": "Firn", "category": "jacken", "price": 10000, "vat": 20, "cost": 4000,
+            "colors": ["moos"], "sizes": ["M"], "variants": [{ "color": "moos", "size": "M", "ean": "2000000000015" }] })).unwrap();
+        let tx = c.transaction().unwrap();
+        catalog::save(&tx, &a).unwrap();
+        tx.commit().unwrap();
+        let sup = crate::lieferant::save(&c, &json!({ "name": "Firn Sports", "nr": 1, "country": "AT" }), "T").unwrap();
+        let sid = sup["id"].as_str().unwrap().to_string();
+        // Rabatt anlegen und prüfen
+        let r = crate::lieferant::rabatt_save(&c, &json!({ "lieferant": sid, "name": "Frühbucher", "pct": "12,5" }), "T").unwrap();
+        assert_eq!((r["id"].as_str(), r["pct"].as_f64()), (Some("LR-0001"), Some(12.5)));
+        for (pct, name) in [(json!(0), "A"), (json!(101), "B"), (json!("abc"), "C"), (json!(null), "D")] {
+            assert!(crate::lieferant::rabatt_save(&c, &json!({ "lieferant": sid, "name": name, "pct": pct }), "T").unwrap_err().contains("Prozentsatz"));
+        }
+        assert!(crate::lieferant::rabatt_save(&c, &json!({ "lieferant": sid, "name": " frühbucher ", "pct": 3 }), "T").unwrap_err().contains("schon"), "Name je Lieferant eindeutig");
+        assert!(crate::lieferant::rabatt_save(&c, &json!({ "lieferant": "L-999", "name": "X", "pct": 3 }), "T").unwrap_err().contains("Lieferant"));
+        assert!(crate::lieferant::rabatt_save(&c, &json!({ "lieferant": sid, "name": "", "pct": 3 }), "T").unwrap_err().contains("Bezeichnung"));
+        // Bestellung mit Rabatt: Wert netto, brutto bleibt sichtbar
+        let tx = c.transaction().unwrap();
+        let id = po_save(&tx, None, &sid, "", &[PoLineIn { variant_id: 1, qty: 10, cost: Some(4000) }], "T").unwrap();
+        po_rabatt(&tx, id, &sid, Some("LR-0001")).unwrap();
+        tx.commit().unwrap();
+        let p = po_list(&c).unwrap().into_iter().find(|p| p["id"] == json!(id)).unwrap();
+        assert_eq!((p["gross"].as_i64(), p["value"].as_i64(), p["disc_name"].as_str(), p["disc_pct"].as_f64()), (Some(40000), Some(35000), Some("Frühbucher"), Some(12.5)));
+        // fremder oder unbekannter Rabatt wird abgelehnt
+        let tx = c.transaction().unwrap();
+        assert!(po_rabatt(&tx, id, &sid, Some("LR-0099")).is_err());
+        drop(tx);
+        // Löschen des Rabatts ändert die bestehende Bestellung nicht
+        crate::lieferant::rabatt_delete(&c, "LR-0001", "T").unwrap();
+        assert!(crate::lieferant::rabatt_delete(&c, "LR-0001", "T").is_err());
+        let p = po_list(&c).unwrap().into_iter().find(|p| p["id"] == json!(id)).unwrap();
+        assert_eq!((p["value"].as_i64(), p["disc_pct"].as_f64()), (Some(35000), Some(12.5)));
+        // bestellt → geliefert: Rechnungsprüfung erwartet den Betrag netto, die Bonus-Basis ebenso
+        po_status(&c, id, "bestellt").unwrap();
+        let tx = c.transaction().unwrap();
+        po_receive(&tx, id, &[Receive { line_id: 1, qty: 10 }], "T").unwrap();
+        tx.commit().unwrap();
+        let vol = crate::vorgang::purchase_volume(&c, chrono::Local::now().format("%Y").to_string().parse().unwrap()).unwrap();
+        assert_eq!(vol[0]["wert"].as_i64(), Some(35000), "Einkaufsvolumen netto nach Rabatt");
+        let tx = c.transaction().unwrap();
+        let er = crate::vorgang::save(&tx, &json!({ "kind": "er", "partner": sid, "partner_name": "Firn", "ref": "R1", "data": { "rechnungsnr": "R1", "betrag": 42000, "bestellungen": [id], "netto": 35000 } }), "T").unwrap();
+        let r = crate::vorgang::action(&tx, er["id"].as_i64().unwrap(), "pruefen", &json!({}), "T").unwrap();
+        tx.commit().unwrap();
+        assert_eq!(r["data"]["pruefung"]["erwartet"].as_i64(), Some(35000));
+        assert_eq!(r["data"]["pruefung"]["ok"], json!(true), "Rechnung über den Betrag nach Rabatt stimmt");
+    }
+
+    #[test]
+    fn rabatte_verschwinden_mit_dem_lieferanten_und_filialkassen_pflegen_sie_nicht() {
+        let c = Connection::open_in_memory().unwrap();
+        db::migrate(&c).unwrap();
+        let sup = crate::lieferant::save(&c, &json!({ "name": "Nordwand", "nr": 1, "country": "AT" }), "T").unwrap();
+        let sid = sup["id"].as_str().unwrap().to_string();
+        crate::lieferant::rabatt_save(&c, &json!({ "lieferant": sid, "name": "Treue", "pct": 2 }), "T").unwrap();
+        crate::lieferant::delete(&c, &sid, "T").unwrap();
+        assert!(crate::lieferant::rabatte(&c).is_empty(), "Rabatte des gelöschten Lieferanten entfallen");
+        let sup = crate::lieferant::save(&c, &json!({ "name": "Firn", "nr": 2, "country": "AT" }), "T").unwrap();
+        db::setting_set(&c, "verbund.rolle", &json!("filiale")).unwrap();
+        assert!(crate::lieferant::rabatt_save(&c, &json!({ "lieferant": sup["id"], "name": "X", "pct": 1 }), "T").unwrap_err().contains("Zentrale"));
     }
 }

@@ -883,6 +883,14 @@ fn lieferant_delete(db: State<db::Db>, id: String, by: Option<String>) -> Res<()
 }
 /// Wie viele Artikel dieser Marken haben noch keinen Lieferanten (für die Rückfrage nach dem Zuordnen von Marken)
 #[tauri::command]
+fn lieferant_rabatt_save(db: State<db::Db>, row: Value, by: Option<String>) -> Res<Value> {
+    lieferant::rabatt_save(&db.conn.lock().unwrap(), &row, by.as_deref().unwrap_or("")).map_err(err)
+}
+#[tauri::command]
+fn lieferant_rabatt_delete(db: State<db::Db>, id: String, by: Option<String>) -> Res<()> {
+    lieferant::rabatt_delete(&db.conn.lock().unwrap(), &id, by.as_deref().unwrap_or("")).map_err(err)
+}
+#[tauri::command]
 fn lieferant_artikel_offen(db: State<db::Db>, brand_ids: Vec<String>) -> Res<i64> {
     Ok(lieferant::artikel_offen(&db.conn.lock().unwrap(), &brand_ids))
 }
@@ -998,11 +1006,12 @@ fn po_lines(db: State<db::Db>, id: i64) -> Res<Vec<Value>> {
 }
 
 #[tauri::command]
-fn po_save(db: State<db::Db>, id: Option<i64>, supplier: String, note: String, lines: Vec<purchasing::PoLineIn>, user: String) -> Res<i64> {
+fn po_save(db: State<db::Db>, id: Option<i64>, supplier: String, note: String, lines: Vec<purchasing::PoLineIn>, user: String, rabatt: Option<String>) -> Res<i64> {
     let mut c = db.conn.lock().unwrap();
     let tx = c.transaction().map_err(err)?;
     let id = purchasing::po_save(&tx, id, &supplier, &note, &lines, &user)?;
-    db::audit_append(&tx, "purchasing.order.saved", &json!({ "bestellung": id, "positionen": lines.len() })).map_err(err)?;
+    purchasing::po_rabatt(&tx, id, &supplier, rabatt.as_deref())?;
+    db::audit_append(&tx, "purchasing.order.saved", &json!({ "bestellung": id, "positionen": lines.len(), "rabatt": rabatt })).map_err(err)?;
     tx.commit().map_err(err)?;
     Ok(id)
 }
@@ -1871,6 +1880,9 @@ fn stamm_save(db: State<db::Db>, kind: String, rows: Vec<Value>, user: String) -
     if kind == marke::KIND {
         return Err("Marken werden unter Stammdaten › Marken gepflegt".into());
     }
+    if kind == lieferant::RABATT_KIND {
+        return Err("Rabatte werden im Lieferanten (Reiter „Rabatte“) gepflegt".into());
+    }
     let c = db.conn.lock().unwrap();
     let n = stamm::save(&c, &kind, &rows)?;
     let _ = db::audit_append(&c, "stamm.saved", &json!({ "tabelle": kind, "zeilen": n, "benutzer": user }));
@@ -2550,6 +2562,8 @@ fn main() {
             lieferant_list,
             lieferant_save,
             lieferant_delete,
+            lieferant_rabatt_save,
+            lieferant_rabatt_delete,
             lieferant_artikel_offen,
             lieferant_artikel_zuordnen,
             lieferant_datei_liste,

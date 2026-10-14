@@ -333,8 +333,11 @@ pub fn action(tx: &Transaction, id: i64, act: &str, payload: &Value, user: &str)
             let mut erwartet = 0i64;
             for o in data["bestellungen"].as_array().cloned().unwrap_or_default() {
                 let id = o.as_i64().unwrap_or(0);
-                let v: i64 = tx.query_row("SELECT COALESCE(SUM(received * COALESCE(cost, 0)), 0) FROM po_lines WHERE po_id = ?1", [id], |r| r.get(0)).map_err(|e| e.to_string())?;
-                erwartet += v;
+                // gelieferte Menge × Einkaufspreis, abzüglich des Rabatts, mit dem bestellt wurde
+                let (v, rabatt): (i64, f64) = tx
+                    .query_row("SELECT COALESCE(SUM(l.received * COALESCE(l.cost, 0)), 0), COALESCE(MAX(p.disc_pct), 0) FROM po_lines l JOIN purchase_orders p ON p.id = l.po_id WHERE l.po_id = ?1", [id], |r| Ok((r.get(0)?, r.get(1)?)))
+                    .map_err(|e| e.to_string())?;
+                erwartet += (v as f64 * (1.0 - rabatt / 100.0)).round() as i64;
             }
             let netto = cents(&data["netto"]);
             let diff = netto - erwartet;
@@ -507,7 +510,7 @@ pub fn reserved(c: &Connection) -> Result<HashMap<String, i64>, String> {
 pub fn purchase_volume(c: &Connection, year: i32) -> Result<Vec<Value>, String> {
     let mut st = c
         .prepare(
-            "SELECT p.supplier_id, a.category, SUM(m.delta * COALESCE(l.cost, a.cost, 0)), SUM(m.delta)
+            "SELECT p.supplier_id, a.category, CAST(ROUND(SUM(m.delta * COALESCE(l.cost, a.cost, 0) * (1 - p.disc_pct / 100.0))) AS INTEGER), SUM(m.delta)
              FROM stock_moves m JOIN purchase_orders p ON p.no = m.ref
              JOIN po_lines l ON l.po_id = p.id AND l.variant_id = m.variant_id
              JOIN variants v ON v.id = m.variant_id JOIN articles a ON a.id = v.article_id

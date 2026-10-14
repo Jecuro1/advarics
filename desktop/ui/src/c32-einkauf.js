@@ -129,7 +129,7 @@ async function avisFromPO() {
     const b = e.target.closest('[data-avpo]'); if (!b) return;
     const p = open.find(x => x.id === +b.dataset.avpo), lines = await invoke('po_lines', {id: p.id});
     closeLayer(el);
-    openDoc('avis', null, {partner: p.supplier_id, partner_name: p.supplier, date: plusDays(1), data: {order_id: p.id, lines: lines.filter(l => l.qty > l.received).map(l => ({ean: l.ean, sku: l.article_id, name: `${l.name} · ${colorName(l.color)} · ${l.size}`, qty: l.qty - l.received, price: l.cost || 0, vat: 20}))}, focusSearch: false});
+    openDoc('avis', null, {partner: p.supplier_id, partner_name: p.supplier, date: plusDays(1), data: {order_id: p.id, lines: lines.filter(l => l.qty > l.received).map(l => ({ean: l.ean, sku: l.article_id, name: `${l.name} · ${colorName(l.color)} · ${l.size}`, qty: l.qty - l.received, price: Math.round((l.cost || 0) * (1 - (+p.disc_pct || 0) / 100)), vat: 20}))}, focusSearch: false});
   });
 }
 async function avisFromFile() {

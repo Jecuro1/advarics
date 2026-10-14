@@ -378,7 +378,7 @@ fn entfernen(tx: &Connection, id: &str) -> Result<(), String> {
         tx.execute(q, [id]).map_err(|e| e.to_string())?;
     }
     // Konfigurationszeilen der EDI-Einstellungen, die diesen Lieferanten nennen
-    for kind in ["edilieferant", "edimapwg", "edimapgr", "lieferantenfarbe"] {
+    for kind in ["edilieferant", "edimapwg", "edimapgr", "lieferantenfarbe", RABATT_KIND] {
         let rows = stamm::list(tx, kind)?;
         let rest: Vec<Value> = rows.iter().filter(|r| s(&r["lieferant"]) != id).cloned().collect();
         if rest.len() != rows.len() {
@@ -419,6 +419,84 @@ pub fn artikel_zuordnen(c: &Connection, sid: &str, brand_ids: &[String], by: &st
     db::audit_append(&tx, "lieferant.artikel", &json!({ "lieferant": sid, "artikel": n, "durch": by })).map_err(|e| e.to_string())?;
     tx.commit().map_err(|e| e.to_string())?;
     Ok(n)
+}
+
+/* ══ Rabatte (Bezeichnung + Prozent) je Lieferant ══ */
+
+/// Stammdaten-Tabelle der Lieferanten-Rabatte (Zeilen: id, lieferant, name, pct); sie gehört zur Zentrale und geht beim Abgleich an die Filialkassen
+pub const RABATT_KIND: &str = "lieferantenrabatt";
+
+pub fn rabatte(c: &Connection) -> Vec<Value> {
+    stamm::list(c, RABATT_KIND).unwrap_or_default()
+}
+
+fn prozent(v: &Value) -> Option<f64> {
+    let x = match v {
+        Value::Number(n) => n.as_f64()?,
+        Value::String(t) => t.trim().replace(',', ".").parse::<f64>().ok()?,
+        _ => return None,
+    };
+    x.is_finite().then_some(x)
+}
+
+/// Rabatt prüfen und speichern (neu: id leer). Rückgabe: die gespeicherte Zeile
+pub fn rabatt_save(c: &Connection, row: &Value, by: &str) -> Result<Value, String> {
+    if verbund::rolle(c) == "filiale" {
+        return Err("Rabatte pflegt die Zentrale – diese Kasse bekommt sie beim nächsten Abgleich".into());
+    }
+    let sid = s(&row["lieferant"]);
+    if c.query_row("SELECT 1 FROM suppliers WHERE id = ?1", [&sid], |_| Ok(())).optional().map_err(|e| e.to_string())?.is_none() {
+        return Err("Rabatt: Lieferant fehlt oder gibt es nicht mehr".into());
+    }
+    let name = s(&row["name"]);
+    if name.chars().count() < 1 || name.chars().count() > 80 {
+        return Err("Rabatt: Bezeichnung angeben (höchstens 80 Zeichen)".into());
+    }
+    let pct = prozent(&row["pct"]).filter(|p| *p > 0.0 && *p <= 100.0).ok_or("Rabatt: Prozentsatz von mehr als 0 bis 100")?;
+    let pct = (pct * 100.0).round() / 100.0;
+    let tx = c.unchecked_transaction().map_err(|e| e.to_string())?;
+    let mut rows = stamm::list(&tx, RABATT_KIND)?;
+    let id = s(&row["id"]);
+    if rows.iter().any(|r| s(&r["lieferant"]) == sid && marke::norm(&s(&r["name"])) == marke::norm(&name) && s(&r["id"]) != id) {
+        return Err(format!("Rabatt: den Namen „{name}“ gibt es für diesen Lieferanten schon"));
+    }
+    let neu = id.is_empty();
+    let id = if neu {
+        let n = rows.iter().filter_map(|r| s(&r["id"]).strip_prefix("LR-").and_then(|x| x.parse::<i64>().ok())).max().unwrap_or(0) + 1;
+        format!("LR-{n:04}")
+    } else if rows.iter().any(|r| s(&r["id"]) == id && s(&r["lieferant"]) == sid) {
+        id
+    } else {
+        return Err("Rabatt gibt es nicht mehr – bitte die Liste aktualisieren".into());
+    };
+    let z = json!({ "id": id, "lieferant": sid, "name": name, "pct": pct });
+    match rows.iter_mut().find(|r| s(&r["id"]) == id) {
+        Some(r) => *r = z.clone(),
+        None => rows.push(z.clone()),
+    }
+    stamm::write_rows(&tx, RABATT_KIND, &rows)?;
+    db::audit_append(&tx, "lieferant.rabatt.saved", &json!({ "lieferant": sid, "rabatt": id, "name": name, "pct": pct, "neu": neu, "durch": by })).map_err(|e| e.to_string())?;
+    tx.commit().map_err(|e| e.to_string())?;
+    Ok(z)
+}
+
+/// Rabatt löschen. Bestellungen behalten den Rabatt, mit dem sie bestellt wurden.
+pub fn rabatt_delete(c: &Connection, id: &str, by: &str) -> Result<(), String> {
+    if verbund::rolle(c) == "filiale" {
+        return Err("Rabatte pflegt die Zentrale".into());
+    }
+    let tx = c.unchecked_transaction().map_err(|e| e.to_string())?;
+    let rows = stamm::list(&tx, RABATT_KIND)?;
+    let Some(alt) = rows.iter().find(|r| s(&r["id"]) == id).cloned() else { return Err("Rabatt gibt es nicht mehr – bitte die Liste aktualisieren".into()) };
+    let rest: Vec<Value> = rows.into_iter().filter(|r| s(&r["id"]) != id).collect();
+    stamm::write_rows(&tx, RABATT_KIND, &rest)?;
+    db::audit_append(&tx, "lieferant.rabatt.deleted", &json!({ "lieferant": s(&alt["lieferant"]), "rabatt": id, "name": s(&alt["name"]), "durch": by })).map_err(|e| e.to_string())?;
+    tx.commit().map_err(|e| e.to_string())
+}
+
+/// Rabatt eines Lieferanten: (Bezeichnung, Prozent)
+pub fn rabatt_finden(c: &Connection, sid: &str, id: &str) -> Option<(String, f64)> {
+    rabatte(c).into_iter().find(|r| s(&r["id"]) == id && s(&r["lieferant"]) == sid).and_then(|r| Some((s(&r["name"]), r["pct"].as_f64()?)))
 }
 
 /* ══ Abgleich Zentrale → Filialkasse ══ */

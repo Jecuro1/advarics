@@ -14,7 +14,7 @@
    ═════════════════════════════════════════════════════════════════ */
 const LF = {rows: [], rolle: 'einzel', eigene: '', nr: 1, loaded: false};
 const LE = {id: null, ids: [], d: null, orig: null, tab: 'allg', dirty: false, show: false, files: [], filesFor: null, busy: false};
-const LF_TABS = [['allg', 'Allgemein'], ['marken', 'Marken'], ['dateien', 'Dateien'], ['haupt', 'Haupt-Adresse'], ['rechn', 'Rechnungsadresse'], ['fk', 'Filial-Kunden-Nummern']];
+const LF_TABS = [['allg', 'Allgemein'], ['marken', 'Marken'], ['dateien', 'Dateien'], ['haupt', 'Haupt-Adresse'], ['rechn', 'Rechnungsadresse'], ['fk', 'Filial-Kunden-Nummern'], ['rabatte', 'Rabatte']];
 const LF_ADR = ['adrzeile1', 'adrzeile2', 'strasse', 'hausnr', 'plz', 'ort', 'postfach', 'bundesland'];
 const LF_GLN_HERKUNFT = [['hersteller', 'Hersteller'], ['lieferant', 'Lieferant']];
 const lfRow = id => LF.rows.find(r => r.id === id);
@@ -194,11 +194,11 @@ const LFK = maskeNew({
   sub: st => st.id ? `${lfRow(st.id)?.nr ?? ''} ${lfName(lfRow(st.id)) || st.d.name}`.trim() : 'neuer Lieferant',
   load: async () => { await Promise.all([lfLoad(), mkLoad(), loadStamm(), typeof filLoad === 'function' ? filLoad() : null]); await lfLoadFiles(); },
   reload: async () => { await Promise.all([lfLoad(true), mkLoad(true), loadStamm(true), typeof filLoad === 'function' ? filLoad(true) : null]); LE.filesFor = null; await lfLoadFiles(); },
-  draft: lfDraft, tabs: () => LF_TABS.map(([k, l]) => [k, l, k === 'marken' && LE.d?.marken.length ? ` <span class="ed-badge" style="background:var(--surface-3);color:var(--text-2)">${LE.d.marken.length}</span>` : k === 'fk' && LE.d && Object.keys(LE.d.profile.filial_kunden).length ? ` <span class="ed-badge" style="background:var(--surface-3);color:var(--text-2)">${Object.keys(LE.d.profile.filial_kunden).length}</span>` : k === 'dateien' && LE.files.length ? ` <span class="ed-badge" style="background:var(--surface-3);color:var(--text-2)">${LE.files.length}</span>` : '']),
+  draft: lfDraft, tabs: () => LF_TABS.map(([k, l]) => [k, l, k === 'marken' && LE.d?.marken.length ? ` <span class="ed-badge" style="background:var(--surface-3);color:var(--text-2)">${LE.d.marken.length}</span>` : k === 'fk' && LE.d && Object.keys(LE.d.profile.filial_kunden).length ? ` <span class="ed-badge" style="background:var(--surface-3);color:var(--text-2)">${Object.keys(LE.d.profile.filial_kunden).length}</span>` : k === 'dateien' && LE.files.length ? ` <span class="ed-badge" style="background:var(--surface-3);color:var(--text-2)">${LE.files.length}</span>` : k === 'rabatte' && LE.id && lfRabatteVon(LE.id).length ? ` <span class="ed-badge" style="background:var(--surface-3);color:var(--text-2)">${lfRabatteVon(LE.id).length}</span>` : '']),
   errors: lfErrors, tabOf: lfTabOf, locked: lfLocked,
   can: () => ({new: !lfLocked(), del: !!LE.id && !lfLocked(), refresh: true}),
   bar: () => `<button class="ag-btn" data-mf-a="edi" title="Lieferanten EDI-Einstellungen" aria-label="Lieferanten EDI-Einstellungen" ${LE.id ? '' : 'disabled'}>${ic('truck', 'i-sm')}</button>`,
-  body: () => ({allg: lfAllg, marken: lfMarken, dateien: lfDateien, haupt: () => lfAdresse('adresse'), rechn: () => lfAdresse('rechnung'), fk: lfFk}[LE.tab] || lfAllg)(),
+  body: () => ({allg: lfAllg, marken: lfMarken, dateien: lfDateien, haupt: () => lfAdresse('adresse'), rechn: () => lfAdresse('rechnung'), fk: lfFk, rabatte: lfRabatte}[LE.tab] || lfAllg)(),
   onSet: (k, el) => { if (k === 'name' || k === 'nr') renderTopbar(); if (k === 'profile.zahlungsbed') lfZahlungsbedAnwenden(); if (k === 'name' || k === 'country' || /^profile\.(adresse|rechnung)\./.test(k)) lfPrevAktual(el); },
   rerender: k => k === 'country' || k === 'profile.zahlungsbed',
   save: () => lfSave(), remove: (ids, ausMaske) => lfRemove(ids, ausMaske),
@@ -372,6 +372,89 @@ function lfMarkeDialog(id) {
   if (id) $('#lmDel', el).onclick = () => { D.marken = D.marken.filter(m => m.brand_id !== id); closeLayer(el); LE.dirty = true; LFK.render(); };
 }
 
+/* ── Rabatte (Bezeichnung + Prozent): wirken auf Bestellwert, A4-Beleg, CSV, Rechnungsprüfung, Bonus-Basis und Avis – siehe c15-purchasing.js ── */
+const lfRabatteVon = id => stRows('lieferantenrabatt').filter(r => r.lieferant === id);
+const lfRabattNorm = t => mkNorm(t);
+/** Prüfung wie in lieferant.rs (`rabatt_save`): Fehlertext oder ''; id = bestehender Rabatt (bleibt außen vor) */
+function lfRabattFehler(sid, id, name, pctText) {
+  if (!sid) return 'Rabatt: Lieferant fehlt';
+  const n = String(name || '').trim(); if (!n || n.length > 80) return 'Rabatt: Bezeichnung angeben (höchstens 80 Zeichen)';
+  const p = parseFloat(String(pctText ?? '').trim().replace(',', '.')); if (!isFinite(p) || p <= 0 || p > 100) return 'Rabatt: Prozentsatz von mehr als 0 bis 100';
+  if (lfRabatteVon(sid).some(r => r.id !== id && lfRabattNorm(r.name) === lfRabattNorm(n))) return `Rabatt: den Namen „${n}“ gibt es für diesen Lieferanten schon`;
+  return '';
+}
+async function lfRabattSpeichern(row) {
+  if (DESKTOP) return invoke('lieferant_rabatt_save', {row, by: S.user.name});
+  const d = persist.get('stamm', {}), l = (d.lieferantenrabatt || []).slice();
+  const pct = Math.round(parseFloat(String(row.pct).replace(',', '.')) * 100) / 100;
+  if (row.id && !l.some(r => r.id === row.id)) throw new Error('Rabatt gibt es nicht mehr – bitte die Liste aktualisieren');
+  const id = row.id || `LR-${String(Math.max(0, ...l.map(r => +String(r.id).replace(/\D/g, '') || 0)) + 1).padStart(4, '0')}`;
+  const z = {id, lieferant: row.lieferant, name: String(row.name).trim(), pct, _aktiv: true}, i = l.findIndex(r => r.id === id);
+  if (i >= 0) l[i] = z; else l.push(z);
+  d.lieferantenrabatt = l; persist.set('stamm', d); return z;
+}
+async function lfRabattLoeschenEins(id) {
+  if (DESKTOP) return invoke('lieferant_rabatt_delete', {id, by: S.user.name});
+  const d = persist.get('stamm', {}); d.lieferantenrabatt = (d.lieferantenrabatt || []).filter(r => r.id !== id); persist.set('stamm', d);
+}
+async function lfRabattLoeschen(ids) {
+  const l = ids.map(i => lfRabatteVon(LE.id).find(r => r.id === i)).filter(Boolean); if (!l.length) return;
+  if (!await confirmBox(`${l.length === 1 ? `Rabatt „${l[0].name}“` : `${l.length} Rabatte`} löschen? Bestellungen behalten den Rabatt, mit dem sie bestellt wurden.`, 'Löschen')) return;
+  const fehler = [];
+  for (const r of l) { try { await lfRabattLoeschenEins(r.id); } catch (e) { fehler.push(String(e.message || e)); } }
+  await loadStamm(true); LFK.render();
+  if (fehler.length) toast('Nicht alles gelöscht', {t2: fehler.join(' · '), type: 'warn', dur: 7000});
+}
+function lfRabatte() {
+  const can = !!LE.id && !lfLocked(), hint = !LE.id ? 'Bitte den Lieferanten zuerst sichern – dann lassen sich Rabatte anlegen.' : lfLocked() ? 'Rabatte pflegt die Zentrale.' : '';
+  return {html: `${lfNote()}<p class="ea-hint ue-note">Rabatte, die dieser Lieferant gewährt (z. B. Frühbucher, Treue, Vororder). Beim Bestellen lässt sich einer wählen: Er mindert den Bestellwert (Bestellsumme, A4-Beleg, CSV), die Rechnungsprüfung erwartet den Betrag nach Rabatt, das Einkaufsvolumen für den Lieferantenbonus rechnet netto, und das Avis aus der Bestellung trägt die Preise nach Rabatt. Bezeichnung und Prozentsatz bleiben mit der Bestellung festgehalten – spätere Änderungen betreffen nur neue Bestellungen. Die Mindestauftragssumme gilt vor Rabatt. ${esc(hint)}</p>
+    <div class="ae-pane"><div class="ae-card" style="flex:1 1 100%"><h4>Rabatte</h4><div data-lf-rab></div></div></div>`,
+    mount: el => {
+      AG['lf-rab'] = agNew({embed: true, title: 'Rabatte', toolbar: [], sort: {k: 'name', dir: 1}, rows: () => lfRabatteVon(LE.id).map(r => ({id: r.id, name: r.name, pct: +r.pct || 0})),
+        cols: [{k: 'name', l: 'Bezeichnung', w: 300}, {k: 'pct', l: 'Rabatt %', t: 'num', w: 120, fmt: v => num(v, 2)}],
+        extra: can ? [{k: 'neu', l: 'Neu', icon: 'plus'}] : [], remove: can ? async ids => { await lfRabattLoeschen(ids); } : undefined, reload: () => {},
+        edit: id => can ? lfRabattDialog(id) : null, actions: {neu: () => lfRabattDialog(null)}});
+      agMount('lf-rab', $('[data-lf-rab]', el));
+    }};
+}
+/** Maske „Rabatt“ mit Aktualisieren, Sichern, Neu, Änderungen zurücknehmen und Löschen (gespeichert wird sofort, unabhängig vom Sichern des Lieferanten) */
+function lfRabattDialog(id0) {
+  const sid = LE.id, sup = lfRow(sid);
+  let cur = {id: '', name: '', pct: ''};
+  const lade = id => { const r = id ? lfRabatteVon(sid).find(x => x.id === id) : null; cur = r ? {id: r.id, name: String(r.name), pct: String(r.pct).replace('.', ',')} : {id: '', name: '', pct: ''}; orig = {...cur}; };
+  let orig = {...cur}; lade(id0);
+  const el = openLayer(`<div class="modal" style="width:min(760px,100%)" role="dialog" aria-modal="true" aria-label="Rabatt"><div class="m-head"><div class="m-ic">${ic('tag')}</div><div><h2>Rabatt</h2><p id="rbSub"></p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
+    <div class="m-body"><div class="ag-bar ae-bar rb-bar" style="margin:0 0 14px">${[['refresh', 'sync', 'Aktualisieren'], ['save', 'check', 'Sichern'], ['new', 'plus', 'Neu'], ['undo', 'undo', 'Änderungen zurücknehmen'], ['del', 'trash', 'Löschen']].map(([a, i, l]) => `<button class="ag-btn" data-rb="${a}">${ic(i, 'i-sm')}<span>${l}</span></button>`).join('')}</div>
+      <div class="ed-grid"><label class="field full"><span>Lieferant</span><input class="input ea-ro" readonly tabindex="-1" value="${esc(sup ? `${sup.nr} ${lfName(sup)}` : '')}"></label>
+        <label class="field full"><span>Bezeichnung *</span><input class="input" id="rbName" maxlength="80" autocomplete="off" placeholder="z. B. Frühbucher"></label>
+        <label class="field"><span>Rabatt (%) *</span><input class="input num" id="rbPct" inputmode="decimal" autocomplete="off" placeholder="z. B. 5"></label></div>
+      <p class="ea-hint" style="margin-top:10px">Der Rabatt gilt für neue Bestellungen an diesen Lieferanten. Bestehende Bestellungen behalten ihren Rabatt.</p></div>
+    <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Schließen</button></div></div>`, {focus: '#rbName'});
+  const name = $('#rbName', el), pct = $('#rbPct', el);
+  const vals = () => ({id: cur.id, name: name.value, pct: pct.value});
+  const dirty = () => name.value !== orig.name || pct.value !== orig.pct;
+  const refresh = () => {
+    $('#rbSub', el).textContent = `Lieferant „${sup ? lfName(sup) : ''}“ · ${cur.id ? 'gespeichert' : 'neu'}`;
+    const d = dirty(); $$('[data-rb]', el).forEach(b => { const a = b.dataset.rb; b.disabled = (a === 'save' || a === 'undo') ? !d : a === 'del' ? !cur.id : false; });
+  };
+  const fill = () => { name.value = cur.name; pct.value = cur.pct; refresh(); };
+  const frage = async () => !dirty() || await confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen');
+  el.addEventListener('input', refresh);
+  el.addEventListener('click', async e => {
+    const b = e.target.closest('[data-rb]'); if (!b || b.disabled) return;
+    const a = b.dataset.rb;
+    if (a === 'save') {
+      const v = vals(), f = lfRabattFehler(sid, cur.id, v.name, v.pct); if (f) return toast('Rabatt nicht gesichert', {t2: f, type: 'warn'});
+      try { const z = await lfRabattSpeichern({id: cur.id, lieferant: sid, name: v.name, pct: v.pct}); await loadStamm(true); cur = {id: z.id, name: String(z.name), pct: String(z.pct).replace('.', ',')}; orig = {...cur}; fill(); toast('Rabatt gesichert', {t2: `${z.name} · ${num(z.pct, 2)} %`, type: 'pos', icon: 'tag', dur: 1800}); if (S.view === 'lieferant-edit') LFK.render(); }
+      catch (err) { toast('Rabatt nicht gesichert', {t2: String(err.message || err), type: 'warn', dur: 6000}); }
+    } else if (a === 'new') { if (!await frage()) return; cur = {id: '', name: '', pct: ''}; orig = {...cur}; fill(); name.focus(); }
+    else if (a === 'undo') { cur = {...cur, name: orig.name, pct: orig.pct}; fill(); }
+    else if (a === 'refresh') { if (!await frage()) return; await loadStamm(true); lade(cur.id); fill(); if (S.view === 'lieferant-edit') LFK.render(); }
+    else if (a === 'del') { if (!await confirmBox(`Rabatt „${cur.name}“ löschen? Bestellungen behalten den Rabatt, mit dem sie bestellt wurden.`, 'Löschen')) return; try { await lfRabattLoeschenEins(cur.id); await loadStamm(true); closeLayer(el); if (S.view === 'lieferant-edit') LFK.render(); } catch (err) { toast('Nicht möglich', {t2: String(err.message || err), type: 'warn'}); } }
+  });
+  fill();
+}
+
 /* ── Dateien ── */
 const lfDateiTyp = n => { const e = String(n).split('.').pop(); return e && e !== n ? e.toUpperCase() : ''; };
 const lfFileRows = () => LE.files.map(f => ({id: String(f.id), am: f.uploaded_at, name: f.name, typ: lfDateiTyp(f.name), beschr: f.descr || '', manr: f.user_nr || '', maname: f.user_name || '', groesse: f.size}));
@@ -525,4 +608,4 @@ DOC_EXTRA.avis = st => { const s = lfSup(st.partner); return s?.profile?.gegensc
 DOC_EXTRA.er = st => { const s = lfSup(st.partner), ids = s ? [['USt-IdNr.', s.profile?.uid], ['Steuernummer', s.profile?.steuernr]].filter(x => String(x[1] || '').trim()) : []; return s ? `${lfHinweis(s)}${ids.length ? `<div class="muted" style="font-size:12.5px">${ids.map(([l, v]) => `${l} des Lieferanten: ${esc(v)}`).join(' · ')}</div>` : ''}` : ''; };
 
 // nur lesend – für Prüfungen: Empfängerblock und Hinweise zu einem Lieferanten, Kunden-Nr. je Filiale
-if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {lfEmpfaenger: (id, art) => lfEmpfaenger(lfRow(id), art), lfKundenNr: (id, st) => lfKundenNr(lfRow(id), st), lfGlnOk, lfSichtbar: name => ({alle: SUPPLIERS_ALL.some(s => s.name === name), aktiv: SUPPLIERS.some(s => s.name === name)}), lfMarkeSync, lfMarkeEigen, lfOptionen: sel => lfOptionen(sel).map(x => x[1])});
+if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {lfEmpfaenger: (id, art) => lfEmpfaenger(lfRow(id), art), lfKundenNr: (id, st) => lfKundenNr(lfRow(id), st), lfGlnOk, lfSichtbar: name => ({alle: SUPPLIERS_ALL.some(s => s.name === name), aktiv: SUPPLIERS.some(s => s.name === name)}), lfMarkeSync, lfMarkeEigen, lfOptionen: sel => lfOptionen(sel).map(x => x[1]), poHTML: (head, lines, sid) => poHTML(head, lines, lfSup(sid))});
