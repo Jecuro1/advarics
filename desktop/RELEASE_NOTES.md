@@ -1,3 +1,14 @@
+## Neu in 0.45.1
+
+- **Lieferanten – Nachbesserungen nach unabhängiger Prüfung der Fassungen 0.43.1 und 0.44.0:**
+  - **Rabattsperre bei Retoure, Storno und Auswertung:** Der Bon-Rabatt wurde bei der Rückrechnung auch auf Positionen mit Rabattsperre verteilt – Retoure und Storno erstatteten dann zu wenig, Umsatz je Artikel und Warengruppe wichen ab. Der Beleg hält jetzt je Position fest, dass sie gesperrt war; ältere Belege rechnen wie bisher.
+  - **Bon-Rabatt ohne Wirkung:** Liegen im Warenkorb nur Artikel mit Rabattsperre, lässt sich kein Bon-Rabatt mehr gewähren (Hinweis statt „Rabatt gewährt“). Ein Bon-Rabatt, der nichts bewirkt, wird nicht im Beleg gespeichert und nicht als „−0,00“ gedruckt.
+  - **Filialkassen:** Der zuletzt in der Zentrale gelöschte Lieferantenrabatt blieb in den Filialen stehen und wirkte dort weiter – die Tabelle wird jetzt auch leer abgeglichen. Rabatte, Rabattsperre und Lieferanten aus dem Hintergrund-Abgleich erscheinen ohne Neustart; nach dem Löschen eines Lieferanten verschwinden auch seine Rabatte aus der Anzeige.
+  - **Bestellung:** Ein gespeicherter Entwurf behält seinen Rabatt, auch wenn er in den Stammdaten geändert oder gelöscht wurde (Auswahl „… – wie gespeichert“). Der Order-Typ ging beim Suchen eines Artikels verloren – behoben. Der Bestellwert im Dialog rechnet wie der Programmkern in Cent.
+  - **Scanner-Wareneingang:** Scheitert das Einbuchen eines Avis, behält es seine angekündigten Positionen und Mengen (bisher wurden sie durch den Zählstand ersetzt).
+  - **EDI:** Ein erneut verarbeitetes oder doppelt eingelesenes Lieferavis wird nicht noch einmal angelegt und eingebucht. Beim erneuten Verarbeiten wird die GLN der Nachricht ausgewertet (z. B. nachdem sie im Lieferanten hinterlegt wurde). Bestellungen außerhalb der letzten 300 werden dem Avis und der Rechnung zugeordnet. Positionen ohne Menge werden nicht automatisch eingebucht. Eingangsrechnung: Fälligkeit und Skonto zählen ab Rechnungsdatum; ohne Angaben des Lieferanten gelten 30 Tage ohne Skonto.
+  - **Kleinigkeiten:** Rabatt unter 0,005 % wird abgelehnt (wurde als 0,00 % gespeichert); Doppelklick auf „Sichern“ im Rabatt-Dialog; Land in der Druck-Ansicht der Rechnungsadresse; Kopien geöffneter Dokumente verschwinden wirklich nach zwei Stunden; Hinweistexte zu „DESADV automatisch verbuchen“ und zum Kalkulationsfaktor präzisiert.
+
 ## Neu in 0.45.0
 
 - **Eigener Update-Installer im Kontor-Design.** Ein Update läuft jetzt in einer eigenen Vollbild-Ansicht statt im kleinen Dialog:
