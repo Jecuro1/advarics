@@ -219,7 +219,7 @@ const flIn = (k, l, o = {}) => {
   const er = FE.show && flErr(key), dis = flLocked() || o.dis;
   return `<label class="field ${er ? 'zp-bad' : ''}"><span>${esc(l)}</span><input class="input ${o.mono ? 'mono' : ''}" ${o.type ? `type="${o.type}"` : ''} data-fl="${key}" value="${esc(val ?? '')}" ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.inputmode ? `inputmode="${o.inputmode}"` : ''} ${o.list ? `list="${o.list}"` : ''} autocomplete="off" ${dis ? 'disabled' : ''} ${er ? `aria-invalid="true"` : ''}>${er ? `<small class="zp-err" role="alert">${esc(er.t)}</small>` : o.hint ? `<small class="ea-hint">${esc(o.hint)}</small>` : ''}</label>`;
 };
-const flLandOpts = cur => { const l = stRows('land').map(x => [x.id, x.name || x.id]); const base = l.length ? l : [['AT', 'Österreich'], ['DE', 'Deutschland'], ['CH', 'Schweiz'], ['IT', 'Italien'], ['LI', 'Liechtenstein']]; return base.some(([id]) => id === cur) || !cur ? base : [[cur, cur], ...base]; };
+const flLandOpts = cur => { const base = landListe().map(x => [x.id, x.name]); return base.some(([id]) => id === cur) || !cur ? base : [[cur, cur], ...base]; };
 const flLandSel = (k, o = {}) => {
   const val = o.z != null ? FE.d.zusatz[o.z][k] : FE.d[k], key = o.z != null ? `z${o.z}.${k}` : k;
   return `<label class="field"><span>Land *</span><select class="input select" data-fl="${key}" ${flLocked() ? 'disabled' : ''}>${flLandOpts(val).map(([id, n]) => `<option value="${esc(id)}" ${id === val ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>`;
@@ -342,7 +342,7 @@ function flRender() {
     if (a === 'refresh' || a === 'undo') { if (a === 'refresh' && !await ask()) return; await Promise.all([filLoad(true), loadStamm(true), flLadeStand()]); FE.d = flDraft(FE.id); FE.orig = flClone(FE.d); FE.dirty = false; FE.show = false; return flRender(); }
     if (a === 'new') { if (!await ask()) return; return flOpen(null, FE.ids); }
     if (a === 'prev' || a === 'next') { if (!await ask()) return; const id = FE.ids[pos + (a === 'next' ? 1 : -1)]; if (id) flOpen(id); return; }
-    if (a === 'del') return flRemove([FE.id], true);
+    if (a === 'del') { try { await flRemove([FE.id], true); } catch (err) { if (!/abgebrochen/.test(String(err?.message || err))) throw err; } return; }
     if (a === 'save') return flSave();
     if (a === 'farbex') { FE.d.farbe = ''; flDirty(el); return flRender(); }
     if (a === 'gruppen') { if (!await ask()) return; FE.dirty = false; return go('st-filialgruppe'); }

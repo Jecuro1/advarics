@@ -175,14 +175,22 @@ fn query_args(url: &str) -> Vec<(String, String)> {
         .unwrap_or_default()
 }
 
+/// Artikel mit den Herstellerangaben seiner Marke (GPSR); `hersteller` ist null, solange die Marke keine Angaben hat
+fn mit_hersteller(a: &catalog::Article, her: &std::collections::HashMap<String, Value>) -> Value {
+    let mut v = json!(a);
+    v["hersteller"] = her.get(&crate::marke::norm(&a.brand)).cloned().unwrap_or(Value::Null);
+    v
+}
+
 pub fn openapi() -> Value {
     let p = |summary: &str, scope: &str| json!({ "summary": summary, "x-berechtigung": scope });
     json!({
         "openapi": "3.0.3",
         "info": { "title": "Kontor API", "version": VERSION, "description": "Lokale API von Kontor. Authentifizierung: Header „Authorization: Bearer <API-Schlüssel>“." },
         "paths": {
-            "/api/v1/artikel": { "get": p("Artikel mit Varianten und Bestand (?q=, ?warengruppe=)", "lesen") },
-            "/api/v1/artikel/{id}": { "get": p("Ein Artikel", "lesen") },
+            "/api/v1/artikel": { "get": p("Artikel mit Varianten, Bestand und Herstellerangaben (GPSR) der Marke (?q=, ?warengruppe=)", "lesen") },
+            "/api/v1/artikel/{id}": { "get": p("Ein Artikel (mit Herstellerangaben)", "lesen") },
+            "/api/v1/marken": { "get": p("Marken mit Herstellerangaben nach GPSR: Name, Anschrift, elektronische Adresse, Verantwortlicher in der EU", "lesen") },
             "/api/v1/bestand": { "get": p("Bestand je Variante (?ean=)", "lesen") },
             "/api/v1/bestand/buchung": { "post": p("Bestand buchen: {ean, menge, art: zugang|abgang|inventur, grund}", "schreiben") },
             "/api/v1/kunden": { "get": p("Kunden (?q=)", "lesen"), "post": p("Kunde anlegen/ändern", "schreiben") },
@@ -252,13 +260,27 @@ fn handle(c: &Connection, db_path: &Path, mut req: Request) {
                 let q = arg("q").map(|s| s.to_lowercase());
                 let cat = arg("warengruppe");
                 let list = catalog::list(c).map_err(|e| e500(e.to_string()))?;
+                let her = crate::marke::hersteller_json(c);
                 Ok(json!(list
                     .into_iter()
                     .filter(|a| q.as_ref().map(|q| a.name.to_lowercase().contains(q) || a.id.to_lowercase() == *q || a.variants.iter().any(|v| v.ean == *q)).unwrap_or(true))
                     .filter(|a| cat.as_ref().map(|k| &a.category == k).unwrap_or(true))
+                    .map(|a| mit_hersteller(&a, &her))
                     .collect::<Vec<_>>()))
             }
-            (Method::Get, ["artikel", id]) => catalog::list(c).map_err(|e| e500(e.to_string()))?.into_iter().find(|a| a.id == *id).map(|a| json!(a)).ok_or((404, "Artikel nicht gefunden".into())),
+            (Method::Get, ["artikel", id]) => {
+                let her = crate::marke::hersteller_json(c);
+                catalog::list(c).map_err(|e| e500(e.to_string()))?.into_iter().find(|a| a.id == *id).map(|a| mit_hersteller(&a, &her)).ok_or((404, "Artikel nicht gefunden".into()))
+            }
+            (Method::Get, ["marken"]) => {
+                let her = crate::marke::hersteller_json(c);
+                let mut l: Vec<Value> = crate::stamm::list(c, crate::marke::KIND).map_err(e500)?.into_iter().filter(|r| r["_aktiv"].as_bool().unwrap_or(true)).map(|r| {
+                    let name = r["name"].as_str().unwrap_or("").to_string();
+                    json!({ "name": name, "hersteller": her.get(&crate::marke::norm(&name)) })
+                }).collect();
+                l.sort_by(|a, b| a["name"].as_str().unwrap_or("").to_lowercase().cmp(&b["name"].as_str().unwrap_or("").to_lowercase()));
+                Ok(json!(l))
+            }
             (Method::Get, ["bestand"]) => {
                 let ean = arg("ean");
                 let mut st = c
@@ -462,6 +484,15 @@ mod tests {
         assert_eq!(get(port, "/api/v1/artikel", Some("ktr_falsch")).0, 401);
         let (code, v) = get(port, "/api/v1/artikel", Some(&read));
         assert_eq!((code, v[0]["id"].clone()), (200, json!("A1")));
+        assert!(v[0]["hersteller"].is_null(), "Marke ohne Angaben: hersteller ist null");
+        // Herstellerangaben (GPSR) der Marke am Artikel und unter /marken
+        c.execute("UPDATE articles SET brand = 'Firn' WHERE id = 'A1'", []).unwrap();
+        crate::marke::save(&c, &json!({ "name": "Firn", "lieferant": "L-001", "hersteller": { "name": "Firn Sports AG", "email": "gpsr@firn.ch", "strasse": "Bergstr.", "hausnr": "2", "plz": "8000", "ort": "Zürich", "land": "CH" } }), "T").unwrap();
+        let (_, v) = get(port, "/api/v1/artikel/A1", Some(&read));
+        assert_eq!((v["hersteller"]["name"].clone(), v["hersteller"]["anschrift"]["stadt"].clone(), v["hersteller"]["gpsr_vollstaendig"].clone()), (json!("Firn Sports AG"), json!("Zürich"), json!(false)));
+        let (code, m) = get(port, "/api/v1/marken", Some(&read));
+        assert_eq!((code, m[0]["name"].clone(), m[0]["hersteller"]["name"].clone()), (200, json!("Firn"), json!("Firn Sports AG")));
+        assert!(!m.to_string().contains("L-001"), "nur die Positivliste geht nach außen");
         // Schreiben mit Leseschlüssel verboten
         let r = ureq::post(&format!("http://127.0.0.1:{port}/api/v1/bestand/buchung")).set("Authorization", &format!("Bearer {read}")).send_json(json!({ "ean": "2000000000015", "menge": 5 }));
         assert!(matches!(r, Err(ureq::Error::Status(403, _))));

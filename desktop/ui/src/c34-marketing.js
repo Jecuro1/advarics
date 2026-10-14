@@ -4,7 +4,7 @@
    Kasse), Kampagnen (E-Mail mit persönlichem Gutschein), Sales-Aktionen
    (Verkaufsprämien je Verkäufer:in), Digitales Schaufenster.
    ════════════════════════════════════════════════════════════════════ */
-Object.assign(DEFAULTS, {'rabatt.regeln': [], 'shop.aktiv': false, 'shop.titel': '', 'shop.text': '', 'shop.farbe': '#1f6fd1', 'shop.kategorien': [], 'shop.ausgeblendet': [], 'shop.preise': true, 'shop.bestand': 'ampel', 'shop.nur_lagernd': false, 'shop.reservieren': true, 'shop.abholtage': 3, 'shop.oeffnung': 'Mo–Fr 9–18 Uhr\nSa 9–17 Uhr', 'shop.kontakt': '', 'shop.hinweis': ''});
+Object.assign(DEFAULTS, {'rabatt.regeln': [], 'shop.aktiv': false, 'shop.titel': '', 'shop.text': '', 'shop.farbe': '#1f6fd1', 'shop.kategorien': [], 'shop.ausgeblendet': [], 'shop.preise': true, 'shop.bestand': 'ampel', 'shop.nur_lagernd': false, 'shop.gpsr_ausblenden': false, 'shop.reservieren': true, 'shop.abholtage': 3, 'shop.oeffnung': 'Mo–Fr 9–18 Uhr\nSa 9–17 Uhr', 'shop.kontakt': '', 'shop.hinweis': ''});
 Object.keys(DEFAULTS).forEach(k => { if (!(k in CFG)) CFG[k] = DEFAULTS[k]; });
 Object.assign(VIEW_PERM, {rabattregeln: 'preise.aktionen', kampagnen: 'marketing', salesaktionen: 'marketing', schaufenster: 'marketing'});
 
@@ -262,6 +262,7 @@ async function renderSchaufenster() {
           ${sw('shop.preise', 'Preise anzeigen', 'Aus = nur Sortiment und Verfügbarkeit')}
           <div class="set-row"><div><div class="set-l">Verfügbarkeit</div><div class="set-h">Wie genau der Bestand gezeigt wird (reservierte Ware ist abgezogen)</div></div><div class="set-c"><div class="seg" id="shBest">${[['ampel', 'verfügbar / wenige'], ['genau', 'Stückzahl'], ['aus', 'nur ja/nein']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${(CFG['shop.bestand'] || 'ampel') === k}">${l}</button>`).join('')}</div></div></div>
           ${sw('shop.nur_lagernd', 'Nur lagernde Artikel', 'Ausverkaufte Artikel ausblenden')}
+          ${sw('shop.gpsr_ausblenden', 'Nur Artikel mit vollständigen Herstellerangaben', `Produktsicherheitsverordnung (GPSR): Artikel, deren Marke keine vollständigen Angaben zu Hersteller und – bei Herstellern außerhalb der EU – Verantwortlichem in der EU hat, werden nicht angezeigt (aktuell ${num(mkArtikelOhneGpsr().length)} von ${num(ART.length)} Artikeln). Die Angaben pflegen Sie unter Stammdaten › Marken; sonst erscheinen sie im Artikel unter „Hersteller & Produktsicherheit“.`)}
           ${sw('shop.reservieren', 'Online reservieren', 'Click & Reserve – Bezahlung bei Abholung')}
           <div class="set-row"><div><div class="set-l">Reservierung gilt</div><div class="set-h">Tage bis zur Abholung</div></div><div class="set-c"><input class="input num" data-shf="shop.abholtage" value="${esc(CFG['shop.abholtage'] ?? 3)}" style="width:80px;text-align:right"> Tage</div></div>
           ${tf('shop.oeffnung', 'Öffnungszeiten', 'erscheinen in der Fußzeile', true)}

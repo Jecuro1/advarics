@@ -38,6 +38,7 @@ mod fedas;
 mod demo;
 mod advarics;
 mod filiale;
+mod marke;
 mod nummern;
 mod msg;
 
@@ -1511,6 +1512,22 @@ fn filiale_list(db: State<db::Db>, seed: Option<Value>) -> Res<Value> {
     }
     Ok(json!({ "rolle": rolle, "eigene": eigene, "zeilen": rows, "warnung": warnung }))
 }
+/// Marken für Liste und Maske: fehlende Marken aus den Artikeln werden angelegt; jede Zeile mit Artikelzahl und GPSR-Stufe
+#[tauri::command]
+fn marke_list(db: State<db::Db>) -> Res<Value> {
+    let c = db.conn.lock().unwrap();
+    marke::ensure_alle(&c);
+    let rows = marke::list(&c).map_err(err)?;
+    Ok(json!({ "rolle": verbund::rolle(&c), "zeilen": rows }))
+}
+#[tauri::command]
+fn marke_save(db: State<db::Db>, row: Value, by: Option<String>) -> Res<Value> {
+    marke::save(&db.conn.lock().unwrap(), &row, by.as_deref().unwrap_or("")).map_err(err)
+}
+#[tauri::command]
+fn marke_delete(db: State<db::Db>, id: String, by: Option<String>) -> Res<()> {
+    marke::delete(&db.conn.lock().unwrap(), &id, by.as_deref().unwrap_or("")).map_err(err)
+}
 /// Stand der Nummernkreise dieser Kasse (nächste Nummer, Rest) für die Maske „Filialen › Nummernkreise“
 #[tauri::command]
 fn nummern_stand(db: State<db::Db>) -> Value {
@@ -1728,6 +1745,9 @@ fn stamm_all(db: State<db::Db>) -> Res<Value> {
 fn stamm_save(db: State<db::Db>, kind: String, rows: Vec<Value>, user: String) -> Res<usize> {
     if kind == filiale::KIND {
         return Err("Filialen werden unter Stammdaten › Filialen › Filialen gepflegt".into());
+    }
+    if kind == marke::KIND {
+        return Err("Marken werden unter Stammdaten › Marken gepflegt".into());
     }
     let c = db.conn.lock().unwrap();
     let n = stamm::save(&c, &kind, &rows)?;
@@ -2229,6 +2249,9 @@ fn main() {
             verbund_sync,
             verbund_store_create,
             filiale_list,
+            marke_list,
+            marke_save,
+            marke_delete,
             nummern_stand,
             filiale_save,
             filiale_delete,

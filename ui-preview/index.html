@@ -2180,7 +2180,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.41.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.42.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -10983,7 +10983,7 @@ function bindVerkauf2() {
    Kasse), Kampagnen (E-Mail mit persönlichem Gutschein), Sales-Aktionen
    (Verkaufsprämien je Verkäufer:in), Digitales Schaufenster.
    ════════════════════════════════════════════════════════════════════ */
-Object.assign(DEFAULTS, {'rabatt.regeln': [], 'shop.aktiv': false, 'shop.titel': '', 'shop.text': '', 'shop.farbe': '#1f6fd1', 'shop.kategorien': [], 'shop.ausgeblendet': [], 'shop.preise': true, 'shop.bestand': 'ampel', 'shop.nur_lagernd': false, 'shop.reservieren': true, 'shop.abholtage': 3, 'shop.oeffnung': 'Mo–Fr 9–18 Uhr\nSa 9–17 Uhr', 'shop.kontakt': '', 'shop.hinweis': ''});
+Object.assign(DEFAULTS, {'rabatt.regeln': [], 'shop.aktiv': false, 'shop.titel': '', 'shop.text': '', 'shop.farbe': '#1f6fd1', 'shop.kategorien': [], 'shop.ausgeblendet': [], 'shop.preise': true, 'shop.bestand': 'ampel', 'shop.nur_lagernd': false, 'shop.gpsr_ausblenden': false, 'shop.reservieren': true, 'shop.abholtage': 3, 'shop.oeffnung': 'Mo–Fr 9–18 Uhr\nSa 9–17 Uhr', 'shop.kontakt': '', 'shop.hinweis': ''});
 Object.keys(DEFAULTS).forEach(k => { if (!(k in CFG)) CFG[k] = DEFAULTS[k]; });
 Object.assign(VIEW_PERM, {rabattregeln: 'preise.aktionen', kampagnen: 'marketing', salesaktionen: 'marketing', schaufenster: 'marketing'});
 
@@ -11241,6 +11241,7 @@ async function renderSchaufenster() {
           ${sw('shop.preise', 'Preise anzeigen', 'Aus = nur Sortiment und Verfügbarkeit')}
           <div class="set-row"><div><div class="set-l">Verfügbarkeit</div><div class="set-h">Wie genau der Bestand gezeigt wird (reservierte Ware ist abgezogen)</div></div><div class="set-c"><div class="seg" id="shBest">${[['ampel', 'verfügbar / wenige'], ['genau', 'Stückzahl'], ['aus', 'nur ja/nein']].map(([k, l]) => `<button data-v="${k}" aria-pressed="${(CFG['shop.bestand'] || 'ampel') === k}">${l}</button>`).join('')}</div></div></div>
           ${sw('shop.nur_lagernd', 'Nur lagernde Artikel', 'Ausverkaufte Artikel ausblenden')}
+          ${sw('shop.gpsr_ausblenden', 'Nur Artikel mit vollständigen Herstellerangaben', `Produktsicherheitsverordnung (GPSR): Artikel, deren Marke keine vollständigen Angaben zu Hersteller und – bei Herstellern außerhalb der EU – Verantwortlichem in der EU hat, werden nicht angezeigt (aktuell ${num(mkArtikelOhneGpsr().length)} von ${num(ART.length)} Artikeln). Die Angaben pflegen Sie unter Stammdaten › Marken; sonst erscheinen sie im Artikel unter „Hersteller & Produktsicherheit“.`)}
           ${sw('shop.reservieren', 'Online reservieren', 'Click & Reserve – Bezahlung bei Abholung')}
           <div class="set-row"><div><div class="set-l">Reservierung gilt</div><div class="set-h">Tage bis zur Abholung</div></div><div class="set-c"><input class="input num" data-shf="shop.abholtage" value="${esc(CFG['shop.abholtage'] ?? 3)}" style="width:80px;text-align:right"> Tage</div></div>
           ${tf('shop.oeffnung', 'Öffnungszeiten', 'erscheinen in der Fußzeile', true)}
@@ -12658,8 +12659,8 @@ async function renderIntrastat() {
 
 /* Artikelliste (Druck/CSV mit wählbaren Spalten) */
 const AL = {cols: ['id', 'name', 'brand', 'cat', 'price', 'stock'], cat: 'alle', q: ''};
-const AL_COLS = [['id', 'Artikel-Nr.', a => a.id], ['name', 'Bezeichnung', a => a.name], ['brand', 'Marke', a => a.brand], ['cat', 'Warengruppe', a => catName(a.cat)], ['supplier', 'Lieferant', a => supName(a.supplierId)], ['price', 'VK', a => eur(a.price)], ['sale', 'Aktionspreis', a => a.sale ? eur(a.sale) : ''], ['cost', 'EK', a => a.cost != null ? eur(a.cost) : ''], ['stock', 'Bestand', a => a.variants.reduce((s, x) => s + x.q, 0)], ['value', 'Lagerwert EK', a => a.cost != null ? eur(a.cost * a.variants.reduce((s, x) => s + x.q, 0)) : ''], ['sizes', 'Größen', a => a.sizes.join(' ')], ['colors', 'Farben', a => a.colors.map(colorName).join(', ')], ['season', 'Saison', a => a.fields?.Saison || ''], ['eans', 'EANs', a => a.variants.length]];
-registerPage('an-artikelliste', {title: 'Artikelliste', sub: () => `${ART.length} Artikel`, render: renderArtListe});
+const AL_COLS = [['id', 'Artikel-Nr.', a => a.id], ['name', 'Bezeichnung', a => a.name], ['brand', 'Marke', a => a.brand], ['cat', 'Warengruppe', a => catName(a.cat)], ['supplier', 'Lieferant', a => supName(a.supplierId)], ['hersteller', 'Hersteller (GPSR)', a => mkArtikelInfo(a.brand).hersteller], ['hersteller_anschrift', 'Herstelleranschrift', a => mkArtikelInfo(a.brand).anschrift], ['eu_verantwortlicher', 'Verantwortlicher in der EU', a => mkArtikelInfo(a.brand).eu], ['gpsr', 'GPSR-Angaben', a => mkStufeText(mkArtikelInfo(a.brand).stufe)], ['price', 'VK', a => eur(a.price)], ['sale', 'Aktionspreis', a => a.sale ? eur(a.sale) : ''], ['cost', 'EK', a => a.cost != null ? eur(a.cost) : ''], ['stock', 'Bestand', a => a.variants.reduce((s, x) => s + x.q, 0)], ['value', 'Lagerwert EK', a => a.cost != null ? eur(a.cost * a.variants.reduce((s, x) => s + x.q, 0)) : ''], ['sizes', 'Größen', a => a.sizes.join(' ')], ['colors', 'Farben', a => a.colors.map(colorName).join(', ')], ['season', 'Saison', a => a.fields?.Saison || ''], ['eans', 'EANs', a => a.variants.length]];
+registerPage('an-artikelliste', {title: 'Artikelliste', sub: () => `${ART.length} Artikel`, render: async () => { try { await Promise.all([loadStamm(), mkLoad()]); } catch { /* */ } renderArtListe(); }});
 function renderArtListe() {
   const v = $('#view-an-artikelliste'), n = norm(AL.q), C = AL_COLS.filter(c => AL.cols.includes(c[0]));
   const rows = ART.filter(a => (AL.cat === 'alle' || a.cat === AL.cat) && (!n || a.hay.includes(n)));
@@ -14694,7 +14695,7 @@ AE_GRID_TABS.karte = ctx => {
   return `<div class="ae-pane"><div class="ae-cards">
     <div class="ae-card"><h4>Artikel-Info</h4>${aeField('Artikel-ID', a.id)}${aeField('Artikel-Nr.', d.hersteller_artikelnr || a.id)}${aeField('Artikel-Name', st.name)}</div>
     <div class="ae-card"><h4>Farben-Info</h4>${aeField('Lief.-Farb-Nr.', a.colors[0] || '')}${aeField('Lief.-Farb-Name', colorName(a.colors[0]))}${aeField('Haus-Farbe', a.colors.map(colorName).join(', '))}</div>
-    <div class="ae-card"><h4>Zusatz-Info</h4>${aeField('Marke', st.brand)}${aeField('Lieferant', sup?.name || '')}${aeField('Warengruppe', catName(st.cat))}</div>
+    <div class="ae-card"><h4>Zusatz-Info</h4>${aeField('Marke', st.brand)}${aeField('Hersteller', mkArtikelInfo(st.brand).hersteller)}${mkKarteChip(st.brand)}${aeField('Lieferant', sup?.name || '')}${aeField('Warengruppe', catName(st.cat))}</div>
     <div class="ae-card"><h4>WE Info</h4>${aeField('Letzte WE-Saison-Nr.', '')}${aeField('Letzte WE-Saison-Name', d.saison || '')}${aeField('Datum letzter WE', '')}</div>
     <div class="ae-card"><h4>Bild-URL</h4>${img ? `<img src="${esc(img)}" alt="" style="width:110px;height:110px;object-fit:contain;border-radius:8px;background:var(--surface-2)">` : '<span class="muted">kein Bild</span>'}</div>
     <div class="ae-card"><h4>WE-Datum</h4>${aeField('WE-Datum von', '01.01.1900')}${aeField('WE-Datum bis', today)}</div>
@@ -14729,7 +14730,7 @@ function aeAfter(ctx, tab) {
     const calc = () => { const m = $('#edMargin', ctx.el); if (!m) return; const vk = parseAmt($('[data-f="price"]', ctx.el)?.value || ''), ek = parseAmt($('[data-f="cost"]', ctx.el)?.value || ''), vat = +($('[data-f="vat"]', ctx.el)?.value || 20); if (vk > 0 && ek > 0) { const net = vk / (1 + vat / 100); m.textContent = `Spanne ${num((net - ek) / net * 100, 1)} % · Aufschlag ${num((net - ek) / ek * 100, 1)} %`; } else m.textContent = ''; };
     ['price', 'cost', 'vat'].forEach(k => $(`[data-f="${k}"]`, ctx.el)?.addEventListener('input', calc)); calc(); return;
   }
-  if (tab === 'karte') { $('#aeKarteRef', ctx.el)?.addEventListener('click', () => ctx.setTab('karte')); return; }
+  if (tab === 'karte') { $('#aeKarteRef', ctx.el)?.addEventListener('click', () => ctx.setTab('karte')); $('[data-mk-open]', ctx.el)?.addEventListener('click', e => mkOeffnen(e.currentTarget.dataset.mkOpen)); return; }
   if (!spec) return;
   const mount = () => {
     if (ctx.tab !== tab) return;
@@ -15095,7 +15096,7 @@ const bsNeu = () => ({name: '', kundenfilter: false, von: 0, bis: 0, nurReg: fal
 const bsStaffel = () => ({name: '', ab: 0, pLauf: 0, pLaufU: '%', bLauf: 0, pGesp: 0, pGespU: '%', bGesp: 0});
 const BS = {id: null, ids: [], draft: null, tab: 'allg', dirty: false};
 const bsLoad = id => { const r = id ? stRows('bonussystem').find(x => x.id === id) : null; return r ? JSON.parse(JSON.stringify({...bsNeu(), ...r})) : bsNeu(); };
-const bsOpt = kind => kind === 'marke' && !stActive('marke').length ? [...new Set(ART.map(a => a.brand).filter(Boolean))].sort().map(x => [x, x]) : stActive(kind).map(r => [r.id, `${r.name || r.id}${r.nr != null && r.nr !== '' ? ` (${r.nr})` : ''}`]);
+const bsOpt = kind => kind === 'marke' ? [...new Set([...stActive('marke').map(r => r.name || r.id), ...ART.map(a => a.brand)].filter(Boolean))].sort((x, y) => x.localeCompare(y, 'de')).map(x => [x, x]) : stActive(kind).map(r => [r.id, `${r.name || r.id}${r.nr != null && r.nr !== '' ? ` (${r.nr})` : ''}`]);
 const bsLabel = (typ, id) => { const h = bsOpt(typ).find(x => x[0] === id); return h ? h[1] : ''; };
 function bsOpen(id, ids) {
   BS.id = id; BS.ids = ids || BS.ids; BS.draft = bsLoad(id); BS.tab = 'allg'; BS.dirty = false;
@@ -17111,7 +17112,7 @@ const flIn = (k, l, o = {}) => {
   const er = FE.show && flErr(key), dis = flLocked() || o.dis;
   return `<label class="field ${er ? 'zp-bad' : ''}"><span>${esc(l)}</span><input class="input ${o.mono ? 'mono' : ''}" ${o.type ? `type="${o.type}"` : ''} data-fl="${key}" value="${esc(val ?? '')}" ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.inputmode ? `inputmode="${o.inputmode}"` : ''} ${o.list ? `list="${o.list}"` : ''} autocomplete="off" ${dis ? 'disabled' : ''} ${er ? `aria-invalid="true"` : ''}>${er ? `<small class="zp-err" role="alert">${esc(er.t)}</small>` : o.hint ? `<small class="ea-hint">${esc(o.hint)}</small>` : ''}</label>`;
 };
-const flLandOpts = cur => { const l = stRows('land').map(x => [x.id, x.name || x.id]); const base = l.length ? l : [['AT', 'Österreich'], ['DE', 'Deutschland'], ['CH', 'Schweiz'], ['IT', 'Italien'], ['LI', 'Liechtenstein']]; return base.some(([id]) => id === cur) || !cur ? base : [[cur, cur], ...base]; };
+const flLandOpts = cur => { const base = landListe().map(x => [x.id, x.name]); return base.some(([id]) => id === cur) || !cur ? base : [[cur, cur], ...base]; };
 const flLandSel = (k, o = {}) => {
   const val = o.z != null ? FE.d.zusatz[o.z][k] : FE.d[k], key = o.z != null ? `z${o.z}.${k}` : k;
   return `<label class="field"><span>Land *</span><select class="input select" data-fl="${key}" ${flLocked() ? 'disabled' : ''}>${flLandOpts(val).map(([id, n]) => `<option value="${esc(id)}" ${id === val ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>`;
@@ -17234,7 +17235,7 @@ function flRender() {
     if (a === 'refresh' || a === 'undo') { if (a === 'refresh' && !await ask()) return; await Promise.all([filLoad(true), loadStamm(true), flLadeStand()]); FE.d = flDraft(FE.id); FE.orig = flClone(FE.d); FE.dirty = false; FE.show = false; return flRender(); }
     if (a === 'new') { if (!await ask()) return; return flOpen(null, FE.ids); }
     if (a === 'prev' || a === 'next') { if (!await ask()) return; const id = FE.ids[pos + (a === 'next' ? 1 : -1)]; if (id) flOpen(id); return; }
-    if (a === 'del') return flRemove([FE.id], true);
+    if (a === 'del') { try { await flRemove([FE.id], true); } catch (err) { if (!/abgebrochen/.test(String(err?.message || err))) throw err; } return; }
     if (a === 'save') return flSave();
     if (a === 'farbex') { FE.d.farbe = ''; flDirty(el); return flRender(); }
     if (a === 'gruppen') { if (!await ask()) return; FE.dirty = false; return go('st-filialgruppe'); }
@@ -17356,6 +17357,385 @@ async function flRemove(ids, fromMask) {
 
 // nur lesend – für Prüfungen: Beleg-Kopf und Bestellung mit den Angaben der eigenen Filiale
 if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {belegKopf: () => letterHead('Rechnung', '', []), bestellung: () => poHTML({no: 'B-TEST'}, [], {name: 'Lieferant'})});
+/* ═════════════════════════════════════════════════════════════════
+   55c · MASKEN-BAUKASTEN – Stammdaten-Masken mit Reitern (Marken, Lieferanten)
+   Gemeinsamer Rahmen wie bei den Filialen: Werkzeugleiste (Übersicht, Aktualisieren, Sichern, Neu, Änderungen
+   zurücknehmen, Löschen), Reiter mit rotem Zähler für fehlende Pflichtangaben, Felder mit Prüfung und Fehlertext,
+   Blättern 1/n, Schutz vor dem Verlassen mit ungesicherten Änderungen. Felder sprechen den Entwurf über Pfade an
+   („hersteller.email“). Die Prüfungen liefert die jeweilige Maske (und das Backend entscheidet).
+   Dazu die gemeinsame Länderliste (EU-Kennzeichen für GPSR und Intrastat).
+   ═════════════════════════════════════════════════════════════════ */
+const mgetp = (o, k) => k.split('.').reduce((x, p) => x == null ? undefined : x[p], o);
+const msetp = (o, k, v) => { const ps = k.split('.'), l = ps.pop(); let x = o; for (const p of ps) { if (x[p] == null || typeof x[p] !== 'object') x[p] = {}; x = x[p]; } x[l] = v; };
+const mclone = d => JSON.parse(JSON.stringify(d));
+const mS = v => typeof v === 'string' ? v.trim() : '';
+
+/* ── Länder: Länder-Tabelle (Stammdaten › Länder) vor der eingebauten Liste ── */
+const LAENDER_BASIS = [['AT', 'Österreich', 1], ['BE', 'Belgien', 1], ['BG', 'Bulgarien', 1], ['HR', 'Kroatien', 1], ['CY', 'Zypern', 1], ['CZ', 'Tschechien', 1], ['DK', 'Dänemark', 1], ['EE', 'Estland', 1], ['FI', 'Finnland', 1], ['FR', 'Frankreich', 1],
+  ['DE', 'Deutschland', 1], ['GR', 'Griechenland', 1], ['HU', 'Ungarn', 1], ['IE', 'Irland', 1], ['IT', 'Italien', 1], ['LV', 'Lettland', 1], ['LT', 'Litauen', 1], ['LU', 'Luxemburg', 1], ['MT', 'Malta', 1], ['NL', 'Niederlande', 1], ['PL', 'Polen', 1], ['PT', 'Portugal', 1],
+  ['RO', 'Rumänien', 1], ['SK', 'Slowakei', 1], ['SI', 'Slowenien', 1], ['ES', 'Spanien', 1], ['SE', 'Schweden', 1],
+  ['CH', 'Schweiz', 0], ['LI', 'Liechtenstein', 0], ['GB', 'Vereinigtes Königreich', 0], ['NO', 'Norwegen', 0], ['IS', 'Island', 0], ['US', 'USA', 0], ['CA', 'Kanada', 0], ['MX', 'Mexiko', 0], ['BR', 'Brasilien', 0], ['AR', 'Argentinien', 0], ['CL', 'Chile', 0],
+  ['CN', 'China', 0], ['HK', 'Hongkong', 0], ['TW', 'Taiwan', 0], ['JP', 'Japan', 0], ['KR', 'Südkorea', 0], ['VN', 'Vietnam', 0], ['TH', 'Thailand', 0], ['ID', 'Indonesien', 0], ['IN', 'Indien', 0], ['BD', 'Bangladesch', 0], ['KH', 'Kambodscha', 0], ['PK', 'Pakistan', 0], ['LK', 'Sri Lanka', 0],
+  ['MY', 'Malaysia', 0], ['PH', 'Philippinen', 0], ['SG', 'Singapur', 0], ['TR', 'Türkei', 0], ['IL', 'Israel', 0], ['AE', 'Vereinigte Arabische Emirate', 0], ['RS', 'Serbien', 0], ['BA', 'Bosnien und Herzegowina', 0], ['ME', 'Montenegro', 0], ['MK', 'Nordmazedonien', 0], ['AL', 'Albanien', 0],
+  ['UA', 'Ukraine', 0], ['MD', 'Moldau', 0], ['BY', 'Belarus', 0], ['RU', 'Russland', 0], ['MA', 'Marokko', 0], ['TN', 'Tunesien', 0], ['EG', 'Ägypten', 0], ['ZA', 'Südafrika', 0], ['AU', 'Australien', 0], ['NZ', 'Neuseeland', 0]];
+/** Alle Länder als {id (ISO-2), name, eu}; die Länder-Tabelle ergänzt und überschreibt Name und EU-Kennzeichen */
+function landListe() {
+  const m = new Map(LAENDER_BASIS.map(([id, name, eu]) => [id, {id, name, eu: !!eu}]));
+  for (const r of stRows('land')) { const id = String(r.id || '').toUpperCase(); if (!id) continue; const p = m.get(id); m.set(id, {id, name: r.name || p?.name || id, eu: r.eu == null ? !!p?.eu : !!r.eu}); }
+  return [...m.values()].sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}
+const landName = id => { const x = String(id || '').toUpperCase(); return x ? (landListe().find(l => l.id === x)?.name || x) : ''; };
+const landEu = id => !!landListe().find(l => l.id === String(id || '').toUpperCase())?.eu;
+
+/** Maske anlegen. o: page, list, title, perm, st (Zustand {id, ids, d, orig, tab, dirty, show}), sub(st), load(), reload(), draft(id), tabs() → [[k, Titel, Zusatz-HTML]],
+ *  body() → {html, mount}, errors(d) → [{k, t}], tabOf(k), locked(), bar() (zusätzliche Knöpfe), can() → {new, del, refresh}, save(), remove(ids, ausMaske), act(a, b, el), onSet(k, el), rerender(k) */
+function maskeNew(o) {
+  const st = o.st, K = {o};
+  const lock = () => !!o.locked?.();
+  K.err = k => o.errors(st.d).find(e => e.k === k);
+  K.val = k => mgetp(st.d, k);
+  const attrs = (op, dis, er) => `${op.ph ? `placeholder="${esc(op.ph)}"` : ''} ${op.inputmode ? `inputmode="${op.inputmode}"` : ''} ${op.list ? `list="${op.list}"` : ''} ${op.max ? `maxlength="${op.max}"` : ''} autocomplete="off" ${dis ? 'disabled' : ''} ${er ? 'aria-invalid="true"' : ''}`;
+  const foot = (er, op) => er ? `<small class="zp-err" role="alert">${esc(er.t)}</small>` : op.hint ? `<small class="ea-hint">${esc(op.hint)}</small>` : '';
+  /** Eingabefeld; op: mono, num, type, ph, hint, dis, inputmode, list, max */
+  K.in = (k, l, op = {}) => {
+    const er = st.show && K.err(k), dis = lock() || op.dis;
+    return `<label class="field ${er ? 'zp-bad' : ''}"><span>${esc(l)}</span><input class="input ${op.mono ? 'mono' : ''} ${op.num ? 'num' : ''}" ${op.type ? `type="${op.type}"` : ''} data-mf="${k}" value="${esc(K.val(k) ?? '')}" ${attrs(op, dis, er)}>${foot(er, op)}</label>`;
+  };
+  K.area = (k, l, rows, hint, op = {}) => {
+    const er = st.show && K.err(k), dis = lock() || op.dis;
+    return `<label class="field ${er ? 'zp-bad' : ''}"><span>${esc(l)}</span><textarea class="input" rows="${rows}" data-mf="${k}" style="height:auto;padding:9px 12px;resize:vertical" ${op.max ? `maxlength="${op.max}"` : ''} ${dis ? 'disabled' : ''}>${esc(K.val(k) ?? '')}</textarea>${foot(er, {hint})}</label>`;
+  };
+  /** Auswahl; opts [[Wert, Beschriftung]]; op.leer = Beschriftung der leeren Auswahl (ohne = keine leere Zeile) */
+  K.sel = (k, l, opts, op = {}) => {
+    const er = st.show && K.err(k), dis = lock() || op.dis, cur = String(K.val(k) ?? '');
+    const list = cur && !opts.some(([v]) => String(v) === cur) ? [[cur, cur], ...opts] : opts;
+    return `<label class="field ${er ? 'zp-bad' : ''}"><span>${esc(l)}</span><select class="input select" data-mf="${k}" ${dis ? 'disabled' : ''}>${op.leer != null ? `<option value="">${esc(op.leer)}</option>` : ''}${list.map(([v, t]) => `<option value="${esc(v)}" ${String(v) === cur ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>${foot(er, op)}</label>`;
+  };
+  K.sw = (k, l, hint, dis) => `<div class="ue-sw"><label class="ea-sw"><button type="button" class="switch" role="switch" data-mf-sw="${k}" aria-checked="${!!K.val(k)}" ${lock() || dis ? 'disabled' : ''}></button><span>${esc(l)}</span></label>${hint ? `<small class="ea-hint">${esc(hint)}</small>` : ''}</div>`;
+  K.card = (h, inner, cls = '') => `<div class="ae-card ea-card ${cls}">${h ? `<h4>${esc(h)}</h4>` : ''}<div class="ea-fields ge-one">${inner}</div></div>`;
+  K.landSel = (k, l = 'Land *', op = {}) => K.sel(k, l, landListe().map(x => [x.id, x.name]), {leer: op.leer ?? '–', ...op});
+  K.note = h => h ? `<div class="zp-note">${ic('info', 'i-sm')}<span>${h}</span></div>` : '';
+
+  K.dirty = el => { st.dirty = true; $$('[data-mf-a="save"],[data-mf-a="undo"]', el).forEach(b => { b.disabled = lock(); }); };
+  K.badges = el => {
+    const errs = o.errors(st.d);
+    $$('[data-mf-tab]', el).forEach(tb => {
+      const k = tb.dataset.mfTab, n = errs.filter(e => o.tabOf(e.k) === k).length; let bd = $('.ed-badge[data-mf-bd]', tb);
+      if (!n) { bd?.remove(); return; }
+      if (!bd) { bd = document.createElement('span'); bd.className = 'ed-badge'; bd.dataset.mfBd = '1'; tb.append(' ', bd); } bd.textContent = n;
+    });
+  };
+  K.fields = el => {
+    const er = new Map(o.errors(st.d).map(e => [e.k, e.t]));
+    $$('[data-mf]', el).forEach(inp => {
+      const lab = inp.closest('label.field'); if (!lab) return; const k = inp.dataset.mf, bad = (st.show || inp.dataset.touched) && er.has(k);
+      lab.classList.toggle('zp-bad', !!bad); let sm = $('small.zp-err', lab);
+      if (bad) { if (!sm) { sm = document.createElement('small'); sm.className = 'zp-err'; sm.setAttribute('role', 'alert'); $('.ea-hint', lab)?.remove(); lab.append(sm); } sm.textContent = er.get(k); } else if (sm) sm.remove();
+    });
+  };
+  K.set = (t, el) => { const k = t.dataset.mf; msetp(st.d, k, t.value); K.dirty(el); o.onSet?.(k, el); K.badges(el); };
+
+  K.open = (id, ids) => {
+    st.id = id; st.ids = ids?.length ? ids : st.ids; st.d = o.draft(id); st.orig = mclone(st.d); st.tab = o.tabs()[0][0]; st.dirty = false; st.show = false;
+    if (S.view === o.page) { K.render(); renderTopbar(); } else go(o.page);
+  };
+  K.reset = () => { st.d = o.draft(st.id); st.orig = mclone(st.d); st.dirty = false; st.show = false; };
+  K.register = () => {
+    registerPage(o.page, {title: o.title, sub: () => st.d ? o.sub(st) : '', render: async () => {
+      if (!st.d) { setTimeout(() => go(o.list), 0); return; }
+      $('#view-' + o.page).innerHTML = '<div class="muted" style="padding:24px">Lade …</div>';
+      await o.load(); K.render(); renderTopbar();
+    }});
+    VIEW_PERM[o.page] = o.perm; NAV_CHILD[o.page] = o.list;
+    leaveGuard(o.page, () => st.dirty, () => { st.dirty = false; st.d = o.draft(st.id); st.orig = mclone(st.d); });
+  };
+
+  K.render = () => {
+    const host = $('#view-' + o.page); if (!host || !st.d) return;
+    const pos = st.ids.indexOf(st.id), el = document.createElement('div'); el.className = 'ae ue ge fl'; host.replaceChildren(el);
+    const can = {new: true, del: !!st.id, refresh: !!st.id, ...(o.can?.() || {})}, lk = lock();
+    const btn = (a, icon, l, dis, text = true, kurz) => `<button class="ag-btn" data-mf-a="${a}" title="${esc(l)}" aria-label="${esc(l)}" ${dis ? 'disabled' : ''}>${ic(icon, 'i-sm')}${text ? `<span>${kurz || l}</span>` : ''}</button>`;
+    const errs = o.errors(st.d), cnt = k => errs.filter(e => o.tabOf(e.k) === k).length;
+    const tab = ([k, l, extra]) => { const n = cnt(k); return `<button type="button" class="ed-tab" role="tab" data-mf-tab="${k}" aria-selected="${st.tab === k}">${esc(l)}${extra || ''}${n ? ` <span class="ed-badge" data-mf-bd="1">${n}</span>` : ''}</button>`; };
+    if (!o.tabs().some(([k]) => k === st.tab)) st.tab = o.tabs()[0][0];
+    const body = o.body();
+    el.innerHTML = `<div class="ag-bar ae-bar">${btn('back', 'chevron-left', `Übersicht: ${o.title}`)}${btn('refresh', 'sync', 'Aktualisieren', !can.refresh)}${btn('save', 'check', 'Sichern', lk || !st.dirty)}${btn('new', 'plus', 'Neu', !can.new)}${btn('undo', 'undo', 'Änderungen zurücknehmen', lk || !st.dirty)}${btn('del', 'trash', 'Löschen', !can.del)}${o.bar?.() || ''}
+      <span class="sp"></span>${st.id && st.ids.length > 1 ? `${btn('prev', 'chevron-left', 'Vorheriger Eintrag', pos <= 0, false)}<span class="ae-nr">${pos + 1}/${st.ids.length}</span>${btn('next', 'chevron-right', 'Nächster Eintrag', pos >= st.ids.length - 1, false)}` : ''}</div>
+      <div class="ae-tabsw"><div class="ed-tabs" role="tablist">${o.tabs().map(tab).join('')}</div></div>
+      <div class="ae-body"><div id="edBody">${body.html}</div></div>`;
+    el.addEventListener('input', e => { const t = e.target.closest('[data-mf]'); if (t && t.type !== 'color' && t.tagName !== 'SELECT') { K.set(t, el); K.fields(el); } });
+    el.addEventListener('focusout', e => { const t = e.target.closest('[data-mf]'); if (t) { t.dataset.touched = '1'; K.fields(el); } });
+    el.addEventListener('change', e => { const t = e.target.closest('[data-mf]'); if (t) { K.set(t, el); t.dataset.touched = '1'; if (t.tagName === 'SELECT' || t.type === 'color' || o.rerender?.(t.dataset.mf)) K.render(); else K.fields(el); } });
+    el.addEventListener('click', async e => {
+      const t = e.target, tb = t.closest('[data-mf-tab]'), b = t.closest('[data-mf-a]'), sw = t.closest('[data-mf-sw]');
+      if (tb) { st.tab = tb.dataset.mfTab; return K.render(); }
+      if (sw && !sw.disabled) { const k = sw.dataset.mfSw; msetp(st.d, k, !K.val(k)); K.dirty(el); o.onSet?.(k, el); return K.render(); }
+      if (!b || b.disabled) return;
+      const a = b.dataset.mfA, ask = async () => !st.dirty || await confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen');
+      if (a === 'back') { if (!await ask()) return; st.dirty = false; return go(o.list); }
+      if (a === 'refresh' || a === 'undo') { if (a === 'refresh' && !await ask()) return; await o.reload(); K.reset(); return K.render(); }
+      if (a === 'new') { if (!await ask()) return; return K.open(null, st.ids); }
+      if (a === 'prev' || a === 'next') { if (!await ask()) return; const id = st.ids[pos + (a === 'next' ? 1 : -1)]; if (id != null) K.open(id); return; }
+      if (a === 'del') { try { await o.remove([st.id], true); } catch (err) { if (!/abgebrochen/.test(String(err?.message || err))) throw err; } return; }
+      if (a === 'save') return o.save();
+      await o.act?.(a, b, el);
+    });
+    body.mount?.(el);
+  };
+  /** Erster Fehler beim Sichern: zum Reiter springen und Fehler zeigen; true = alles in Ordnung */
+  K.gate = () => {
+    const errs = o.errors(st.d); if (!errs.length) return true;
+    st.tab = o.tabOf(errs[0].k); st.show = true; K.render(); toast(errs[0].t, {t2: 'Angabe prüfen', type: 'warn'}); return false;
+  };
+  return K;
+}
+/* ═════════════════════════════════════════════════════════════════
+   55d · MARKEN (Stammdaten › Marken) – Liste und Maske mit Reitern Allgemein, Postanschrift, Postanschrift in EU
+   Eine Zeile je Marke (Stammdaten-Art „marke“, stabiler Schlüssel „mk-…“; die Artikel verweisen über den Markennamen). Die Zeile trägt die
+   Herstellerangaben nach der Produktsicherheitsverordnung (GPSR): Hersteller, Anschrift, elektronische Adresse und – bei einem Hersteller
+   außerhalb der EU – den Verantwortlichen in der EU.
+   • Wirkung: Schaufenster (Abschnitt „Hersteller & Produktsicherheit“, optional nur Artikel mit vollständigen Angaben), REST-Schnittstelle
+     (Artikel und /api/v1/marken), Artikelliste/CSV, Artikelmaske (Hersteller, Ampel), Liste und Maske (GPSR-Ampel)
+   • Umbenennen zieht Artikel, Preisaktionen, Rabattregeln, Sales-Aktionen, Webshop-/Statistikfilter, Bonus-Systeme und die Standard-Marke mit
+   • Löschen nur ohne Artikel, sonst „Aktiv“ ausschalten; unbekannte Marken aus den Artikeln werden automatisch angelegt
+   • Pflege nur in der Zentrale (und am Einzelplatz); die Prüfungen stehen hier und in marke.rs gleich (das Backend entscheidet)
+   ═════════════════════════════════════════════════════════════════ */
+const MK = {rows: [], rolle: 'einzel', loaded: false};
+const ME = {id: null, ids: [], d: null, orig: null, tab: 'allg', dirty: false, show: false};
+const MK_ADR = ['name', 'email', 'adrzeile1', 'adrzeile2', 'strasse', 'hausnr', 'plz', 'ort', 'postfach', 'land', 'region'];
+const MK_ANSCHRIFT = ['adrzeile1', 'adrzeile2', 'strasse', 'hausnr', 'plz', 'ort', 'postfach', 'region'];
+const MK_TABS = [['allg', 'Allgemein'], ['h', 'Postanschrift'], ['eu', 'Postanschrift in EU']];
+const mkNorm = x => String(x || '').replace(/[®™©]/g, '').trim().split(/\s+/).filter(Boolean).join(' ').toLowerCase();
+const mkRow = id => MK.rows.find(r => String(r.id).toLowerCase() === String(id).toLowerCase());
+const mkLocked = () => MK.rolle === 'filiale';
+const mkLand = iso => landName(iso);
+/** E-Mail-Adresse oder Web-Adresse (wie marke.rs) */
+function mkElektronisch(x) {
+  x = String(x || '').trim(); if (!x || /\s/.test(x)) return false;
+  if (/^https?:\/\//i.test(x)) return x.length > 8 && x.includes('.');
+  const i = x.indexOf('@'); if (i < 1) return false; const b = x.slice(i + 1);
+  return b.includes('.') && !b.startsWith('.') && !b.endsWith('.') && !b.includes('@');
+}
+const mkAnschriftLeer = v => MK_ANSCHRIFT.every(k => !mS(v?.[k]));
+/** GPSR-Vollständigkeit wie marke.rs (die Liste kommt fertig vom Backend; das hier gilt für den Entwurf und die Browser-Vorschau) */
+function mkGpsr(row) {
+  const h = row.hersteller || {}, e = row.eu || {};
+  const leer = v => !mS(v.name) && !mS(v.email) && mkAnschriftLeer(v) && !mS(v.land);
+  if (leer(h) && leer(e)) return {stufe: 'keine_angaben', fehlt: ['Hersteller']};
+  const fehlt = [], strasse = v => !!(mS(v.strasse) || mS(v.adrzeile1)), voll = v => strasse(v) && !!mS(v.plz) && !!mS(v.ort) && !!mS(v.land);
+  if (!mS(h.name)) fehlt.push('Name des Herstellers');
+  if (!voll(h)) fehlt.push('Anschrift des Herstellers');
+  if (!mkElektronisch(mS(h.email))) fehlt.push('Elektronische Adresse des Herstellers');
+  const hl = mS(h.land).toUpperCase();
+  if (!hl || !landEu(hl)) {
+    if (!mS(e.name)) fehlt.push('Verantwortlicher in der EU');
+    if (!voll(e)) fehlt.push('Anschrift in der EU'); else if (!landEu(e.land)) fehlt.push('Anschrift in der EU (Land liegt nicht in der EU)');
+    if (!mkElektronisch(mS(e.email))) fehlt.push('Elektronische Adresse in der EU');
+  }
+  return {stufe: fehlt.length ? 'unvollstaendig' : 'ok', fehlt};
+}
+const mkStufeText = s => s === 'ok' ? 'vollständig' : s === 'unvollstaendig' ? 'unvollständig' : 'keine Angaben';
+const mkStufeTon = s => s === 'ok' ? 'pos' : s === 'unvollstaendig' ? 'warn' : '';
+/** Anzeige der Anschrift (Hersteller/EU) in Zeilen */
+function mkAdrLines(v) {
+  return [mS(v?.adrzeile1), mS(v?.adrzeile2), [mS(v?.strasse), mS(v?.hausnr)].filter(Boolean).join(' '), mS(v?.postfach) ? 'Postfach ' + mS(v.postfach) : '', [mS(v?.plz), mS(v?.ort)].filter(Boolean).join(' '), mS(v?.region), mkLand(v?.land)].filter(Boolean);
+}
+
+/* ── Laden ── */
+const mkSlug = x => { const t = String(x).toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); return t ? t.slice(0, 40) : 'marke'; };
+function mkVorschauMeta(r) {
+  const n = ART.filter(a => mkNorm(a.brand) === mkNorm(r.name)), g = mkGpsr(r);
+  return {_artikel: n.length, _artikel_aktiv: n.length, _gpsr: g.stufe, _gpsr_fehlt: g.fehlt};
+}
+async function mkLoad(force) {
+  if (MK.loaded && !force) return;
+  if (DESKTOP) {
+    try { const r = await invoke('marke_list'); MK.rows = r.zeilen || []; MK.rolle = r.rolle; } catch (e) { console.error(e); }
+  } else {
+    let l = persist.get('marken', null);
+    if (!l) { l = [...new Set(ART.map(a => a.brand).filter(Boolean))].sort().map(b => ({id: 'mk-' + mkSlug(b), name: b, _aktiv: true, hersteller: {}, eu: {}})); persist.set('marken', l); }
+    const known = new Set(l.map(r => mkNorm(r.name))), neu = [...new Set(ART.map(a => a.brand).filter(Boolean))].filter(b => !known.has(mkNorm(b)));
+    if (neu.length) { l = [...l, ...neu.map(b => ({id: 'mk-' + mkSlug(b), name: b, _aktiv: true, hersteller: {}, eu: {}}))]; persist.set('marken', l); }
+    MK.rows = l.map(r => ({...r, ...mkVorschauMeta(r)})); MK.rolle = 'zentrale';
+  }
+  MK.loaded = true;
+  STAMM.data.marke = MK.rows.map(r => ({...r}));   // Auswahl in Artikelmaske, Einstellungen und Bonus nutzt die Stammdaten
+}
+/** Marke zu einem Artikel-Markennamen (nach der Vergleichsform) – aus der Markenliste, sonst aus den Stammdaten */
+const mkFuer = brand => (MK.loaded ? MK.rows : stRows('marke')).find(r => mkNorm(r.name) === mkNorm(brand));
+/** Herstellerangaben und GPSR-Stufe zu einem Artikel-Markennamen (für Artikelliste, Artikelmaske, Schaufenster) */
+function mkArtikelInfo(brand) {
+  const m = mkFuer(brand), g = mkGpsr(m || {}), h = m?.hersteller || {}, e = m?.eu || {};
+  return {marke: m, stufe: mS(brand) ? g.stufe : 'keine_angaben', fehlt: g.fehlt, hersteller: mS(h.name), anschrift: mkAdrLines(h).join(', '), eu: [mS(e.name), mkAdrLines(e).join(', ')].filter(Boolean).join(', ')};
+}
+/** Artikel, die das Schaufenster mit dem Schalter „nur vollständige Herstellerangaben“ ausblenden würde */
+const mkArtikelOhneGpsr = () => ART.filter(a => a.active !== false && mkArtikelInfo(a.brand).stufe !== 'ok');
+/** Ampel der Herstellerangaben in der Artikelmaske (mit Sprung zur Marke) */
+function mkKarteChip(brand) {
+  const i = mkArtikelInfo(brand); if (!mS(brand)) return '';
+  return `<div class="field"><span>GPSR-Angaben</span><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="pill ${mkStufeTon(i.stufe)}" style="height:22px" title="${esc(i.fehlt.length && i.stufe !== 'ok' ? 'Es fehlt: ' + i.fehlt.join(', ') : '')}">${mkStufeText(i.stufe)}</span>${i.marke ? `<button type="button" class="btn btn-ghost btn-sm" data-mk-open="${esc(i.marke.id)}">${ic('edit', 'i-sm')}Marke öffnen</button>` : ''}</div></div>`;
+}
+/** Marke aus der Artikelmaske öffnen */
+async function mkOeffnen(id) { await mkLoad(); if (!mkRow(id)) return toast('Diese Marke gibt es nicht mehr', {type: 'warn'}); mkOpen(id, MK.rows.map(r => r.id)); }
+
+/* ── Liste ── */
+function mkListRows() {
+  return MK.rows.map(r => {
+    const h = r.hersteller || {}, e = r.eu || {};
+    return {id: r.id, name: r.name || '', aktiv: r._aktiv !== false, artikel: r._artikel || 0, gpsr: r._gpsr || 'keine_angaben', gpsr_fehlt: (r._gpsr_fehlt || []).join(', '),
+      hname: mS(h.name), hmail: mS(h.email), hstrasse: mS(h.strasse), hhausnr: mS(h.hausnr), hplz: mS(h.plz), hort: mS(h.ort), hland: mkLand(h.land), hiso: mS(h.land).toUpperCase(),
+      ename: mS(e.name), email: mS(e.email), estrasse: mS(e.strasse), ehausnr: mS(e.hausnr), eplz: mS(e.plz), eort: mS(e.ort), eland: mkLand(e.land), eiso: mS(e.land).toUpperCase()};
+  });
+}
+agridPage('st-marke', {
+  title: 'Marken', rows: mkListRows, count: () => MK.rows.length, sort: {k: 'name', dir: 1}, rowH: 44,
+  toolbar: [{k: 'back', l: 'Zurück', icon: 'chevron-left'}, {k: 'refresh', l: 'Aktualisieren', icon: 'sync'}, {k: 'new', l: 'Neu', icon: 'plus'}],
+  cols: [{k: 'name', l: 'Name', w: 170}, {k: 'hname', l: 'Name des Herstellers', w: 210}, {k: 'hmail', l: 'Elektronische Adresse', w: 200},
+    {k: 'hstrasse', l: 'Hersteller Straße', w: 160}, {k: 'hhausnr', l: 'Hersteller Hausnummer', w: 100}, {k: 'hplz', l: 'Hersteller PLZ', w: 90}, {k: 'hort', l: 'Hersteller Stadt', w: 140}, {k: 'hland', l: 'Hersteller Land', w: 140}, {k: 'hiso', l: 'Hersteller Land ISO', w: 100},
+    {k: 'ename', l: 'Verantwortlicher in EU', w: 210}, {k: 'email', l: 'Elektronische Adresse in der EU', w: 210},
+    {k: 'estrasse', l: 'Verantwortlicher in EU Straße', w: 170}, {k: 'ehausnr', l: 'Verantwortlicher in EU Hausnummer', w: 110}, {k: 'eplz', l: 'Verantwortlicher in EU PLZ', w: 100}, {k: 'eort', l: 'Verantwortlicher in EU Stadt', w: 150}, {k: 'eland', l: 'Verantwortlicher in EU Land', w: 150}, {k: 'eiso', l: 'Verantwortlicher in EU Land ISO', w: 110},
+    {k: 'gpsr', l: 'GPSR', w: 130, get: r => mkStufeText(r.gpsr) + (r.gpsr_fehlt ? ` – fehlt: ${r.gpsr_fehlt}` : ''), html: r => `<span class="pill ${mkStufeTon(r.gpsr)}" style="height:22px" title="${esc(r.gpsr_fehlt ? 'Es fehlt: ' + r.gpsr_fehlt : 'Alle Pflichtangaben vorhanden')}">${mkStufeText(r.gpsr)}</span>`},
+    {k: 'artikel', l: 'Artikel', t: 'num', w: 80, show: false}, {k: 'aktiv', l: 'Aktiv', t: 'check', w: 70, show: false}],
+  remove: ids => mkRemove(ids),
+  actions: {back: () => e2Back(), refresh: () => PAGES['st-marke'].render(true), new: () => mkNeu()},
+  edit: id => mkOpen(id, (AG['st-marke'].filtered || []).map(r => r.id)),
+});
+{ const p = PAGES['st-marke'], _r = p.render; p.render = async fresh => { await Promise.all([loadStamm(fresh === true), mkLoad(true)]); await _r(); renderTopbar(); }; }
+VIEW_PERM['st-marke'] = 'einstellungen';
+/** „Neu“: nur Zentrale und Einzelplatz legen Marken an */
+function mkNeu() {
+  if (mkLocked()) return toast('Marken pflegt die Zentrale', {t2: 'Diese Kasse bekommt die Angaben beim Abgleich', icon: 'lock'});
+  mkOpen(null, ME.ids);
+}
+
+/* ── Entwurf ── */
+const mkBlankAdr = () => Object.fromEntries(MK_ADR.map(k => [k, '']));
+const mkBlank = () => ({id: '', name: '', _aktiv: true, hersteller: mkBlankAdr(), eu: mkBlankAdr()});
+function mkDraft(id) {
+  const r = id ? mkRow(id) : null; if (!r) return mkBlank();
+  const adr = v => Object.fromEntries(MK_ADR.map(k => [k, String(v?.[k] ?? '')]));
+  return {id: r.id, name: String(r.name ?? ''), _aktiv: r._aktiv !== false, hersteller: adr(r.hersteller), eu: adr(r.eu)};
+}
+function mkToRow(d) {
+  const adr = v => Object.fromEntries(MK_ADR.map(k => [k, String(v?.[k] ?? '').trim()]));
+  const r = {id: d.id || '', name: String(d.name).trim(), _aktiv: d._aktiv !== false, hersteller: adr(d.hersteller), eu: adr(d.eu)};
+  r.hersteller.land = r.hersteller.land.toUpperCase(); r.eu.land = r.eu.land.toUpperCase();
+  return r;
+}
+/** Prüfungen wie im Backend (marke.rs); k = Pfad des Feldes */
+function mkErrors(d) {
+  const m = [], add = (k, t) => m.push({k, t}), name = String(d.name).trim();
+  if (!name) add('name', 'Name angeben'); else if (name.length > 120) add('name', 'Name: höchstens 120 Zeichen');
+  else { const o = MK.rows.find(r => mkNorm(r.name) === mkNorm(name) && String(r.id).toLowerCase() !== String(d.id || '').toLowerCase()); if (o) add('name', `Die Marke „${o.name}“ gibt es schon`); }
+  for (const [p, wo] of [['hersteller', 'Hersteller'], ['eu', 'Verantwortlicher in der EU']]) {
+    const v = d[p];
+    for (const k of MK_ADR) { const max = k === 'name' || k === 'email' ? 120 : 80; if (String(v[k] ?? '').trim().length > max) add(`${p}.${k}`, `Höchstens ${max} Zeichen`); }
+    const em = mS(v.email); if (em && !mkElektronisch(em)) add(`${p}.email`, 'E-Mail (name@firma.com) oder Web-Adresse (https://…)');
+    const land = mS(v.land); if (land && !/^[A-Za-z]{2}$/.test(land)) add(`${p}.land`, 'Land als zweistelliger ISO-Code');
+    else if (!land && !mkAnschriftLeer(v)) add(`${p}.land`, 'Land wählen');
+  }
+  return m;
+}
+const mkTabOf = k => /^hersteller\.(name|email)$/.test(k) || /^eu\.(name|email)$/.test(k) || k === 'name' ? 'allg' : /^hersteller\./.test(k) ? 'h' : /^eu\./.test(k) ? 'eu' : 'allg';
+
+/* ── Maske ── */
+const mkNote = () => mkLocked() ? `<div class="zp-note">${ic('lock', 'i-sm')}<span><b>Marken pflegt die Zentrale.</b> Diese Kasse bekommt die Angaben beim Abgleich; hier sind sie nur lesbar.</span></div>` : '';
+const MKK = maskeNew({
+  page: 'marke-edit', list: 'st-marke', title: 'Marken', perm: 'einstellungen', st: ME,
+  sub: st => st.id ? (mkRow(st.id)?.name || st.d.name) : 'neue Marke',
+  load: async () => { await Promise.all([mkLoad(), loadStamm()]); },
+  reload: async () => { await Promise.all([mkLoad(true), loadStamm(true)]); },
+  draft: mkDraft, tabs: () => MK_TABS.map(([k, l]) => [k, l]), errors: mkErrors, tabOf: mkTabOf, locked: mkLocked,
+  can: () => ({new: !mkLocked(), del: !!ME.id && !mkLocked(), refresh: true}),
+  body: () => ({html: (ME.tab === 'h' ? mkAnschriftTab('hersteller') : ME.tab === 'eu' ? mkAnschriftTab('eu') : mkAllg()), mount: null}),
+  onSet: k => { if (k === 'name' || k === 'hersteller.name' || k === 'eu.name') renderTopbar(); if (ME.tab === 'allg') mkRefreshStatus(); },
+  rerender: k => k === 'hersteller.land' || k === 'eu.land',
+  save: () => mkSave(), remove: (ids, fromMask) => mkRemove(ids, fromMask),
+});
+MKK.register();
+function mkOpen(id, ids) { MKK.open(id, ids); }
+
+const mkStatusHTML = () => {
+  const r = ME.id ? mkRow(ME.id) : null, g = mkGpsr(mkToRow(ME.d)), n = r?._artikel || 0;
+  return `<div class="ge-facts"><div class="ge-fact"><span>GPSR-Angaben</span><b><span class="pill ${mkStufeTon(g.stufe)}" style="height:22px">${mkStufeText(g.stufe)}</span></b></div>
+    <div class="ge-fact"><span>Artikel</span><b>${n ? `${num(n)} Artikel tragen diese Marke` : 'noch kein Artikel'}</b></div></div>
+    ${g.fehlt.length && g.stufe !== 'ok' ? `<p class="ea-hint" style="margin:8px 0 0">Es fehlt: ${esc(g.fehlt.join(', '))}.</p>` : ''}
+    <p class="ea-hint" style="margin:8px 0 0">Online-Angebote brauchen nach der Produktsicherheitsverordnung (GPSR) den Hersteller mit Anschrift und elektronischer Adresse – bei einem Hersteller außerhalb der EU zusätzlich den Verantwortlichen in der EU. Die Angaben erscheinen im Schaufenster (Abschnitt „Hersteller &amp; Produktsicherheit“) und in der Schnittstelle.</p>`;
+};
+function mkRefreshStatus() { const el = $('[data-mk-status]'); if (el) el.innerHTML = mkStatusHTML(); }
+function mkAllg() {
+  const D = ME.d, K = MKK, n = ME.id ? mkRow(ME.id)?._artikel || 0 : 0;
+  return `${mkNote()}<div class="fl-grid fl-2">
+    ${K.card('Allgemein', `${K.in('name', 'Name *', {hint: n ? `Name der Marke an den Artikeln. Umbenennen ändert die ${num(n)} Artikel und alle Aktionen, Regeln und Filter, die die Marke nennen.` : 'Name der Marke an den Artikeln – eindeutig.'})}
+      ${K.in('hersteller.name', 'Name des Herstellers', {hint: 'Rechtlicher Hersteller (Firma) – nicht die Marke.'})}${K.in('hersteller.email', 'Elektronische Adresse', {hint: 'E-Mail oder Web-Adresse des Herstellers.'})}
+      ${K.in('eu.name', 'Verantwortlicher in EU', {hint: 'Pflicht, wenn der Hersteller außerhalb der EU sitzt.'})}${K.in('eu.email', 'Elektronische Adresse in der EU')}
+      ${K.sw('_aktiv', 'Aktiv', 'Inaktive Marken erscheinen nicht mehr in der Auswahl für neue Artikel; die Herstellerangaben bleiben für vorhandene Artikel erhalten.')}`)}
+    ${K.card('Herstellerangaben (GPSR)', `<div data-mk-status>${mkStatusHTML()}</div>`)}
+  </div>`;
+}
+/** Reiter Postanschrift (Hersteller) und Postanschrift in EU (Verantwortlicher) – gleiche Felder */
+function mkAnschriftTab(p) {
+  const D = ME.d, K = MKK, v = D[p], eu = p === 'eu', lines = mkAdrLines(v), name = mS(v.name);
+  const landOpts = (eu ? landListe().filter(l => l.eu || l.id === mS(v.land).toUpperCase()) : landListe()).map(l => [l.id, l.name]);
+  const kopf = eu ? 'Verantwortlicher des Herstellers in der EU' : 'Herstelleradresse';
+  const nameFeld = `<label class="field"><span>Name</span><input class="input ea-ro" readonly tabindex="-1" value="${esc(name)}"><small class="ea-hint">Aus „${eu ? 'Verantwortlicher in EU' : 'Name des Herstellers'}“ (Reiter Allgemein).</small></label>`;
+  return `${mkNote()}<div class="fl-grid fl-2">
+    ${K.card(kopf, `${nameFeld}${K.in(`${p}.adrzeile1`, 'Adr.-Zeile 1')}${K.in(`${p}.adrzeile2`, 'Adr.-Zeile 2')}
+      <div class="zp-pair">${K.in(`${p}.strasse`, 'Straße')}${K.in(`${p}.hausnr`, 'Haus-Nr.')}</div><div class="zp-pair">${K.in(`${p}.plz`, 'PLZ')}${K.in(`${p}.ort`, 'Ort')}</div>${K.in(`${p}.postfach`, 'Postfach', {hint: 'Ein Postfach allein genügt als Anschrift nicht – Straße oder Adr.-Zeile 1 ist nötig.'})}
+      ${K.sel(`${p}.land`, 'Land *', landOpts, {leer: '–', hint: eu ? 'Der Verantwortliche muss in der EU sitzen.' : ''})}
+      <label class="field"><span>Land-ISO</span><input class="input ea-ro mono" readonly tabindex="-1" value="${esc(mS(v.land).toUpperCase())}"><small class="ea-hint">Zweistelliger Code, aus dem Land abgeleitet.</small></label>
+      ${K.in(`${p}.region`, 'Bundesland / Kanton / Provinz')}`)}
+    ${K.card('Druck-Ansicht', `<div class="fl-prev">${lines.length || name ? [name ? `<b>${esc(name)}</b>` : '', ...lines.map(esc)].filter(Boolean).join('<br>') : '<span class="muted">Noch keine Anschrift</span>'}</div><small class="ea-hint">So steht die Anschrift im Schaufenster unter „Hersteller &amp; Produktsicherheit“ und in der Schnittstelle.</small>`)}
+  </div>`;
+}
+
+/* ── Sichern und Löschen ── */
+async function mkSave() {
+  if (mkLocked()) return;
+  const D = ME.d, isNew = !ME.id;
+  if (!MKK.gate()) return;
+  const row = mkToRow(D), alt = ME.id ? mkRow(ME.id) : null, umbenannt = alt && alt.name !== row.name;
+  if (umbenannt && DESKTOP) { try { await stepUp({title: 'Administrator-Freigabe', text: `Marke „${alt.name}“ in „${row.name}“ umbenennen (ändert ${num(alt._artikel || 0)} Artikel und alle Verweise)`, admin: true}); } catch { return; } }
+  let saved;
+  try {
+    if (DESKTOP) saved = await invoke('marke_save', {row, by: S.user.name});
+    else {
+      const l = persist.get('marken', []).slice(), i = l.findIndex(r => r.id === row.id);
+      if (i < 0) { let id = 'mk-' + mkSlug(row.name), k = 2; while (l.some(r => r.id === id)) id = `mk-${mkSlug(row.name)}-${k++}`; row.id = id; l.push({...row}); }
+      else l[i] = {...l[i], ...row};
+      persist.set('marken', l); saved = row;
+      if (umbenannt) ART.forEach(a => { if (mkNorm(a.brand) === mkNorm(alt.name)) a.brand = row.name; });
+    }
+  } catch (err) { return toast('Speichern fehlgeschlagen', {t2: String(err.message || err), type: 'warn', dur: 7000}); }
+  if (DESKTOP && umbenannt) { try { replaceCatalog(await invoke('catalog_list')); } catch { /* */ } try { await loadSettings(); } catch { /* */ } }
+  await Promise.all([mkLoad(true), DESKTOP ? loadStamm(true) : Promise.resolve()]);
+  const id = saved.id; ME.id = id; ME.d = mkDraft(id); ME.orig = mclone(ME.d); ME.dirty = false; ME.show = false; if (isNew) ME.ids = [...ME.ids, id];
+  Hooks.emit('marke.saved', {marke: row.name, neu: isNew});
+  toast(isNew ? 'Marke angelegt' : 'Gespeichert', {t2: row.name, type: 'pos', icon: 'star', dur: 2200});
+  MKK.render(); renderTopbar();
+}
+async function mkRemove(ids, fromMask) {
+  const abort = () => { throw new Error('abgebrochen'); };
+  if (mkLocked()) { toast('Marken löscht die Zentrale', {icon: 'lock'}); abort(); }
+  const rs = ids.map(mkRow).filter(Boolean); if (!rs.length) abort();
+  const wer = rs.length === 1 ? `Marke „${rs[0].name}“` : `${rs.length} Marken`;
+  if (!await confirmBox(`${wer} löschen? Marken mit Artikeln lassen sich nicht löschen – sie lassen sich nur deaktivieren (Schalter „Aktiv“).`, 'Löschen')) abort();
+  if (DESKTOP) await stepUp({title: 'Administrator-Freigabe', text: `${wer} löschen`, admin: true}).catch(abort);
+  const fehler = [];
+  for (const r of rs) {
+    try {
+      if (DESKTOP) await invoke('marke_delete', {id: r.id, by: S.user.name});
+      else { if (r._artikel) throw `Zur Marke „${r.name}“ gehören ${r._artikel} Artikel – sie lässt sich nicht löschen, aber deaktivieren (Schalter „Aktiv“)`; persist.set('marken', persist.get('marken', []).filter(x => x.id !== r.id)); }
+    } catch (e) { fehler.push(String(e.message || e)); }
+  }
+  await Promise.all([mkLoad(true), DESKTOP ? loadStamm(true) : Promise.resolve()]);
+  if (fehler.length) { toast('Nicht alles gelöscht', {t2: fehler.join(' · '), type: 'warn', dur: 9000}); if (fehler.length === rs.length) abort(); return; }
+  toast(rs.length === 1 ? 'Marke gelöscht' : `${rs.length} Marken gelöscht`, {t2: rs.map(r => r.name).join(', '), icon: 'star', dur: 2400});
+  if (fromMask) { ME.dirty = false; ME.d = null; go('st-marke'); }
+}
+
+// nur lesend – für Prüfungen: Markennamen der Artikel und Artikelzahl je Marke
+if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {mkGpsr, markenArtikel: () => [...new Set(ART.map(a => a.brand).filter(Boolean))], artikelJeMarke: b => ART.filter(a => a.brand === b).length});
 /* ═════════════════════════════════════════════════════════════════
    56 · MENÜPUNKTE UND RECHTE
    Wer ein Recht nicht hat – weder über seine Rolle noch über seine Benutzergruppe – sieht die zugehörigen Menüpunkte nicht

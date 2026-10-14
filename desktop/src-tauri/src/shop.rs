@@ -66,8 +66,15 @@ pub fn articles(c: &Connection) -> Result<Vec<Value>, String> {
     let hidden: Vec<String> = cfg(c, "shop.ausgeblendet").as_array().map(|a| a.iter().filter_map(|x| x.as_str().map(str::to_string)).collect()).unwrap_or_default();
     let modus = cfg_s(c, "shop.bestand");
     let nur_lager = cfg(c, "shop.nur_lagernd").as_bool().unwrap_or(false);
+    // Herstellerangaben (GPSR) je Marke; optional nur Artikel mit vollständigen Angaben zeigen
+    let hersteller = crate::marke::hersteller_json(c);
+    let nur_gpsr = cfg(c, "shop.gpsr_ausblenden").as_bool().unwrap_or(false);
     let mut out = vec![];
     for a in list.iter().filter(|a| a.active && (cats.is_empty() || cats.contains(&a.category)) && !hidden.contains(&a.id)) {
+        let her = hersteller.get(&crate::marke::norm(&a.brand));
+        if nur_gpsr && her.map(|h| h["gpsr_vollstaendig"] != true).unwrap_or(true) {
+            continue;
+        }
         let base = a.sale_price.unwrap_or(a.price);
         let pct = promo_pct(&promos, a, &today);
         let promo = if pct > 0 { (a.price as f64 * (100 - pct) as f64 / 100.0).round() as i64 } else { i64::MAX };
@@ -92,7 +99,8 @@ pub fn articles(c: &Connection) -> Result<Vec<Value>, String> {
             "preis": price, "statt": if price < a.price { Some(a.price) } else { None }, "aktion": pct > 0 && promo <= base, "bild": a.image.is_some(),
             "tag": a.tag, "beliebt": a.popularity, "felder": a.fields, "varianten": vars,
             "galerie": a.media.iter().filter(|m| m["file"].is_string()).map(|m| json!({ "id": m["id"], "farbe": m["color"] })).collect::<Vec<_>>(),
-            "kurztext": a.details["kurztext"], "beschreibung": a.details["beschreibung"], "merkmale": a.details["features"], "material": a.details["mat_zusammensetzung"], "pflege": a.details["pflege"] }));
+            "kurztext": a.details["kurztext"], "beschreibung": a.details["beschreibung"], "merkmale": a.details["features"], "material": a.details["mat_zusammensetzung"], "pflege": a.details["pflege"],
+            "hersteller": her }));
     }
     out.sort_by(|a, b| b["beliebt"].as_i64().cmp(&a["beliebt"].as_i64()));
     Ok(out)
@@ -237,5 +245,35 @@ mod tests {
         assert_eq!(reserve(&c, &json!({ "name": "Max", "telefon": "0664 1234567", "artikel": [{ "ean": "2000000000015" }] }), "1.2.3.4").unwrap_err().0, 409);
         let d = vorgang::list(&c, &["reservierung".into()], None, 10).unwrap();
         assert_eq!(d[0]["status"], "angefragt");
+    }
+
+    #[test]
+    fn herstellerangaben_im_schaufenster() {
+        let c = Connection::open_in_memory().unwrap();
+        db::migrate(&c).unwrap();
+        c.execute("INSERT INTO articles(id, name, brand, category, price, created_at, updated_at) VALUES ('A1','Jacke','Firn®','jacken',10000,'x','x')", []).unwrap();
+        c.execute("INSERT INTO articles(id, name, brand, category, price, created_at, updated_at) VALUES ('A2','Mütze','Nordwand','jacken',2000,'x','x')", []).unwrap();
+        c.execute("INSERT INTO articles(id, name, brand, category, price, created_at, updated_at) VALUES ('A3','Socken','','jacken',500,'x','x')", []).unwrap();
+        for (i, a) in ["A1", "A2", "A3"].iter().enumerate() {
+            c.execute("INSERT INTO variants(article_id, color, size, ean, stock) VALUES (?1,'moos','M',?2, 5)", rusqlite::params![a, format!("200000000001{i}")]).unwrap();
+        }
+        let eu = json!({ "name": "Firn EU GmbH", "email": "eu@firn.de", "strasse": "Weg", "hausnr": "1", "plz": "80331", "ort": "München", "land": "DE" });
+        let h = json!({ "name": "Firn Sports AG", "email": "gpsr@firn.ch", "strasse": "Bergstr.", "hausnr": "2", "plz": "8000", "ort": "Zürich", "land": "CH" });
+        crate::marke::save(&c, &json!({ "name": "Firn", "hersteller": h, "eu": eu, "lieferant": "L-001" }), "T").unwrap();
+        crate::marke::save(&c, &json!({ "name": "Nordwand", "hersteller": { "name": "Nordwand GmbH" } }), "T").unwrap();
+        let a = articles(&c).unwrap();
+        let firn = a.iter().find(|x| x["id"] == "A1").unwrap();
+        assert_eq!(firn["hersteller"]["name"], "Firn Sports AG", "Marke mit ® wird über die Vergleichsform gefunden");
+        assert_eq!(firn["hersteller"]["eu_verantwortlicher"]["anschrift"]["stadt"], "München");
+        assert_eq!(firn["hersteller"]["gpsr_vollstaendig"], true);
+        let t = firn.to_string();
+        assert!(!t.contains("L-001"), "keine internen Angaben im öffentlichen Schaufenster");
+        assert_eq!(a.iter().find(|x| x["id"] == "A2").unwrap()["hersteller"]["gpsr_vollstaendig"], false);
+        assert!(a.iter().find(|x| x["id"] == "A3").unwrap()["hersteller"].is_null(), "Artikel ohne Marke: keine Angaben");
+        assert_eq!(a.len(), 3, "ohne Schalter bleiben alle Artikel sichtbar");
+        // Schalter: nur Artikel mit vollständigen Angaben
+        db::setting_set(&c, "shop.gpsr_ausblenden", &json!(true)).unwrap();
+        let a = articles(&c).unwrap();
+        assert_eq!(a.iter().map(|x| x["id"].as_str().unwrap()).collect::<Vec<_>>(), vec!["A1"]);
     }
 }

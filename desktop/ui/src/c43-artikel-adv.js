@@ -200,7 +200,7 @@ AE_GRID_TABS.karte = ctx => {
   return `<div class="ae-pane"><div class="ae-cards">
     <div class="ae-card"><h4>Artikel-Info</h4>${aeField('Artikel-ID', a.id)}${aeField('Artikel-Nr.', d.hersteller_artikelnr || a.id)}${aeField('Artikel-Name', st.name)}</div>
     <div class="ae-card"><h4>Farben-Info</h4>${aeField('Lief.-Farb-Nr.', a.colors[0] || '')}${aeField('Lief.-Farb-Name', colorName(a.colors[0]))}${aeField('Haus-Farbe', a.colors.map(colorName).join(', '))}</div>
-    <div class="ae-card"><h4>Zusatz-Info</h4>${aeField('Marke', st.brand)}${aeField('Lieferant', sup?.name || '')}${aeField('Warengruppe', catName(st.cat))}</div>
+    <div class="ae-card"><h4>Zusatz-Info</h4>${aeField('Marke', st.brand)}${aeField('Hersteller', mkArtikelInfo(st.brand).hersteller)}${mkKarteChip(st.brand)}${aeField('Lieferant', sup?.name || '')}${aeField('Warengruppe', catName(st.cat))}</div>
     <div class="ae-card"><h4>WE Info</h4>${aeField('Letzte WE-Saison-Nr.', '')}${aeField('Letzte WE-Saison-Name', d.saison || '')}${aeField('Datum letzter WE', '')}</div>
     <div class="ae-card"><h4>Bild-URL</h4>${img ? `<img src="${esc(img)}" alt="" style="width:110px;height:110px;object-fit:contain;border-radius:8px;background:var(--surface-2)">` : '<span class="muted">kein Bild</span>'}</div>
     <div class="ae-card"><h4>WE-Datum</h4>${aeField('WE-Datum von', '01.01.1900')}${aeField('WE-Datum bis', today)}</div>
@@ -235,7 +235,7 @@ function aeAfter(ctx, tab) {
     const calc = () => { const m = $('#edMargin', ctx.el); if (!m) return; const vk = parseAmt($('[data-f="price"]', ctx.el)?.value || ''), ek = parseAmt($('[data-f="cost"]', ctx.el)?.value || ''), vat = +($('[data-f="vat"]', ctx.el)?.value || 20); if (vk > 0 && ek > 0) { const net = vk / (1 + vat / 100); m.textContent = `Spanne ${num((net - ek) / net * 100, 1)} % · Aufschlag ${num((net - ek) / ek * 100, 1)} %`; } else m.textContent = ''; };
     ['price', 'cost', 'vat'].forEach(k => $(`[data-f="${k}"]`, ctx.el)?.addEventListener('input', calc)); calc(); return;
   }
-  if (tab === 'karte') { $('#aeKarteRef', ctx.el)?.addEventListener('click', () => ctx.setTab('karte')); return; }
+  if (tab === 'karte') { $('#aeKarteRef', ctx.el)?.addEventListener('click', () => ctx.setTab('karte')); $('[data-mk-open]', ctx.el)?.addEventListener('click', e => mkOeffnen(e.currentTarget.dataset.mkOpen)); return; }
   if (!spec) return;
   const mount = () => {
     if (ctx.tab !== tab) return;

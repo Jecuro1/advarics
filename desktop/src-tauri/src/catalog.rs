@@ -197,6 +197,7 @@ pub fn save(tx: &Transaction, a: &Article) -> Result<(), String> {
             }
         })?;
     }
+    crate::marke::ensure(tx, &a.brand);
     Ok(())
 }
 
