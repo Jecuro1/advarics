@@ -1001,6 +1001,11 @@ fn po_list(db: State<db::Db>) -> Res<Vec<Value>> {
 }
 
 #[tauri::command]
+fn po_by_no(db: State<db::Db>, no: String) -> Option<i64> {
+    purchasing::po_by_no(&db.conn.lock().unwrap(), &no)
+}
+
+#[tauri::command]
 fn po_lines(db: State<db::Db>, id: i64) -> Res<Vec<Value>> {
     purchasing::po_lines(&db.conn.lock().unwrap(), id).map_err(err)
 }
@@ -2333,6 +2338,11 @@ fn main() {
                 }
                 dokumente_aufraeumen(std::time::Duration::ZERO, None);
             }
+            // Kopien geöffneter Lieferanten-Dokumente: nach zwei Stunden entfernen (nicht erst beim nächsten Öffnen oder Start)
+            std::thread::spawn(|| loop {
+                std::thread::sleep(std::time::Duration::from_secs(1800));
+                dokumente_aufraeumen(std::time::Duration::from_secs(2 * 3600), None);
+            });
             // Hintergrund-Dienste: Webhook-Zustellung, lokale REST-API (falls eingeschaltet)
             automation::start_worker(path.clone());
             verbund::start_worker(path.clone());
@@ -2587,6 +2597,7 @@ fn main() {
             lieferant_datei_loeschen,
             lieferant_datei_beschreiben,
             po_list,
+            po_by_no,
             po_lines,
             po_save,
             po_status,

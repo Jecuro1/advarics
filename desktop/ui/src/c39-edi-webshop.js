@@ -93,29 +93,34 @@ async function ediImportFolder(auto) {
 }
 /** Nachricht verarbeiten: DESADV → Avis, INVOIC → Eingangsrechnung, ORDRSP → bestätigt, PRICAT → Katalog */
 async function ediProcess(d) {
-  const p = d.data.parsed || {}, sup = lfSup(d.partner);
+  const p = d.data.parsed || {}, sup = lfSup(d.partner) || supByGln(p.lieferant_gln) || supByGln(p.absender);   // GLN auch jetzt auswerten: sie kann nach dem Einlesen im Lieferanten hinterlegt worden sein
   const lines = [], unknown = [];
-  for (const x of p.positionen || []) { const f = findEan(x.ean); if (f) lines.push({...newLine(DK.avis, f.a, f.v, x.menge || 1), ...(x.ek ? {price: Math.round(x.ek * 100)} : {})}); else unknown.push(x.ean); }
+  let ohneMenge = 0;
+  for (const x of p.positionen || []) { const f = findEan(x.ean); if (f) { if (!(x.menge > 0)) ohneMenge++; lines.push({...newLine(DK.avis, f.a, f.v, x.menge || 1), ...(x.ek ? {price: Math.round(x.ek * 100)} : {})}); } else unknown.push(x.ean); }
   let info = '';
   if (p.typ === 'DESADV') {
     if (!sup) throw new Error('Lieferant unbekannt – Haupt-GLN im Lieferanten (Stammdaten › Lieferanten) hinterlegen');
     if (unknown.length) throw new Error(`Unbekannte EAN: ${unknown.slice(0, 5).join(', ')}${unknown.length > 5 ? ' …' : ''} – erst per PRICAT/Artikel-Import anlegen`);
-    const po = EK.pos.find(x => x.no === p.bestellung);
-    const a = await invoke('doc_save', {doc: {kind: 'avis', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), data: {lines, order_id: po?.id || null, spedition: '', edi: d.no}}, user: S.user.name});
-    info = `Avis ${a.no}`;
-    // Lieferant: „DESADV automatisch verbuchen“ (nicht bei Gegenscannen – dort bucht erst der Scanner-Wareneingang)
-    if (sup.profile?.desadv_auto && !sup.profile?.gegenscannen) {
+    const po = EK.pos.find(x => x.no === p.bestellung) || (p.bestellung ? await invoke('po_by_no', {no: p.bestellung}).then(id => id ? {id} : null).catch(() => null) : null);   // die Liste kennt nur die letzten 300 Bestellungen
+    // dasselbe Avis (gleiche EDI-Nachricht oder gleiche Avis-Nummer desselben Lieferanten) nicht noch einmal anlegen und buchen
+    const vorh = (await docLoad('avis').catch(() => [])).find(x => x.data?.edi === d.no || (p.nr && x.partner === sup.id && x.ref === p.nr));
+    const a = vorh ? null : await invoke('doc_save', {doc: {kind: 'avis', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), data: {lines, order_id: po?.id || null, spedition: '', edi: d.no}}, user: S.user.name});
+    info = vorh ? `Avis ${vorh.no} gibt es schon – nicht noch einmal angelegt` : `Avis ${a.no}`;
+    // Lieferant: „DESADV automatisch verbuchen“ (nicht bei Gegenscannen – dort bucht erst der Scanner-Wareneingang; nicht bei Positionen ohne Menge)
+    if (!a) { /* schon vorhanden: nichts weiter */ }
+    else if (sup.profile?.desadv_auto && ohneMenge) info += ` – nicht automatisch eingebucht: ${ohneMenge} Position${ohneMenge === 1 ? '' : 'en'} ohne Menge`;
+    else if (sup.profile?.desadv_auto && !sup.profile?.gegenscannen) {
       try { const r = await invoke('doc_action', {id: a.id, action: 'buchen', payload: {}, user: S.user.name}); applyStocks(r.stocks); info += ' – eingebucht'; }
       catch (e) { info += ` – Einbuchen nicht möglich: ${String(e.message || e)}`; }
     }
   } else if (p.typ === 'INVOIC') {
     if (!sup) throw new Error('Lieferant unbekannt – Haupt-GLN im Lieferanten (Stammdaten › Lieferanten) hinterlegen');
     const betrag = Math.round((p.summe ?? (p.positionen || []).reduce((s, x) => s + (x.betrag ?? (x.ek || 0) * (x.menge || 0)), 0)) * 100);
-    const po = EK.pos.find(x => x.no === p.bestellung);
-    // Fälligkeit und Skonto wie bei der von Hand erfassten Rechnung: Valuta/Skonto des Lieferanten, sonst seine Zahlungs-Bed., sonst die erste Zahlungsbedingung
-    const sp = sup.profile || {}, zb = stRows('zahlungsbedingung').find(z => z.id === sp.zahlungsbed) || stActive('zahlungsbedingung')[0];
+    const po = EK.pos.find(x => x.no === p.bestellung) || (p.bestellung ? await invoke('po_by_no', {no: p.bestellung}).then(id => id ? {id} : null).catch(() => null) : null);
+    // Fälligkeit und Skonto ab Rechnungsdatum: Valuta/Skonto des Lieferanten, sonst seine Zahlungs-Bed.; ohne beides 30 Tage und kein Skonto
+    const sp = sup.profile || {}, zb = stRows('zahlungsbedingung').find(z => z.id === sp.zahlungsbed), rd = /^\d{4}-\d{2}-\d{2}$/.test(p.datum || '') ? p.datum : today(), plus = n => dIso(new Date(new Date(rd + 'T12:00:00').getTime() + n * 864e5));
     const valuta = +sp.valuta || +zb?.tage || 30, skonto = +sp.skonto || +zb?.skonto || 0, skTage = +zb?.skonto_tage || 0;
-    const r = await invoke('doc_save', {doc: {kind: 'er', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), due: plusDays(valuta), data: {rechnungsnr: p.nr, betrag, bestellungen: po ? [po.id] : [], notiz: `aus EDI ${d.no}`, ...(skonto ? {skonto_pct: skonto, skonto_bis: skTage ? plusDays(skTage) : ''} : {})}}, user: S.user.name});
+    const r = await invoke('doc_save', {doc: {kind: 'er', partner: sup.id, partner_name: sup.name, ref: p.nr, date: p.datum || today(), due: plus(valuta), data: {rechnungsnr: p.nr, betrag, bestellungen: po ? [po.id] : [], notiz: `aus EDI ${d.no}`, ...(skonto ? {skonto_pct: skonto, skonto_bis: skTage ? plus(skTage) : ''} : {})}}, user: S.user.name});
     info = `Eingangsrechnung ${r.no}`;
   } else if (p.typ === 'ORDRSP') {
     info = `Bestätigung zu ${p.bestellung || '–'}: ${num((p.positionen || []).reduce((s, x) => s + (x.menge || 0), 0))} Teile`;

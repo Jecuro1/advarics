@@ -17,7 +17,7 @@ function totals() {
   if (POS.billDisc) Object.keys(byRate).forEach(k => { if (+k > 0) { const d = r2((byRate[k] - (gesperrt[k] || 0)) * POS.billDisc.pct / 100); byRate[k] -= d; bdisc += d; } });
   const total = r2(sub - ldisc - bdisc);
   const vat = Object.entries(byRate).filter(([k, g]) => +k > 0 && g > 0).map(([k, g]) => ({rate: +k, gross: r2(g), net: r2(g / (1 + k / 100)), tax: r2(g - g / (1 + k / 100))}));
-  return {sub: r2(sub), disc: r2(ldisc + bdisc), total, vat, zero: r2(byRate[0] || 0), points: Math.floor(total / 10)};
+  return {sub: r2(sub), disc: r2(ldisc + bdisc), bdisc: r2(bdisc), total, vat, zero: r2(byRate[0] || 0), points: Math.floor(total / 10)};
 }
 
 function renderPOS() {
@@ -338,6 +338,7 @@ function openDiscount() {
   if (!POS.cart.length) return toast('Warenkorb ist leer', {type: 'warn', icon: 'percent'});
   let line = POS.cart.find(l => l.key === POS.sel);
   if (line && lfRabattGesperrt(line.art)) { toast('Rabattsperre', {t2: `${line.name}: Artikel von ${supName(line.art.supplierId)} sind vom Rabatt ausgeschlossen – ein Bon-Rabatt gilt nicht für diese Position`, icon: 'lock', type: 'warn', dur: 5000}); line = null; }
+  if (!line && !POS.cart.some(l => l.vat > 0 && !lfRabattGesperrt(l.art))) return toast('Kein Rabatt möglich', {t2: 'Im Warenkorb ist keine Position, auf die ein Bon-Rabatt wirkt (Rabattsperre des Lieferanten bzw. steuerfreie Positionen)', icon: 'lock', type: 'warn', dur: 5000});
   const st = {target: line ? 'line' : 'bill', pct: (line ? line.disc?.pct : POS.billDisc?.pct) || 10, reason: line?.disc?.reason || 'Kulanz'};
   const limit = POS.flow.approval ? POS.flow.approvalPct : 100;
   const el = openLayer(`<div class="modal" style="width:min(540px,100%)" role="dialog" aria-modal="true" aria-label="Rabatt gewähren"><div id="dBody"></div></div>`);
@@ -636,7 +637,7 @@ async function finalizePayment() {
   L.innerHTML = `<div style="flex:1;display:grid;place-items:center;text-align:center"><div class="authwait"><div class="ring">${ic('shield')}</div><p><b style="color:var(--text)">${DESKTOP ? 'Beleg wird gespeichert …' : 'Beleg wird signiert …'}</b><br>${DESKTOP ? (S.rksv?.active ? `RKSV-Testmodus · Kasse ${esc(CFG['kasse.id'])} · Umsatzzähler verschlüsselt` : 'Lokale Datenbank') : `Signatureinheit ${S.online ? 'Smartcard · Kasse ' + esc(CFG['kasse.id']) : 'Smartcard (offline)'} · Umsatzzähler verschlüsselt`}</p></div></div>`;
   await wait(reduced() ? 150 : DESKTOP ? 250 : 1000);
   const t = PAY.t, change = r2(PAY.parts.reduce((s, p) => s + (p.change || 0), 0));
-  const rec = {no: belegNo(), date: new Date(), lines: POS.cart.map(l => ({...l})), t, parts: PAY.parts.slice(), change, customer: POS.customer, billDisc: POS.billDisc, cashier: S.user.name, offline: !S.online,
+  const rec = {no: belegNo(), date: new Date(), lines: POS.cart.map(l => ({...l})), t, parts: PAY.parts.slice(), change, customer: POS.customer, billDisc: t.bdisc > 0 ? POS.billDisc : null, cashier: S.user.name, offline: !S.online,
     sig: (hash(belegNo() + t.total) >>> 0).toString(16).toUpperCase().padStart(8, '0') + (hash(String(t.total)) >>> 0).toString(16).toUpperCase().padStart(8, '0')};
   // Festschreiben: Belegnummer, Beleg und Bestandsabbuchung in einer Transaktion
   try {

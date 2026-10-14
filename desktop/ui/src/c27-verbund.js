@@ -93,7 +93,7 @@ function openVbSetup(rolle) {
   };
 }
 async function afterSync(r) {
-  try { replaceCatalog(await invoke('catalog_list')); await loadCustomers(); await loadPromos(); await loadSuppliers(); } catch { /* */ }
+  try { replaceCatalog(await invoke('catalog_list')); await loadCustomers(); await loadPromos(); await loadSuppliers(); await loadStamm(); } catch { /* */ }   // loadStamm: Stammdaten-Tabellen der Zentrale (z. B. Lieferantenrabatte)
   await loadVerbund();
   toast('Abgleich abgeschlossen', {t2: `${num(r.gesendet.belege)} Belege gesendet · ${num(r.geholt.artikel)} Artikel, ${num(r.geholt.kunden)} Kunden geholt`, type: 'pos', icon: 'sync'});
 }
@@ -219,5 +219,6 @@ function bindVerbund() {
     const s = e.target.closest('[data-tst]'); if (s) transferStatus(s.dataset.tno, s.dataset.tst);
   });
   // regelmäßig Status/Umsätze der Filialen aktualisieren
-  setInterval(() => { if (vbOn()) loadVerbund().then(() => { if (S.view === 'filialen' && VB.tab === 'uebersicht') renderVbBody(); }); }, 60000);
+  setInterval(() => { if (vbOn() && vbRole() === 'filiale') { loadStamm().catch(() => {}); loadSuppliers().catch(() => {}); }   // der Hintergrund-Abgleich bringt Rabatte, Rabattsperre u. a. – die Anzeige nachziehen
+    if (vbOn()) loadVerbund().then(() => { if (S.view === 'filialen' && VB.tab === 'uebersicht') renderVbBody(); }); }, 60000);
 }

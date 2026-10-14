@@ -59,14 +59,15 @@ async function openPO(id, preset) {
   const st = {supplier: head?.supplier_id || preset?.supplier || SUPPLIERS[0]?.id || '', note: head?.note || '', type: head?.order_type ?? preset?.type ?? (orderTypes()[0]?.name || ''), lines: lines.map(l => ({...l, costE: l.cost != null ? num(l.cost / 100, 2) : ''})), q: '', rabatt: '', rabattWeg: null};
   // Rabatt des Lieferanten (Stammdaten › Lieferanten › Rabatte): beim Entwurf der gewählte, sonst der festgehaltene der Bestellung
   const rabatteVon = sid => stRows('lieferantenrabatt').filter(r => r.lieferant === sid);
-  if (head?.disc_name) { const r0 = rabatteVon(st.supplier).find(r => r.name === head.disc_name && Math.abs(r.pct - head.disc_pct) < 0.001); if (r0) st.rabatt = r0.id; else st.rabattWeg = {name: head.disc_name, pct: head.disc_pct}; }
+  if (head?.disc_name) { const r0 = rabatteVon(st.supplier).find(r => r.name === head.disc_name && Math.abs(r.pct - head.disc_pct) < 0.001); if (r0) st.rabatt = r0.id; else { st.rabattWeg = {name: head.disc_name, pct: head.disc_pct}; if (head.status === 'entwurf') st.rabatt = '='; } }
   const el = openLayer(`<div class="drawer-panel" style="width:min(760px,100%)" role="dialog" aria-modal="true" aria-label="Bestellung"><div id="poBody" style="display:flex;flex-direction:column;min-height:0;flex:1"></div></div>`, {cls: 'drawer'});
   const box = $('#poBody', el);
   const total = () => st.lines.reduce((s, l) => s + (parseAmt(l.costE) || 0) * (parseInt(l.qty, 10) || 0), 0);
-  const rabattObj = () => draft ? rabatteVon(st.supplier).find(r => r.id === st.rabatt) : head?.disc_name ? {name: head.disc_name, pct: head.disc_pct} : null;
+  const rabattObj = () => draft ? (st.rabatt === '=' && head?.disc_name ? {name: head.disc_name, pct: head.disc_pct} : rabatteVon(st.supplier).find(r => r.id === st.rabatt)) : head?.disc_name ? {name: head.disc_name, pct: head.disc_pct} : null;
   const rabattPct = () => +rabattObj()?.pct || 0;
   /** Bestellwert nach Rabatt (auf Cent gerundet wie im Programmkern) */
-  const netto = () => Math.round(total() * 100 * (1 - rabattPct() / 100)) / 100;
+  const totalC = () => st.lines.reduce((s, l) => s + Math.round((parseAmt(l.costE) || 0) * 100) * (parseInt(l.qty, 10) || 0), 0);   // in Cent, wie der Programmkern (Preis je Stück gerundet, dann Menge, dann Rabatt)
+  const netto = () => Math.round(totalC() * (1 - rabattPct() / 100)) / 100;
   const sumHTML = () => rabattPct() > 0 ? `<span class="muted" style="font-size:12px;display:block">Zwischensumme ${eur(total())} · Rabatt ${esc(rabattObj().name)} ${num(rabattPct(), 2)} % = −${eur(total() - netto())}</span>` : '';
   const supObj = () => SUPPLIERS_ALL.find(x => x.id === st.supplier) || SUPPLIERS.find(x => x.id === st.supplier);
   /** Mindestauftragssumme/-menge des Lieferanten: Hinweis, solange die Bestellung darunter liegt (die Summe nur, wenn alle Positionen einen Preis haben) */
@@ -82,7 +83,7 @@ async function openPO(id, preset) {
     box.innerHTML = `<div class="m-head" style="padding-bottom:12px"><div class="m-ic">${ic('truck')}</div><div><h2>${head ? esc(head.no) : 'Neue Bestellung'}</h2><p>${head ? `${PO_ST[head.status][0]} · angelegt ${esc(fmtTs(head.created_at))}${head.user ? ' von ' + esc(head.user) : ''}` : 'Entwurf – wird erst mit „Bestellen“ verbindlich'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
       <div class="drawer-body" style="display:grid;gap:14px;align-content:start">
         <div class="ed-grid"><label class="field"><span>Lieferant</span><select class="input select" id="poSup" ${draft ? '' : 'disabled'}>${(SUPPLIERS.some(x => x.id === st.supplier) ? SUPPLIERS : [...SUPPLIERS_ALL.filter(x => x.id === st.supplier), ...SUPPLIERS]).map(s => `<option value="${esc(s.id)}" ${s.id === st.supplier ? 'selected' : ''}>${esc(s.name)}${s.active === false ? ' (inaktiv)' : ''}</option>`).join('')}</select></label>
-          ${draft ? `<label class="field"><span>Rabatt</span><select class="input select" id="poRab"><option value="">– kein Rabatt –</option>${rabatteVon(st.supplier).map(r => `<option value="${esc(r.id)}" ${r.id === st.rabatt ? 'selected' : ''}>${esc(r.name)} (${num(r.pct, 2)} %)</option>`).join('')}</select>${st.rabattWeg ? `<small class="ea-hint">Der frühere Rabatt „${esc(st.rabattWeg.name)}“ (${num(st.rabattWeg.pct, 2)} %) gibt es nicht mehr – bitte neu wählen.</small>` : ''}</label>` : head?.disc_name ? `<label class="field"><span>Rabatt</span><input class="input ea-ro" readonly tabindex="-1" value="${esc(head.disc_name)} (${num(head.disc_pct, 2)} %)"></label>` : ''}
+          ${draft ? `<label class="field"><span>Rabatt</span><select class="input select" id="poRab"><option value="">– kein Rabatt –</option>${st.rabattWeg && head?.status === 'entwurf' ? `<option value="=" ${st.rabatt === '=' ? 'selected' : ''}>${esc(st.rabattWeg.name)} (${num(st.rabattWeg.pct, 2)} %) – wie gespeichert</option>` : ''}${rabatteVon(st.supplier).map(r => `<option value="${esc(r.id)}" ${r.id === st.rabatt ? 'selected' : ''}>${esc(r.name)} (${num(r.pct, 2)} %)</option>`).join('')}</select>${st.rabattWeg && st.rabatt === '=' ? `<small class="ea-hint">Der Entwurf behält den gespeicherten Rabatt „${esc(st.rabattWeg.name)}“ (${num(st.rabattWeg.pct, 2)} %), auch wenn er in den Stammdaten geändert oder gelöscht wurde. Wählen Sie einen anderen, um ihn zu ersetzen.</small>` : ''}</label>` : head?.disc_name ? `<label class="field"><span>Rabatt</span><input class="input ea-ro" readonly tabindex="-1" value="${esc(head.disc_name)} (${num(head.disc_pct, 2)} %)"></label>` : ''}
           <label class="field"><span>Order-Typ</span><select class="input select" id="poType" ${draft ? '' : 'disabled'}><option value="">–</option>${orderTypes().map(t => `<option ${t.name === st.type ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
           <label class="field full"><span>Notiz</span><input class="input" id="poNote" value="${esc(st.note)}" ${draft ? '' : 'readonly'} placeholder="z. B. Saisonvororder"></label></div>
         ${lfHinweis(supObj())}
@@ -103,7 +104,7 @@ async function openPO(id, preset) {
           : ['bestellt', 'teilgeliefert'].includes(head.status) ? `<button class="btn btn-primary" id="poRecv">${ic('boxes', 'i-sm')}Wareneingang buchen</button>` : '<button class="btn btn-secondary" data-close>Schließen</button>'}</div>`;
     if (st.q) { const q = $('#poQ', box); q.focus(); q.setSelectionRange(st.q.length, st.q.length); }
   };
-  const sync = () => { const s = $('#poSup', box), n = $('#poNote', box), t = $('#poType', box), r = $('#poRab', box); if (s) st.supplier = s.value; if (n) st.note = n.value; if (t) st.type = t.value; if (r) { st.rabatt = r.value; st.rabattWeg = null; } };
+  const sync = () => { const s = $('#poSup', box), n = $('#poNote', box), t = $('#poType', box), r = $('#poRab', box); if (s) st.supplier = s.value; if (n) st.note = n.value; if (t) st.type = t.value; if (r) { st.rabatt = r.value; if (r.value !== '=') st.rabattWeg = null; } };
   const save = async () => {
     sync();
     if (!st.supplier) { toast('Lieferant wählen', {type: 'warn'}); return null; }
@@ -114,7 +115,7 @@ async function openPO(id, preset) {
   };
   box.addEventListener('input', e => {
     if (e.target.id === 'poNote') { st.note = e.target.value; return; } // sonst ginge die Notiz beim nächsten Neuzeichnen (Artikelsuche) verloren
-    if (e.target.id === 'poQ') { st.q = e.target.value; render(); return; }
+    if (e.target.id === 'poQ') { sync(); st.q = e.target.value; render(); return; }
     const q = e.target.dataset.lq, c = e.target.dataset.lc;
     if (q != null) st.lines[q].qty = e.target.value.replace(/\D/g, '');
     if (c != null) st.lines[c].costE = e.target.value;

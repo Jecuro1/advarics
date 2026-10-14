@@ -188,6 +188,10 @@ pub fn po_save(tx: &Transaction, id: Option<i64>, supplier: &str, note: &str, li
 
 /// Rabatt des Lieferanten (Stammdaten › Lieferanten › Rabatte) an einen Entwurf hängen; Bezeichnung und Prozent werden mit der Bestellung festgehalten, leer = kein Rabatt
 pub fn po_rabatt(tx: &Transaction, id: i64, supplier: &str, rabatt: Option<&str>) -> Result<(), String> {
+    // „=“: den festgehaltenen Rabatt des Entwurfs unverändert lassen (auch wenn er in den Stammdaten inzwischen geändert oder gelöscht ist)
+    if rabatt.map(str::trim) == Some("=") {
+        return Ok(());
+    }
     let (name, pct) = match rabatt.map(str::trim).filter(|r| !r.is_empty()) {
         None => (String::new(), 0.0),
         Some(rid) => crate::lieferant::rabatt_finden(tx, supplier, rid).ok_or("Dieser Rabatt gehört nicht (mehr) zum Lieferanten – bitte neu wählen")?,
@@ -277,6 +281,11 @@ pub fn po_receive(tx: &Transaction, id: i64, items: &[Receive], user: &str) -> R
 pub fn po_set_type(c: &Connection, id: i64, t: &str) -> Result<(), String> {
     c.execute("UPDATE purchase_orders SET order_type = ?2 WHERE id = ?1", params![id, t.trim()]).map_err(|e| e.to_string())?;
     Ok(())
+}
+
+/// Id der Bestellung mit dieser Nummer (auch außerhalb der letzten 300, die `po_list` liefert)
+pub fn po_by_no(c: &Connection, no: &str) -> Option<i64> {
+    c.query_row("SELECT id FROM purchase_orders WHERE no = ?1", [no.trim()], |r| r.get(0)).ok()
 }
 
 pub fn po_list(c: &Connection) -> rusqlite::Result<Vec<Value>> {

@@ -466,8 +466,8 @@ pub fn rabatt_save(c: &Connection, row: &Value, by: &str) -> Result<Value, Strin
     if name.chars().count() < 1 || name.chars().count() > 80 {
         return Err("Rabatt: Bezeichnung angeben (höchstens 80 Zeichen)".into());
     }
-    let pct = prozent(&row["pct"]).filter(|p| *p > 0.0 && *p <= 100.0).ok_or("Rabatt: Prozentsatz von mehr als 0 bis 100")?;
-    let pct = (pct * 100.0).round() / 100.0;
+    // erst auf zwei Nachkommastellen runden, dann prüfen: 0,004 % würde sonst als 0,00 % gespeichert
+    let pct = prozent(&row["pct"]).map(|p| (p * 100.0).round() / 100.0).filter(|p| *p > 0.0 && *p <= 100.0).ok_or("Rabatt: Prozentsatz von 0,01 bis 100")?;
     let tx = c.unchecked_transaction().map_err(|e| e.to_string())?;
     let mut rows = stamm::list(&tx, RABATT_KIND)?;
     let id = s(&row["id"]);

@@ -22,7 +22,9 @@ fn line_effective(line: &Value, bill_pct: f64) -> i64 {
     let ldisc = line["disc"]["pct"].as_f64().map(|p| (gross as f64 * p / 100.0).round() as i64).unwrap_or(0);
     let after = gross - ldisc;
     let vat = line["vat"].as_i64().unwrap_or(20);
-    if vat > 0 && bill_pct > 0.0 {
+    // „nodisc“: Artikel eines Lieferanten mit Rabattsperre – der Bon-Rabatt hat die Position nie erfasst
+    let locked = line["nodisc"].as_bool().unwrap_or(false);
+    if vat > 0 && bill_pct > 0.0 && !locked {
         after - (after as f64 * bill_pct / 100.0).round() as i64
     } else {
         after
@@ -461,6 +463,16 @@ mod tests {
     }
     fn points(c: &Connection) -> i64 {
         c.query_row("SELECT points FROM customers WHERE id = 'K-1'", [], |r| r.get(0)).unwrap()
+    }
+
+    #[test]
+    fn bon_rabatt_erfasst_gesperrte_positionen_nicht() {
+        let jacke = json!({ "qty": 1, "unit": 100.0, "vat": 20, "nodisc": true });
+        let hose = json!({ "qty": 1, "unit": 100.0, "vat": 20 });
+        assert_eq!(line_effective(&jacke, 10.0), 10000);
+        assert_eq!(line_effective(&hose, 10.0), 9000);
+        // Belege aus früheren Fassungen ohne Kennzeichen rechnen wie bisher
+        assert_eq!(line_effective(&json!({ "qty": 1, "unit": 100.0, "vat": 20 }), 10.0), 9000);
     }
 
     #[test]

@@ -178,7 +178,7 @@ async function wsBook() {
       await invoke('doc_save', {doc: {...a, data: {...a.data, lines, gezaehlt: true}}, user: S.user.name});
       let r;
       try { r = await invoke('doc_action', {id: a.id, action: 'buchen', payload: {}, user: S.user.name}); }
-      catch (e) { await invoke('doc_save', {doc: {...a, data: {...a.data, lines, gezaehlt: false}}, user: S.user.name}).catch(() => {}); throw e; } // nicht gebucht: der Zählstand gilt nicht weiter
+      catch (e) { await invoke('doc_save', {doc: {...a, data: {...a.data, gezaehlt: false}}, user: S.user.name}).catch(() => {}); throw e; } // nicht gebucht: das Avis behält seine angekündigten Positionen und Mengen (der Zählstand gilt nicht weiter)
       applyStocks(r.stocks);
       toast('Avis eingebucht', {t2: `${a.no} · ${WS.items.reduce((s, x) => s + x.qty, 0)} Stück`, type: 'pos', icon: 'boxes'});
     } else if (WS.po) {
