@@ -85,7 +85,19 @@ fn zahl(v: &Value) -> Option<f64> {
 
 /// Eingabe prüfen und in die gespeicherte Form bringen. Unbekannte Schlüssel der Zeile (Import: `gruppe`, frühere Fassungen) bleiben erhalten.
 pub fn pruefen(c: &Connection, row: &Value, alt: Option<&Value>) -> Result<Value, String> {
-    let nr = nr_norm(&s(&row["nr"])).ok_or("Nr.: eine ganze Zahl bis 999999 (nur Ziffern)")?;
+    // Nr.: neue Gruppen brauchen eine Zahl; Alt-Zeilen ohne Zahl (vom Artikelimport angelegt: Schlüssel adv-<Text>) bleiben mit ihrer bisherigen Nr. speicherbar
+    let nr_in = s(&row["nr"]);
+    let nr = match nr_norm(&nr_in) {
+        Some(n) => n,
+        None => {
+            let alt_nr = alt.map(|a| s(&a["nr"])).filter(|x| !x.is_empty()).or_else(|| alt.map(|a| s(&a["id"]).trim_start_matches("adv-").to_string()));
+            if !nr_in.is_empty() && nr_in.chars().count() <= 40 && alt_nr.as_deref() == Some(nr_in.as_str()) {
+                nr_in.clone()
+            } else {
+                return Err("Nr.: eine ganze Zahl bis 999999 (nur Ziffern)".into());
+            }
+        }
+    };
     let name = s(&row["name"]);
     if name.is_empty() {
         return Err("Name fehlt".into());
@@ -96,7 +108,7 @@ pub fn pruefen(c: &Connection, row: &Value, alt: Option<&Value>) -> Result<Value
     let altv = |k: &str| alt.map(|a| s(&a[k])).filter(|x| !x.is_empty());
     let mut o = alt.and_then(|a| a.as_object().cloned()).unwrap_or_default();
     o.retain(|k, _| !k.starts_with('_') && k != "id");
-    for k in ["service", "rabattsperre", "intrastat_nr", "intrastat_bez", "gewicht", "webkat1", "webkat2", "webkat3", "webkat4", "webkat5", "etikett2", "hierarchie", "statgroessen", "anz_etiketten", "mwst"] {
+    for k in ["service", "rabattsperre", "intrastat_nr", "zolltarif", "intrastat_bez", "gewicht", "webkat1", "webkat2", "webkat3", "webkat4", "webkat5", "etikett2", "hierarchie", "statgroessen", "anz_etiketten", "mwst"] {
         o.remove(k);   // optionale Felder werden unten nur gesetzt, wenn sie vom Standard abweichen
     }
     o.insert("nr".into(), json!(nr));
@@ -131,13 +143,15 @@ pub fn pruefen(c: &Connection, row: &Value, alt: Option<&Value>) -> Result<Value
 
     // MwSt.: der Typ bestimmt den Satz (`ust` bleibt als Zahl für alle, die ihn lesen)
     let mw = zeile(c, "mwsttyp", &s(&row["mwsttyp"]));
+    // Ohne verwertbaren Satz im Typ (Typ gelöscht oder ohne Satz) gilt der bisher gespeicherte Satz der Gruppe, nie stillschweigend 20 %
+    let bisher = zahl(&row["ust"]).or_else(|| alt.and_then(|a| zahl(&a["ust"]))).unwrap_or(20.0);
     let satz = match &mw {
-        Some(m) => zahl(&m["satz"]).unwrap_or(20.0),
+        Some(m) => zahl(&m["satz"]).unwrap_or(bisher),
         None => match s(&row["mwsttyp"]).as_str() {
             "E" => 10.0,
             "E13" => 13.0,
             "F" => 0.0,
-            _ => zahl(&row["ust"]).unwrap_or(20.0),
+            _ => bisher,
         },
     };
     if (satz - satz.round()).abs() > 1e-9 || !SAETZE.contains(&(satz.round() as i64)) {
@@ -159,13 +173,19 @@ pub fn pruefen(c: &Connection, row: &Value, alt: Option<&Value>) -> Result<Value
         }
     }
 
-    // Intrastat
-    let nrz: String = s(&row["intrastat_nr"]).chars().filter(|ch| !ch.is_whitespace()).collect();
+    // Intrastat: Punkte, Bindestriche und Leerzeichen sind erlaubt und werden entfernt; ein unveränderter Altwert (früher „Zolltarifnr.“, frei getippt) bleibt speicherbar
+    let roh = s(&row["intrastat_nr"]);
+    let nrz: String = roh.chars().filter(|ch| !ch.is_whitespace() && *ch != '.' && *ch != '-').collect();
     if !nrz.is_empty() {
-        if !nrz.chars().all(|ch| ch.is_ascii_digit()) || nrz.len() < 4 || nrz.len() > 10 {
+        let alt_nr = altv("intrastat_nr").or_else(|| altv("zolltarif"));
+        let gueltig = nrz.chars().all(|ch| ch.is_ascii_digit()) && nrz.len() >= 4 && nrz.len() <= 10;
+        if gueltig {
+            o.insert("intrastat_nr".into(), json!(nrz));
+        } else if alt_nr.as_deref() == Some(roh.as_str()) {
+            o.insert("intrastat_nr".into(), json!(roh));
+        } else {
             return Err("Intrastat-Waren-Nr.: 4 bis 10 Ziffern (Warennummer der Kombinierten Nomenklatur, z. B. 62011290)".into());
         }
-        o.insert("intrastat_nr".into(), json!(nrz));
     }
     let bez = s(&row["intrastat_bez"]);
     if bez.chars().count() > 120 {
@@ -269,7 +289,8 @@ pub fn save(c: &Connection, row: &Value, by: &str) -> Result<Value, String> {
     let nr = s(&r["nr"]);
     let id = match &alt {
         Some(a) => {
-            if nr_norm(&s(&a["nr"])).unwrap_or_else(|| s(&a["nr"])) != nr && !s(&a["nr"]).is_empty() {
+            let alt_nr = Some(s(&a["nr"])).filter(|x| !x.is_empty()).unwrap_or_else(|| s(&a["id"]).trim_start_matches("adv-").to_string());
+            if nr_norm(&alt_nr).unwrap_or(alt_nr.clone()) != nr {
                 return Err("Die Nr. lässt sich nach dem Anlegen nicht mehr ändern (Artikel und Importe verweisen darauf) – für eine andere Nr. die Warengruppe kopieren".into());
             }
             id_in.clone()
@@ -292,8 +313,8 @@ pub fn save(c: &Connection, row: &Value, by: &str) -> Result<Value, String> {
     Ok(r)
 }
 
-/// Löschen: nur ohne Artikel (auch inaktive). Rückgabe: die gelöschten Kennungen; bei Hindernissen steht der Grund im Fehler.
-pub fn delete(c: &Connection, ids: &[String], by: &str) -> Result<usize, String> {
+/// Löschen: nur ohne Artikel (auch inaktive). Rückgabe: { geloescht: Anzahl, nicht: [Gründe] } – was geht, wird gelöscht, der Rest mit Grund gemeldet.
+pub fn delete(c: &Connection, ids: &[String], by: &str) -> Result<Value, String> {
     if verbund::rolle(c) == "filiale" {
         return Err("Warengruppen löscht die Zentrale".into());
     }
@@ -312,10 +333,7 @@ pub fn delete(c: &Connection, ids: &[String], by: &str) -> Result<usize, String>
         weg += 1;
     }
     tx.commit().map_err(|e| e.to_string())?;
-    if !grund.is_empty() {
-        return Err(format!("{}{}Nicht gelöscht, weil Artikel dazugehören: {}", if weg > 0 { format!("{weg} gelöscht. ") } else { String::new() }, "", grund.iter().take(5).cloned().collect::<Vec<_>>().join("; ")));
-    }
-    Ok(weg)
+    Ok(json!({ "geloescht": weg, "nicht": grund }))
 }
 
 /// Standardzeilen, die die Warengruppen-Maske voraussetzt. Fehlt die Tabelle ganz, kommen alle Zeilen hinein, sonst nur die benötigten.
@@ -522,6 +540,42 @@ mod tests {
     }
 
     #[test]
+    fn alt_zeilen_vom_artikelimport_ohne_nr_mit_freiem_zolltarif_und_ohne_typ_satz_bleiben_speicherbar() {
+        let c = db();
+        let b = basis(&c);
+        tabelle(&c, "mwsttyp", "LEER", json!({ "name": "Typ ohne Satz" }));
+        // vom Artikelimport angelegt: Schlüssel mit Text, keine Nr., Satz nur als ust, Zolltarif frei getippt
+        tabelle(&c, "warengruppe", "adv-skijacken", json!({ "name": "Skijacken", "ust": 10, "zolltarif": "6201 xx", "gruppe": "Ski" }));
+        let mut x = b.clone();
+        x["id"] = json!("adv-skijacken");
+        x["nr"] = json!("skijacken");
+        x["name"] = json!("Skijacken neu");
+        x["mwsttyp"] = json!("LEER");
+        x["intrastat_nr"] = json!("6201 xx");
+        let r = save(&c, &x, "T").unwrap();
+        assert_eq!((r["nr"].clone(), r["intrastat_nr"].clone(), r["ust"].clone()), (json!("skijacken"), json!("6201 xx"), json!(10)), "bisheriger Satz bleibt, nicht still 20 %");
+        assert!(r.get("zolltarif").is_none(), "die Maske führt nur noch intrastat_nr");
+        assert_eq!(r["gruppe"], "Ski");
+        // eine andere Nr. oder eine neue ungültige Warennummer wird abgelehnt
+        let mut y = x.clone();
+        y["nr"] = json!("77");
+        assert!(save(&c, &y, "T").unwrap_err().contains("nicht mehr ändern"));
+        let mut z = x.clone();
+        z["intrastat_nr"] = json!("abc");
+        assert!(save(&c, &z, "T").is_err());
+        // Punkte und Bindestriche sind erlaubt, Leeren wirkt wirklich
+        let mut w = x.clone();
+        w["intrastat_nr"] = json!("6201.12-90");
+        assert_eq!(save(&c, &w, "T").unwrap()["intrastat_nr"], "62011290");
+        w["intrastat_nr"] = json!("");
+        assert!(save(&c, &w, "T").unwrap().get("intrastat_nr").is_none());
+        // neue Gruppen brauchen eine Zahl
+        let mut n = b.clone();
+        n["nr"] = json!("abc");
+        assert!(save(&c, &n, "T").is_err());
+    }
+
+    #[test]
     fn loeschen_nur_ohne_artikel_und_filiale_gesperrt() {
         let c = db();
         let b = basis(&c);
@@ -530,10 +584,15 @@ mod tests {
         x["nr"] = json!("2");
         let z = save(&c, &x, "T").unwrap();
         artikel(&c, "A1", &s(&a["id"]));
-        let e = delete(&c, &[s(&a["id"])], "T").unwrap_err();
-        assert!(e.contains("1 Artikel"), "{e}");
+        let r = delete(&c, &[s(&a["id"])], "T").unwrap();
+        assert_eq!(r["geloescht"], json!(0));
+        assert!(r["nicht"][0].as_str().unwrap().contains("1 Artikel"), "{r}");
         assert!(finden(&c, &s(&a["id"])).is_some());
-        assert_eq!(delete(&c, &[s(&z["id"])], "T").unwrap(), 1);
+        // teilweise: eine löschbare, eine mit Artikeln → die eine wird gelöscht, die andere gemeldet
+        let r = delete(&c, &[s(&a["id"]), s(&z["id"])], "T").unwrap();
+        assert_eq!((r["geloescht"].clone(), r["nicht"].as_array().unwrap().len()), (json!(1), 1));
+        let z = save(&c, &{ let mut x = b.clone(); x["nr"] = json!("3"); x }, "T").unwrap();
+        assert_eq!(delete(&c, &[s(&z["id"])], "T").unwrap()["geloescht"], json!(1));
         assert!(finden(&c, &s(&z["id"])).is_none());
         let z = zaehler(&c);
         assert_eq!(z["adv-960100"], json!([1, 1]));

@@ -162,12 +162,13 @@ function renderEtRes() {
 }
 function renderEtList() {
   const box = $('#etList'); if (!box) return;
-  box.innerHTML = ET.items.length ? `<table class="tbl" style="margin:0"><tbody>${ET.items.map((x, i) => `<tr><td style="padding-left:16px"><b>${esc(x.a.name)}</b><div class="muted" style="font-size:11.5px">${esc(colorName(x.v.c))} · ${esc(x.v.s)} · ${esc(x.v.ean)}</div></td><td class="r"><input class="input num" data-etn="${i}" value="${x.n}" style="width:70px;height:30px;text-align:right"></td><td class="r" style="padding-right:12px"><button class="btn btn-ghost btn-sm btn-icon" data-etrm="${i}" aria-label="Entfernen">${ic('x', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
+  box.innerHTML = ET.items.length ? `<table class="tbl" style="margin:0"><tbody>${ET.items.map((x, i) => `<tr><td style="padding-left:16px"><b>${esc(x.a.name)}</b><div class="muted" style="font-size:11.5px">${esc(colorName(x.v.c))} · ${esc(x.v.s)} · ${esc(x.v.ean)}${x.m != null && lblAnz(x.a, 1) !== 1 ? ` · ${lblAnz(x.a, 1) ? 'Menge × Anz. (' + lblAnz(x.a, 1) + ')' : 'Anz. 0: keine automatischen Etiketten'}` : ''}</div></td><td class="r"><input class="input num" data-etn="${i}" value="${x.n}" style="width:70px;height:30px;text-align:right"></td><td class="r" style="padding-right:12px"><button class="btn btn-ghost btn-sm btn-icon" data-etrm="${i}" aria-label="Entfernen">${ic('x', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
     : `<div class="empty" style="padding:36px"><div class="empty-icon">${ic('barcode')}</div><p>Links Varianten antippen – oder „Alle“ bzw. „= Bestand“ für ganze Artikel.</p></div>`;
   const pb = $('[data-et="print"]'); if (pb) { pb.disabled = !ET.items.length; pb.innerHTML = `${ic('printer', 'i-sm')}${num(ET.items.reduce((a, x) => a + x.n, 0))} Etiketten drucken`; }
   const cb = $('[data-et="clear"]'); if (cb) cb.disabled = !ET.items.length;
 }
-function etAdd(a, v, n = 1) { const ex = ET.items.find(x => x.v.ean === v.ean); if (ex) ex.n += n; else ET.items.push({a, v, n}); }
+/** m = Menge vor „× Anz. der Warengruppe“ (nur bei automatischer Menge; so erklärt der Dialog die Zahl). Von Hand gewählte Zeilen (Variante antippen, Scan) tragen kein m. */
+function etAdd(a, v, n = 1, m) { const ex = ET.items.find(x => x.v.ean === v.ean); if (ex) { ex.n += n; if (m != null && ex.m != null) ex.m += m; else delete ex.m; } else ET.items.push(m != null ? {a, v, n, m} : {a, v, n}); }
 
 /* ── Buchhaltung ── */
 const FB = {p: 'monat', von: '', bis: '', rows: []};
@@ -307,19 +308,19 @@ function bindPages() {
   on('wareneingang', async e => {
     const p = e.target.closest('[data-wepo]');
     if (p) { const head = EK.pos.find(x => x.id === +p.dataset.wepo); try { await needPerm('einkauf', 'Wareneingang'); const lines = await invoke('po_lines', {id: head.id}); openReceive(head, lines); } catch (err) { if (err?.message !== 'abgebrochen') toast('Nicht möglich', {t2: String(err), type: 'warn'}); } return; }
-    const b = e.target.closest('[data-we]'); if (!b) return; if (b.dataset.we === 'book') return weBook(); if (b.dataset.we === 'etiketten') { ET.items = []; WE.log.forEach(x => { const h = findEan(x.ean); if (h) etAdd(h.a, h.v, x.qty); }); go('etiketten'); }
+    const b = e.target.closest('[data-we]'); if (!b) return; if (b.dataset.we === 'book') return weBook(); if (b.dataset.we === 'etiketten') { ET.items = []; WE.log.forEach(x => { const h = findEan(x.ean); if (h) etAdd(h.a, h.v, lblAnz(h.a, x.qty), x.qty); }); go('etiketten'); }
   });
   $('#view-wareneingang').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.target.id === 'weEan' || e.target.id === 'weQty')) { e.preventDefault(); if (e.target.id === 'weEan' && findEan(e.target.value)) { const h = findEan(e.target.value); $('#weHit').textContent = `${h.a.name} · ${colorName(h.v.c)} · ${h.v.s} · Bestand ${h.v.q}`; } weBook(); } });
   on('etiketten', e => {
     const t = e.target;
     const vb = t.closest('[data-etv]'); if (vb) { const h = findEan(vb.dataset.etv); if (h) { etAdd(h.a, h.v); renderEtList(); } return; }
-    const al = t.closest('[data-etall]'); if (al) { const a = artById(al.dataset.etall); a.variants.forEach(v => etAdd(a, v)); return renderEtList(); }
-    const as = t.closest('[data-etstock]'); if (as) { const a = artById(as.dataset.etstock); a.variants.filter(v => v.q > 0).forEach(v => etAdd(a, v, v.q)); return renderEtList(); }
+    const al = t.closest('[data-etall]'); if (al) { const a = artById(al.dataset.etall); a.variants.forEach(v => etAdd(a, v, lblAnz(a, 1), 1)); return renderEtList(); }
+    const as = t.closest('[data-etstock]'); if (as) { const a = artById(as.dataset.etstock); a.variants.filter(v => v.q > 0).forEach(v => etAdd(a, v, lblAnz(a, v.q), v.q)); return renderEtList(); }
     const rm = t.closest('[data-etrm]'); if (rm) { ET.items.splice(+rm.dataset.etrm, 1); return renderEtList(); }
     const b = t.closest('[data-et]'); if (b?.dataset.et === 'clear') { ET.items = []; return renderEtList(); } if (b?.dataset.et === 'print' && ET.items.length) openLabels(ET.items.map(x => ({...x})));
   });
   $('#view-etiketten').addEventListener('input', e => { if (e.target.id === 'etQ') { ET.q = e.target.value; renderEtRes(); } });
-  $('#view-etiketten').addEventListener('change', e => { const i = e.target.dataset.etn; if (i != null) { ET.items[+i].n = Math.max(1, parseInt(e.target.value, 10) || 1); renderEtList(); } });
+  $('#view-etiketten').addEventListener('change', e => { const i = e.target.dataset.etn; if (i != null) { const z = parseInt(e.target.value, 10), it = ET.items[+i]; it.n = isNaN(z) ? 1 : Math.max(0, z); delete it.m; renderEtList(); } });
   $('#view-etiketten').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'etQ') { const h = findEan(e.target.value); if (h) { etAdd(h.a, h.v); e.target.value = ''; ET.q = ''; renderEtList(); renderEtRes(); } } });
   on('buchhaltung', async e => {
     const b = e.target.closest('[data-fb]'); if (!b) return; if (b.dataset.fb === 'konten') return setGo('buchhaltung');

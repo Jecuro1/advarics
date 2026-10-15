@@ -1671,7 +1671,7 @@ fn warengruppe_save(db: State<db::Db>, row: Value, by: Option<String>) -> Res<Va
     warengruppe::save(&db.conn.lock().unwrap(), &row, by.as_deref().unwrap_or("")).map_err(err)
 }
 #[tauri::command]
-fn warengruppe_delete(db: State<db::Db>, ids: Vec<String>, by: Option<String>) -> Res<usize> {
+fn warengruppe_delete(db: State<db::Db>, ids: Vec<String>, by: Option<String>) -> Res<Value> {
     warengruppe::delete(&db.conn.lock().unwrap(), &ids, by.as_deref().unwrap_or("")).map_err(err)
 }
 /// Artikelzahlen je Warengruppe und die nächste freie Nr.

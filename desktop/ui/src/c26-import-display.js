@@ -102,7 +102,7 @@ function openImport(kind = 'artikel') {
         const cat = ensureCat(val(r, 'cat') || (ex ? ex.cat : 'acc'));
         const fields = {...(ex?.fields || {})}; Object.keys(st.map).filter(k => k.startsWith('cf:')).forEach(k => { const x = val(r, k); if (x) fields[k.slice(3)] = x; });
         Object.entries(st.extra).forEach(([j, lbl]) => { const x = String(r[+j] ?? '').trim(); if (x && lbl) fields[lbl] = x; });
-        a = {id, name, brand: val(r, 'brand') || ex?.brand || '', cat, g: ex?.g || ({jacken: 'jacket', hosen: 'pants', schuhe: 'shoe', ski: 'ski', shirts: 'shirt', rucksaecke: 'backpack', acc: 'beanie'})[cat] || 'shirt', price: r2(price), sale: sale > 0 && sale < price ? r2(sale) : undefined, vat: [20, 13, 10, 0].includes(vat) ? vat : (ex?.vat ?? 20),
+        a = {id, name, brand: val(r, 'brand') || ex?.brand || '', cat, g: ex?.g || ({jacken: 'jacket', hosen: 'pants', schuhe: 'shoe', ski: 'ski', shirts: 'shirt', rucksaecke: 'backpack', acc: 'beanie'})[cat] || 'shirt', price: r2(price), sale: sale > 0 && sale < price ? r2(sale) : undefined, vat: [20, 13, 10, 0].includes(vat) ? vat : ex ? (ex.vat ?? 20) : (aeWgSatz(cat) ?? 20),   // ohne Angabe in der Datei: bestehender Artikel behält seinen Satz, neuer bekommt den der Warengruppe
           cost: cost > 0 ? r2(cost) : (ex?.cost ?? null), supplierId: sup?.id || ex?.supplierId || '', minStock: parseInt(val(r, 'min'), 10) >= 0 ? parseInt(val(r, 'min'), 10) : (ex?.minStock ?? 2), pop: ex?.pop || 50, tag: ex?.tag, prompts: ex?.prompts, fields, colors: [], sizes: [], combos: new Map(), ex};
         by.set(id, a);
       }

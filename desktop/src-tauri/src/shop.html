@@ -102,7 +102,7 @@ footer p{margin:0;white-space:pre-line}
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
   const eur = c => (c / 100).toLocaleString('de-AT', {style: 'currency', currency: 'EUR'});
-  const S = {info: {}, arts: [], cat: '', q: '', bag: []};
+  const S = {info: {}, arts: [], wk: [], cat: '', q: '', bag: []};
   try { S.bag = JSON.parse(localStorage.getItem('kontor.shop.bag') || '[]'); } catch { S.bag = []; }
   const saveBag = () => { try { localStorage.setItem('kontor.shop.bag', JSON.stringify(S.bag)); } catch { /* */ } $('#bagN').textContent = S.bag.reduce((a, b) => a + b.menge, 0); };
   const meta = () => S.info.meta || {};
@@ -122,6 +122,8 @@ footer p{margin:0;white-space:pre-line}
     try {
       const [i, a] = await Promise.all([fetch('/shop/api/info').then(r => r.json()), fetch('/shop/api/artikel').then(r => r.json())]);
       S.info = i; S.arts = Array.isArray(a) ? a : [];
+      // Navigation: Webshop-Kategorien (Reihenfolge der Tabelle in Kontor), solange es Zuordnungen gibt – sonst wie bisher die Warengruppen
+      S.wk = (i.webkategorien || []).filter(k => S.arts.some(a => (a.webkategorien || []).some(x => x.id === k.id)));
     } catch { $('#grid').innerHTML = '<div class="empty">Das Schaufenster ist gerade nicht erreichbar.</div>'; return; }
     const i = S.info;
     if (i.farbe) document.documentElement.style.setProperty('--a', i.farbe);
@@ -130,8 +132,8 @@ footer p{margin:0;white-space:pre-line}
     $('#title').textContent = i.titel || 'Unser Sortiment';
     $('#text').textContent = i.text || (i.reservieren ? 'Online stöbern, reservieren und im Geschäft anprobieren und abholen.' : '');
     $('#bagBtn').hidden = !i.reservieren;
-    const cats = [...new Set(S.arts.map(a => a.kategorie))];
-    $('#cats').innerHTML = [['', 'Alle'], ...cats.map(c => [c, catName(c)])].map(([k, l]) => `<button class="chip" data-c="${esc(k)}" aria-pressed="${S.cat === k}">${esc(l)}</button>`).join('');
+    const cats = S.wk.length ? S.wk.map(k => [k.id, k.name]) : [...new Set(S.arts.map(a => a.kategorie))].map(c => [c, catName(c)]);
+    $('#cats').innerHTML = [['', 'Alle'], ...cats].map(([k, l]) => `<button class="chip" data-c="${esc(k)}" aria-pressed="${S.cat === k}">${esc(l)}</button>`).join('');
     $('#foot').innerHTML = [i.adresse && `<div><h4>${esc(i.firma || '')}</h4><p>${esc(i.adresse)}</p></div>`, i.oeffnung && `<div><h4>Öffnungszeiten</h4><p>${esc(i.oeffnung)}</p></div>`, i.kontakt && `<div><h4>Kontakt</h4><p>${esc(i.kontakt)}</p></div>`, i.hinweis && `<div><h4>Hinweis</h4><p>${esc(i.hinweis)}</p></div>`].filter(Boolean).join('');
     S.bag = S.bag.filter(b => S.arts.some(a => a.varianten.some(v => v.ean === b.ean)));   // ausgeblendete oder entfernte Artikel bleiben nicht im Warenkorb
     saveBag(); render();
@@ -139,7 +141,8 @@ footer p{margin:0;white-space:pre-line}
   }
   function render() {
     const n = S.q.toLowerCase().trim();
-    const l = S.arts.filter(a => (!S.cat || a.kategorie === S.cat) && (!n || `${a.name} ${a.marke} ${catName(a.kategorie)}`.toLowerCase().includes(n)));
+    const wk = S.wk.length > 0;   // ein Artikel erscheint in allen seinen Webshop-Kategorien
+    const l = S.arts.filter(a => (!S.cat || (wk ? (a.webkategorien || []).some(k => k.id === S.cat) : a.kategorie === S.cat)) && (!n || `${a.name} ${a.marke} ${wk ? (a.webkategorien || []).map(k => k.name).join(' ') : catName(a.kategorie)}`.toLowerCase().includes(n)));
     $('#grid').innerHTML = l.length ? l.map(a => { const [cl, t] = avail(a); return `<article class="card" data-a="${esc(a.id)}"><div class="pic">${pic(a)}${a.aktion || a.statt ? `<span class="badge">−${Math.round((1 - a.preis / a.statt) * 100)} %</span>` : a.tag ? `<span class="badge neu">${esc(a.tag)}</span>` : ''}<span class="dots">${(a.farben || []).slice(0, 4).map(c => `<i style="background:${col(c)[1]}"></i>`).join('')}</span></div><div class="meta"><span class="mk">${esc(a.marke)}</span><span class="nm">${esc(a.name)}</span><div class="pr">${priceHTML(a)}</div><span class="av ${cl}">${t}</span></div></article>`; }).join('')
       : '<div class="empty" style="grid-column:1/-1">Keine Artikel gefunden.</div>';
   }

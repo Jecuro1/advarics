@@ -7,7 +7,7 @@
    Bericht, Intrastat, Artikelliste, Feste Rabatte, Prämien, Hotels,
    Altersbewertung, Flächenproduktivität) und Power-BI-Anbindung.
    ════════════════════════════════════════════════════════════════════ */
-const AN_DIMS = [['warengruppe', 'Warengruppe'], ['marke', 'Marke'], ['artikel', 'Artikel'], ['farbe', 'Farbe'], ['groesse', 'Größe'], ['preislage', 'Preislage'], ['lieferant', 'Lieferant'], ['saison', 'Saison'],
+const AN_DIMS = [['warengruppe', 'Warengruppe'], ['marke', 'Marke'], ['artikel', 'Artikel'], ['farbe', 'Farbe'], ['groesse', 'Größe'], ['statgroesse', 'Statistik-Größe'], ['preislage', 'Preislage'], ['lieferant', 'Lieferant'], ['saison', 'Saison'],
   ['verkaeufer', 'Verkäufer:in'], ['kassier', 'Kassier:in'], ['kunde', 'Kunde'], ['filiale', 'Filiale'], ['filialgruppe', 'Filialgruppe'], ['haustyp', 'Haus-Typ'], ['jahr', 'Jahr'], ['monat', 'Monat'], ['tag', 'Tag'], ['wochentag', 'Wochentag'], ['stunde', 'Stunde']];
 const AN_MEAS = [['menge', 'Menge', 'n'], ['umsatz', 'Umsatz brutto', 'e'], ['rabatt', 'Rabatt', 'e'], ['netto', 'Umsatz netto', 'e'], ['ek', 'Wareneinsatz EK', 'e'], ['rohertrag', 'Rohertrag', 'e'], ['bons', 'Bons', 'n']];
 Object.assign(DEFAULTS, {'analyse.zeitraum': 'monat', 'analyse.dims': ['warengruppe'], 'analyse.kennzahlen': ['menge', 'umsatz', 'rohertrag'], 'analyse.anteil': true, 'intrastat.laender': {}, 'intrastat.ware_kg': 0.5});
@@ -242,8 +242,8 @@ function anSimplePage(id, title, sub, dims, meas, cust = [], per = 'jahr') {
   }});
   VIEW_PERM[id] = 'berichte';
 }
-anSimplePage('an-groessen', 'Größen-Auswertung', 'Abverkauf je Warengruppe und Größe – für die Größenaufteilung in der Order', ['warengruppe', 'groesse'], ['menge', 'umsatz', 'rohertrag']);
-anSimplePage('an-preislagen', 'Preislagen-Auswertung', 'Umsatz und Spanne je Preislage – wo liegt der Schwerpunkt des Sortiments?', ['preislage', 'warengruppe'], ['menge', 'umsatz', 'rohertrag'], ['SPANNE']);
+anSimplePage('an-groessen', 'Größen-Auswertung', 'Abverkauf je Warengruppe und Statistik-Größe (das Statistik-Größen-Set der Warengruppe fasst Größen zusammen, z. B. 36 2/3 und 37 1/3 zu 37) – für die Größenaufteilung in der Order', ['warengruppe', 'statgroesse'], ['menge', 'umsatz', 'rohertrag']);
+anSimplePage('an-preislagen', 'Preislagen-Auswertung', 'Umsatz und Spanne je Preislage – die Stufen kommen aus dem Preislagen-Schlüssel der Warengruppe (Stammdaten › Preislagen); wo liegt der Schwerpunkt des Sortiments?', ['preislage', 'warengruppe'], ['menge', 'umsatz', 'rohertrag'], ['SPANNE']);
 
 /* Artikel Filialmanagement: Bestand je Filiale */
 registerPage('an-filialbestand', {title: 'Artikel Filialmanagement', sub: () => `${STORES.length} Filiale${STORES.length === 1 ? '' : 'n'}`, render: renderFilialBestand});
@@ -296,6 +296,33 @@ async function renderArtBericht() {
 registerPage('an-intrastat', {title: 'Intrastat Auswertung', sub: () => 'Innergemeinschaftliche Wareneingänge', render: renderIntrastat});
 VIEW_PERM['an-intrastat'] = 'berichte';
 const IS = {mon: dIso(new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)).slice(0, 7), data: null};
+/** Gewicht in kg aus einer Angabe: Zahl = Wert in der Standardeinheit std ('g' oder 'kg'); Text mit Einheit in deutscher Schreibweise („420 g“, „1.050 g“, „1,5 kg“, „0.35 kg“); sonst null */
+function anGewichtKg(v, std = 'g') {
+  if (v == null || v === '') return null;
+  let n, unit = std;
+  if (typeof v === 'number') n = v;
+  else {
+    const t = String(v).trim().toLowerCase(), m = t.match(/\d[\d.,\s]*/); if (!m) return null;
+    const rest = t.slice(m.index + m[0].length).trim();
+    unit = /^(kg|kilo)/.test(rest) ? 'kg' : /^g(r|ramm)?(\b|$)/.test(rest) ? 'g' : std;
+    let z = m[0].replace(/\s/g, '');
+    if (z.includes(',')) z = z.replace(/\./g, '').replace(',', '.');                  // 1.050,5 · 1,5
+    else if (unit === 'g' && /^\d{1,3}(\.\d{3})+$/.test(z)) z = z.replace(/\./g, '');   // „1.050 g“ = 1050 g (Punkt = Tausender)
+    n = parseFloat(z);                                                                 // sonst Punkt = Dezimalpunkt („0.35 kg“)
+  }
+  return isFinite(n) && n > 0 ? (unit === 'kg' ? n : n / 1000) : null;
+}
+/** Warennummer, Bezeichnung und Eigenmasse (kg je Stück) eines Artikels für Intrastat – jeweils mit Herkunft: Artikel, Warengruppe, Standardgewicht bzw. fehlt */
+function anIsWare(a) {
+  const wg = wgRaw(a.cat), roh = x => String(x ?? '').trim(), nr = x => roh(x).replace(/\D/g, '');   // Warennummer = nur Ziffern: „6201.12.90“, „6201 12 90“ und „62011290“ sind dieselbe Meldezeile (Anzeige, CSV, Gruppierung)
+  const quellen = [[a.fields?.Zolltarifnummer, 'Artikel'], [a.fields?.Zolltarif, 'Artikel'], [a.details?.zolltarif, 'Artikel'], [wg?.intrastat_nr, 'Warengruppe'], [wg?.zolltarif, 'Warengruppe']], hit = quellen.find(([x]) => nr(x));
+  let tarif = hit ? nr(hit[0]) : '', tq = hit ? hit[1] : 'fehlt';
+  if (!tarif) tarif = roh(quellen.find(([x]) => roh(x))?.[0]) || '–';   // Eintrag ohne eine einzige Ziffer: das Original bleibt sichtbar (als „Nummer fehlt“)
+  let kg = anGewichtKg(a.fields?.Gewicht, 'g') ?? anGewichtKg(a.details?.gewicht_g, 'g'), kq = 'Artikel';
+  if (kg == null) { kg = anGewichtKg(wg?.gewicht, 'kg'); kq = 'Warengruppe'; }
+  if (kg == null) { kg = +CFG['intrastat.ware_kg'] || 0.5; kq = 'Standard'; }
+  return {tarif, tq, kg, kq, bez: String(wg?.intrastat_bez || '').trim() || wg?.name || catName(a.cat)};
+}
 async function renderIntrastat() {
   const v = $('#view-an-intrastat');
   if (!DESKTOP) { v.innerHTML = desktopEmpty('globe', 'Intrastat'); return; }
@@ -309,23 +336,23 @@ async function renderIntrastat() {
     const a = artById(m.article_id); if (!a) continue;
     const land = SUPPLIERS_ALL.find(x => x.id === a.supplierId)?.country || lands[a.supplierId] || '';
     if (!land || !eu.has(land) || land === home) continue;
-    const wg = stRows('warengruppe').find(x => x.id === a.cat);
-    const tarif = a.fields?.Zolltarifnummer || a.fields?.Zolltarif || wg?.zolltarif || '–';
-    const kg = parseFloat(String(a.fields?.Gewicht || '').replace(',', '.')) / (/kg/i.test(a.fields?.Gewicht || '') ? 1 : 1000) || +CFG['intrastat.ware_kg'] || 0.5;
-    const k = `${land}|${tarif}`; const x = agg[k] ||= {land, tarif, menge: 0, wert: 0, kg: 0, arts: new Set()};
-    x.menge += m.delta; x.wert += m.delta * (a.cost || 0); x.kg += m.delta * kg; x.arts.add(a.name);
+    const {tarif, tq, kg, kq, bez} = anIsWare(a);
+    const k = `${land}|${tarif}`; const x = agg[k] ||= {land, tarif, menge: 0, wert: 0, kg: 0, arts: new Set(), bez: new Set(), tq: new Set(), kq: new Set()};
+    x.menge += m.delta; x.wert += m.delta * (a.cost || 0); x.kg += m.delta * kg; x.arts.add(a.name); x.bez.add(bez); x.tq.add(tq); x.kq.add(kq);
   }
   const rows = Object.values(agg).sort((a, b) => b.wert - a.wert), sum = rows.reduce((s, r) => s + r.wert, 0);
-  const tbl = `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Versendungsland</th><th>Warennummer (KN8)</th><th>Art des Geschäfts</th><th class="r">Menge</th><th class="r">Eigenmasse kg</th><th class="r" style="padding-right:16px">Rechnungsbetrag</th></tr></thead><tbody>${rows.map(r => `<tr><td style="padding-left:16px"><b>${esc(r.land)}</b> <span class="muted">${esc(stName('land', r.land))}</span></td><td class="mono">${esc(r.tarif)}<div class="muted" style="font-size:11.5px">${esc([...r.arts].slice(0, 3).join(', '))}</div></td><td>11 (Kauf)</td><td class="r num">${num(r.menge)}</td><td class="r num">${num(Math.round(r.kg * 10) / 10)}</td><td class="r num" style="padding-right:16px">${eur(r.wert)}</td></tr>`).join('')}</tbody></table>`;
-  v.innerHTML = `<div class="cv">${pageHead('Intrastat Auswertung', 'Eingänge aus anderen EU-Staaten je Land und Zolltarifnummer (Feld „Zolltarifnummer“ am Artikel oder an der Warengruppe; Gewicht aus Feld „Gewicht“)', `<button class="btn btn-secondary" data-isp>${ic('printer', 'i-sm')}Drucken</button><button class="btn btn-secondary" data-isx>${ic('upload', 'i-sm')}CSV</button>`)}
-    <div class="filters"><input class="input" type="month" data-ism value="${IS.mon}" style="width:auto"><span class="muted">${num(moves.length)} Eingangsbuchungen · Schwelle Eingänge AT: € 1.100.000 p. a.</span></div>
+  const herk = set => ['Artikel', 'Warengruppe', 'Standard'].filter(h => set.has(h)).join(' + '), bezTxt = r => { const l = [...r.bez]; return l.slice(0, 3).join(' / ') + (l.length > 3 ? ' …' : ''); }, ohneNr = rows.filter(r => r.tq.has('fehlt')).length;
+  const tbl = `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Versendungsland</th><th>Warennummer (KN8)</th><th>Warenbezeichnung</th><th>Art des Geschäfts</th><th class="r">Menge</th><th class="r">Eigenmasse kg</th><th class="r" style="padding-right:16px">Rechnungsbetrag</th></tr></thead><tbody>${rows.map(r => `<tr><td style="padding-left:16px"><b>${esc(r.land)}</b> <span class="muted">${esc(stName('land', r.land))}</span></td><td><span class="mono">${esc(r.tarif)}</span><div class="muted" style="font-size:11.5px">${r.tq.has('fehlt') ? `<span style="color:var(--warn)">Nummer fehlt</span>${r.tq.size > 1 ? ' · teils aus ' + esc(herk(r.tq)) : ''}` : 'aus ' + esc(herk(r.tq))}</div></td><td>${esc(bezTxt(r))}<div class="muted" style="font-size:11.5px">${esc([...r.arts].slice(0, 3).join(', '))}</div></td><td>11 (Kauf)</td><td class="r num">${num(r.menge)}</td><td class="r num">${num(Math.round(r.kg * 10) / 10, 1)}<div class="muted" style="font-size:11.5px">aus ${esc(herk(r.kq))}</div></td><td class="r num" style="padding-right:16px">${eur(r.wert)}</td></tr>`).join('')}</tbody></table>`;
+  v.innerHTML = `<div class="cv">${pageHead('Intrastat Auswertung', 'Eingänge aus anderen EU-Staaten je Land und Warennummer – Nummer vom Artikel (Zolltarifnummer), sonst von der Warengruppe (Intrastat-Waren-Nr.); Eigenmasse aus dem Artikelgewicht, sonst dem Durchschnitts-Gewicht der Warengruppe, sonst dem Standardgewicht (Analyseeinstellungen)', `<button class="btn btn-secondary" data-isp>${ic('printer', 'i-sm')}Drucken</button><button class="btn btn-secondary" data-isx>${ic('upload', 'i-sm')}CSV</button>`)}
+    <div class="filters"><input class="input" type="month" data-ism value="${IS.mon}" style="width:auto"><span class="muted">${num(moves.length)} Eingangsbuchungen · Schwelle Eingänge AT: € 1.100.000 p. a.${ohneNr ? ` · <span style="color:var(--warn)">${ohneNr} Meldezeile${ohneNr === 1 ? '' : 'n'} ohne Warennummer (am Artikel oder an der Warengruppe pflegen)</span>` : ''}</span></div>
     ${kpiCards([[eur0(sum), 'Rechnungsbetrag EU-Eingänge'], [num(rows.length), 'Meldezeilen'], [num(rows.reduce((s, r) => s + r.menge, 0)), 'Stück']])}
     <div class="card" style="margin-bottom:14px"><div class="set-row"><div><div class="set-l">Versendungsland je Lieferant</div><div class="set-h">Das Land des Lieferanten (Stammdaten › Lieferanten › Allgemein) gilt als Versendungsland; Lieferanten aus Österreich und aus Nicht-EU-Ländern werden nicht gemeldet.</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" data-isgo>${ic('building', 'i-sm')}Lieferanten öffnen</button></div></div><div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 14px">${Object.entries(SUPPLIERS_ALL.reduce((m, s) => { const k = s.country || 'AT'; m[k] = (m[k] || 0) + 1; return m; }, {})).sort().map(([k, n]) => `<span class="pill ${eu.has(k) && k !== home ? 'info' : ''}" style="height:24px">${esc(landName(k))}: ${n} ${n === 1 ? 'Lieferant' : 'Lieferanten'}</span>`).join('')}</div></div>
     <div class="card" style="overflow:auto">${rows.length ? tbl : '<div class="empty" style="padding:40px 20px"><h3>Keine meldepflichtigen Eingänge</h3><p>Monat wählen und Versendungsland der Lieferanten festlegen.</p></div>'}</div></div>`;
   $('[data-ism]', v).onchange = e => { IS.mon = e.target.value; renderIntrastat(); };
   $('[data-isgo]', v).onclick = () => go('lieferanten');
   $('[data-isp]', v).onclick = () => anPrint(`Intrastat ${IS.mon}`, tbl);
-  $('[data-isx]', v).onclick = async () => { const csv = '﻿Land;Warennummer;Geschäftsart;Menge;Eigenmasse kg;Rechnungsbetrag\r\n' + rows.map(r => [r.land, r.tarif, 11, r.menge, String(Math.round(r.kg * 10) / 10).replace('.', ','), String(Math.round(r.wert * 100) / 100).replace('.', ',')].join(';')).join('\r\n'); try { const p = await invoke('save_text', {name: `Intrastat_${IS.mon}.csv`, content: csv, title: 'Intrastat exportieren'}); if (p) toast('Exportiert', {t2: p, type: 'pos', icon: 'download'}); } catch (err) { toast('Export fehlgeschlagen', {t2: String(err), type: 'warn'}); } };
+  // CSV: Spalten wie bisher; die Warenbezeichnung (von der Warengruppe) steht am Ende
+  $('[data-isx]', v).onclick = async () => { const csv = '﻿Land;Warennummer;Geschäftsart;Menge;Eigenmasse kg;Rechnungsbetrag;Warenbezeichnung\r\n' + rows.map(r => [r.land, r.tarif, 11, r.menge, String(Math.round(r.kg * 10) / 10).replace('.', ','), String(Math.round(r.wert * 100) / 100).replace('.', ','), `"${[...r.bez].join(' / ').replace(/"/g, '""')}"`].join(';')).join('\r\n'); try { const p = await invoke('save_text', {name: `Intrastat_${IS.mon}.csv`, content: csv, title: 'Intrastat exportieren'}); if (p) toast('Exportiert', {t2: p, type: 'pos', icon: 'download'}); } catch (err) { toast('Export fehlgeschlagen', {t2: String(err), type: 'warn'}); } };
 }
 
 /* Artikelliste (Druck/CSV mit wählbaren Spalten) */
@@ -369,37 +396,56 @@ VIEW_PERM['an-rabatte'] = 'berichte';
 
 /* Verkäuferprämien-Abrechnung */
 const PRM = {mon: today().slice(0, 7)};
+/** Prämienschlüssel einer Warengruppe: ihr eigener Schlüssel (Feld „Prämienschlüssel“), sonst die frühere Zuordnung (Zeile mit „Warengruppe“ = diese Gruppe), sonst keiner */
+function anPrmSchluessel(keys, cat) {
+  const id = wgKey('praemienschluessel', wgRaw(cat)?.praemienschluessel);
+  return (id && keys.find(z => z.id === id)) || keys.find(z => z.warengruppe === cat) || null;
+}
 registerPage('praemien', {title: 'Prämienabrechnung', sub: () => PRM.mon, render: async () => {
   const v = $('#view-praemien');
   if (!DESKTOP) { v.innerHTML = desktopEmpty('target', 'Prämien'); return; }
   await loadStamm();
   const [y, m] = PRM.mon.split('-').map(Number), von = `${PRM.mon}-01`, bis = dIso(new Date(y, m, 0));
-  v.innerHTML = `<div class="cv">${pageHead('Prämienabrechnung', 'Verkäuferprämien je Monat aus Prämienschlüsseln (je Warengruppe) und Monatszielen', `<button class="btn btn-secondary" data-goto="st-praemienschluessel">${ic('sliders', 'i-sm')}Prämienschlüssel</button><button class="btn btn-secondary" data-goto="st-praemienmonat">${ic('calendar', 'i-sm')}Monate & Ziele</button>`)}<div class="filters"><input class="input" type="month" data-prmm value="${PRM.mon}" style="width:auto"></div><div data-prmr>${loadingCard('Rechne')}</div></div>`;
+  v.innerHTML = `<div class="cv">${pageHead('Prämienabrechnung', 'Verkäuferprämien je Monat aus dem Prämienschlüssel der Warengruppe (sonst der früheren Zuordnung unter Prämienschlüssel) und Monatszielen. Der Schlüssel an der Warengruppe geht vor – auch der Standard-Schlüssel mit 0 % ersetzt dort eine frühere Zuordnung', `<button class="btn btn-secondary" data-goto="st-praemienschluessel">${ic('sliders', 'i-sm')}Prämienschlüssel</button><button class="btn btn-secondary" data-goto="st-praemienmonat">${ic('calendar', 'i-sm')}Monate & Ziele</button>`)}<div class="filters"><input class="input" type="month" data-prmm value="${PRM.mon}" style="width:auto"></div><div data-prmr>${loadingCard('Rechne')}</div></div>`;
   $('[data-prmm]', v).onchange = e => { PRM.mon = e.target.value; PAGES.praemien.render(); };
   let res; try { res = await anRun({von, bis, dims: ['verkaeufer', 'warengruppe']}); } catch (e) { $('[data-prmr]', v).innerHTML = `<div class="card" style="padding:16px">${esc(String(e))}</div>`; return; }
   const keys = stActive('praemienschluessel'), mon = stActive('praemienmonat').find(x => x.name === PRM.mon || x.id === PRM.mon);
-  const per = {};
-  for (const r of res.rows) { const [p, wg] = r.keys; const x = per[p] ||= {umsatz: 0, praemie: 0, det: []}; x.umsatz += r.umsatz; const k = keys.find(z => z.warengruppe === wg); if (k) { const pr = r.netto * (+k.pct || 0) / 100; x.praemie += pr; x.det.push(`${catName(wg)} ${num(+k.pct)} %`); } }
+  const per = {}, luecke = {netto: 0, umsatz: 0, wg: {}};
+  for (const r of res.rows) { const [p, wg] = r.keys; const x = per[p] ||= {umsatz: 0, praemie: 0, det: []}; x.umsatz += r.umsatz; const k = anPrmSchluessel(keys, wg); if (k) { const pr = r.netto * (+k.pct || 0) / 100; x.praemie += pr; x.det.push(`${catName(wg)} ${num(+k.pct)} %`); } else { luecke.netto += r.netto; luecke.umsatz += r.umsatz; luecke.wg[wg] = (luecke.wg[wg] || 0) + r.netto; } }
   Object.values(per).forEach(x => { x.ziel = mon ? +mon.ziel || 0 : 0; x.bonus = mon && x.umsatz > x.ziel ? (x.umsatz - x.ziel) * (+mon.pct || 0) / 100 : 0; });
   const rows = Object.entries(per).sort((a, b) => b[1].umsatz - a[1].umsatz);
-  const tbl = `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Verkäufer:in</th><th class="r">Umsatz</th><th class="r">Ziel</th><th class="r">Zielerreichung</th><th class="r">Prämie Warengruppen</th><th class="r">Bonus über Ziel</th><th class="r" style="padding-right:16px">Summe</th></tr></thead><tbody>${rows.map(([p, x]) => `<tr><td style="padding-left:16px"><b>${esc(p || '–')}</b><div class="muted" style="font-size:11.5px">${esc([...new Set(x.det)].join(' · '))}</div></td><td class="r num">${eur(x.umsatz)}</td><td class="r num">${x.ziel ? eur0(x.ziel) : '–'}</td><td class="r num" style="color:${x.ziel && x.umsatz >= x.ziel ? 'var(--pos)' : 'inherit'}">${x.ziel ? num(x.umsatz / x.ziel * 100, 0) + ' %' : '–'}</td><td class="r num">${eur(x.praemie)}</td><td class="r num">${eur(x.bonus)}</td><td class="r num" style="padding-right:16px;font-weight:700">${eur(x.praemie + x.bonus)}</td></tr>`).join('')}</tbody></table>`;
+  const tbl = `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Verkäufer:in</th><th class="r">Umsatz</th><th class="r">Ziel</th><th class="r">Zielerreichung</th><th class="r">Prämie Warengruppen</th><th class="r">Bonus über Ziel</th><th class="r" style="padding-right:16px">Summe</th></tr></thead><tbody>${rows.map(([p, x]) => `<tr><td style="padding-left:16px"><b>${esc(p || '–')}</b><div class="muted" style="font-size:11.5px">${esc([...new Set(x.det)].join(' · '))}</div></td><td class="r num">${eur(x.umsatz)}</td><td class="r num">${x.ziel ? eur0(x.ziel) : '–'}</td><td class="r num" style="color:${x.ziel && x.umsatz >= x.ziel ? 'var(--pos)' : 'inherit'}">${x.ziel ? num(x.umsatz / x.ziel * 100, 0) + ' %' : '–'}</td><td class="r num">${eur(x.praemie)}</td><td class="r num">${eur(x.bonus)}</td><td class="r num" style="padding-right:16px;font-weight:700">${eur(x.praemie + x.bonus)}</td></tr>`).join('')}</tbody>${Math.abs(luecke.netto) >= 0.005 ? `<tfoot><tr><td colspan="7" style="padding:10px 16px;color:var(--warn)"><b>Umsatz ohne Prämienschlüssel:</b> ${eur(luecke.netto)} netto (${eur(luecke.umsatz)} brutto) – dafür entsteht keine Prämie.<div class="muted" style="font-size:11.5px">Warengruppen: ${esc(Object.entries(luecke.wg).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 6).map(([w, n]) => `${catName(w)} ${eur0(n)}`).join(' · '))}${Object.keys(luecke.wg).length > 6 ? ` · + ${Object.keys(luecke.wg).length - 6} weitere` : ''} – Schlüssel in der Warengruppe (Feld „Prämienschlüssel“) wählen.</div></td></tr></tfoot>` : ''}</table>`;
   $('[data-prmr]', v).innerHTML = `${kpiCards([[eur0(rows.reduce((s, [, x]) => s + x.praemie + x.bonus, 0)), 'Prämien gesamt'], [num(rows.length), 'Personen'], [mon ? eur0(+mon.ziel || 0) : 'kein Ziel', 'Monatsziel je Person']])}<div class="card" style="overflow:auto">${rows.length ? tbl : '<div class="empty" style="padding:40px 20px"><h3>Keine Umsätze im Monat</h3></div>'}</div><div style="margin-top:12px"><button class="btn btn-secondary" data-prmp>${ic('printer', 'i-sm')}Drucken</button></div>`;
   $('[data-prmp]', v).onclick = () => anPrint(`Prämienabrechnung ${PRM.mon}`, tbl);
 }});
 VIEW_PERM.praemien = 'berichte';
 
 /* Altersbewertung des Lagers */
+/** Stufen je Altersbewertungs-Schlüssel (Kennung → Stufen nach Monaten aufsteigend); Stufen ohne Schlüssel gehören zu STANDARD */
+function anAlterStufen() {
+  const by = new Map();
+  for (const s of stActive('altersbewertung')) { const k = wgKey('altersschluessel', s.schluessel) || 'STANDARD'; if (!by.has(k)) by.set(k, []); by.get(k).push(s); }
+  by.forEach(l => l.sort((a, b) => (+a.ab || 0) - (+b.ab || 0)));
+  return by;
+}
+/** Welche Stufen für eine Warengruppe gelten: die ihres Schlüssels, sonst (Schlüssel ohne eigene Stufen) die von STANDARD; ohne Warengruppe/Schlüssel = STANDARD */
+function anAlterFuer(by, cat) {
+  const key = wgKey('altersschluessel', wgRaw(cat)?.altersbewertung) || 'STANDARD', own = by.get(key);
+  return own?.length ? {key, stufen: own, std: false} : {key, stufen: by.get('STANDARD') || [], std: key !== 'STANDARD'};
+}
 registerPage('altersbewertung', {title: 'Altersbewertung', sub: () => 'Lagerwert nach Alter', render: async () => {
   const v = $('#view-altersbewertung'); await loadStamm();
-  const stufen = stActive('altersbewertung').slice().sort((a, b) => (+a.ab || 0) - (+b.ab || 0)), sais = stRows('saison');
+  const stufen = anAlterStufen(), sais = stRows('saison'), UNB = 'Alter unbekannt (Saison am Artikel fehlt)';
   const monthsOf = a => { const s = sais.find(x => x.id === a.fields?.Saison || x.name === a.fields?.Saison); const d = s?.von ? new Date(s.von) : null; return d ? Math.max(0, (Date.now() - d) / (30.4 * 864e5)) : null; };
-  const rows = ART.map(a => { const st = a.variants.reduce((s, x) => s + x.q, 0), mo = monthsOf(a), stufe = mo == null ? null : stufen.filter(x => mo >= (+x.ab || 0)).at(-1), wert = st * (a.cost || 0), ab = stufe ? wert * (+stufe.pct || 0) / 100 : 0; return {a, st, mo, stufe, wert, ab}; }).filter(r => r.st > 0);
-  const by = {}; rows.forEach(r => { const k = r.stufe?.name || 'Alter unbekannt (Saison am Artikel fehlt)'; const x = by[k] ||= {wert: 0, ab: 0, n: 0}; x.wert += r.wert; x.ab += r.ab; x.n++; });
+  const rows = ART.map(a => { const st = a.variants.reduce((s, x) => s + x.q, 0), mo = monthsOf(a), al = anAlterFuer(stufen, a.cat), stufe = mo == null ? null : al.stufen.filter(x => mo >= (+x.ab || 0)).at(-1), wert = st * (a.cost || 0), ab = stufe ? wert * (+stufe.pct || 0) / 100 : 0; return {a, st, mo, al, stufe, wert, ab}; }).filter(r => r.st > 0);
+  const schl = r => wgNm('altersschluessel', r.al.key) || r.al.key;
+  const by = {}; rows.forEach(r => { const k = r.stufe ? `${r.al.key}|${r.stufe.id ?? r.stufe.name}` : 'unbekannt'; const x = by[k] ||= {schl: r.stufe ? schl(r) : '–', std: r.stufe ? r.al.std : false, name: r.stufe?.name || UNB, ab: r.stufe ? +r.stufe.ab || 0 : 1e9, pct: r.stufe ? +r.stufe.pct || 0 : null, wert: 0, abw: 0, n: 0}; x.wert += r.wert; x.abw += r.ab; x.n++; });
+  const grp = Object.values(by).sort((a, b) => (a.pct == null) - (b.pct == null) || a.schl.localeCompare(b.schl, 'de') || a.ab - b.ab);
   const wert = rows.reduce((s, r) => s + r.wert, 0), ab = rows.reduce((s, r) => s + r.ab, 0);
-  v.innerHTML = `<div class="cv">${pageHead('Altersbewertung', 'Lagerwert zum EK mit Abwertung nach Alter (Monate seit Saisonbeginn des Artikels) – Grundlage für die Inventurbewertung', `<button class="btn btn-secondary" data-goto="st-altersbewertung">${ic('percent', 'i-sm')}Prozentsätze</button>`)}
+  v.innerHTML = `<div class="cv">${pageHead('Altersbewertung', 'Lagerwert zum EK mit Abwertung nach Alter (Monate seit Saisonbeginn des Artikels) – Grundlage für die Inventurbewertung; die Stufen bestimmt der Altersbewertungs-Schlüssel der Warengruppe (ohne eigene Stufen gelten die von „Standard“)', `<button class="btn btn-secondary" data-goto="st-altersbewertung">${ic('percent', 'i-sm')}Prozentsätze</button>`)}
     ${kpiCards([[eur0(wert), 'Lagerwert EK'], [eur0(ab), 'Abwertung', 'neg'], [eur0(wert - ab), 'Bewerteter Lagerwert', 'pos']])}
-    <div class="card" style="margin-bottom:14px"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Altersstufe</th><th class="r">Artikel</th><th class="r">Lagerwert</th><th class="r" style="padding-right:16px">Abwertung</th></tr></thead><tbody>${Object.entries(by).map(([k, x]) => `<tr><td style="padding-left:16px">${esc(k)}</td><td class="r num">${x.n}</td><td class="r num">${eur(x.wert)}</td><td class="r num" style="padding-right:16px;color:var(--neg)">${eur(x.ab)}</td></tr>`).join('')}</tbody></table></div>
-    <div class="card" style="overflow:auto"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Artikel</th><th>Saison</th><th class="r">Alter</th><th class="r">Bestand</th><th class="r">Wert EK</th><th class="r" style="padding-right:16px">bewertet</th></tr></thead><tbody>${rows.sort((x, y) => y.ab - x.ab).slice(0, 300).map(r => `<tr><td style="padding-left:16px"><b>${esc(r.a.name)}</b></td><td>${esc(r.a.fields?.Saison || '–')}</td><td class="r num">${r.mo != null ? Math.floor(r.mo) + ' Mon.' : '–'}</td><td class="r num">${r.st}</td><td class="r num">${eur(r.wert)}</td><td class="r num" style="padding-right:16px">${eur(r.wert - r.ab)}</td></tr>`).join('')}</tbody></table></div></div>`;
+    <div class="card" style="margin-bottom:14px"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Schlüssel</th><th>Altersstufe</th><th class="r">Abwertung</th><th class="r">Artikel</th><th class="r">Lagerwert</th><th class="r" style="padding-right:16px">Abwertung €</th></tr></thead><tbody>${grp.map(x => `<tr><td style="padding-left:16px">${esc(x.schl)}${x.std ? '<div class="muted" style="font-size:11.5px">Stufen von Standard</div>' : ''}</td><td>${esc(x.name)}</td><td class="r num">${x.pct == null ? '–' : num(x.pct, 0) + ' %'}</td><td class="r num">${x.n}</td><td class="r num">${eur(x.wert)}</td><td class="r num" style="padding-right:16px;color:var(--neg)">${eur(x.abw)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="card" style="overflow:auto"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Artikel</th><th>Schlüssel</th><th>Saison</th><th class="r">Alter</th><th class="r">Bestand</th><th class="r">Wert EK</th><th class="r" style="padding-right:16px">bewertet</th></tr></thead><tbody>${rows.sort((x, y) => y.ab - x.ab).slice(0, 300).map(r => `<tr><td style="padding-left:16px"><b>${esc(r.a.name)}</b></td><td>${esc(schl(r))}${r.stufe ? `<div class="muted" style="font-size:11.5px">${esc(r.stufe.name)} · ${num(+r.stufe.pct || 0, 0)} %${r.al.std ? ' · Stufen von Standard' : ''}</div>` : ''}</td><td>${esc(r.a.fields?.Saison || '–')}</td><td class="r num">${r.mo != null ? Math.floor(r.mo) + ' Mon.' : '–'}</td><td class="r num">${r.st}</td><td class="r num">${eur(r.wert)}</td><td class="r num" style="padding-right:16px">${eur(r.wert - r.ab)}</td></tr>`).join('')}</tbody></table></div></div>`;
 }});
 VIEW_PERM.altersbewertung = 'berichte';
 
@@ -424,7 +470,7 @@ registerPage('analyse-einstellungen', {title: 'Analyseeinstellungen', sub: () =>
     <div class="set-row"><div><div class="set-l">Standard-Dimension</div></div><div class="set-c"><select class="input select" data-ase="analyse.dims" style="width:auto">${AN_DIMS.map(([k, l]) => `<option value="${k}" ${(CFG['analyse.dims'] || [])[0] === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div></div>
     <div class="set-row"><div><div class="set-l">Standard-Kennzahlen</div></div><div class="set-c" style="flex-wrap:wrap;gap:6px">${AN_MEAS.map(([k, l]) => `<label class="chip"><input type="checkbox" data-asek="${k}" ${(CFG['analyse.kennzahlen'] || []).includes(k) ? 'checked' : ''} style="margin:0 6px 0 0">${l}</label>`).join('')}</div></div>
     <div class="set-row"><div><div class="set-l">Anteil-Spalte anzeigen</div><div class="set-h">Prozentanteil am Gesamtumsatz je Zeile</div></div><div class="set-c"><button class="switch" role="switch" data-asea aria-checked="${CFG['analyse.anteil'] !== false}"></button></div></div>
-    <div class="set-row"><div><div class="set-l">Gewicht je Teil ohne Angabe (kg)</div><div class="set-h">Für Intrastat, wenn am Artikel kein Feld „Gewicht“ gepflegt ist</div></div><div class="set-c"><input class="input num" data-ase="intrastat.ware_kg" value="${esc(String(CFG['intrastat.ware_kg']).replace('.', ','))}" style="max-width:100px"></div></div>
+    <div class="set-row"><div><div class="set-l">Gewicht je Teil ohne Angabe (kg)</div><div class="set-h">Für Intrastat, wenn weder am Artikel noch an der Warengruppe (Durchschnitts-Gewicht) ein Gewicht gepflegt ist</div></div><div class="set-c"><input class="input num" data-ase="intrastat.ware_kg" value="${esc(String(CFG['intrastat.ware_kg']).replace('.', ','))}" style="max-width:100px"></div></div>
   </div><div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn btn-secondary" data-goto="st-analysespalte">${ic('list', 'i-sm')}Flexanalysespalten</button><button class="btn btn-secondary" data-goto="st-indikator">${ic('target', 'i-sm')}Wert-Indikator-Sets</button><button class="btn btn-secondary" data-goto="st-statistikfilter">${ic('filter', 'i-sm')}Statistikfilter</button></div></div>`;
   v.onchange = async e => { const t = e.target; if (t.dataset.ase) { const k = t.dataset.ase; await saveSettings({[k]: k === 'analyse.dims' ? [t.value] : k === 'intrastat.ware_kg' ? parseAmt(t.value) : t.value}); if (k === 'analyse.zeitraum') AN.per = t.value; } if (t.dataset.asek) { const l = AN_MEAS.map(m => m[0]).filter(k => k === t.dataset.asek ? t.checked : (CFG['analyse.kennzahlen'] || []).includes(k)); await saveSettings({'analyse.kennzahlen': l}); AN.meas = l.slice(); } };
   v.onclick = async e => { const b = e.target.closest('[data-asea]'); if (!b) return; const on = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', on); await saveSettings({'analyse.anteil': on}); };

@@ -56,21 +56,26 @@ function aeGrundpreis(ctx, row, done) {
   const el = openLayer(`<div class="modal" style="width:min(820px,100%)" role="dialog" aria-modal="true"><div class="m-head"><div class="m-ic">${ic('tag')}</div><div><h2>Grundpreis</h2><p>${esc(row.ean)} · Größe ${esc(row.size)}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
     <div class="m-body" style="display:grid;gap:14px;grid-template-columns:repeat(3,1fr)">
       <div class="ae-card"><h4>Allgemein</h4><label class="field"><span>EAN/GTIN</span><input class="input" value="${esc(row.ean)}" disabled></label><label class="field"><span>Zolltarifnummer</span><input class="input" value="${esc(ctx.st.d.zolltarif || '')}" disabled></label></div>
-      <div class="ae-card"><h4>Preis</h4><label class="field"><span>EK</span><input class="input num" data-gp="cost" value="${esc(aeEk(ctx) != null ? num(aeEk(ctx), 2) : '')}"></label><label class="field"><span>VK</span><input class="input num" data-gp="price" value="${esc(String(ctx.st.price))}"></label><label class="field"><span>MwSt.-Typ</span><input class="input" value="${esc(row.mwst)}" disabled></label></div>
+      <div class="ae-card"><h4>Preis</h4><label class="field"><span>EK</span><input class="input num" data-gp="cost" value="${esc(aeEk(ctx) != null ? num(aeEk(ctx), 2) : '')}"></label><label class="field"><span>VK</span><input class="input num" data-gp="price" value="${esc(String(ctx.st.price))}"></label><div class="muted" data-gp-sug style="font-size:12px" hidden></div><label class="field"><span>MwSt.-Typ</span><input class="input" value="${esc(row.mwst)}" disabled></label></div>
       <div class="ae-card"><h4>Größen</h4><label class="field"><span>Größe</span><input class="input" value="${esc(row.size)}" disabled></label><label class="field"><span>Größensort.-Nr.</span><input class="input" value="${esc(row.gsort)}" disabled></label></div></div>
     <div class="m-foot"><span class="muted" style="font-size:12px">Preise gelten für den ganzen Artikel (alle Größen).</span><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" data-gok>${ic('check', 'i-sm')}Übernehmen</button></div></div>`);
-  $('[data-gok]', el).onclick = () => { ctx.st.cost = $('[data-gp="cost"]', el).value; ctx.st.price = $('[data-gp="price"]', el).value; closeLayer(el); done(); toast('Preis übernommen', {t2: 'mit „Sichern“ speichern', type: 'pos'}); };
+  // Verkaufspreis-Vorschlag auch hier, wenn der EK eingetragen wird und der VK noch leer ist (Zustand nur im Dialog, bis „Übernehmen“)
+  const vk = {s: {_vkSug: ctx.st._vkSug && ctx.st._vkSug.v === String(ctx.st.price).trim() ? ctx.st._vkSug : null}, c: $('[data-gp="cost"]', el), p: $('[data-gp="price"]', el), h: $('[data-gp-sug]', el)};
+  vk.c.addEventListener('input', () => aeWgVkNeu(vk, () => ({cat: ctx.st.cat, supplierId: ctx.st.supplierId, vat: ctx.st.vat})));
+  vk.p.addEventListener('input', () => aeWgVkEingabe(vk));
+  aeWgVkZeigen(vk);
+  $('[data-gok]', el).onclick = () => { ctx.st.cost = $('[data-gp="cost"]', el).value; ctx.st.price = $('[data-gp="price"]', el).value; ctx.st._vkSug = vk.s._vkSug && vk.s._vkSug.v === ctx.st.price.trim() ? vk.s._vkSug : null; closeLayer(el); done(); toast('Preis übernommen', {t2: 'mit „Sichern“ speichern', type: 'pos'}); };
 }
 
 /* ── Raster-Beschreibungen je Reiter ── */
 const AE_GRIDS = {
   basis: {
-    top: ctx => `<div class="ae-card ae-row"><label class="field" style="min-width:300px"><span>Größenschlüssel*</span><select class="input select" data-aesz><option value="">–</option>${stOpts('groessenschluessel').map(([x, l]) => `<option value="${esc(x)}">${esc(l)}</option>`).join('')}</select></label></div>`,
+    top: ctx => `<div class="ae-card ae-row"><label class="field" style="min-width:300px"><span>Größenschlüssel*</span><select class="input select" data-aesz><option value="">–</option>${stOpts('groessenschluessel').map(([x, l]) => `<option value="${esc(x)}" ${ctx.st._gsSel && ctx.st._gsSel.id === x && ctx.st._gsSel.sizes === ctx.st.sizes ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label></div>`,
     cfg: ctx => ({embed: true, title: 'Basispreise', cols: priceCols, rows: () => aeVariantRows(ctx),
       extra: [{k: 'neu', l: 'Neu', icon: 'plus'}, {k: 'alle', l: 'Preis für alle Filial-Preise für alle Größen übernehmen', icon: 'plus'}],
       actions: {neu: async () => { const o = await aeForm('Neue Größe', [{k: 'size', l: 'Größe', req: true}]); if (!o?.size) return; const s = new Set(ctx.sizesArr()); s.add(o.size); ctx.st.sizes = [...s].join(', '); toast('Größe vorgemerkt', {t2: 'mit „Sichern“ werden Variante und EAN angelegt', type: 'pos'}); }, alle: () => toast('Filial-Preise übernehmen den Basispreis', {t2: 'Preise gelten derzeit für alle Filialen gleich', icon: 'info'})},
       edit: (id, done) => { const r = aeVariantRows(ctx).find(x => x.id === id); if (r) aeGrundpreis(ctx, r, () => ctx.setTab('basis')); }}),
-    bind: (ctx, root) => { const s = $('[data-aesz]', root); s.onchange = () => { const g = stRows('groessenschluessel').find(x => x.id === s.value); const sizes = g?.groessen || g?.werte || g?.sizes; if (Array.isArray(sizes) && sizes.length) { ctx.st.sizes = sizes.join(', '); toast('Größenlauf übernommen', {t2: 'mit „Sichern“ speichern', type: 'pos'}); } }; },
+    bind: (ctx, root) => { const s = $('[data-aesz]', root); s.onchange = () => { const g = stRows('groessenschluessel').find(x => x.id === s.value); const sizes = g?.groessen || g?.werte || g?.sizes; if (Array.isArray(sizes) && sizes.length) { ctx.st.sizes = sizes.join(', '); ctx.st._gsSel = {id: g.id, sizes: ctx.st.sizes}; toast('Größenlauf übernommen', {t2: 'mit „Sichern“ speichern', type: 'pos'}); } }; },
   },
   filial: {
     card: true,
@@ -228,12 +233,115 @@ for (const [k, label, kind, key, src] of [['attr', 'Attribut', 'Attribut', 'attr
   }};
 }
 
+/* ── Warengruppe als Vorgabe für neue Artikel: Steuersatz, Größenreihe und Verkaufspreis-Vorschlag ──
+   Rangfolgen: Eingabe des Benutzers > Warengruppe > Einstellungen (Standardwerte) > bisheriger Rückfall.
+   Bestehende Artikel und eingegebene Werte werden nie von selbst geändert. */
+const AE_SAETZE = [20, 13, 10, 0];   // Sätze der Artikelmaske (und der Kasse/RKSV)
+{ const st = document.createElement('style'); st.textContent = '.field .input.ae-sug,.ae .field .input.ae-sug{border-style:dashed;border-color:var(--accent);color:var(--accent-strong,var(--accent))}.ae-lnk{border:0;background:none;padding:6px 4px;font:inherit;color:var(--accent-strong,var(--accent));text-decoration:underline;cursor:pointer}.ae-lnk:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-radius:3px}'; document.head.appendChild(st); }
+/** Steuersatz in % aus dem MwSt.-Typ der Warengruppe (Rückfall: gespeicherter Satz „ust“); null = Gruppe unbekannt, kein Satz hinterlegt (leer ist NICHT 0 %) oder Satz nicht in der Auswahl der Maske */
+function aeWgSatz(cat) {
+  const r = cat ? wgRaw(cat) : null; if (!r) return null;
+  const zahl = x => { if (x == null || (typeof x === 'string' && !x.trim())) return null; const n = +String(x).replace(',', '.'); return isFinite(n) ? n : null; };
+  const typ = r.mwsttyp ? (stRows('mwsttyp').find(x => x.id === r.mwsttyp) || stRows('mwsttyp').find(x => x.id === wgKey('mwsttyp', r.mwsttyp))) : null;   // zweiter Versuch: Altzeile mit Klartext statt Kennung
+  const v = (typ ? zahl(typ.satz) : null) ?? zahl(r.ust);
+  return AE_SAETZE.includes(v) ? v : null;
+}
+/** Größenreihe aus dem Größenschlüssel der Warengruppe: {id, name, sizes: 'S, M, L'}; null = kein Schlüssel oder leerer Schlüssel */
+function aeWgGroessen(cat) {
+  const r = cat ? wgRaw(cat) : null, id = r?.groessenschluessel ? wgKey('groessenschluessel', r.groessenschluessel) : '';
+  const g = id ? stRows('groessenschluessel').find(x => x.id === id) : null, l = g && (g.groessen || g.werte || g.sizes);
+  return Array.isArray(l) && l.length ? {id: g.id, name: g.name || g.id, sizes: l.join(', ')} : null;
+}
+/** Neuer Artikel (nach den Standardwerten der Einstellungen): Steuersatz und Größen der Warengruppe vorbelegen; merkt, was automatisch gesetzt wurde */
+function aeWgVorbelegen(st) {
+  if (!CATS.some(c => c.id === st.cat && c.id !== 'alle')) { const f = CATS.find(c => c.id !== 'alle'); if (f) st.cat = f.id; }   // so, wie das Auswahlfeld sie ohnehin zeigt
+  st._wgBasis = {vat: +st.vat, sizes: st.sizes, gs: st._gsSel || null};
+  const sz = aeWgSatz(st.cat), gs = aeWgGroessen(st.cat);
+  if (sz != null) st.vat = sz;
+  if (gs) { st.sizes = gs.sizes; st._gsSel = {id: gs.id, sizes: gs.sizes}; }
+  st._wgAuto = {vat: +st.vat, sizes: st.sizes};
+  return st;
+}
+/** Warengruppe im Formular gewechselt: neuer Artikel → Steuersatz und Größen nachführen, solange nicht von Hand geändert; danach Hinweis und Preisvorschlag neu rechnen */
+function aeWgWechsel(ctx) {
+  const st = ctx.st; ctx.collect();
+  let gs = null, neu = false;
+  if (ctx.isNew && st._wgAuto) {
+    const au = st._wgAuto, ba = st._wgBasis, sz = aeWgSatz(st.cat);
+    gs = aeWgGroessen(st.cat);
+    if (+st.vat === au.vat) {                       // Steuersatz noch nicht von Hand geändert
+      const v = sz ?? ba.vat; au.vat = v; st.vat = v;
+      const sel = $('[data-f="vat"]', ctx.el); if (sel) sel.value = String(v);
+      ctx.margeNeu?.();                             // „Spanne … % · Aufschlag … %“ unter dem MwSt.-Typ gilt jetzt für den neuen Satz (auch bei von Hand eingegebenem VK)
+    }
+    if (st.sizes === au.sizes) {                    // Größen noch nicht von Hand geändert
+      const s = gs ? gs.sizes : ba.sizes;
+      neu = s !== st.sizes;
+      au.sizes = s; st.sizes = s; st._gsSel = gs ? {id: gs.id, sizes: gs.sizes} : ba.gs;
+    }
+  }
+  if (neu) {                                        // Zähler „Varianten“ und Reiter nachziehen
+    ctx.rerender(); $('[data-f="cat"]', ctx.el)?.focus();
+    if (gs) toast(`Größen aus Schlüssel „${gs.name}“`, {t2: `${gs.sizes.split(', ').length} Größen vorbelegt – im Reiter „Farben & Größen“ änderbar`, icon: 'grid', dur: 2600});
+  }
+  aeWgHinweise(ctx); ctx.vkNeu?.();
+}
+/** Dezenter Hinweis unter dem MwSt.-Typ, wenn der Satz des Artikels von dem der Warengruppe abweicht (mit Übernehmen für diesen Artikel) */
+function aeWgHinweise(ctx) {
+  const h = $('#edVatHint', ctx.el), sel = $('[data-f="vat"]', ctx.el); if (!h || !sel) return;
+  const cat = $('[data-f="cat"]', ctx.el)?.value, sz = aeWgSatz(cat);
+  if (sz == null || sz === +sel.value) { h.hidden = true; h.textContent = ''; return; }
+  h.hidden = false; h.innerHTML = `Warengruppe „${esc(wgRaw(cat)?.name || cat)}“: ${sz} % MwSt. <button type="button" class="ae-lnk" data-wg-vat="${sz}">${sz} % übernehmen</button>`;
+}
+/** Auf ganze Cent runden, bevor die Preisrundung greift: Fließkomma-Rauschen (24,000000000000004 oder 23,999999999999996) darf nicht über die Stufe entscheiden */
+const aeCent = x => Math.round(+(x * 100).toFixed(6)) / 100;
+/** Verkaufspreis-Vorschlag (brutto) aus dem Netto-EK: Kalkulationsfaktor des Lieferanten > Handelsspanne der Warengruppe (vom Netto-VK) > o.fallback (Faktor, falls angegeben).
+ *  Liefert {vk, text} (gerundet nach Stammdaten › Preisrundung) oder null. */
+function aeWgVk(ek, o) {
+  if (!(ek > 0)) return null;
+  const f = +lfSup(o.supplierId)?.profile?.kalk_faktor;
+  if (f > 0) return {vk: roundPrice(aeCent(ek * f)), text: `laut Kalkulationsfaktor ${num(f, 2)} des Lieferanten (EK × Faktor, gerundet)`};
+  const r = o.cat ? wgRaw(o.cat) : null, s = r && r.spanne != null && r.spanne !== '' ? +String(r.spanne).replace(',', '.') : NaN;
+  if (s > 0 && s < 1) { const m = AE_SAETZE.includes(+o.vat) ? +o.vat : 20, pct = Math.round(s * 1000) / 10; return {vk: roundPrice(aeCent(ek / (1 - s) * (1 + m / 100))), text: `laut Spanne ${num(pct, pct % 1 ? 1 : 0)} % der Warengruppe „${r.name || o.cat}“ (vom Netto-VK, inkl. ${m} % MwSt., gerundet)`}; }
+  return o.fallback > 0 ? {vk: roundPrice(aeCent(ek * o.fallback)), text: `laut Standardfaktor ${num(o.fallback, 2)} (EK × Faktor, gerundet)`} : null;
+}
+/** Vorschlag im Preisfeld kenntlich machen (gestrichelter Rahmen und Hinweiszeile) – nur solange das Feld noch den Vorschlag enthält. h = {s: Zustand mit _vkSug, c: EK-Feld, p: VK-Feld, h: Hinweiszeile} */
+function aeWgVkZeigen(h) {
+  const s = h.s._vkSug && h.p.value.trim() === h.s._vkSug.v ? h.s._vkSug : null;
+  h.p.classList.toggle('ae-sug', !!s);
+  if (h.h) { h.h.hidden = !s; h.h.textContent = s ? `Vorschlag ${s.text} – bitte prüfen` : ''; }
+}
+/** Der Benutzer tippt im VK-Feld: der Vorschlag gehört ihm, spätere Änderungen am EK überschreiben ihn nicht mehr */
+function aeWgVkEingabe(h) { if (h.s._vkSug && h.p.value.trim() !== h.s._vkSug.v) h.s._vkSug = null; aeWgVkZeigen(h); }
+/** EK (oder Warengruppe, Lieferant, MwSt.) geändert: VK vorschlagen, solange er leer/0 ist oder noch der zuletzt gemachte Vorschlag – ein vorhandener Preis bleibt unberührt */
+function aeWgVkNeu(h, o) {
+  const cur = h.p.value.trim(), mine = !!h.s._vkSug && cur === h.s._vkSug.v;
+  if (!mine && parseAmt(cur) > 0) { h.s._vkSug = null; return aeWgVkZeigen(h); }
+  const v = aeWgVk(parseAmt(h.c.value), o());
+  if (v) { const t = num(v.vk, 2); h.p.value = t; h.s._vkSug = {v: t, text: v.text}; }
+  else if (mine) { h.p.value = ''; h.s._vkSug = null; }
+  h.p.dispatchEvent(new Event('input', {bubbles: true}));   // Spanne/Aufschlag unter dem Preis mitrechnen
+  aeWgVkZeigen(h);
+}
+
 /** Nach dem Zeichnen eines Reiters: Tabellen einhängen, Daten der Reiter laden */
 function aeAfter(ctx, tab) {
   const spec = AE_GRIDS[tab];
+  ctx.vkNeu = null; ctx.margeNeu = null;
   if (tab === 'stamm') {
-    const calc = () => { const m = $('#edMargin', ctx.el); if (!m) return; const vk = parseAmt($('[data-f="price"]', ctx.el)?.value || ''), ek = parseAmt($('[data-f="cost"]', ctx.el)?.value || ''), vat = +($('[data-f="vat"]', ctx.el)?.value || 20); if (vk > 0 && ek > 0) { const net = vk / (1 + vat / 100); m.textContent = `Spanne ${num((net - ek) / net * 100, 1)} % · Aufschlag ${num((net - ek) / ek * 100, 1)} %`; } else m.textContent = ''; };
-    ['price', 'cost', 'vat'].forEach(k => $(`[data-f="${k}"]`, ctx.el)?.addEventListener('input', calc)); calc(); return;
+    const calc = ctx.margeNeu = () => { const m = $('#edMargin', ctx.el); if (!m) return; const vk = parseAmt($('[data-f="price"]', ctx.el)?.value || ''), ek = parseAmt($('[data-f="cost"]', ctx.el)?.value || ''), vat = +($('[data-f="vat"]', ctx.el)?.value || 20); if (vk > 0 && ek > 0) { const net = vk / (1 + vat / 100); m.textContent = `Spanne ${num((net - ek) / net * 100, 1)} % · Aufschlag ${num((net - ek) / ek * 100, 1)} %`; } else m.textContent = ''; };
+    ['price', 'cost', 'vat'].forEach(k => $(`[data-f="${k}"]`, ctx.el)?.addEventListener('input', calc)); calc();
+    // Warengruppe als Vorgabe: Hinweis bei abweichendem Steuersatz, Verkaufspreis-Vorschlag aus dem Einkaufspreis
+    const q = k => $(`[data-f="${k}"]`, ctx.el), c = q('cost'), p = q('price');
+    if (c && p) {
+      const h = {s: ctx.st, c, p, h: $('#edVkSug', ctx.el)}, o = () => ({cat: q('cat')?.value, supplierId: q('supplierId')?.value, vat: q('vat')?.value});
+      ctx.vkNeu = () => aeWgVkNeu(h, o);
+      c.addEventListener('input', ctx.vkNeu); p.addEventListener('input', () => aeWgVkEingabe(h));
+      q('vat')?.addEventListener('change', () => { aeWgHinweise(ctx); ctx.vkNeu(); }); q('supplierId')?.addEventListener('change', ctx.vkNeu);
+      aeWgVkZeigen(h);
+    }
+    $('#edVatHint', ctx.el)?.addEventListener('click', e => { const b = e.target.closest('[data-wg-vat]'), sel = q('vat'); if (!b || !sel) return; sel.value = b.dataset.wgVat; sel.dispatchEvent(new Event('input', {bubbles: true})); sel.dispatchEvent(new Event('change', {bubbles: true})); });
+    aeWgHinweise(ctx); return;
   }
   if (tab === 'karte') { $('#aeKarteRef', ctx.el)?.addEventListener('click', () => ctx.setTab('karte')); $('[data-mk-open]', ctx.el)?.addEventListener('click', e => mkOeffnen(e.currentTarget.dataset.mkOpen)); return; }
   if (!spec) return;
@@ -259,7 +367,7 @@ function aeService(ctx, anchor) {
   el?.addEventListener('click', e => {
     const b = e.target.closest('[data-sv]'); if (!b) return; closePopover();
     const k = b.dataset.sv;
-    if (k === 'lbl') { if (a) openLabels(a.variants.map(v => ({a, v, n: 1}))); else toast('Erst Artikel speichern', {type: 'warn'}); return; }
+    if (k === 'lbl') { if (a) openLabels(a.variants.map(v => lblPos(a, v, 1))); else toast('Erst Artikel speichern', {type: 'warn'}); return; }
     if (k === 'info') { if (a) { AIF.sel = a.id; go('artikelinfo'); } return; }
     const tab = items.find(x => x[0] === k)[3]; ctx.setTab(tab);
     setTimeout(() => $(k === 'page' ? '#edPage' : k === 'ai' ? '#edAi' : '#gAdd', ctx.el)?.click(), 60);
@@ -311,7 +419,7 @@ agridPage('artikel', {
     refresh: async () => { try { if (DESKTOP) replaceCatalog(await invoke('catalog_list')); } catch { /* */ } PAGES.artikel.render(); },
     new: () => openEditor(null, 'stamm', []),
     imp: () => go('advarics-import'),
-    label: () => { const sel = AG.artikel.sel; const l = ART.filter(a => sel.has(a.id)); if (!l.length) return toast('Artikel ankreuzen', {t2: 'für die Etikettenausgabe', icon: 'info'}); openLabels(l.flatMap(a => a.variants.map(v => ({a, v, n: 1})))); },
+    label: () => { const sel = AG.artikel.sel; const l = ART.filter(a => sel.has(a.id)); if (!l.length) return toast('Artikel ankreuzen', {t2: 'für die Etikettenausgabe', icon: 'info'}); openLabels(l.flatMap(a => a.variants.map(v => lblPos(a, v, 1)))); },
   },
   edit: id => { const a = artById(id); if (a) openEditor(a, 'stamm', (AG.artikel.filtered || []).map(r => r.id)); },
   remove: async ids => {
@@ -353,7 +461,7 @@ agridPage('st-groesse', {
 
 /* ── Stammdaten › Größen › Größenschlüssel ── */
 delete STAMM_DEF.groessenschluessel.seed;
-STAMM_DEF.groessenschluessel.cols = [{k: 'nr', l: 'Nr.', t: 'num'}, {k: 'name', l: 'Name'}, {k: 'sync', l: 'Synchronisiert', t: 'check'}, {k: 'groessen', l: 'Größen', t: 'list'}];
+STAMM_DEF.groessenschluessel.cols = [{k: 'nr', l: 'Nr.', t: 'num'}, {k: 'name', l: 'Name'}, {k: 'sync', l: 'Synchronisiert', t: 'check'}, {k: 'groessen', l: 'Größen (getrennt durch ;)', t: 'list', sep: ';'}];   // Halbgrößen wie 6,5 enthalten ein Komma
 const gsRows = () => stRows('groessenschluessel').map(r => ({id: r.id, nr: +r.nr || 0, name: r.name || '', sync: !!r.sync, anz: (r.groessen || []).length, groessen: (r.groessen || []).join(', '), _raw: r}));
 function gsEdit(id, done) {
   const all = stRows('groessenschluessel'), r = id ? all.find(x => x.id === id) : null;

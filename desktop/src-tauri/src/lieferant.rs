@@ -119,7 +119,7 @@ pub fn profil_pruefen(c: &Connection, p: &Value) -> Result<Value, String> {
         o.insert(k.into(), json!(p[k].as_bool().unwrap_or(false)));
     }
     let leer = |v: &Value| v.is_null() || v.is_string() && s(v).is_empty();
-    let kalk = if leer(&p["kalk_faktor"]) { 0.0 } else { zahl(&p["kalk_faktor"]).filter(|x| *x == 0.0 || (1.0..=20.0).contains(x)).ok_or("Kalkulationsfaktor: Zahl von 1 bis 20 (leer = 2,2)")? };
+    let kalk = if leer(&p["kalk_faktor"]) { 0.0 } else { zahl(&p["kalk_faktor"]).filter(|x| *x == 0.0 || (1.0..=20.0).contains(x)).ok_or("Kalkulationsfaktor: Zahl von 1 bis 20 (leer = Spanne der Warengruppe)")? };
     o.insert("kalk_faktor".into(), json!((kalk * 100.0).round() / 100.0));
     let term2 = if leer(&p["term2"]) { 0 } else { ganz(&p["term2"]).filter(|n| (0..=365).contains(n)).ok_or("Lief.-Term. 2 Offset: Tage von 0 bis 365")? };
     o.insert("term2".into(), json!(term2));

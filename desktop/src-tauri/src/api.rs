@@ -175,10 +175,12 @@ fn query_args(url: &str) -> Vec<(String, String)> {
         .unwrap_or_default()
 }
 
-/// Artikel mit den Herstellerangaben seiner Marke (GPSR); `hersteller` ist null, solange die Marke keine Angaben hat
-fn mit_hersteller(a: &catalog::Article, her: &std::collections::HashMap<String, Value>) -> Value {
+/// Artikel mit den Herstellerangaben seiner Marke (GPSR; `hersteller` ist null, solange die Marke keine Angaben hat)
+/// und seinen Webshop-Kategorien (`webkategorien`: [{id, name}], leer ohne Zuordnung) – dieselbe Auskunft wie im Schaufenster
+fn artikel_json(a: &catalog::Article, her: &std::collections::HashMap<String, Value>, wk: &crate::shop::WebKat) -> Value {
     let mut v = json!(a);
     v["hersteller"] = her.get(&crate::marke::norm(&a.brand)).cloned().unwrap_or(Value::Null);
+    v["webkategorien"] = json!(wk.kategorien_json(a));
     v
 }
 
@@ -188,8 +190,9 @@ pub fn openapi() -> Value {
         "openapi": "3.0.3",
         "info": { "title": "Kontor API", "version": VERSION, "description": "Lokale API von Kontor. Authentifizierung: Header „Authorization: Bearer <API-Schlüssel>“." },
         "paths": {
-            "/api/v1/artikel": { "get": p("Artikel mit Varianten, Bestand und Herstellerangaben (GPSR) der Marke (?q=, ?warengruppe=)", "lesen") },
-            "/api/v1/artikel/{id}": { "get": p("Ein Artikel (mit Herstellerangaben)", "lesen") },
+            "/api/v1/artikel": { "get": p("Alle aktiven Artikel (unabhängig von Schaufenster-Einstellungen) mit Varianten, Bestand, Herstellerangaben (GPSR) der Marke und Webshop-Kategorien (webkategorien) (?q=, ?warengruppe=, ?webkategorie=<id>)", "lesen") },
+            "/api/v1/artikel/{id}": { "get": p("Ein Artikel (mit Herstellerangaben und Webshop-Kategorien)", "lesen") },
+            "/api/v1/webkategorien": { "get": p("Webshop-Kategorien, die aktiv und sichtbar sind, in der Reihenfolge der Tabelle: id, name, artikelzahl", "lesen") },
             "/api/v1/marken": { "get": p("Marken mit Herstellerangaben nach GPSR: Name, Anschrift, elektronische Adresse, Verantwortlicher in der EU", "lesen") },
             "/api/v1/bestand": { "get": p("Bestand je Variante (?ean=)", "lesen") },
             "/api/v1/bestand/buchung": { "post": p("Bestand buchen: {ean, menge, art: zugang|abgang|inventur, grund}", "schreiben") },
@@ -259,18 +262,27 @@ fn handle(c: &Connection, db_path: &Path, mut req: Request) {
             (Method::Get, ["artikel"]) => {
                 let q = arg("q").map(|s| s.to_lowercase());
                 let cat = arg("warengruppe");
+                let wkat = arg("webkategorie");
                 let list = catalog::list(c).map_err(|e| e500(e.to_string()))?;
                 let her = crate::marke::hersteller_json(c);
+                let wk = crate::shop::webkat_laden(c).map_err(e500)?;
                 Ok(json!(list
                     .into_iter()
                     .filter(|a| q.as_ref().map(|q| a.name.to_lowercase().contains(q) || a.id.to_lowercase() == *q || a.variants.iter().any(|v| v.ean == *q)).unwrap_or(true))
                     .filter(|a| cat.as_ref().map(|k| &a.category == k).unwrap_or(true))
-                    .map(|a| mit_hersteller(&a, &her))
+                    .filter(|a| wkat.as_ref().map(|k| wk.kategorien(a).iter().any(|x| &x.id == k)).unwrap_or(true))
+                    .map(|a| artikel_json(&a, &her, &wk))
                     .collect::<Vec<_>>()))
             }
             (Method::Get, ["artikel", id]) => {
                 let her = crate::marke::hersteller_json(c);
-                catalog::list(c).map_err(|e| e500(e.to_string()))?.into_iter().find(|a| a.id == *id).map(|a| mit_hersteller(&a, &her)).ok_or((404, "Artikel nicht gefunden".into()))
+                let wk = crate::shop::webkat_laden(c).map_err(e500)?;
+                catalog::list(c).map_err(|e| e500(e.to_string()))?.into_iter().find(|a| a.id == *id).map(|a| artikel_json(&a, &her, &wk)).ok_or((404, "Artikel nicht gefunden".into()))
+            }
+            (Method::Get, ["webkategorien"]) => {
+                let wk = crate::shop::webkat_laden(c).map_err(e500)?;
+                let n = wk.artikelzahlen(c).map_err(e500)?;
+                Ok(json!(wk.liste.iter().zip(n).map(|(k, n)| json!({ "id": k.id, "name": k.name, "artikelzahl": n })).collect::<Vec<_>>()))
             }
             (Method::Get, ["marken"]) => {
                 let her = crate::marke::hersteller_json(c);
@@ -511,6 +523,70 @@ mod tests {
         assert_eq!((v[0]["ref"].clone(), v[0]["betrag"].clone()), (json!("S-2"), json!(200.0)));
         let n: i64 = c.query_row("SELECT COUNT(*) FROM api_log WHERE path LIKE '%webshop%' AND status = 400", [], |r| r.get(0)).unwrap();
         assert_eq!(n, 1);
+        stop(&st);
+        let _ = std::fs::remove_file(&p);
+    }
+
+    #[test]
+    fn rest_api_webkategorien() {
+        let p = std::env::temp_dir().join(format!("kontor-api-wk-{}.db", std::process::id()));
+        let _ = std::fs::remove_file(&p);
+        let c = db::open(&p).unwrap();
+        for (i, kat) in ["adv-1", "adv-2", "adv-3"].iter().enumerate() {
+            let a: catalog::Article = serde_json::from_value(json!({ "id": format!("A{}", i + 1), "name": format!("Artikel {}", i + 1), "category": kat, "price": 1000, "vat": 20, "colors": ["moos"], "sizes": ["M"], "variants": [{ "color": "moos", "size": "M", "ean": format!("200000000020{i}") }] })).unwrap();
+            let tx = c.unchecked_transaction().unwrap();
+            catalog::save(&tx, &a).unwrap();
+            tx.commit().unwrap();
+        }
+        let read = key_create(&c, "Webshop", &["lesen".into()]).unwrap();
+        let st = ApiState::default();
+        let port = 19000 + (std::process::id() % 1000) as u16;
+        start(&st, p.clone(), false, port).unwrap();
+        // ohne Zuordnung: alles wie bisher, keine Kategorien am Artikel, Liste der Kategorien leer
+        let (code, v) = get(port, "/api/v1/artikel", Some(&read));
+        assert_eq!((code, v.as_array().unwrap().len(), v[0]["webkategorien"].clone()), (200, 3, json!([])));
+        assert_eq!(get(port, "/api/v1/webkategorien", Some(&read)), (200, json!([])));
+        assert_eq!(get(port, "/api/v1/webkategorien", None).0, 401);
+        // Digitales Schaufenster (öffentlich): ohne Zuordnung alle Artikel, Navigation ohne Webshop-Kategorien
+        db::setting_set(&c, "shop.aktiv", &json!(true)).unwrap();
+        let (code, info) = get(port, "/shop/api/info", None);
+        assert_eq!((code, info["webkategorien"].clone()), (200, json!([])));
+        assert_eq!(get(port, "/shop/api/artikel", None).1.as_array().unwrap().len(), 3);
+        let ins =|kind: &str, id: &str, pos: i64, d: Value| {
+            c.execute("INSERT INTO stamm(kind, id, data, pos, active, updated_at) VALUES (?1,?2,?3,?4,1,'t')", params![kind, id, d.to_string(), pos]).unwrap();
+        };
+        ins("webkategorie", "W1", 0, json!({ "name": "Ski", "sichtbar": true }));
+        ins("webkategorie", "W2", 1, json!({ "name": "Schuhe", "sichtbar": true, "warengruppen": ["adv-1", "adv-2"] }));
+        ins("webkategorie", "W3", 2, json!({ "name": "Intern", "sichtbar": false }));
+        ins("warengruppe", "adv-1", 0, json!({ "name": "Jacken", "webkat1": "W2", "webkat2": "W1" }));
+        ins("warengruppe", "adv-3", 1, json!({ "name": "Intern", "webkat1": "W3" }));
+        // die Schnittstelle liefert weiterhin ALLE aktiven Artikel – auch die, die im Schaufenster fehlen
+        let (_, v) = get(port, "/api/v1/artikel", Some(&read));
+        assert_eq!(v.as_array().unwrap().len(), 3);
+        let namen = |a: &Value| a["webkategorien"].as_array().unwrap().iter().map(|k| k["name"].as_str().unwrap().to_string()).collect::<Vec<_>>();
+        let von = |id: &str| namen(v.as_array().unwrap().iter().find(|a| a["id"] == id).unwrap());
+        assert_eq!((von("A1"), von("A2"), von("A3")), (vec!["Ski".to_string(), "Schuhe".to_string()], vec!["Schuhe".to_string()], vec![]));
+        assert_eq!(get(port, "/api/v1/artikel/A2", Some(&read)).1["webkategorien"], json!([{ "id": "W2", "name": "Schuhe" }]));
+        // Kategorien: nur aktive, sichtbare, in der Reihenfolge der Tabelle, mit Artikelzahl
+        let (code, k) = get(port, "/api/v1/webkategorien", Some(&read));
+        assert_eq!((code, k), (200, json!([{ "id": "W1", "name": "Ski", "artikelzahl": 1 }, { "id": "W2", "name": "Schuhe", "artikelzahl": 2 }])));
+        // Filter
+        let ids = |pfad: &str| get(port, pfad, Some(&read)).1.as_array().unwrap().iter().map(|a| a["id"].as_str().unwrap().to_string()).collect::<Vec<_>>();
+        assert_eq!(ids("/api/v1/artikel?webkategorie=W2"), vec!["A1", "A2"]);
+        assert_eq!(ids("/api/v1/artikel?webkategorie=W1"), vec!["A1"]);
+        assert!(ids("/api/v1/artikel?webkategorie=W3").is_empty(), "unsichtbare und unbekannte Kategorien liefern nichts");
+        assert!(ids("/api/v1/artikel?webkategorie=gibtsnicht").is_empty());
+        assert_eq!(ids("/api/v1/artikel?webkategorie=W2&warengruppe=adv-2"), vec!["A2"]);
+        assert!(get(port, "/api/v1/openapi.json", None).1["paths"]["/api/v1/webkategorien"].is_object());
+        // Schaufenster mit Zuordnung: nur Artikel in sichtbaren Kategorien (A3 liegt nur in der unsichtbaren), Navigation in Tabellenreihenfolge –
+        // dieselbe Auskunft wie die Schnittstelle, die weiterhin alle drei Artikel liefert
+        let (_, info) = get(port, "/shop/api/info", None);
+        assert_eq!(info["webkategorien"], json!([{ "id": "W1", "name": "Ski" }, { "id": "W2", "name": "Schuhe" }]));
+        let (_, sa) = get(port, "/shop/api/artikel", None);
+        let sid: Vec<&str> = sa.as_array().unwrap().iter().map(|a| a["id"].as_str().unwrap()).collect();
+        assert_eq!(sid, vec!["A1", "A2"]);
+        assert_eq!(sa[0]["webkategorien"], json!([{ "id": "W1", "name": "Ski" }, { "id": "W2", "name": "Schuhe" }]));
+        assert_eq!(ids("/api/v1/artikel").len(), 3);
         stop(&st);
         let _ = std::fs::remove_file(&p);
     }

@@ -86,7 +86,7 @@ function maskeNew(o) {
     const k = bt.dataset.mfK, d = K.refs[k]; if (!d) return; const a = bt.dataset.mfRef;
     if (a === 'find') { const v = await eaPick({l: d.op.titel || d.l.replace(/[\s*]+$/, ''), o: () => refRows(d.kind, d.op).map(r => [String(r.id), refLbl(r, d.op)])}); if (v !== undefined) K.pick(k, v, el); return; }
     const id = await (STROW[d.kind] || stRowDialog)(d.kind, a === 'edit' ? K.val(k) : null, {preset: a === 'new' ? d.op.preset?.(st.d) : null, titel: d.op.titel || d.l.replace(/[\s*]+$/, '')});
-    if (id) { if (a === 'new') K.pick(k, id, el); else K.render(); }
+    if (id) { if (a === 'new') K.pick(k, id, el); else { o.onRefEdit?.(k, el); K.render(); } }
   };
   K.card = (h, inner, cls = '') => `<div class="ae-card ea-card ${cls}">${h ? `<h4>${esc(h)}</h4>` : ''}<div class="ea-fields ge-one">${inner}</div></div>`;
   K.landSel = (k, l = 'Land *', op = {}) => K.sel(k, l, landListe().map(x => [x.id, x.name]), {leer: op.leer ?? '–', ...op});
@@ -130,7 +130,7 @@ function maskeNew(o) {
 
   K.render = () => {
     const host = $('#view-' + o.page); if (!host || !st.d) return;
-    const fk = document.activeElement?.closest?.('[data-mf]')?.dataset?.mf;   // nach dem Zeichnen wieder in dasselbe Feld (Tastaturbedienung)
+    const ae = document.activeElement, fk = ae?.closest?.('[data-mf]')?.dataset?.mf, fsw = ae?.closest?.('[data-mf-sw]')?.dataset?.mfSw;   // nach dem Zeichnen wieder in dasselbe Feld bzw. denselben Schalter (Tastaturbedienung)
     const pos = st.ids.indexOf(st.id), el = document.createElement('div'); el.className = 'ae ue ge fl'; host.replaceChildren(el);
     const can = {new: true, del: !!st.id, refresh: !!st.id, ...(o.can?.() || {})}, lk = lock();
     const btn = (a, icon, l, dis, text = true, kurz) => `<button class="ag-btn" data-mf-a="${a}" title="${esc(l)}" aria-label="${esc(l)}" ${dis ? 'disabled' : ''}>${ic(icon, 'i-sm')}${text ? `<span>${kurz || l}</span>` : ''}</button>`;
@@ -153,7 +153,7 @@ function maskeNew(o) {
       if (!b || b.disabled) return;
       const a = b.dataset.mfA, ask = async () => !st.dirty || await confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen');
       if (a === 'back') { if (!await ask()) return; st.dirty = false; return go(o.list); }
-      if (a === 'refresh' || a === 'undo') { if (a === 'refresh' && !await ask()) return; await o.reload(); K.reset(); return K.render(); }
+      if (a === 'refresh' || a === 'undo') { if (a === 'refresh' && !await ask()) return; await o.reload(); K.reset(); K.render(); return renderTopbar(); }
       if (a === 'new') { if (!await ask()) return; return K.open(null, st.ids); }
       if (a === 'prev' || a === 'next') { if (!await ask()) return; const id = st.ids[pos + (a === 'next' ? 1 : -1)]; if (id != null) K.open(id); return; }
       if (a === 'del') { try { await o.remove([st.id], true); } catch (err) { if (!/abgebrochen/.test(String(err?.message || err))) throw err; } return; }
@@ -170,12 +170,16 @@ function maskeNew(o) {
     };
     el.addEventListener('focusin', e => fill(e.target)); el.addEventListener('mousedown', e => fill(e.target));
     body.mount?.(el);
-    if (fk) { const f = $(`[data-mf="${CSS.escape(fk)}"]`, el); if (f && !f.disabled) try { f.focus({preventScroll: true}); } catch { /* */ } }
+    const fb = fk ? $(`[data-mf="${CSS.escape(fk)}"]`, el) : fsw ? $(`[data-mf-sw="${CSS.escape(fsw)}"]`, el) : null;
+    if (fb && !fb.disabled) try { fb.focus({preventScroll: true}); } catch { /* */ }
   };
   /** Erster Fehler beim Sichern: zum Reiter springen und Fehler zeigen; true = alles in Ordnung */
   K.gate = () => {
     const errs = o.errors(st.d); if (!errs.length) return true;
-    st.tab = o.tabOf(errs[0].k); st.show = true; K.render(); toast(errs[0].t, {t2: 'Angabe prüfen', type: 'warn'}); return false;
+    st.tab = o.tabOf(errs[0].k); st.show = true; K.render(); toast(errs[0].t, {t2: 'Angabe prüfen', type: 'warn'});
+    // zum ersten fehlerhaften Feld blättern und es anwählen
+    setTimeout(() => { const f = $(`#view-${o.page} .zp-bad [data-mf]`); if (f) { try { f.scrollIntoView({block: 'center'}); f.focus({preventScroll: true}); } catch { /* */ } } }, 30);
+    return false;
   };
   return K;
 }

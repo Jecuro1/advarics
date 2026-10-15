@@ -48,7 +48,7 @@ pub fn holt(xs: &[f64], h: usize) -> Vec<f64> {
 
 pub fn forecast(c: &Connection) -> Result<Vec<Value>, String> {
     let w = weekly(c).map_err(|e| e.to_string())?;
-    let mut st = c.prepare("SELECT a.id, a.name, COALESCE(SUM(v.stock),0) FROM articles a LEFT JOIN variants v ON v.article_id = a.id AND v.active = 1 WHERE a.active = 1 GROUP BY a.id").map_err(|e| e.to_string())?;
+    let mut st = c.prepare("SELECT a.id, a.name, COALESCE(SUM(v.stock),0) FROM articles a LEFT JOIN variants v ON v.article_id = a.id AND v.active = 1 LEFT JOIN stamm w ON w.kind = 'warengruppe' AND w.id = a.category WHERE a.active = 1 AND COALESCE(json_extract(w.data, '$.service'), 0) = 0 GROUP BY a.id").map_err(|e| e.to_string())?;
     let rows: Vec<(String, String, i64)> = st.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?))).map_err(|e| e.to_string())?.filter_map(Result::ok).collect();
     let mut out = vec![];
     for (id, name, stock) in rows {
@@ -86,8 +86,9 @@ pub fn reorder(c: &Connection) -> Result<Vec<Value>, String> {
         .prepare(
             "SELECT v.id, a.id, a.name, v.color, v.size, v.stock, COALESCE(s.lead_days, 7), COALESCE(a.supplier_id,''),
                (SELECT COALESCE(SUM(l.qty - l.received),0) FROM po_lines l JOIN purchase_orders p ON p.id = l.po_id WHERE l.variant_id = v.id AND p.status IN ('entwurf','bestellt','teilgeliefert'))
-             FROM variants v JOIN articles a ON a.id = v.article_id LEFT JOIN suppliers s ON s.id = a.supplier_id
-             WHERE v.active = 1 AND a.active = 1 AND COALESCE(s.active, 1) = 1 AND COALESCE(json_extract(s.profile, '$.order_vorschlag'), 1) <> 0",
+             FROM variants v JOIN articles a ON a.id = v.article_id LEFT JOIN suppliers s ON s.id = a.supplier_id LEFT JOIN stamm w ON w.kind = 'warengruppe' AND w.id = a.category
+             WHERE v.active = 1 AND a.active = 1 AND COALESCE(s.active, 1) = 1 AND COALESCE(json_extract(s.profile, '$.order_vorschlag'), 1) <> 0
+               AND COALESCE(json_extract(w.data, '$.service'), 0) = 0",   // Service-Warengruppen (Dienstleistungen) werden nie nachbestellt
         )
         .map_err(|e| e.to_string())?;
     let vars: Vec<(i64, String, String, String, String, i64, i64, String, i64)> = st
@@ -199,8 +200,8 @@ pub fn insights(c: &Connection) -> Result<Vec<Value>, String> {
     }
     let mut st = c
         .prepare(
-            "SELECT a.id, a.name, SUM(v.stock), SUM(v.stock) * COALESCE(a.sale_price, a.price) FROM articles a JOIN variants v ON v.article_id = a.id
-             WHERE a.active = 1 AND v.active = 1 GROUP BY a.id HAVING SUM(v.stock) > 0
+            "SELECT a.id, a.name, SUM(v.stock), SUM(v.stock) * COALESCE(a.sale_price, a.price) FROM articles a JOIN variants v ON v.article_id = a.id LEFT JOIN stamm w ON w.kind = 'warengruppe' AND w.id = a.category
+             WHERE a.active = 1 AND v.active = 1 AND COALESCE(json_extract(w.data, '$.service'), 0) = 0 GROUP BY a.id HAVING SUM(v.stock) > 0
              AND NOT EXISTS (SELECT 1 FROM stock_moves m JOIN variants v2 ON v2.id = m.variant_id WHERE v2.article_id = a.id AND m.reason = 'Verkauf' AND substr(m.ts,1,19) >= ?1)
              AND EXISTS (SELECT 1 FROM stock_moves m JOIN variants v3 ON v3.id = m.variant_id WHERE v3.article_id = a.id AND substr(m.ts,1,19) < ?1)
              ORDER BY 4 DESC LIMIT 3",

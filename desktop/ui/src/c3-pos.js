@@ -68,8 +68,8 @@ function filtered() {
   return ART.filter(a => toks.every(t => a.hay.includes(t)) || a.variants.some(v => v.ean.startsWith(q)));
 }
 function tileHTML(a, i) {
-  const c = COLORS[a.colors[0]][1], st = a.stock;
-  const [cls, txt] = st <= 0 ? ['out', 'Ausverkauft'] : st <= 6 ? ['low', `Nur ${st}`] : ['ok', `${st} lagernd`];
+  const c = COLORS[a.colors[0]][1], svc = wgService(a.cat), st = svc ? 1 : a.stock;   // Service-Warengruppe: Dienstleistung, nie ausverkauft
+  const [cls, txt] = svc ? ['ok', 'Dienstleistung'] : st <= 0 ? ['out', 'Ausverkauft'] : st <= 6 ? ['low', `Nur ${st}`] : ['ok', `${st} lagernd`];
   const badge = a.sale ? `<span class="tb sale">−${discOf(a)} %</span>` : a.tag ? `<span class="tb new">${a.tag}</span>` : '<span></span>';
   const sw = a.colors.length > 1 ? `<span class="swatches">${a.colors.slice(0, 4).map(k => `<i style="background:${COLORS[k][1]}"></i>`).join('')}</span>` : '';
   return `<button class="tile ${st <= 0 ? 'out' : ''}" data-id="${a.id}" role="listitem" style="--c:${c};animation-delay:${Math.min(i, 18) * 22}ms" aria-label="${esc(a.name)}, ${esc(eur(a.sale || a.price))}, ${txt}">
@@ -159,7 +159,7 @@ function fly(fromEl, color) {
 function openArticle(a, fromEl, preset) {
   if (a.variants.length === 1 && !(a.prompts && POS.flow.prompts)) {
     const v = a.variants[0];
-    if (v.q <= 0) return openVariant(a, fromEl);
+    if (v.q <= 0 && !wgService(a.cat)) return openVariant(a, fromEl);
     return addLine(a, v.c, v.s, 1, null, fromEl);
   }
   openVariant(a, fromEl, preset);
@@ -232,7 +232,7 @@ function handleEnter() {
 
 /* ── Variantenwahl ── */
 function openVariant(a, fromEl, preset) {
-  const oneSize = a.sizes.length === 1;
+  const oneSize = a.sizes.length === 1, svc = wgService(a.cat);   // Service-Warengruppe: ohne Bestand verkäuflich
   const firstAvail = c => (a.variants.find(v => v.c === c && v.q > 0) || a.variants.find(v => v.c === c)).s;
   const st = {c: preset?.c || (a.variants.find(v => v.q > 0) || a.variants[0]).c, s: preset?.s, qty: 1, vals: {}};
   st.s = st.s || firstAvail(st.c);
@@ -246,20 +246,20 @@ function openVariant(a, fromEl, preset) {
         <div style="display:flex;align-items:flex-start;gap:8px"><div style="flex:1;min-width:0"><div class="vp-brand">${esc(a.brand)} · ${a.id}</div><div class="vp-name">${esc(a.name)}</div></div><button class="btn btn-ghost btn-icon btn-sm" data-close aria-label="Schließen">${ic('x')}</button></div>
         <div class="vp-price">${eur(price)}${a.sale ? `<s>${eur(a.price)}</s>` : ''}</div>
         ${a.colors.length > 1 ? `<div class="vp-sec"><div class="lab">Farbe <span>${COLORS[st.c][0]} · <span class="kbd">↑</span><span class="kbd">↓</span></span></div><div class="colors">${a.colors.map(k => `<button class="cbtn" data-c="${k}" aria-pressed="${k === st.c}" style="--sw:${COLORS[k][1]}"><i></i>${COLORS[k][0]}</button>`).join('')}</div></div>` : ''}
-        ${!oneSize ? `<div class="vp-sec"><div class="lab">Größe <span>Bestand Innsbruck · <span class="kbd">←</span><span class="kbd">→</span></span></div><div class="sizes">${a.sizes.map(s => { const x = variant(a, st.c, s); return `<button class="sbtn ${x.q <= 0 ? 'so' : ''}" data-s="${esc(s)}" aria-pressed="${s === st.s}"><span class="sz">${esc(s)}</span><small class="${x.q > 0 && x.q <= 2 ? 'low' : ''}">${x.q <= 0 ? 'ausverkauft' : x.q + ' Stk.'}</small></button>`; }).join('')}</div></div>` : ''}
-        <div class="elsewhere">${ic('store', 'i-xs')}${v.other ? `${oneSize ? `${esc(storeObj().name)} <b style="color:var(--text);margin:0 4px">${v.q}</b> ·` : `Gr. ${esc(st.s)} in`} anderen Filialen: ${OTHER_STORES.map((s, i) => `<span>${s.name} <b>${v.other[i]}</b></span>`).join('')}` : `Bestand hier: <b style="color:var(--text);margin:0 4px">${v.q}</b> · EAN ${esc(v.ean)} · ${DESKTOP ? 'Einzelplatz · Filialverbund unter Einstellungen' : 'andere Filialen sichtbar, sobald der Filial-Server verbunden ist'}`}</div>
+        ${!oneSize ? `<div class="vp-sec"><div class="lab">Größe <span>Bestand Innsbruck · <span class="kbd">←</span><span class="kbd">→</span></span></div><div class="sizes">${a.sizes.map(s => { const x = variant(a, st.c, s); return `<button class="sbtn ${x.q <= 0 && !svc ? 'so' : ''}" data-s="${esc(s)}" aria-pressed="${s === st.s}"><span class="sz">${esc(s)}</span><small class="${!svc && x.q > 0 && x.q <= 2 ? 'low' : ''}">${svc ? 'Dienstleistung' : x.q <= 0 ? 'ausverkauft' : x.q + ' Stk.'}</small></button>`; }).join('')}</div></div>` : ''}
+        <div class="elsewhere">${ic('store', 'i-xs')}${svc ? `Service-Warengruppe „${esc(wgNm('warengruppe', a.cat))}“: Dienstleistung ohne Bestand · EAN ${esc(v.ean)}` : v.other ? `${oneSize ? `${esc(storeObj().name)} <b style="color:var(--text);margin:0 4px">${v.q}</b> ·` : `Gr. ${esc(st.s)} in`} anderen Filialen: ${OTHER_STORES.map((s, i) => `<span>${s.name} <b>${v.other[i]}</b></span>`).join('')}` : `Bestand hier: <b style="color:var(--text);margin:0 4px">${v.q}</b> · EAN ${esc(v.ean)} · ${DESKTOP ? 'Einzelplatz · Filialverbund unter Einstellungen' : 'andere Filialen sichtbar, sobald der Filial-Server verbunden ist'}`}</div>
         ${prompts ? `<div class="vp-sec"><div class="lab">Kassenablauf „Skiverkauf“ <span>benutzerdefinierte Felder</span></div><div class="prompts">${prompts.map(p => `<label class="field"><span>${esc(p.label)}${p.req ? ' <b class="req">*</b>' : ''}</span><input class="input" data-p="${p.key}" placeholder="${esc(p.ph)}" value="${esc(st.vals[p.key] || '')}" ${p.type === 'number' ? 'inputmode="decimal"' : ''}></label>`).join('')}</div><div class="prompt-hint">${ic('flow', 'i-xs')}Pflichtfelder je Warengruppe – im Kassenablauf konfiguriert, ohne Code.</div></div>` : ''}
         <div class="vp-foot">
           <div class="qty" style="height:48px;border-radius:12px"><button data-q="-1" style="width:44px;height:46px" aria-label="Menge verringern">${ic('minus', 'i-sm')}</button><span style="min-width:28px;font-size:15px">${st.qty}</span><button data-q="1" style="width:44px;height:46px" aria-label="Menge erhöhen">${ic('plus', 'i-sm')}</button></div>
-          ${v.q <= 0 ? `<button class="btn btn-secondary" id="vpAdd" style="flex:1;height:48px;border-radius:12px" data-transfer>${ic('swap', 'i-sm')}Umlagerung anfragen</button>` : `<button class="btn btn-primary" id="vpAdd">Hinzufügen · ${eur(price * st.qty)}<span class="kbd">↵</span></button>`}
+          ${v.q <= 0 && !svc ? `<button class="btn btn-secondary" id="vpAdd" style="flex:1;height:48px;border-radius:12px" data-transfer>${ic('swap', 'i-sm')}Umlagerung anfragen</button>` : `<button class="btn btn-primary" id="vpAdd">Hinzufügen · ${eur(price * st.qty)}<span class="kbd">↵</span></button>`}
         </div>
       </div>`;
     const f = focusSel && $(focusSel, box); (f || $('#vpAdd', box)).focus({preventScroll: true});
   };
   const add = () => {
     const v = variant(a, st.c, st.s);
-    if (v.q <= 0 && !v.other) { closeLayer(el); toast('Nicht lagernd', {t2: DESKTOP ? 'Bestand unter „Bestand“ oder „Wareneingang“ buchen' : 'Umlagerungen zwischen Filialen folgen mit dem Filial-Server · Bestand unter „Bestand“ buchen', type: 'warn', icon: 'boxes'}); return; }
-    if (v.q <= 0) { const best = OTHER_STORES.map((s, i) => [s, v.other[i]]).sort((x, y) => y[1] - x[1])[0]; closeLayer(el); if (DESKTOP) { if (best && best[1] > 0) requestTransfer(a, v, best[0].id); else toast('Nirgends lagernd', {t2: 'Auch in den anderen Filialen kein Bestand', type: 'warn', icon: 'boxes'}); return; } toast('Umlagerung angefragt', {t2: `${a.name} · ${COLORS[st.c][0]} ${st.s} · ${best[0].name} → Innsbruck`, type: 'pos', icon: 'swap'}); Hooks.emit('inventory.transfer.requested', {sku: a.id, von: best[0].id, nach: 'INN', menge: 1}); return; }
+    if (v.q <= 0 && !svc && !v.other) { closeLayer(el); toast('Nicht lagernd', {t2: DESKTOP ? 'Bestand unter „Bestand“ oder „Wareneingang“ buchen' : 'Umlagerungen zwischen Filialen folgen mit dem Filial-Server · Bestand unter „Bestand“ buchen', type: 'warn', icon: 'boxes'}); return; }
+    if (v.q <= 0 && !svc) { const best = OTHER_STORES.map((s, i) => [s, v.other[i]]).sort((x, y) => y[1] - x[1])[0]; closeLayer(el); if (DESKTOP) { if (best && best[1] > 0) requestTransfer(a, v, best[0].id); else toast('Nirgends lagernd', {t2: 'Auch in den anderen Filialen kein Bestand', type: 'warn', icon: 'boxes'}); return; } toast('Umlagerung angefragt', {t2: `${a.name} · ${COLORS[st.c][0]} ${st.s} · ${best[0].name} → Innsbruck`, type: 'pos', icon: 'swap'}); Hooks.emit('inventory.transfer.requested', {sku: a.id, von: best[0].id, nach: 'INN', menge: 1}); return; }
     if (prompts) {
       $$('[data-p]', box).forEach(i => { st.vals[i.dataset.p] = i.value.trim(); });
       const miss = prompts.find(p => p.req && !st.vals[p.key]);
@@ -269,7 +269,7 @@ function openVariant(a, fromEl, preset) {
   };
   box.addEventListener('click', e => {
     const c = e.target.closest('[data-c]'), s = e.target.closest('[data-s]'), q = e.target.closest('[data-q]');
-    if (c) { st.c = c.dataset.c; if (variant(a, st.c, st.s).q === 0) st.s = firstAvail(st.c); render(`[data-c="${st.c}"]`); }
+    if (c) { st.c = c.dataset.c; if (variant(a, st.c, st.s).q === 0 && !svc) st.s = firstAvail(st.c); /* Service: ohne Bestand verkäuflich, die gewählte Größe bleibt */ render(`[data-c="${st.c}"]`); }
     else if (s) { st.s = s.dataset.s; render(`[data-s="${CSS.escape(st.s)}"]`); }
     else if (q) { st.qty = clamp(st.qty + +q.dataset.q, 1, 99); render(`[data-q="${q.dataset.q}"]`); }
     else if (e.target.closest('#vpAdd')) add();

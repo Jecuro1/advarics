@@ -239,8 +239,8 @@ pub fn commit_return(tx: &Transaction, orig_no: &str, lines: &[ReturnLine], stor
     // Bestand zurückbuchen
     let mut stocks = vec![];
     for l in &out_lines {
-        if l["service"].as_bool().unwrap_or(false) {
-            continue;
+        if l["service"].as_bool().unwrap_or(false) || l["nostock"].as_bool().unwrap_or(false) {
+            continue;   // Dienstleistung bzw. Service-Warengruppe (Beleg hält „nostock“ fest): kein Bestand
         }
         let (Some(sku), Some(col), Some(size)) = (l["sku"].as_str(), l["c"].as_str(), l["s"].as_str()) else { continue };
         let v: Option<(i64, String)> = tx
@@ -248,6 +248,9 @@ pub fn commit_return(tx: &Transaction, orig_no: &str, lines: &[ReturnLine], stor
             .optional()
             .map_err(|e| e.to_string())?;
         if let Some((vid, ean)) = v {
+            if catalog::service_variante(tx, vid) {
+                continue;   // inzwischen Service-Warengruppe: ein Service hat keinen Bestand, den man zurückbuchen könnte
+            }
             let after = catalog::book(tx, vid, l["qty"].as_i64().unwrap_or(0), false, if storno { "Storno" } else { "Kundenretoure" }, Some(&no), Some(cashier))?;
             stocks.push(json!({ "ean": ean, "stock": after }));
         }
@@ -474,6 +477,35 @@ mod tests {
         assert_eq!(line_effective(&hose, 10.0), 9000);
         // Belege aus früheren Fassungen ohne Kennzeichen rechnen wie bisher
         assert_eq!(line_effective(&json!({ "qty": 1, "unit": 100.0, "vat": 20 }), 10.0), 9000);
+    }
+
+    #[test]
+    fn service_warengruppe_bucht_keinen_bestand_weder_beim_verkauf_noch_bei_retoure() {
+        let mut c = setup();
+        c.execute("INSERT INTO stamm(kind, id, data, pos, active, updated_at) VALUES ('warengruppe', 'jacken', '{\"name\":\"Service\",\"service\":true}', 0, 1, 't')", []).unwrap();
+        let data = json!({ "t": { "total": 200.0 }, "lines": [{ "name": "Jacke", "sku": "A1", "c": "moos", "s": "M", "ean": "2000000000015", "qty": 2, "unit": 100.0, "vat": 20 }] });
+        let tx = c.transaction().unwrap();
+        let r = catalog::commit_sale(&tx, &[catalog::SaleLine { ean: Some("2000000000015".into()), qty: 2 }], 20000, "Test", None, &data).unwrap();
+        tx.commit().unwrap();
+        assert_eq!(stock(&c), 5, "Service: kein Abgang");
+        assert!(r["stocks"].as_array().unwrap().is_empty());
+        let no = r["no"].as_str().unwrap().to_string();
+        let beleg: String = c.query_row("SELECT data FROM sales WHERE beleg_no = ?1", [&no], |x| x.get(0)).unwrap();
+        assert_eq!(serde_json::from_str::<Value>(&beleg).unwrap()["lines"][0]["nostock"], json!(true));
+        let moves: i64 = c.query_row("SELECT COUNT(*) FROM stock_moves WHERE reason = 'Verkauf'", [], |x| x.get(0)).unwrap();
+        assert_eq!(moves, 0);
+        let tx = c.transaction().unwrap();
+        commit_return(&tx, &no, &[ReturnLine { idx: 0, qty: 1 }], false, "x", &json!({ "m": "bar", "label": "Bar" }), "Test").unwrap();
+        tx.commit().unwrap();
+        assert_eq!(stock(&c), 5, "Retoure bucht nichts zurück");
+        // ohne Service-Kennzeichen: Verhalten wie bisher
+        c.execute("DELETE FROM stamm WHERE kind = 'warengruppe'", []).unwrap();
+        let no2 = sell(&mut c, 1, None);
+        assert_eq!(stock(&c), 4);
+        let tx = c.transaction().unwrap();
+        commit_return(&tx, &no2, &[ReturnLine { idx: 0, qty: 1 }], false, "x", &json!({ "m": "bar", "label": "Bar" }), "Test").unwrap();
+        tx.commit().unwrap();
+        assert_eq!(stock(&c), 5);
     }
 
     #[test]

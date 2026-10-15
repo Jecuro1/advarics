@@ -226,7 +226,7 @@ const ownWidgets = () => Array.isArray(CFG['dash.eigene']) ? CFG['dash.eigene'] 
 const OW_VORLAGEN = [
   ['Umsatz heute', 'kennzahl', "SELECT printf('€ %.2f', COALESCE(SUM(total),0)/100.0) AS wert FROM sales WHERE substr(ts,1,10) = date('now','localtime')", 'brutto'],
   ['Bons je Stunde (heute)', 'tabelle', "SELECT substr(ts,12,2) || ' Uhr' AS Stunde, COUNT(*) AS Bons, printf('€ %.2f', SUM(total)/100.0) AS Umsatz FROM sales WHERE kind = 'verkauf' AND substr(ts,1,10) = date('now','localtime') GROUP BY 1 ORDER BY 1", ''],
-  ['Unter Mindestbestand', 'liste', "SELECT a.name AS Artikel, v.stock || ' / ' || a.min_stock AS Bestand, v.ean AS EAN FROM variants v JOIN articles a ON a.id = v.article_id WHERE a.min_stock > 0 AND v.stock < a.min_stock ORDER BY v.stock LIMIT 20", ''],
+  ['Unter Mindestbestand', 'liste', "SELECT a.name AS Artikel, v.stock || ' / ' || a.min_stock AS Bestand, v.ean AS EAN FROM variants v JOIN articles a ON a.id = v.article_id LEFT JOIN stamm w ON w.kind = 'warengruppe' AND w.id = a.category WHERE a.min_stock > 0 AND v.stock < a.min_stock AND COALESCE(json_extract(w.data, '$.service'), 0) = 0 ORDER BY v.stock LIMIT 20", ''],
   ['Neue Kund:innen (30 Tage)', 'kennzahl', "SELECT COUNT(*) AS wert FROM customers WHERE created_at >= date('now','-30 days')", 'Kund:innen'],
 ];
 function registerOwnWidgets() {

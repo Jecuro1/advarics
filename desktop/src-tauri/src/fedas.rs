@@ -104,6 +104,45 @@ pub fn ensure_color(c: &Connection, name: &str) -> String {
     key
 }
 
+/// Steuersatz in % aus einer Warengruppen-Zeile der Stammdaten (Rechenkern). `typ` ist die Zeile der Tabelle „mwsttyp“, auf die die Warengruppe zeigt;
+/// deren `satz` gilt zuerst, sonst die abgeleitete Zahl `ust` der Warengruppe. Nur die Sätze 20/13/10/0 sind erlaubt, alles andere wird 20.
+pub fn wg_satz_aus(row: &Value, typ: Option<&Value>) -> i64 {
+    fn zahl(v: &Value) -> Option<f64> {
+        match v {
+            Value::Number(n) => n.as_f64(),
+            Value::String(s) => s.trim().trim_end_matches('%').trim().replace(',', ".").parse().ok(),
+            _ => None,
+        }
+    }
+    match typ.and_then(|t| zahl(&t["satz"])).or_else(|| zahl(&row["ust"])) {
+        Some(x) if x.fract() == 0.0 && [20.0, 13.0, 10.0, 0.0].contains(&x) => x as i64,
+        _ => 20,
+    }
+}
+
+/// Steuersatz der Warengruppe `cat` für neu angelegte Artikel (Import, FEDAS, Demo): Zeile der Warengruppe → MwSt.-Typ (Kennung oder Name in der Tabelle
+/// „mwsttyp“) → Satz, sonst `ust`. Unbekannte Warengruppe oder unzulässiger Satz: 20. Bestehende Artikel werden damit nie angefasst.
+pub fn wg_satz(c: &Connection, cat: &str) -> i64 {
+    let zeile = |kind: &str, id: &str| -> Option<Value> {
+        let d: String = c.query_row("SELECT data FROM stamm WHERE kind = ?1 AND id = ?2", params![kind, id], |r| r.get(0)).optional().ok().flatten()?;
+        serde_json::from_str(&d).ok()
+    };
+    let Some(wg) = zeile("warengruppe", cat) else { return 20 };
+    let k = wg["mwsttyp"].as_str().map(str::trim).unwrap_or("");
+    let typ = if k.is_empty() {
+        None
+    } else {
+        zeile("mwsttyp", k).or_else(|| {
+            // Altzeile mit Klartext statt Kennung: nach dem Namen suchen
+            let mut st = c.prepare("SELECT data FROM stamm WHERE kind = 'mwsttyp'").ok()?;
+            let rows = st.query_map([], |r| r.get::<_, String>(0)).ok()?;
+            let treffer = rows.flatten().filter_map(|d| serde_json::from_str::<Value>(&d).ok()).find(|v| v["name"].as_str().is_some_and(|n| n.trim().eq_ignore_ascii_case(k)));
+            treffer
+        })
+    };
+    wg_satz_aus(&wg, typ.as_ref())
+}
+
 #[derive(Default, Clone, Debug)]
 pub struct Item {
     pub gtin: String,
@@ -401,9 +440,11 @@ pub fn apply_items(c: &mut Connection, items: Vec<Item>, preise: bool, user: &st
                 let cat = guess_category(&tx, det.get("fedas_code").and_then(|v| v.as_str()).unwrap_or(""), &format!("{} {}", name, det.get("kategorie_hersteller").and_then(|v| v.as_str()).unwrap_or("")));
                 let mut dv = Value::Object(det.clone());
                 dv["fedas_sync"] = json!(db::now());
+                // Satz aus dem Feed, sonst der der Warengruppe (MwSt.-Typ), sonst 20
+                let vat = first.vat.filter(|v| [0, 10, 13, 20].contains(v)).unwrap_or_else(|| wg_satz(&tx, &cat));
                 let a = catalog::Article {
                     id: id.clone(), name, brand: first.brand.clone(), category: cat, glyph: "shirt".into(), price, sale_price: None,
-                    vat: first.vat.filter(|v| [0, 10, 13, 20].contains(v)).unwrap_or(20), tag: None, popularity: 40, colors, sizes,
+                    vat, tag: None, popularity: 40, colors, sizes,
                     fields: json!({ "Quelle": "FEDAS" }), prompts: Value::Null, active: true, variants, cost: list.iter().find_map(|i| i.cost),
                     supplier_id: None, min_stock: 1, image: None, details: dv, media: vec![],
                 };
@@ -852,5 +893,60 @@ mod tests {
         let it = parse_items(&csv);
         assert_eq!((it.len(), it[0].price, it[0].size.as_str()), (1, Some(9995), "42"));
         assert_eq!(slug("Blau/Grün Ä"), "blau-grun-a");
+    }
+
+    #[test]
+    fn steuersatz_der_warengruppe() {
+        // Rechenkern: MwSt.-Typ vor ust, nur 20/13/10/0 erlaubt, alles andere 20
+        let typ = |s: Value| json!({ "name": "x", "satz": s });
+        for (row, t, want) in [
+            (json!({ "ust": 20 }), None, 20), (json!({ "ust": 10 }), None, 10), (json!({ "ust": 13 }), None, 13), (json!({ "ust": 0 }), None, 0),
+            (json!({ "ust": "10" }), None, 10), (json!({ "ust": "13,0" }), None, 13), (json!({ "ust": 10.0 }), None, 10),
+            (json!({ "ust": 10 }), Some(typ(json!(13))), 13),          // MwSt.-Typ geht vor ust
+            (json!({ "ust": 10 }), Some(typ(json!("0"))), 0),
+            (json!({ "ust": 10 }), Some(typ(Value::Null)), 10),        // Typ ohne Satz: ust
+            (json!({}), None, 20), (json!({ "ust": "" }), None, 20), (json!({ "ust": null }), None, 20),
+            (json!({ "ust": 19 }), None, 20), (json!({ "ust": 7.5 }), None, 20), (json!({ "ust": -10 }), None, 20), (json!({ "ust": "abc" }), None, 20),
+            (json!({ "ust": 10 }), Some(typ(json!(19))), 20),          // unzulässiger Satz im Typ: 20 (kein Rückgriff auf ust)
+        ] {
+            assert_eq!(wg_satz_aus(&row, t.as_ref()), want, "{row} / {t:?}");
+        }
+        // aus den Stammdaten: Kennung, Name (Altzeile), ust, unbekannt, fehlende Tabelle
+        let c = Connection::open_in_memory().unwrap();
+        assert_eq!(wg_satz(&c, "adv-1"), 20, "ohne Tabelle stamm");
+        db::migrate(&c).unwrap();
+        let put = |kind: &str, id: &str, d: Value| { c.execute("INSERT INTO stamm(kind, id, data, pos, active, updated_at) VALUES (?1, ?2, ?3, 0, 1, '2026-01-01')", params![kind, id, d.to_string()]).unwrap(); };
+        put("mwsttyp", "E", json!({ "name": "Ermäßigt 10", "satz": 10 }));
+        put("mwsttyp", "E13", json!({ "name": "Ermäßigt 13", "satz": 13 }));
+        put("mwsttyp", "F", json!({ "name": "Steuerfrei", "satz": 0 }));
+        put("warengruppe", "adv-1", json!({ "name": "A", "mwsttyp": "E", "ust": 20 }));          // Kennung (Typ vor ust)
+        put("warengruppe", "adv-2", json!({ "name": "B", "mwsttyp": "ermäßigt 13", "ust": 20 })); // Klartext statt Kennung (Name, Groß/Klein egal)
+        put("warengruppe", "adv-3", json!({ "name": "C", "mwsttyp": "", "ust": 0 }));             // kein Typ: ust
+        put("warengruppe", "adv-4", json!({ "name": "D", "mwsttyp": "gibt-es-nicht", "ust": 10 })); // Typ nicht auffindbar: ust
+        put("warengruppe", "adv-5", json!({ "name": "E" }));                                       // nichts gesetzt: 20
+        put("warengruppe", "adv-6", json!({ "name": "F", "mwsttyp": "F" }));
+        put("warengruppe", "adv-7", json!({ "name": "G", "ust": 19 }));
+        for (id, want) in [("adv-1", 10), ("adv-2", 13), ("adv-3", 0), ("adv-4", 10), ("adv-5", 20), ("adv-6", 0), ("adv-7", 20), ("acc", 20), ("", 20)] {
+            assert_eq!(wg_satz(&c, id), want, "{id}");
+        }
+    }
+
+    #[test]
+    fn neuer_fedas_artikel_nimmt_den_satz_der_warengruppe() {
+        let mut c = Connection::open_in_memory().unwrap();
+        db::migrate(&c).unwrap();
+        // „Jacke“ landet in der Warengruppe „jacken“; diese hat den MwSt.-Typ „Ermäßigt 10“
+        c.execute("INSERT INTO stamm(kind, id, data, pos, active, updated_at) VALUES ('mwsttyp', 'E', ?1, 0, 1, '2026-01-01')", [json!({ "name": "Ermäßigt", "satz": 10 }).to_string()]).unwrap();
+        c.execute("INSERT INTO stamm(kind, id, data, pos, active, updated_at) VALUES ('warengruppe', 'jacken', ?1, 0, 1, '2026-01-01')", [json!({ "name": "Jacken", "mwsttyp": "E", "ust": 10 }).to_string()]).unwrap();
+        let v = json!({ "items": [
+            { "ItemNumber": "J1", "Name": "Alpha Jacke", "Brand": "Nordwand", "RetailPrice": "299,90", "Variants": [ { "EAN": "4000000000011", "Colour": "Schwarz", "Size": "M" } ] },
+            { "ItemNumber": "J2", "Name": "Beta Jacke", "Brand": "Nordwand", "RetailPrice": "199,90", "VatRate": "13", "Variants": [ { "EAN": "4000000000028", "Colour": "Rot", "Size": "M" } ] },
+            { "ItemNumber": "H1", "Name": "Gamma Hose", "Brand": "Nordwand", "RetailPrice": "99,90", "Variants": [ { "EAN": "4000000000035", "Colour": "Blau", "Size": "M" } ] } ]});
+        let st = apply_items(&mut c, parse_items(&v), true, "t").unwrap();
+        assert_eq!(st.neu, 3);
+        let vat = |nr: &str| -> i64 { c.query_row("SELECT vat FROM articles WHERE name LIKE ?1", [format!("%{nr}%")], |r| r.get(0)).unwrap() };
+        assert_eq!(vat("Alpha"), 10, "Satz der Warengruppe");
+        assert_eq!(vat("Beta"), 13, "Satz aus dem Feed geht vor");
+        assert_eq!(vat("Gamma"), 20, "Warengruppe ohne Eintrag: 20");
     }
 }

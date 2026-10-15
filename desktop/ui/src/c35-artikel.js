@@ -61,11 +61,11 @@ async function renderArtInfo(id, mode, title) {
 
 /* ── Bestandsinfo ── */
 const BI = {cat: 'alle', f: 'alle', q: ''};
-registerPage('bestandsinfo', {title: 'Bestandsinfo', sub: () => `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück`, render: renderBestandsinfo});
+registerPage('bestandsinfo', {title: 'Bestandsinfo', sub: () => `${num(ART.reduce((s, a) => s + (wgService(a.cat) ? 0 : a.stock), 0))} Stück`, render: renderBestandsinfo});
 function renderBestandsinfo() {
   const v = $('#view-bestandsinfo'), n = norm(BI.q);
-  const rows = ART.filter(a => (BI.cat === 'alle' || a.cat === BI.cat) && (!n || a.hay.includes(n))).map(a => ({a, st: a.variants.reduce((s, x) => s + x.q, 0), neg: a.variants.filter(x => x.q < 0).length, low: a.variants.filter(x => x.q <= (a.minStock ?? 2)).length}))
-    .filter(r => BI.f === 'alle' || (BI.f === 'leer' && r.a.variants.some(x => x.q <= 0)) || (BI.f === 'min' && r.low) || (BI.f === 'neg' && r.neg));
+  const rows = ART.filter(a => (BI.cat === 'alle' || a.cat === BI.cat) && (!n || a.hay.includes(n))).map(a => { const svc = wgService(a.cat); return {a, svc, st: svc ? 0 : a.variants.reduce((s, x) => s + x.q, 0), neg: svc ? 0 : a.variants.filter(x => x.q < 0).length, low: svc ? 0 : a.variants.filter(x => x.q <= (a.minStock ?? 2)).length}; })   // Service-Warengruppen: keine Warnungen
+    .filter(r => BI.f === 'alle' || (BI.f === 'leer' && !r.svc && r.a.variants.some(x => x.q <= 0)) || (BI.f === 'min' && r.low) || (BI.f === 'neg' && r.neg));
   const ek = rows.reduce((s, r) => s + r.st * (r.a.cost || 0), 0), vk = rows.reduce((s, r) => s + r.st * (r.a.sale || r.a.price), 0);
   const byCat = {}; rows.forEach(r => { (byCat[r.a.cat] ||= {st: 0, ek: 0}); byCat[r.a.cat].st += r.st; byCat[r.a.cat].ek += r.st * (r.a.cost || 0); });
   v.innerHTML = `<div class="cv">${pageHead('Bestandsinfo', 'Bestand und Lagerwert je Artikel und Warengruppe – Klick öffnet die Artikelinfo')}
@@ -239,7 +239,7 @@ DK.preis = {t: 'Preisänderungen', one: 'Preisänderung', ic: 'tag', page: 'prei
   head: [{k: 'date', l: 'Gültig ab', t: 'date'}, {k: 'data.grund', l: 'Grund', t: 'select', o: ['Preisanpassung Lieferant', 'Saisonwechsel', 'Abverkauf', 'Wettbewerb', 'Sonstiges']}],
   acts: {geplant: [['durchfuehren', 'Jetzt durchführen', 'primary', {confirm: 'Preise jetzt ändern?'}], ['stornieren', 'Verwerfen', 'danger']]}};
 DOC_EDIT.preis = ['geplant'];
-DOC_AFTER.preis = {durchfuehren: async st => { await reloadArt(); toast('Preise geändert', {t2: `${st.data.lines.length} Artikel – Etiketten drucken?`, icon: 'tag', action: {label: 'Etiketten', run: () => openLabels(st.data.lines.map(l => artById(l.sku)).filter(Boolean).flatMap(a => a.variants.filter(v => v.q > 0).map(v => ({a, v, n: v.q}))))}}); }};
+DOC_AFTER.preis = {durchfuehren: async st => { await reloadArt(); toast('Preise geändert', {t2: `${st.data.lines.length} Artikel – Etiketten drucken?`, icon: 'tag', action: {label: 'Etiketten', run: () => openLabels(lblPreisPos(st.data.lines))}}); }};
 docPage('preis-uebersicht', 'preis', {title: 'Übersicht Preisänderungen', tabs: [['alle', 'Alle', () => true], ['durch', 'Durchgeführt', s => s === 'durchgefuehrt']], defTab: 'alle', noNew: true, actions: `<button class="btn btn-primary" data-goto="preisaenderung">${ic('plus', 'i-sm')}Preisänderung</button>`,
   cols: [{l: 'Gültig ab', f: d => esc(dDate(d.date))}, {l: 'Artikel', r: true, f: d => num((d.data.lines || []).length)}, {l: 'Grund', f: d => esc(d.data.grund || '')}]});
 docPage('preis-geplant', 'preis', {title: 'Geplante Preisänderungen', tabs: [['geplant', 'Geplant', s => s === 'geplant']], defTab: 'geplant', noNew: true, actions: `<button class="btn btn-primary" data-goto="preisaenderung">${ic('plus', 'i-sm')}Preisänderung</button>`,
@@ -265,7 +265,7 @@ async function preisGo() {
   try { await needPerm('artikel.bearbeiten', 'Preisänderung'); } catch { return; }
   try {
     const d = await invoke('doc_save', {doc: {kind: 'preis', partner_name: 'Preisänderung', date: PC.ab || today(), data: {lines, grund: PC.grund, modus: PC.modus, wert: PC.wert}}, user: S.user.name});
-    if (!PC.ab || PC.ab <= today()) { await invoke('doc_action', {id: d.id, action: 'durchfuehren', payload: {}, user: S.user.name}); await reloadArt(); toast('Preise geändert', {t2: `${lines.length} Artikel · ${d.no}`, type: 'pos', icon: 'tag', action: {label: 'Etiketten', run: () => openLabels(lines.map(l => artById(l.sku)).filter(Boolean).flatMap(a => a.variants.filter(v => v.q > 0).map(v => ({a, v, n: v.q}))))}}); }
+    if (!PC.ab || PC.ab <= today()) { await invoke('doc_action', {id: d.id, action: 'durchfuehren', payload: {}, user: S.user.name}); await reloadArt(); toast('Preise geändert', {t2: `${lines.length} Artikel · ${d.no}`, type: 'pos', icon: 'tag', action: {label: 'Etiketten', run: () => openLabels(lblPreisPos(lines))}}); }
     else toast('Preisänderung geplant', {t2: `${lines.length} Artikel ab ${dDate(PC.ab)} · ${d.no}`, type: 'pos', icon: 'clock'});
     Hooks.emit('pricing.change', {nr: d.no, artikel: lines.length, ab: PC.ab || today()}); PC.sel.clear(); renderPreisAend();
   } catch (e) { toast('Nicht möglich', {t2: String(e), type: 'warn'}); }
@@ -374,7 +374,7 @@ function bindArtikel() {
     const k = e.target.closest('[data-apk]'); if (k) { const p = k.closest('[style*="position:relative"]').querySelector('[data-apq]').dataset.apq, st = pickers[p]; if (st === MA) { const a = artById(k.dataset.apk); a.fields = {...a.fields, Master: 'ja'}; await artSave(a); MA.q = ''; return PAGES['master-artikel'].render(); } st.sel = k.dataset.apk; st.q = ''; return PAGES[S.view].render(); }
     const ao = e.target.closest('[data-aiopen]'); if (ao) { AIF.sel = ao.dataset.aiopen; return go('artikelinfo'); }
     const ed = e.target.closest('[data-aied]'); if (ed) return openEditor(artById(ed.dataset.aied));
-    const lb = e.target.closest('[data-ailbl]'); if (lb) { const a = artById(lb.dataset.ailbl); return openLabels(a.variants.filter(v => v.q > 0).map(v => ({a, v, n: v.q}))); }
+    const lb = e.target.closest('[data-ailbl]'); if (lb) { const a = artById(lb.dataset.ailbl); return openLabels(a.variants.filter(v => v.q > 0).map(v => lblPos(a, v, v.q))); }
     // Umlagerungen
     if (e.target.closest('[data-ulnew]')) return openTransferNew();
     const ts = e.target.closest('[data-tst2]'); if (ts) { await transferStatus(ts.dataset.no, ts.dataset.tst2); return PAGES[S.view].render(); }

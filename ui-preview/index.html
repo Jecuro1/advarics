@@ -1738,7 +1738,7 @@ button.ge-caret:hover{background:var(--surface-3);color:var(--text)}
 .ea-cmb-row.rf{gap:4px}
 .ea-cmb-row.rf .ea-ib{width:30px;height:34px;border-radius:8px}
 .ea-cmb-row .ea-unit{flex:none;font-size:13px;color:var(--text-3);min-width:22px}
-.ea-cmb-row>.input{flex:1;min-width:0}
+.wg-grid .ea-cmb-row>.input{flex:1;min-width:0}
 .field.rq-miss>span::after{content:'';display:inline-block;width:7px;height:7px;margin-left:6px;border-radius:50%;background:var(--neg);vertical-align:middle}
 .wg-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
 .wg-grid>.ea-card{max-width:none;flex:none;min-width:0;padding:16px 14px;gap:14px}
@@ -2408,7 +2408,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.45.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.46.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -3915,8 +3915,8 @@ function filtered() {
   return ART.filter(a => toks.every(t => a.hay.includes(t)) || a.variants.some(v => v.ean.startsWith(q)));
 }
 function tileHTML(a, i) {
-  const c = COLORS[a.colors[0]][1], st = a.stock;
-  const [cls, txt] = st <= 0 ? ['out', 'Ausverkauft'] : st <= 6 ? ['low', `Nur ${st}`] : ['ok', `${st} lagernd`];
+  const c = COLORS[a.colors[0]][1], svc = wgService(a.cat), st = svc ? 1 : a.stock;   // Service-Warengruppe: Dienstleistung, nie ausverkauft
+  const [cls, txt] = svc ? ['ok', 'Dienstleistung'] : st <= 0 ? ['out', 'Ausverkauft'] : st <= 6 ? ['low', `Nur ${st}`] : ['ok', `${st} lagernd`];
   const badge = a.sale ? `<span class="tb sale">−${discOf(a)} %</span>` : a.tag ? `<span class="tb new">${a.tag}</span>` : '<span></span>';
   const sw = a.colors.length > 1 ? `<span class="swatches">${a.colors.slice(0, 4).map(k => `<i style="background:${COLORS[k][1]}"></i>`).join('')}</span>` : '';
   return `<button class="tile ${st <= 0 ? 'out' : ''}" data-id="${a.id}" role="listitem" style="--c:${c};animation-delay:${Math.min(i, 18) * 22}ms" aria-label="${esc(a.name)}, ${esc(eur(a.sale || a.price))}, ${txt}">
@@ -4006,7 +4006,7 @@ function fly(fromEl, color) {
 function openArticle(a, fromEl, preset) {
   if (a.variants.length === 1 && !(a.prompts && POS.flow.prompts)) {
     const v = a.variants[0];
-    if (v.q <= 0) return openVariant(a, fromEl);
+    if (v.q <= 0 && !wgService(a.cat)) return openVariant(a, fromEl);
     return addLine(a, v.c, v.s, 1, null, fromEl);
   }
   openVariant(a, fromEl, preset);
@@ -4079,7 +4079,7 @@ function handleEnter() {
 
 /* ── Variantenwahl ── */
 function openVariant(a, fromEl, preset) {
-  const oneSize = a.sizes.length === 1;
+  const oneSize = a.sizes.length === 1, svc = wgService(a.cat);   // Service-Warengruppe: ohne Bestand verkäuflich
   const firstAvail = c => (a.variants.find(v => v.c === c && v.q > 0) || a.variants.find(v => v.c === c)).s;
   const st = {c: preset?.c || (a.variants.find(v => v.q > 0) || a.variants[0]).c, s: preset?.s, qty: 1, vals: {}};
   st.s = st.s || firstAvail(st.c);
@@ -4093,20 +4093,20 @@ function openVariant(a, fromEl, preset) {
         <div style="display:flex;align-items:flex-start;gap:8px"><div style="flex:1;min-width:0"><div class="vp-brand">${esc(a.brand)} · ${a.id}</div><div class="vp-name">${esc(a.name)}</div></div><button class="btn btn-ghost btn-icon btn-sm" data-close aria-label="Schließen">${ic('x')}</button></div>
         <div class="vp-price">${eur(price)}${a.sale ? `<s>${eur(a.price)}</s>` : ''}</div>
         ${a.colors.length > 1 ? `<div class="vp-sec"><div class="lab">Farbe <span>${COLORS[st.c][0]} · <span class="kbd">↑</span><span class="kbd">↓</span></span></div><div class="colors">${a.colors.map(k => `<button class="cbtn" data-c="${k}" aria-pressed="${k === st.c}" style="--sw:${COLORS[k][1]}"><i></i>${COLORS[k][0]}</button>`).join('')}</div></div>` : ''}
-        ${!oneSize ? `<div class="vp-sec"><div class="lab">Größe <span>Bestand Innsbruck · <span class="kbd">←</span><span class="kbd">→</span></span></div><div class="sizes">${a.sizes.map(s => { const x = variant(a, st.c, s); return `<button class="sbtn ${x.q <= 0 ? 'so' : ''}" data-s="${esc(s)}" aria-pressed="${s === st.s}"><span class="sz">${esc(s)}</span><small class="${x.q > 0 && x.q <= 2 ? 'low' : ''}">${x.q <= 0 ? 'ausverkauft' : x.q + ' Stk.'}</small></button>`; }).join('')}</div></div>` : ''}
-        <div class="elsewhere">${ic('store', 'i-xs')}${v.other ? `${oneSize ? `${esc(storeObj().name)} <b style="color:var(--text);margin:0 4px">${v.q}</b> ·` : `Gr. ${esc(st.s)} in`} anderen Filialen: ${OTHER_STORES.map((s, i) => `<span>${s.name} <b>${v.other[i]}</b></span>`).join('')}` : `Bestand hier: <b style="color:var(--text);margin:0 4px">${v.q}</b> · EAN ${esc(v.ean)} · ${DESKTOP ? 'Einzelplatz · Filialverbund unter Einstellungen' : 'andere Filialen sichtbar, sobald der Filial-Server verbunden ist'}`}</div>
+        ${!oneSize ? `<div class="vp-sec"><div class="lab">Größe <span>Bestand Innsbruck · <span class="kbd">←</span><span class="kbd">→</span></span></div><div class="sizes">${a.sizes.map(s => { const x = variant(a, st.c, s); return `<button class="sbtn ${x.q <= 0 && !svc ? 'so' : ''}" data-s="${esc(s)}" aria-pressed="${s === st.s}"><span class="sz">${esc(s)}</span><small class="${!svc && x.q > 0 && x.q <= 2 ? 'low' : ''}">${svc ? 'Dienstleistung' : x.q <= 0 ? 'ausverkauft' : x.q + ' Stk.'}</small></button>`; }).join('')}</div></div>` : ''}
+        <div class="elsewhere">${ic('store', 'i-xs')}${svc ? `Service-Warengruppe „${esc(wgNm('warengruppe', a.cat))}“: Dienstleistung ohne Bestand · EAN ${esc(v.ean)}` : v.other ? `${oneSize ? `${esc(storeObj().name)} <b style="color:var(--text);margin:0 4px">${v.q}</b> ·` : `Gr. ${esc(st.s)} in`} anderen Filialen: ${OTHER_STORES.map((s, i) => `<span>${s.name} <b>${v.other[i]}</b></span>`).join('')}` : `Bestand hier: <b style="color:var(--text);margin:0 4px">${v.q}</b> · EAN ${esc(v.ean)} · ${DESKTOP ? 'Einzelplatz · Filialverbund unter Einstellungen' : 'andere Filialen sichtbar, sobald der Filial-Server verbunden ist'}`}</div>
         ${prompts ? `<div class="vp-sec"><div class="lab">Kassenablauf „Skiverkauf“ <span>benutzerdefinierte Felder</span></div><div class="prompts">${prompts.map(p => `<label class="field"><span>${esc(p.label)}${p.req ? ' <b class="req">*</b>' : ''}</span><input class="input" data-p="${p.key}" placeholder="${esc(p.ph)}" value="${esc(st.vals[p.key] || '')}" ${p.type === 'number' ? 'inputmode="decimal"' : ''}></label>`).join('')}</div><div class="prompt-hint">${ic('flow', 'i-xs')}Pflichtfelder je Warengruppe – im Kassenablauf konfiguriert, ohne Code.</div></div>` : ''}
         <div class="vp-foot">
           <div class="qty" style="height:48px;border-radius:12px"><button data-q="-1" style="width:44px;height:46px" aria-label="Menge verringern">${ic('minus', 'i-sm')}</button><span style="min-width:28px;font-size:15px">${st.qty}</span><button data-q="1" style="width:44px;height:46px" aria-label="Menge erhöhen">${ic('plus', 'i-sm')}</button></div>
-          ${v.q <= 0 ? `<button class="btn btn-secondary" id="vpAdd" style="flex:1;height:48px;border-radius:12px" data-transfer>${ic('swap', 'i-sm')}Umlagerung anfragen</button>` : `<button class="btn btn-primary" id="vpAdd">Hinzufügen · ${eur(price * st.qty)}<span class="kbd">↵</span></button>`}
+          ${v.q <= 0 && !svc ? `<button class="btn btn-secondary" id="vpAdd" style="flex:1;height:48px;border-radius:12px" data-transfer>${ic('swap', 'i-sm')}Umlagerung anfragen</button>` : `<button class="btn btn-primary" id="vpAdd">Hinzufügen · ${eur(price * st.qty)}<span class="kbd">↵</span></button>`}
         </div>
       </div>`;
     const f = focusSel && $(focusSel, box); (f || $('#vpAdd', box)).focus({preventScroll: true});
   };
   const add = () => {
     const v = variant(a, st.c, st.s);
-    if (v.q <= 0 && !v.other) { closeLayer(el); toast('Nicht lagernd', {t2: DESKTOP ? 'Bestand unter „Bestand“ oder „Wareneingang“ buchen' : 'Umlagerungen zwischen Filialen folgen mit dem Filial-Server · Bestand unter „Bestand“ buchen', type: 'warn', icon: 'boxes'}); return; }
-    if (v.q <= 0) { const best = OTHER_STORES.map((s, i) => [s, v.other[i]]).sort((x, y) => y[1] - x[1])[0]; closeLayer(el); if (DESKTOP) { if (best && best[1] > 0) requestTransfer(a, v, best[0].id); else toast('Nirgends lagernd', {t2: 'Auch in den anderen Filialen kein Bestand', type: 'warn', icon: 'boxes'}); return; } toast('Umlagerung angefragt', {t2: `${a.name} · ${COLORS[st.c][0]} ${st.s} · ${best[0].name} → Innsbruck`, type: 'pos', icon: 'swap'}); Hooks.emit('inventory.transfer.requested', {sku: a.id, von: best[0].id, nach: 'INN', menge: 1}); return; }
+    if (v.q <= 0 && !svc && !v.other) { closeLayer(el); toast('Nicht lagernd', {t2: DESKTOP ? 'Bestand unter „Bestand“ oder „Wareneingang“ buchen' : 'Umlagerungen zwischen Filialen folgen mit dem Filial-Server · Bestand unter „Bestand“ buchen', type: 'warn', icon: 'boxes'}); return; }
+    if (v.q <= 0 && !svc) { const best = OTHER_STORES.map((s, i) => [s, v.other[i]]).sort((x, y) => y[1] - x[1])[0]; closeLayer(el); if (DESKTOP) { if (best && best[1] > 0) requestTransfer(a, v, best[0].id); else toast('Nirgends lagernd', {t2: 'Auch in den anderen Filialen kein Bestand', type: 'warn', icon: 'boxes'}); return; } toast('Umlagerung angefragt', {t2: `${a.name} · ${COLORS[st.c][0]} ${st.s} · ${best[0].name} → Innsbruck`, type: 'pos', icon: 'swap'}); Hooks.emit('inventory.transfer.requested', {sku: a.id, von: best[0].id, nach: 'INN', menge: 1}); return; }
     if (prompts) {
       $$('[data-p]', box).forEach(i => { st.vals[i.dataset.p] = i.value.trim(); });
       const miss = prompts.find(p => p.req && !st.vals[p.key]);
@@ -4116,7 +4116,7 @@ function openVariant(a, fromEl, preset) {
   };
   box.addEventListener('click', e => {
     const c = e.target.closest('[data-c]'), s = e.target.closest('[data-s]'), q = e.target.closest('[data-q]');
-    if (c) { st.c = c.dataset.c; if (variant(a, st.c, st.s).q === 0) st.s = firstAvail(st.c); render(`[data-c="${st.c}"]`); }
+    if (c) { st.c = c.dataset.c; if (variant(a, st.c, st.s).q === 0 && !svc) st.s = firstAvail(st.c); /* Service: ohne Bestand verkäuflich, die gewählte Größe bleibt */ render(`[data-c="${st.c}"]`); }
     else if (s) { st.s = s.dataset.s; render(`[data-s="${CSS.escape(st.s)}"]`); }
     else if (q) { st.qty = clamp(st.qty + +q.dataset.q, 1, 99); render(`[data-q="${q.dataset.q}"]`); }
     else if (e.target.closest('#vpAdd')) add();
@@ -4998,17 +4998,17 @@ function recData(rec) {
   return {date: rec.date.toISOString(), cashier: rec.cashier, offline: rec.offline, sig: rec.sig, change: rec.change, billDisc: rec.billDisc || null, t: rec.t,
     parts: rec.parts.map(p => ({m: p.m, label: p.label, amount: p.amount, ref: p.ref, given: p.given || null, change: p.change || 0, code: p.code || null})),
     customer: rec.customer ? {id: rec.customer.id, name: rec.customer.name, points: rec.customer.points, email: rec.customer.email} : null,
-    lines: rec.lines.map(l => ({name: l.name, sku: l.art?.id || null, ean: l.art && l.art.variants ? variant(l.art, l.c, l.s)?.ean || null : null, glyph: l.art?.g || null, c: l.c || null, s: l.s || null, qty: l.qty, unit: l.unit, was: l.was || null, vat: l.vat, disc: l.disc || null, service: !!l.service, voucher: !!l.voucher, icon: l.icon || null, meta: l.meta || null, vals: l.vals || null, ...(l.art && rabattGesperrt(l.art) ? {nodisc: true} : {})}))};
+    lines: rec.lines.map(l => ({name: l.name, sku: l.art?.id || null, ean: l.art && l.art.variants ? variant(l.art, l.c, l.s)?.ean || null : null, glyph: l.art?.g || null, c: l.c || null, s: l.s || null, qty: l.qty, unit: l.unit, was: l.was || null, vat: l.vat, disc: l.disc || null, service: !!l.service, voucher: !!l.voucher, icon: l.icon || null, meta: l.meta || null, vals: l.vals || null, ...(l.art && rabattGesperrt(l.art) ? {nodisc: true} : {}), ...(l.art && wgService(l.art.cat) ? {nostock: true} : {})}))};
 }
 const recFromData = (no, d) => ({...d, no, date: new Date(d.date), lines: d.lines.map(l => ({...l, art: l.sku ? (artById(l.sku) || {g: l.glyph, id: l.sku}) : null}))});
 async function commitSale(rec) {
   const data = recData(rec);
   if (!DESKTOP) {
-    rec.lines.forEach(l => { if (l.art) { const v = variant(l.art, l.c, l.s); v.q -= l.qty; finishArt(l.art); } });
+    rec.lines.forEach(l => { if (l.art && !wgService(l.art.cat)) { const v = variant(l.art, l.c, l.s); v.q -= l.qty; finishArt(l.art); } });
     MEM.sales.unshift({no: rec.no, ts: new Date().toISOString(), total: Math.round(rec.t.total * 100), cashier: rec.cashier, data});
     return null;
   }
-  const lines = rec.lines.filter(l => l.art).map(l => ({ean: variant(l.art, l.c, l.s).ean, qty: l.qty}));
+  const lines = rec.lines.filter(l => l.art && !wgService(l.art.cat)).map(l => ({ean: variant(l.art, l.c, l.s).ean, qty: l.qty}));   // Service-Warengruppe: kein Bestand
   const r = await invoke('sale_commit', {lines, total: Math.round(rec.t.total * 100), cashier: S.user.name, customer: rec.customer?.id || null, data});
   r.stocks.forEach(({ean, stock}) => { for (const a of ART) { const v = a.variants.find(x => x.ean === ean); if (v) { v.q = stock; finishArt(a); } } });
   return r;
@@ -5106,7 +5106,7 @@ function openEditor(a) {
     if (t.closest('#edSki')) { st.ski = !st.ski; $('#edSki', el).setAttribute('aria-checked', st.ski); return; }
     if (t.closest('#edImg')) { collect(); try { const n = await invoke('article_image_pick', {id: a.id}); if (n) { a.image = n; render(); renderArtTable(); toast('Bild übernommen', {t2: a.name, type: 'pos', icon: 'check'}); } } catch (err) { toast('Bild nicht übernommen', {t2: String(err), type: 'warn'}); } return; }
     if (t.closest('#edImgRm')) { collect(); try { await invoke('article_image_remove', {id: a.id}); a.image = null; render(); renderArtTable(); } catch (err) { toast('Fehler', {t2: String(err), type: 'warn'}); } return; }
-    if (t.closest('#edLbl')) return openLabels(a.variants.map(v => ({a, v, n: 1})));
+    if (t.closest('#edLbl')) return openLabels(a.variants.map(v => lblPos(a, v, 1)));
     if (t.closest('#edDel')) {
       try { await stepUp({title: 'Artikel deaktivieren', text: `${a.name} wird aus Kasse und Liste entfernt. Belege und Historie bleiben erhalten.`}); } catch { return; }
       if (DESKTOP) { try { await invoke('article_delete', {id: a.id, user: S.user.name}); } catch (err) { return toast('Fehler', {t2: String(err), type: 'warn'}); } }
@@ -5149,7 +5149,7 @@ function openEditor(a) {
 const INV = {q: '', f: 'alle'};
 function renderBestand() {
   const v = $('#view-bestand');
-  const vars = ART.flatMap(a => a.variants.map(x => ({a, v: x})));
+  const vars = ART.filter(a => !wgService(a.cat)).flatMap(a => a.variants.map(x => ({a, v: x})));   // Service-Warengruppen führen keinen Bestand
   const pieces = vars.reduce((s, x) => s + Math.max(0, x.v.q), 0), value = vars.reduce((s, x) => s + Math.max(0, x.v.q) * (x.a.sale || x.a.price), 0);
   const low = vars.filter(x => x.v.q > 0 && x.v.q <= 2).length, out = vars.filter(x => x.v.q <= 0).length;
   v.innerHTML = `<div class="cv">
@@ -5164,7 +5164,7 @@ function renderBestand() {
 }
 function renderInvList() {
   const toks = norm(INV.q.trim()).split(/\s+/).filter(Boolean);
-  const list = ART.filter(a => toks.every(t => a.hay.includes(t)) && (INV.f === 'alle' || a.variants.some(x => INV.f === 'aus' ? x.q <= 0 : x.q > 0 && x.q <= 2)));
+  const list = ART.filter(a => toks.every(t => a.hay.includes(t)) && (INV.f === 'alle' ? true : !wgService(a.cat) && a.variants.some(x => INV.f === 'aus' ? x.q <= 0 : x.q > 0 && x.q <= 2)));
   $('#invList').innerHTML = list.length ? list.map(a => {
     const c = COLORS[a.colors[0]]?.[1] || '#888';
     return `<div class="card inv-card" data-inv="${esc(a.id)}"><div class="inv-h"><span class="thumb" style="--c:${c}">${artVisual(a, c)}</span><div style="flex:1;min-width:0"><div style="font-weight:600">${esc(a.name)}</div><div class="muted" style="font-size:12px">${esc(a.brand)} · ${esc(a.id)} · ${eur(a.sale || a.price)}</div></div><span class="stock ${a.stock <= 0 ? 'out' : a.stock <= 6 ? 'low' : 'ok'}"><span class="dot"></span>${num(a.stock)} Stk.</span><button class="btn btn-ghost btn-sm btn-icon" data-lbl="${esc(a.id)}" data-tip="Etiketten (Anzahl = Bestand)" aria-label="Etiketten">${ic('tag', 'i-sm')}</button></div>
@@ -5223,7 +5223,7 @@ function bindCatalog() {
   const bv = $('#view-bestand');
   bv.addEventListener('input', e => { if (e.target.id === 'invQ') { INV.q = e.target.value; renderInvList(); } });
   bv.addEventListener('click', e => {
-    const lb = e.target.closest('[data-lbl]'); if (lb) { const a = artById(lb.dataset.lbl); return openLabels(a.variants.map(v => ({a, v, n: Math.max(0, v.q)}))); }
+    const lb = e.target.closest('[data-lbl]'); if (lb) { const a = artById(lb.dataset.lbl); return openLabels(a.variants.map(v => lblPos(a, v, Math.max(0, v.q)))); }
     const cell = e.target.closest('[data-vk]'); if (!cell) return;
     for (const a of ART) { const v = a.variants.find(x => x.ean === cell.dataset.vk); if (v) return openBooking(a, v); }
   });
@@ -6404,7 +6404,7 @@ function realHeatHTML() {
 }
 function realLowRows() {
   const sold = {}; (ST.d28?.items || []).forEach(i => { sold[i.sku] = i.qty; });
-  return ART.flatMap(a => a.variants.filter(v => v.q <= 2).map(v => ({a, v, s: sold[a.id] || 0})))
+  return ART.filter(a => !wgService(a.cat)).flatMap(a => a.variants.filter(v => v.q <= 2).map(v => ({a, v, s: sold[a.id] || 0})))   // Dienstleistungen haben keinen Bestand
     .sort((x, y) => (y.s - x.s) || (x.v.q - y.v.q) || (y.a.pop || 0) - (x.a.pop || 0));
 }
 function realLowHTML(it) {
@@ -7105,7 +7105,7 @@ function openReceive(head, lines) {
     if (!items.length) return toast('Keine Menge erfasst', {type: 'warn'});
     let r; try { r = await invoke('po_receive', {id: head.id, items, user: S.user.name}); } catch (e) { return toast('Wareneingang fehlgeschlagen', {t2: String(e), type: 'warn', dur: 7000}); }
     applyStocks(r); await loadPurchasing(); closeLayer(el);
-    toast('Wareneingang gebucht', {t2: `${head.no} · ${items.reduce((s, x) => s + x.qty, 0)} Stück`, type: 'pos', icon: 'boxes', dur: 8000, action: {label: 'Etiketten', run: () => openLabels(items.map(x => { const l = lines.find(y => y.id === x.line_id), vv = varById(l.variant_id); return vv ? {a: vv.a, v: vv.v, n: x.qty} : null; }).filter(Boolean))}});
+    toast('Wareneingang gebucht', {t2: `${head.no} · ${items.reduce((s, x) => s + x.qty, 0)} Stück`, type: 'pos', icon: 'boxes', dur: 8000, action: {label: 'Etiketten', run: () => openLabels(items.map(x => { const l = lines.find(y => y.id === x.line_id), vv = varById(l.variant_id); return vv ? lblPos(vv.a, vv.v, x.qty) : null; }).filter(Boolean))}});
     Hooks.emit('purchasing.goods.received', {bestellung: head.no, stueck: items.reduce((s, x) => s + x.qty, 0)});
     if (S.view === 'einkauf') renderEinkauf();
   };
@@ -7368,7 +7368,64 @@ function ean13SVG(code, h = 30) {
 
 /* ── Etiketten ── */
 const LABEL_FORMATS = {'3x8': {cols: 3, rows: 8, w: 70, h: 37, name: 'A4 · 3 × 8 (70 × 37 mm)'}, '2x7': {cols: 2, rows: 7, w: 99.1, h: 38.1, name: 'A4 · 2 × 7 (99 × 38 mm)'}, '4x10': {cols: 4, rows: 10, w: 48.5, h: 25.4, name: 'A4 · 4 × 10 (48 × 25 mm)'}};
-function labelData(a, v) { return {name: a.name, brand: a.brand, variant: `${colorName(v.c)}${v.s !== 'Einheitsgröße' ? ' · ' + v.s : ''}`, ean: v.ean, price: a.sale || a.price, was: a.sale ? a.price : null, sku: a.id}; }
+/* ── Etiketten und Warengruppe ──────────────────────────────────────────────
+   Die Warengruppe des Artikels (wgRaw(a.cat)) steuert den Etikettendruck:
+   • etikett = Zeile der Tabelle „etikettentyp“: Größe (mm, 203 dpi) und Inhalt (Marke, Name, Farbe, Größe, Preis, EAN).
+     Fehlt der Typ, ist er unbekannt oder gelöscht: 50 × 30 mm mit allen Feldern (wie bisher).
+   • etikett2 = Typ für reduzierte Ware (Aktions-/Sale-Preis aktiv oder Preis gesenkt) – ersetzt den Typ; leer (oder gleich etikett) = Typ bleibt.
+     Ohne gültigen Typ2 druckt das Programm wie bisher: nur ein Aktionspreis (a.sale) bringt einen Altpreis; der Altpreis aus einer Preisänderung
+     (lblPreisPos/alt) und die Markierung „reduziert“ aus einer Preissenkung gelten nur mit Typ2.
+   • Gedruckt wird nach Etikettengröße (Breite × Höhe in mm): gleich große Typen teilen sich Druckauftrag und Rolle, die Felder richten sich nach dem Typ des einzelnen Etiketts.
+   • anz_etiketten = Etiketten je Stück bei automatisch vorgeschlagenen Mengen (fehlt = 1; 0 = keine automatischen Etiketten).
+   • hierarchie = Zeile der Tabelle „wghierarchie“: die gewählten Ebenen der Warengruppe als zusätzliche Textzeile.
+   Die Aufrufer von openLabels geben bei automatischen Mengen lblPos(a, v, menge) mit; manuelle Mengen gehen unverändert durch. */
+const LBL_ALLE = {Marke: 1, Name: 1, Farbe: 1, 'Größe': 1, Preis: 1, EAN: 1};
+const LBL_STD = {id: '', name: 'Standard 50×30', b: 50, h: 30, f: LBL_ALLE, std: true};
+const LBL_FELDMAP = {marke: 'Marke', name: 'Name', farbe: 'Farbe', grosse: 'Größe', preis: 'Preis', ean: 'EAN'};
+const lblFeldKey = s => norm(s).replace(/ß/g, 'ss').replace(/oe/g, 'o').replace(/[^a-z]/g, '');
+const lblMass = t => `${String(t.b).replace('.', ',')} × ${String(t.h).replace('.', ',')} mm`;
+/** Etiketten-Typ (Kennung oder Name) → {id, name, b, h, f} oder null (unbekannt/gelöscht); ungültige Maße und leere Inhaltslisten fallen auf 50 × 30 bzw. alle Felder zurück */
+function lblTyp(wert) {
+  const id = wgKey('etikettentyp', wert), r = id ? stRows('etikettentyp').find(x => String(x.id) === String(id)) : null;
+  if (!r) return null;
+  const mm = (v, d, lo, hi) => { v = parseFloat(String(v ?? '').replace(',', '.')); return v >= lo && v <= hi ? v : d; };
+  const f = {}; for (const x of Array.isArray(r.felder) ? r.felder : String(r.felder || '').split(/[,;]/)) { const k = LBL_FELDMAP[lblFeldKey(x)]; if (k) f[k] = 1; }
+  return {id: String(r.id), name: r.name || String(r.id), b: mm(r.b, 50, 20, 200), h: mm(r.h, 30, 12, 300), f: Object.keys(f).length ? f : LBL_ALLE, std: false};
+}
+/** Anz. Etiketten der Warengruppe: ganze Zahl 0–99 (wie die Maske prüft); fehlt oder ungültig = 1 */
+const lblAnzWert = v => { const s = String(v ?? '').trim(); return /^\d{1,2}$/.test(s) ? +s : 1; };
+/** Menge × Anz. der Warengruppe (nur für automatisch entstehende Mengen) */
+const lblAnz = (a, menge) => { const r = wgRaw(a.cat), q = Math.max(0, +menge || 0); return r ? Math.round(q * lblAnzWert(r.anz_etiketten)) : q; };
+/** Position für openLabels mit automatischer Menge: n = Menge × Anz.; m = die Menge davor (der Dialog erklärt damit die Zahl); extra z. B. {alt} */
+const lblPos = (a, v, menge, extra) => ({a, v, n: lblAnz(a, menge), m: menge, ...extra});
+/** Positionen nach einer Preisänderung (Zeilen {sku, alt, neu} in Cent): Bestand × Anz.; bei gesenktem Preis mit Altpreis – gedruckt wird er (und „reduziert“) nur, wenn die Warengruppe einen Typ2 hat (labelData) */
+const lblPreisPos = lines => lines.flatMap(l => { const a = artById(l.sku); return a ? a.variants.filter(v => v.q > 0).map(v => lblPos(a, v, v.q, l.neu < l.alt ? {alt: l.alt / 100} : null)) : []; });
+/** Ebenen der Hierarchie-Zeile von oben nach unten als Text „Bereich › Haupt-Abteilung › Abteilung“ */
+function lblHierText(wg, h) {
+  const k = wgKette(wg.abteilung), sel = Array.isArray(h.ebenen) ? h.ebenen : String(h.ebenen || '').split(/[,;]/).map(x => x.trim());
+  return [['hauptbereich', 'x'], ['bereich', 'b'], ['hauptabteilung', 'h'], ['abteilung', 'a']].filter(([e]) => sel.includes(e)).map(([, s]) => k[s]?.name).filter(Boolean).join(' › ');
+}
+/** Etiketten-Angaben der Warengruppe eines Artikels: {typ, typ2, anz, hier}; cache (Map) spart wiederholtes Nachschlagen */
+function lblWg(a, cache) {
+  let w = cache?.get(a.cat); if (w) return w;
+  const r = wgRaw(a.cat), h = r?.hierarchie ? stRows('wghierarchie').find(x => String(x.id) === String(wgKey('wghierarchie', r.hierarchie))) : null;
+  const typ = r?.etikett ? lblTyp(r.etikett) : null, typ2 = r?.etikett2 ? lblTyp(r.etikett2) : null;
+  w = {typ, typ2: typ2 && (!typ || typ2.id !== typ.id) ? typ2 : null, anz: r ? lblAnzWert(r.anz_etiketten) : 1, hier: r && h ? lblHierText(r, h) : ''};   // Typ2 gleich Typ: nichts zu ersetzen (wie das Backend)
+  cache?.set(a.cat, w); return w;
+}
+/** Altpreis aus einer Preissenkung: nur wenn er über dem heutigen Preis liegt UND die Warengruppe einen Typ2 hat (w = lblWg); ohne Typ2 druckt das Programm wie bisher (kein Altpreis).
+ *  reduziert = Aktions-/Sale-Preis aktiv oder Altpreis aus der Preissenkung. Der Aktionspreis (a.sale) gilt auch ohne Typ2 (Altpreis wie bisher). */
+const lblAltPreis = (a, alt, w) => w?.typ2 && alt > a.price + .001 ? alt : null;
+const lblReduziert = (a, alt, w) => !!(a.sale && a.sale < a.price - .001) || lblAltPreis(a, alt, w) != null;
+/** Titelzeile (Marke, Name) nach den Feldern des Typs */
+const lblTitel = (d, sep) => [d.f.Marke && d.brand, d.f.Name && d.name].filter(Boolean).join(sep);
+/** Inhalt eines Etiketts; o = {alt: Preis vor der Senkung, wg: lblWg(a)} */
+function labelData(a, v, o = {}) {
+  const w = o.wg || lblWg(a), alt = lblAltPreis(a, o.alt, w), red = lblReduziert(a, o.alt, w), typ = (red && w.typ2) || w.typ || LBL_STD, f = typ.f;
+  const col = colorName(v.c), sz = (v.s !== 'Einheitsgröße' && v.s) || '', variant = `${col}${v.s !== 'Einheitsgröße' ? ' · ' + v.s : ''}`;
+  return {name: a.name, brand: a.brand, variant, ean: v.ean, price: a.sale || a.price, was: a.sale ? a.price : alt, sku: a.id,
+    typ, f, red, hier: w.hier, col, sz, pvar: f.Farbe && f['Größe'] ? variant : f.Farbe ? col : f['Größe'] ? sz : ''};
+}
 function labelsA4HTML(items, fmt, skip) {
   const F = LABEL_FORMATS[fmt] || LABEL_FORMATS['3x8'], cells = [...Array(skip).fill(null)];
   items.forEach(it => { for (let i = 0; i < it.n; i++) cells.push(it.d); });
@@ -7376,50 +7433,148 @@ function labelsA4HTML(items, fmt, skip) {
   const gx = (210 - F.cols * F.w) / 2, gy = (297 - F.rows * F.h) / 2;
   let html = '';
   for (let p = 0; p < pages; p++) {
-    html += `<div class="pg">${cells.slice(p * per, (p + 1) * per).map((d, i) => { const x = gx + (i % F.cols) * F.w, y = gy + Math.floor(i / F.cols) * F.h; return d ? `<div class="lb" style="left:${x}mm;top:${y}mm;width:${F.w}mm;height:${F.h}mm"><div class="t">${esc(d.brand ? d.brand + ' · ' : '')}${esc(d.name)}</div><div class="v">${esc(d.variant)} · ${esc(d.sku)}</div><div class="row"><div class="bc">${ean13SVG(d.ean)}</div><div class="pr">${d.was ? `<s>${num(d.was, 2)}</s>` : ''}€ ${num(d.price, 2)}</div></div></div>` : ''; }).join('')}</div>`;
+    html += `<div class="pg">${cells.slice(p * per, (p + 1) * per).map((d, i) => { const x = gx + (i % F.cols) * F.w, y = gy + Math.floor(i / F.cols) * F.h; return d ? `<div class="lb" style="left:${x}mm;top:${y}mm;width:${F.w}mm;height:${F.h}mm">${lblZelleHTML(d)}</div>` : ''; }).join('')}</div>`;
   }
   return html;
 }
+/** Inhalt eines Etiketts auf dem A4-Bogen: nur die Felder des Typs (Bogengröße bleibt), Hierarchie-Zeile, durchgestrichener Altpreis */
+function lblZelleHTML(d) {
+  const f = d.f, t = lblTitel(d, ' · '), bc = f.EAN ? `<div class="bc">${ean13SVG(d.ean)}</div>` : '', pr = f.Preis ? `<div class="pr"${f.EAN ? '' : ' style="margin-left:auto"'}>${d.was ? `<s>${num(d.was, 2)}</s>` : ''}€ ${num(d.price, 2)}</div>` : '';
+  return `${f.Marke || f.Name ? `<div class="t">${esc(t)}</div>` : ''}<div class="v">${esc([d.pvar, d.sku].filter(Boolean).join(' · '))}</div>${d.hier ? `<div class="h">${esc(d.hier)}</div>` : ''}${bc || pr ? `<div class="row">${bc}${pr}</div>` : ''}`;
+}
 const LABEL_CSS = `@page{size:A4;margin:0}body{margin:0}.pg{position:relative;width:210mm;height:297mm;page-break-after:always;overflow:hidden}.lb{position:absolute;padding:2.5mm 3mm;display:flex;flex-direction:column;overflow:hidden;font-family:"Segoe UI",system-ui,sans-serif}
   .lb .t{font-size:8pt;font-weight:700;line-height:1.15;max-height:2.3em;overflow:hidden}.lb .v{font-size:7pt;color:#444;margin-top:.5mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lb .row{display:flex;align-items:flex-end;gap:2mm;margin-top:auto;min-height:0;flex:1}
-  .lb .bc{flex:1;height:100%;max-height:16mm;min-width:0}.lb .pr{font-size:12pt;font-weight:800;white-space:nowrap;text-align:right;line-height:1.1}.lb .pr s{display:block;font-size:7pt;font-weight:400;color:#555}`;
+  .lb .bc{flex:1;height:100%;max-height:16mm;min-width:0}.lb .pr{font-size:12pt;font-weight:800;white-space:nowrap;text-align:right;line-height:1.1}.lb .pr s{display:block;font-size:7pt;font-weight:400;color:#555}
+  .lb .h{font-size:6.5pt;color:#555;margin-top:.3mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}`;
+/** Höhe der Klartextzeile unter dem Strichcode (^BE …,Y; Näherung, Punkte) */
+const LBL_KLARTEXT = 30;
+/** Stufen des ZPL-Layouts, von voll nach knapp: k = Schrift-/Abstandsfaktor, hier = Hierarchiezeile, was = Altpreis, mf = Marke und Farbe, t2 = Titel zweizeilig, gr = Größenzeile, ti = Titel.
+ *  Stufe 0 ist das frühere Layout; die nächste Stufe gilt erst, wenn die Stufe davor aus dem Etikett laufen würde (kleine Typen ab 20 × 12 mm). */
+const LBL_STUFEN = [{k: 1, hier: 1, was: 1, mf: 1, t2: 1, gr: 1, ti: 1}, {k: 1, hier: 0, was: 1, mf: 1, t2: 1, gr: 1, ti: 1}, {k: 1, hier: 0, was: 0, mf: 1, t2: 1, gr: 1, ti: 1},
+  {k: 1, hier: 0, was: 0, mf: 0, t2: 1, gr: 1, ti: 1}, {k: 1, hier: 0, was: 0, mf: 0, t2: 0, gr: 1, ti: 1}, {k: .85, hier: 0, was: 0, mf: 0, t2: 0, gr: 1, ti: 1},
+  {k: .7, hier: 0, was: 0, mf: 0, t2: 0, gr: 1, ti: 1}, {k: .85, hier: 0, was: 0, mf: 0, t2: 0, gr: 1, ti: 0}, {k: .7, hier: 0, was: 0, mf: 0, t2: 0, gr: 1, ti: 0}, {k: .7, hier: 0, was: 0, mf: 0, t2: 0, gr: 0, ti: 0}];
+/** ZPL-Etikett (203 dpi) in der Größe des Typs mit den Feldern des Typs. 50 × 30 mm mit allen Feldern ergibt genau das frühere Layout (406 × 240 Punkte);
+ *  andere Größen skalieren Schrift und Abstände (Faktor 0,8–1,5), die Zeilen rücken nach oben, wenn ein Feld fehlt. ZPL kann nicht durchstreichen:
+ *  der Altpreis steht wie bisher als kleine Zeile über dem Preis. Kleine Typen: ^BY1, wenn der Strichcode bei ^BY2 nicht in die Breite passt; passt das Layout nicht in die Höhe,
+ *  entfallen zuerst Hierarchie- und Altpreiszeile, dann Marke und Farbe, danach wird der Titel einzeilig und die Schrift kleiner, zuletzt entfällt der Titel, dann die Größenzeile (LBL_STUFEN).
+ *  Sonderzeichen im Text: „^“ und „~“ (Befehlszeichen) werden wie in der Vorversion durch Leerzeichen ersetzt, ebenso Steuerzeichen (Zeilenumbruch in Namen). „\“ braucht keine Behandlung:
+ *  ohne ^FH ist es ein gewöhnliches Zeichen (in ^FB bedeutet nur „\&“ Zeilenumbruch) und beendet kein Feld. */
 function labelZPL(d) {
-  const t = s => String(s).replace(/[\^~]/g, ' ').normalize('NFC');
-  return `^XA^CI28^PW406^LL240^FO16,14^A0N,26,24^FB374,2,0,L^FD${t((d.brand ? d.brand + ' ' : '') + d.name)}^FS^FO16,72^A0N,20,20^FD${t(d.variant)}^FS^FO16,100^BY2^BEN,70,Y,N^FD${d.ean.slice(0, 12)}^FS^FO230,150^A0N,44,40^FB160,1,0,R^FD${num(d.price, 2)}^FS${d.was ? `^FO230,120^A0N,22,20^FB160,1,0,R^FD${num(d.was, 2)}^FS` : ''}^XZ`;
+  const t = s => String(s).replace(/[\^~\x00-\x1f\x7f]/g, ' ').normalize('NFC'), f = d.f || LBL_ALLE, T = d.typ || LBL_STD, pt = mm => Math.round(mm * 203 / 25.4);
+  let W = pt(T.b); if (Math.abs(W - 406) <= 8) W = 406;   // 50 mm ≈ 2 Zoll = 406 Punkte (wie bisher)
+  const H = pt(T.h), s0 = clamp(Math.min(W / 406, H / 240), .8, 1.5);
+  const hier = d.hier ? t(d.hier.replace(/ › /g, ' > ')) : '';   // „›“ ist nicht in jeder Druckerschrift
+  const lay = (o, n) => {
+    const s = s0 * o.k, px = v => Math.round(v * s), m = px(16), pw = px(160), wb = W - 2 * m, lim = H - px(10), was = o.was && d.was, fb = n ? `^FB${wb},1,0,L` : '';
+    let by = s >= 1.45 ? 3 : 2; while (by > 1 && 2 * m + 95 * by > W) by--;   // schmales Etikett: der Strichcode muss in die Breite passen (^BY1)
+    const tit = [o.mf && f.Marke && d.brand, f.Name && d.name].filter(Boolean).join(' '), pv = o.mf ? d.pvar : f['Größe'] ? d.sz || '' : '';
+    let z = `^XA^CI28^PW${W}^LL${H}`, y = px(14), text = 0, bot = 0;   // text/bot: untere Kante der Textzeilen bzw. des untersten Elements
+    if (o.ti && (f.Marke || f.Name) && (o.mf || tit)) { z += `^FO${m},${y}^A0N,${px(26)},${px(24)}^FB${wb},${o.t2 ? 2 : 1},0,L^FD${t(tit)}^FS`; text = y + (o.t2 ? 2 : 1) * px(26); y += px(o.t2 ? 58 : 30); }
+    if (o.gr && (o.mf ? f.Farbe || f['Größe'] : pv)) { z += `^FO${m},${y}^A0N,${px(20)},${px(20)}${fb}^FD${t(pv)}^FS`; text = Math.max(text, y + px(20)); y += px(28); }
+    if (hier && o.hier) { z += `^FO${m},${y}^A0N,${px(18)},${px(16)}^FB${wb},1,0,L^FD${hier}^FS`; text = Math.max(text, y + px(18)); y += px(24); }
+    const aY = H - px(120), pY = H - px(90);
+    const preis = `^FO${W - m - pw},${pY}^A0N,${px(44)},${px(40)}^FB${pw},1,0,R^FD${num(d.price, 2)}^FS${was ? `^FO${W - m - pw},${aY}^A0N,${px(22)},${px(20)}^FB${pw},1,0,R^FD${num(d.was, 2)}^FS` : ''}`;
+    const daneben = !f.EAN || W - m - pw >= m + 95 * by + 4;   // reicht neben dem Strichcode der Platz für den Preis?
+    if (f.Preis && !daneben) {   // schmales Etikett: Preis (links Altpreis) in eigener Zeile über dem Strichcode
+      z += `^FO${m},${y}^A0N,${px(44)},${px(40)}^FB${wb},1,0,R^FD${num(d.price, 2)}^FS${was ? `^FO${m},${y + px(8)}^A0N,${px(22)},${px(20)}^FB${wb},1,0,L^FD${num(d.was, 2)}^FS` : ''}`; bot = y + px(44); y += px(48);
+    }
+    if (f.EAN) {   // Blockhöhe: Strichcode + Klartext müssen in H passen (Strichcode mindestens 30 Punkte, in den knappen Stufen 20)
+      const bh = clamp(Math.min(H - px(70), lim - LBL_KLARTEXT) - y, o.k < 1 ? Math.max(20, px(30)) : 30, px(110));
+      z += `^FO${m},${y}^BY${by}^BEN,${bh},Y,N^FD${String(d.ean || '').slice(0, 12)}^FS`; bot = Math.max(bot, y + bh + LBL_KLARTEXT);
+    }
+    if (f.Preis && daneben) { z += preis; bot = Math.max(bot, pY + px(44)); }
+    return {z: z + '^XZ', ok: bot <= lim && !(f.Preis && daneben && text > (was ? aY : pY))};
+  };
+  let r; for (let n = 0; n < LBL_STUFEN.length; n++) { r = lay(LBL_STUFEN[n], n); if (r.ok) break; }
+  return r.z;
 }
-function openLabels(list) {
-  const items = list.map(x => ({key: x.v.ean, d: labelData(x.a, x.v), n: x.n ?? 1}));
+/** Größenschlüssel eines Typs (Breite × Höhe in mm): gleich große Typen liegen auf derselben Rolle */
+const lblGKey = t => `${Math.round(t.b * 100) / 100}x${Math.round(t.h * 100) / 100}`;
+/** Positionen nach Etikettengröße gruppieren (Reihenfolge des ersten Auftretens): {key, typ (erster Typ), typen (alle Typen dieser Größe), items}.
+ *  Ein Druckauftrag und eine Rollenwechsel-Abfrage je Gruppe; die Felder richten sich weiter nach dem Typ des einzelnen Etiketts. */
+function lblGruppen(items) {
+  const g = new Map();
+  for (const it of items) {
+    const typ = it.d.typ, k = lblGKey(typ); if (!g.has(k)) g.set(k, {key: k, typ, typen: [], items: []});
+    const x = g.get(k); if (!x.typen.some(y => y.id === typ.id)) x.typen.push(typ); x.items.push(it);
+  }
+  return [...g.values()];
+}
+/** Größe der Gruppe mit den Typnamen: „50 × 30 mm (Klebe 50x30, Sale rot 50x30)“ */
+const lblGTitel = g => `${lblMass(g.typ)} (${g.typen.map(x => x.name).join(', ')})`;
+/** Tabellenzeile im Dialog: Artikel (mit „reduziert“ und dem Hinweis auf Menge × Anz.), Typ, EAN, Preis, Anzahl; kopf = Gruppe (lblGruppen), wenn davor ihre Überschriftszeile steht */
+function lblZeileHTML(it, i, kopf, zpl) {
+  const d = it.d, typ = d.typ, hint = it.m != null && !it.man && it.anz !== 1 ? (it.anz === 0 ? 'Anz. 0: keine automatischen Etiketten' : `Menge × Anz. (${it.anz})`) : '';
+  const sum = kopf ? kopf.items.reduce((s, x) => s + (x.n || 0), 0) : 0;
+  return `${kopf ? `<tr><td colspan="5" style="padding:7px 14px;background:var(--surface-2);font-size:12px;font-weight:650">${lblMass(kopf.typ)} · ${kopf.typen.length > 1 ? 'Typen' : 'Typ'} ${esc(kopf.typen.map(x => x.name).join(', '))} · <span data-lbgc="${esc(kopf.key)}">${sum}</span> Etiketten${zpl ? ' · eigener Druckauftrag' : ''}</td></tr>` : ''}<tr><td style="padding-left:14px"><b>${esc(d.name)}</b>${d.red ? ' <span class="pill warn" style="height:18px;font-size:10.5px">reduziert</span>' : ''}<div class="muted" style="font-size:12px">${esc(d.variant)}${hint ? `<span data-lbhint="${i}" title="${esc(`${it.m} × ${it.anz} = ${it.n}`)}"> · ${esc(hint)}</span>` : ''}</div></td><td style="font-size:12px" title="${esc('Inhalt: ' + Object.keys(typ.f).join(', '))}">${esc(typ.name)}<div class="muted" style="font-size:11px">${lblMass(typ)}</div></td><td class="mono" style="font-size:12px">${esc(d.ean)}</td><td class="r">${d.was ? `<s class="muted" style="font-size:11.5px">${eur(d.was)}</s> ` : ''}${eur(d.price)}</td><td class="r" style="padding-right:14px"><input class="input num" data-ln="${i}" value="${it.n}" inputmode="numeric" style="width:64px;height:30px;text-align:right"></td></tr>`;
+}
+/** Vorschau-Karte im Dialog: Größenverhältnis, Felder und Hierarchie-Zeile des Typs, durchgestrichener Altpreis */
+function lblKarteHTML(d) {
+  const f = d.f, t = lblTitel(d, ' · '), h = d.typ.std ? 112 : clamp(Math.round(210 * d.typ.h / d.typ.b), 64, 240);
+  return `<div class="lb-pv"><div class="lb-card" style="height:${h}px;overflow:hidden">${f.Marke || f.Name ? `<div class="t">${esc(t)}</div>` : ''}${f.Farbe || f['Größe'] ? `<div class="v">${esc(d.pvar)}</div>` : ''}${d.hier ? `<div style="font-size:9px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(d.hier)}</div>` : ''}${f.EAN || f.Preis ? `<div class="row">${f.EAN ? `<div class="bc">${ean13SVG(d.ean)}</div>` : ''}${f.Preis ? `<b${f.EAN ? '' : ' style="margin-left:auto"'}>${d.was ? `<s style="font-size:10px;font-weight:400;color:#777;margin-right:6px">${num(d.was, 2)}</s>` : ''}${eur(d.price)}</b>` : ''}</div>` : ''}</div><div class="muted" style="font-size:11px;margin-top:4px">${esc(d.typ.name)} · ${lblMass(d.typ)}${d.red ? ' · reduziert' : ''}</div></div>`;
+}
+const lblZplAktiv = () => DESKTOP && ['netz', 'windows'].includes(CFG['etikett.art']);
+const lblSenden = data => invoke('label_print', {data});
+/** Zuletzt tatsächlich gesendete Etikettengröße (= eingelegte Rolle): gilt über Dialoge hinweg, damit auch der nächste Dialog vor einer anderen Größe nach dem Rollenwechsel fragt */
+const LBL_ROLLE = {g: null};
+/** Dialog „Etiketten drucken“. list: Positionen {a, v, n, m?, alt?} (bei automatischer Menge mit lblPos(a, v, menge) erzeugen; alt = Preis vor einer Senkung, wirkt nur mit Typ2 der Warengruppe).
+ *  o (für Prüfungen): {zpl: ZPL-Rolle statt A4 erzwingen, senden: Sendefunktion statt label_print} */
+function openLabels(list, o = {}) {
+  const wc = new Map(), items = list.map(x => { const w = lblWg(x.a, wc); return {key: x.v.ean, d: labelData(x.a, x.v, {alt: x.alt, wg: w}), n: x.n ?? 1, m: x.m, anz: w.anz}; });
+  { const sortiert = lblGruppen(items).flatMap(g => g.items); items.length = 0; for (const it of sortiert) items.push(it); }   // nach Etikettengröße gruppiert (ohne Spread: auch Listen mit über 100.000 Positionen)
   const st = {fmt: CFG['etikett.format'] || '3x8', skip: 0};
-  const zpl = DESKTOP && ['netz', 'windows'].includes(CFG['etikett.art']);
+  const zpl = o.zpl ?? lblZplAktiv(); let grp = lblGruppen(items);
   const el = openLayer(`<div class="modal" style="width:min(720px,100%);max-height:calc(100dvh - 48px);display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="Etiketten"><div id="lbBody" style="display:flex;flex-direction:column;min-height:0"></div></div>`);
   const box = $('#lbBody', el);
   const render = () => {
-    const total = items.reduce((s, i) => s + (i.n || 0), 0);
+    const total = items.reduce((s, i) => s + (i.n || 0), 0); grp = lblGruppen(items);
+    const typen = [...items.reduce((m, it) => m.has(it.d.typ.id) ? m : m.set(it.d.typ.id, it), new Map()).values()];   // erstes Etikett je Typ: eine Vorschaukarte je Typ
     box.innerHTML = `<div class="m-head"><div class="m-ic">${ic('tag')}</div><div><h2>Etiketten drucken</h2><p>${total} Etiketten · ${zpl ? `Etikettendrucker (ZPL) · ${esc(CFG['etikett.art'] === 'netz' ? CFG['etikett.adresse'] : CFG['etikett.name'])}` : 'A4-Bogen über den Druckdialog'}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
-      <div class="m-body" style="display:grid;gap:12px;overflow:auto">
+      <div class="m-body" style="display:flex;flex-direction:column;gap:12px;overflow:auto">
         ${zpl ? '' : `<div class="ed-grid"><label class="field"><span>Bogen</span><select class="input select" id="lbFmt">${Object.entries(LABEL_FORMATS).map(([k, f]) => `<option value="${k}" ${k === st.fmt ? 'selected' : ''}>${f.name}</option>`).join('')}</select></label><label class="field"><span>Bereits benutzte Felder überspringen</span><input class="input num" id="lbSkip" inputmode="numeric" value="${st.skip}"></label></div>`}
-        <div class="card" style="overflow:hidden"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:14px">Artikel</th><th>EAN</th><th class="r">Preis</th><th class="r" style="padding-right:14px">Anzahl</th></tr></thead><tbody>${items.map((it, i) => `<tr><td style="padding-left:14px"><b>${esc(it.d.name)}</b><div class="muted" style="font-size:12px">${esc(it.d.variant)}</div></td><td class="mono" style="font-size:12px">${esc(it.d.ean)}</td><td class="r">${eur(it.d.price)}</td><td class="r" style="padding-right:14px"><input class="input num" data-ln="${i}" value="${it.n}" inputmode="numeric" style="width:64px;height:30px;text-align:right"></td></tr>`).join('')}</tbody></table></div>
-        <div class="lb-prev">${items.slice(0, 3).map(it => `<div class="lb-card"><div class="t">${esc(it.d.name)}</div><div class="v">${esc(it.d.variant)}</div><div class="row"><div class="bc">${ean13SVG(it.d.ean)}</div><b>${eur(it.d.price)}</b></div></div>`).join('')}</div>
+        ${zpl && grp.length > 1 ? `<div class="muted" style="font-size:12.5px;line-height:1.45">${grp.length} Etikettengrößen: je Größe ein eigener Druckauftrag. Rolle wechseln: ${grp.map(g => esc(g.typen.length > 1 ? lblGTitel(g) : lblMass(g.typ))).join(' → ')}.</div>` : ''}
+        <div class="card" style="overflow:hidden;flex:none"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:14px">Artikel</th><th>Typ</th><th>EAN</th><th class="r">Preis</th><th class="r" style="padding-right:14px">Anzahl</th></tr></thead><tbody>${items.map((it, i) => lblZeileHTML(it, i, grp.length > 1 && (i === 0 || lblGKey(items[i - 1].d.typ) !== lblGKey(it.d.typ)) ? grp.find(g => g.key === lblGKey(it.d.typ)) : null, zpl)).join('')}</tbody></table></div>
+        <div class="lb-prev">${(typen.length > 1 ? typen.slice(0, 6) : items.slice(0, 3)).map(it => lblKarteHTML(it.d)).join('')}</div>
       </div>
       <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" id="lbGo" ${total ? '' : 'disabled'}>${ic('printer', 'i-sm')}${total} Etiketten drucken</button></div>`;
   };
   box.addEventListener('input', e => {
-    const i = e.target.dataset.ln; if (i != null) { items[i].n = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0; $('#lbGo', box).innerHTML = `${ic('printer', 'i-sm')}${items.reduce((s, x) => s + x.n, 0)} Etiketten drucken`; }
+    const i = e.target.dataset.ln; if (i != null) {
+      items[i].n = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0; items[i].man = true; $(`[data-lbhint="${i}"]`, box)?.remove();   // von Hand geändert: kein Hinweis „Menge × Anz.“ mehr
+      const summe = items.reduce((s, x) => s + x.n, 0);
+      $('#lbGo', box).innerHTML = `${ic('printer', 'i-sm')}${summe} Etiketten drucken`; $('#lbGo', box).disabled = !summe;
+      $$('[data-lbgc]', box).forEach(s => { s.textContent = items.filter(x => lblGKey(x.d.typ) === s.dataset.lbgc).reduce((a, x) => a + (x.n || 0), 0); });
+    }
     if (e.target.id === 'lbSkip') st.skip = clamp(parseInt(e.target.value, 10) || 0, 0, 39);
   });
   box.addEventListener('change', e => { if (e.target.id === 'lbFmt') { st.fmt = e.target.value; saveSettings({'etikett.format': st.fmt}, true); } });
+  let busy = false, zuletzt = LBL_ROLLE.g;   // zuletzt: Größenschlüssel der zuletzt TATSÄCHLICH gesendeten Gruppe (die eingelegte Rolle); gilt für alle Druckversuche dieses Dialogs
   box.addEventListener('click', async e => {
-    if (!e.target.closest('#lbGo')) return;
+    if (!e.target.closest('#lbGo') || busy) return;
     const use = items.filter(i => i.n > 0);
     if (zpl) {
-      const data = use.flatMap(i => Array(i.n).fill(labelZPL(i.d))).join('\n');
-      try { await invoke('label_print', {data}); toast('Etiketten gesendet', {t2: `${use.reduce((s, i) => s + i.n, 0)} Stück an den Etikettendrucker`, type: 'pos', icon: 'tag'}); closeLayer(el); }
-      catch (err) { toast('Etikettendruck fehlgeschlagen', {t2: String(err), type: 'warn', dur: 7000}); }
-    } else { printHTML(labelsA4HTML(use, st.fmt, st.skip), 'Etiketten', LABEL_CSS); closeLayer(el); }
+      /* Rolle: je Etikettengröße ein eigener Druckauftrag; vor jeder Größe, die nicht der zuletzt gesendeten entspricht, die Rolle wechseln lassen – auch bei jedem neuen Versuch nach Abbruch/Fehler.
+         Gesendete Positionen verlassen die Liste (kein doppeltes Drucken bei Abbruch/Fehler). */
+      const gr = lblGruppen(use), sum = g => g.items.reduce((s, i) => s + i.n, 0); let sent = 0, sentG = 0; busy = true;
+      try {
+        for (let k = 0; k < gr.length; k++) {
+          const g = gr[k];
+          if (zuletzt != null && g.key !== zuletzt && !await confirmBox(`Rolle wechseln: ${lblGTitel(g)} – ${sum(g)} Etiketten`, 'Rolle gewechselt – drucken')) { toast('Druck unterbrochen', {t2: `${lblMass(g.typ)}: ${gr.slice(k).reduce((s, x) => s + sum(x), 0)} Etiketten bleiben in der Liste`, icon: 'info', dur: 6000}); break; }
+          try { await (o.senden || lblSenden)(g.items.flatMap(i => Array(i.n).fill(labelZPL(i.d))).join('\n')); }
+          catch (err) { toast('Etikettendruck fehlgeschlagen', {t2: `${gr.length > 1 || zuletzt != null ? lblMass(g.typ) + ': ' : ''}${err}`, type: 'warn', dur: 7000}); break; }
+          zuletzt = LBL_ROLLE.g = g.key; sent += sum(g); sentG++; for (let j = items.length - 1; j >= 0; j--) if (lblGKey(items[j].d.typ) === g.key) items.splice(j, 1);   // auch Zeilen mit 0 dieser Größe: die Größe ist erledigt
+        }
+      } finally { busy = false; }
+      if (sent) { toast('Etiketten gesendet', {t2: `${sent} Stück an den Etikettendrucker${sentG > 1 ? ` · ${sentG} Größen` : ''}`, type: 'pos', icon: 'tag'}); Hooks.emit('device.labels.printed', {anzahl: sent}); }
+      if (items.some(i => i.n > 0)) render(); else closeLayer(el);
+      return;
+    }
+    printHTML(labelsA4HTML(use, st.fmt, st.skip), 'Etiketten', LABEL_CSS); closeLayer(el);
     Hooks.emit('device.labels.printed', {anzahl: use.reduce((s, i) => s + i.n, 0)});
   });
   render();
 }
+if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {openLabels, labelData, labelZPL, labelsA4HTML, lblWg, lblTyp, lblAnz, lblPos, lblPreisPos, lblGruppen, lblGKey, artById, stRows: k => stRows(k), ART, lblRolleSetzen: g => { LBL_ROLLE.g = g; }});   // nur für Prüfungen
 
 /* ── E-Mail ── */
 const mailReady = () => DESKTOP && CFG['mail.host'] && CFG['mail.from'];
@@ -7550,6 +7705,10 @@ async function loadInventories() {
   if (!DESKTOP) return;
   try { IV.list = await invoke('inventory_list'); const open = IV.list.find(i => i.status === 'offen'); IV.cur = open ? await invoke('inventory_get', {id: open.id}) : null; } catch (e) { toast('Inventur nicht verfügbar', {t2: String(e), type: 'warn'}); }
 }
+/** Varianten, die wegen „Inventur aus“ oder Service-Warengruppe nicht in die Zählliste kommen (nur zur Anzeige vor dem Start) */
+const ivKeine = a => !wgInventur(a.cat) || wgService(a.cat);
+const ivAusgenommen = () => ART.filter(a => a.active !== false && ivKeine(a)).reduce((s, a) => s + a.variants.length, 0);
+const ivAusgenommenBsp = () => { const a = ART.find(x => x.active !== false && ivKeine(x)); return a ? wgNm('warengruppe', a.cat) : ''; };
 async function renderInventur() {
   const v = $('#view-inventur');
   if (!DESKTOP) { v.innerHTML = `<div class="cv"><div class="card"><div class="empty" style="padding:64px 20px"><div class="empty-icon">${ic('boxes')}</div><h3>Inventur nur in der Desktop-App</h3><p>Zähllisten und Buchungen brauchen die lokale Datenbank.</p></div></div></div>`; return; }
@@ -7559,9 +7718,9 @@ async function renderInventur() {
     const brands = [...new Set(ART.map(a => a.brand).filter(Boolean))].sort();
     v.innerHTML = `<div class="cv"><div class="cv-head"><div><h2 class="h-title">Inventur</h2><div class="dash-meta" style="margin-top:6px"><span>Zählen per Scanner oder Eingabe · Verkäufe während der Zählung werden berücksichtigt</span></div></div></div>
       <div class="card" style="padding:18px;display:grid;gap:12px;max-width:760px"><div class="set-l">Neue Inventur starten</div>
-        <div class="ed-grid"><label class="field"><span>Warengruppe</span><select class="input select" id="ivCat"><option value="">alle</option>${CATS.filter(x => x.id !== 'alle').map(x => `<option value="${x.id}">${x.name}</option>`).join('')}</select></label>
+        <div class="ed-grid"><label class="field"><span>Warengruppe</span><select class="input select" id="ivCat"><option value="">alle</option>${CATS.filter(x => x.id !== 'alle').map(x => { const keine = !wgInventur(x.id) || wgService(x.id); return `<option value="${x.id}" ${keine ? 'disabled' : ''}>${esc(x.name)}${keine ? ' (keine Inventur)' : ''}</option>`; }).join('')}</select></label>
           <label class="field"><span>Marke</span><select class="input select" id="ivBrand"><option value="">alle</option>${brands.map(b => `<option>${esc(b)}</option>`).join('')}</select></label></div>
-        <div class="prompt-hint">${ic('info', 'i-xs')}Der Sollbestand wird beim Start festgehalten. Abschluss bucht nur die Differenzen (Grund „Inventur“).</div>
+        <div class="prompt-hint">${ic('info', 'i-xs')}Der Sollbestand wird beim Start festgehalten. Abschluss bucht nur die Differenzen (Grund „Inventur“). Warengruppen mit ausgeschaltetem Schalter „Inventur“ und Service-Warengruppen werden nicht gezählt${ivAusgenommen() ? ` – derzeit ${num(ivAusgenommen())} Varianten (z. B. in „${esc(ivAusgenommenBsp())}“); der Schalter steht in Stammdaten › Warengruppen › Warengruppen` : ''}.</div>
         <div><button class="btn btn-primary" id="ivStart">${ic('boxes', 'i-sm')}Inventur starten</button></div></div>
       <div class="card" style="margin-top:14px">${IV.list.length ? `<table class="tbl art-tbl"><thead><tr><th style="padding-left:16px">Inventur</th><th>Status</th><th>Zeitpunkt</th><th class="r">gezählt</th><th class="r">Plus</th><th class="r">Minus</th><th class="r">Differenz VK</th><th class="r" style="padding-right:16px">Differenz EK</th></tr></thead><tbody>${IV.list.map(i => `<tr><td style="padding-left:16px"><b>${esc(i.no)}</b><div class="muted" style="font-size:12px">${esc(i.user || '')}</div></td><td><span class="pill ${i.status === 'abgeschlossen' ? 'pos' : ''}" style="height:20px">${esc(i.status)}</span></td><td class="muted">${esc(fmtTs(i.closed_at || i.created_at))}</td><td class="r num">${i.counted} / ${i.lines}</td><td class="r num">${i.result ? '+' + i.result.plus : '–'}</td><td class="r num">${i.result ? '−' + i.result.minus : '–'}</td><td class="r">${i.result ? eur(i.result.value_vk / 100) : '–'}</td><td class="r" style="padding-right:16px">${i.result ? eur(i.result.value_ek / 100) : '–'}</td></tr>`).join('')}</tbody></table>`
         : '<div class="empty" style="padding:40px 20px"><p>Noch keine Inventuren.</p></div>'}</div></div>`;
@@ -7569,7 +7728,7 @@ async function renderInventur() {
   }
   const done = c.lines.filter(l => l.counted != null).length;
   v.innerHTML = `<div class="cv">
-    <div class="cv-head"><div><h2 class="h-title">Inventur ${esc(c.no)}</h2><div class="dash-meta" style="margin-top:6px"><span>gestartet ${esc(fmtTs(c.created_at))} · ${esc(c.user || '')}</span>${c.scope?.cat ? `<span>·</span><span>${esc(catName(c.scope.cat))}</span>` : ''}${c.scope?.brand ? `<span>·</span><span>${esc(c.scope.brand)}</span>` : ''}</div></div>
+    <div class="cv-head"><div><h2 class="h-title">Inventur ${esc(c.no)}</h2><div class="dash-meta" style="margin-top:6px"><span>gestartet ${esc(fmtTs(c.created_at))} · ${esc(c.user || '')}</span>${c.scope?.ausgenommen ? `<span>·</span><span title="Warengruppen mit ausgeschaltetem Schalter „Inventur“ und Service-Warengruppen">${num(c.scope.ausgenommen)} Varianten ohne Inventur</span>` : ''}${c.scope?.cat ? `<span>·</span><span>${esc(catName(c.scope.cat))}</span>` : ''}${c.scope?.brand ? `<span>·</span><span>${esc(c.scope.brand)}</span>` : ''}</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" id="ivPrint">${ic('printer', 'i-sm')}Zählliste</button><button class="btn btn-secondary" id="ivDiscard">${ic('x', 'i-sm')}Verwerfen</button><button class="btn btn-primary" id="ivFinish">${ic('check', 'i-sm')}Abschließen</button></div></div>
     <div class="kpis" id="ivKpis"></div>
     <div class="cv-tools"><label class="search-field" style="flex:0 1 420px">${ic('barcode')}<input id="ivScan" placeholder="EAN scannen (+1) oder Artikel suchen …" autocomplete="off" value="${esc(IV.q)}"></label>
@@ -7611,7 +7770,7 @@ function bindStockViews() {
     if (e.target.closest('#ivStart')) {
       const scope = {cat: $('#ivCat').value, brand: $('#ivBrand').value};
       try { IV.cur = await invoke('inventory_start', {scope, user: S.user.name}); } catch (err) { return toast('Start nicht möglich', {t2: String(err), type: 'warn'}); }
-      toast(`Inventur ${IV.cur.no} gestartet`, {t2: `${IV.cur.lines.length} Varianten in der Zählliste`, type: 'pos', icon: 'boxes'}); Hooks.emit('inventory.started', {inventur: IV.cur.no});
+      toast(`Inventur ${IV.cur.no} gestartet`, {t2: `${IV.cur.lines.length} Varianten in der Zählliste${IV.cur.scope?.ausgenommen ? ` · ${IV.cur.scope.ausgenommen} ohne Inventur (Warengruppe)` : ''}`, type: 'pos', icon: 'boxes'}); Hooks.emit('inventory.started', {inventur: IV.cur.no});
       return renderInventur();
     }
     if (e.target.closest('#ivDiscard')) { try { await stepUp({title: 'Inventur verwerfen', text: `${IV.cur.no} – Zählungen gehen verloren, Bestand bleibt unverändert`}); await invoke('inventory_discard', {id: IV.cur.id}); } catch (err) { if (!String(err).includes('abgebrochen')) toast('Nicht möglich', {t2: String(err), type: 'warn'}); return; } toast('Inventur verworfen', {icon: 'x'}); return renderInventur(); }
@@ -9165,12 +9324,13 @@ function renderEtRes() {
 }
 function renderEtList() {
   const box = $('#etList'); if (!box) return;
-  box.innerHTML = ET.items.length ? `<table class="tbl" style="margin:0"><tbody>${ET.items.map((x, i) => `<tr><td style="padding-left:16px"><b>${esc(x.a.name)}</b><div class="muted" style="font-size:11.5px">${esc(colorName(x.v.c))} · ${esc(x.v.s)} · ${esc(x.v.ean)}</div></td><td class="r"><input class="input num" data-etn="${i}" value="${x.n}" style="width:70px;height:30px;text-align:right"></td><td class="r" style="padding-right:12px"><button class="btn btn-ghost btn-sm btn-icon" data-etrm="${i}" aria-label="Entfernen">${ic('x', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
+  box.innerHTML = ET.items.length ? `<table class="tbl" style="margin:0"><tbody>${ET.items.map((x, i) => `<tr><td style="padding-left:16px"><b>${esc(x.a.name)}</b><div class="muted" style="font-size:11.5px">${esc(colorName(x.v.c))} · ${esc(x.v.s)} · ${esc(x.v.ean)}${x.m != null && lblAnz(x.a, 1) !== 1 ? ` · ${lblAnz(x.a, 1) ? 'Menge × Anz. (' + lblAnz(x.a, 1) + ')' : 'Anz. 0: keine automatischen Etiketten'}` : ''}</div></td><td class="r"><input class="input num" data-etn="${i}" value="${x.n}" style="width:70px;height:30px;text-align:right"></td><td class="r" style="padding-right:12px"><button class="btn btn-ghost btn-sm btn-icon" data-etrm="${i}" aria-label="Entfernen">${ic('x', 'i-sm')}</button></td></tr>`).join('')}</tbody></table>`
     : `<div class="empty" style="padding:36px"><div class="empty-icon">${ic('barcode')}</div><p>Links Varianten antippen – oder „Alle“ bzw. „= Bestand“ für ganze Artikel.</p></div>`;
   const pb = $('[data-et="print"]'); if (pb) { pb.disabled = !ET.items.length; pb.innerHTML = `${ic('printer', 'i-sm')}${num(ET.items.reduce((a, x) => a + x.n, 0))} Etiketten drucken`; }
   const cb = $('[data-et="clear"]'); if (cb) cb.disabled = !ET.items.length;
 }
-function etAdd(a, v, n = 1) { const ex = ET.items.find(x => x.v.ean === v.ean); if (ex) ex.n += n; else ET.items.push({a, v, n}); }
+/** m = Menge vor „× Anz. der Warengruppe“ (nur bei automatischer Menge; so erklärt der Dialog die Zahl). Von Hand gewählte Zeilen (Variante antippen, Scan) tragen kein m. */
+function etAdd(a, v, n = 1, m) { const ex = ET.items.find(x => x.v.ean === v.ean); if (ex) { ex.n += n; if (m != null && ex.m != null) ex.m += m; else delete ex.m; } else ET.items.push(m != null ? {a, v, n, m} : {a, v, n}); }
 
 /* ── Buchhaltung ── */
 const FB = {p: 'monat', von: '', bis: '', rows: []};
@@ -9310,19 +9470,19 @@ function bindPages() {
   on('wareneingang', async e => {
     const p = e.target.closest('[data-wepo]');
     if (p) { const head = EK.pos.find(x => x.id === +p.dataset.wepo); try { await needPerm('einkauf', 'Wareneingang'); const lines = await invoke('po_lines', {id: head.id}); openReceive(head, lines); } catch (err) { if (err?.message !== 'abgebrochen') toast('Nicht möglich', {t2: String(err), type: 'warn'}); } return; }
-    const b = e.target.closest('[data-we]'); if (!b) return; if (b.dataset.we === 'book') return weBook(); if (b.dataset.we === 'etiketten') { ET.items = []; WE.log.forEach(x => { const h = findEan(x.ean); if (h) etAdd(h.a, h.v, x.qty); }); go('etiketten'); }
+    const b = e.target.closest('[data-we]'); if (!b) return; if (b.dataset.we === 'book') return weBook(); if (b.dataset.we === 'etiketten') { ET.items = []; WE.log.forEach(x => { const h = findEan(x.ean); if (h) etAdd(h.a, h.v, lblAnz(h.a, x.qty), x.qty); }); go('etiketten'); }
   });
   $('#view-wareneingang').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.target.id === 'weEan' || e.target.id === 'weQty')) { e.preventDefault(); if (e.target.id === 'weEan' && findEan(e.target.value)) { const h = findEan(e.target.value); $('#weHit').textContent = `${h.a.name} · ${colorName(h.v.c)} · ${h.v.s} · Bestand ${h.v.q}`; } weBook(); } });
   on('etiketten', e => {
     const t = e.target;
     const vb = t.closest('[data-etv]'); if (vb) { const h = findEan(vb.dataset.etv); if (h) { etAdd(h.a, h.v); renderEtList(); } return; }
-    const al = t.closest('[data-etall]'); if (al) { const a = artById(al.dataset.etall); a.variants.forEach(v => etAdd(a, v)); return renderEtList(); }
-    const as = t.closest('[data-etstock]'); if (as) { const a = artById(as.dataset.etstock); a.variants.filter(v => v.q > 0).forEach(v => etAdd(a, v, v.q)); return renderEtList(); }
+    const al = t.closest('[data-etall]'); if (al) { const a = artById(al.dataset.etall); a.variants.forEach(v => etAdd(a, v, lblAnz(a, 1), 1)); return renderEtList(); }
+    const as = t.closest('[data-etstock]'); if (as) { const a = artById(as.dataset.etstock); a.variants.filter(v => v.q > 0).forEach(v => etAdd(a, v, lblAnz(a, v.q), v.q)); return renderEtList(); }
     const rm = t.closest('[data-etrm]'); if (rm) { ET.items.splice(+rm.dataset.etrm, 1); return renderEtList(); }
     const b = t.closest('[data-et]'); if (b?.dataset.et === 'clear') { ET.items = []; return renderEtList(); } if (b?.dataset.et === 'print' && ET.items.length) openLabels(ET.items.map(x => ({...x})));
   });
   $('#view-etiketten').addEventListener('input', e => { if (e.target.id === 'etQ') { ET.q = e.target.value; renderEtRes(); } });
-  $('#view-etiketten').addEventListener('change', e => { const i = e.target.dataset.etn; if (i != null) { ET.items[+i].n = Math.max(1, parseInt(e.target.value, 10) || 1); renderEtList(); } });
+  $('#view-etiketten').addEventListener('change', e => { const i = e.target.dataset.etn; if (i != null) { const z = parseInt(e.target.value, 10), it = ET.items[+i]; it.n = isNaN(z) ? 1 : Math.max(0, z); delete it.m; renderEtList(); } });
   $('#view-etiketten').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'etQ') { const h = findEan(e.target.value); if (h) { etAdd(h.a, h.v); e.target.value = ''; ET.q = ''; renderEtList(); renderEtRes(); } } });
   on('buchhaltung', async e => {
     const b = e.target.closest('[data-fb]'); if (!b) return; if (b.dataset.fb === 'konten') return setGo('buchhaltung');
@@ -9452,7 +9612,7 @@ function openImport(kind = 'artikel') {
         const cat = ensureCat(val(r, 'cat') || (ex ? ex.cat : 'acc'));
         const fields = {...(ex?.fields || {})}; Object.keys(st.map).filter(k => k.startsWith('cf:')).forEach(k => { const x = val(r, k); if (x) fields[k.slice(3)] = x; });
         Object.entries(st.extra).forEach(([j, lbl]) => { const x = String(r[+j] ?? '').trim(); if (x && lbl) fields[lbl] = x; });
-        a = {id, name, brand: val(r, 'brand') || ex?.brand || '', cat, g: ex?.g || ({jacken: 'jacket', hosen: 'pants', schuhe: 'shoe', ski: 'ski', shirts: 'shirt', rucksaecke: 'backpack', acc: 'beanie'})[cat] || 'shirt', price: r2(price), sale: sale > 0 && sale < price ? r2(sale) : undefined, vat: [20, 13, 10, 0].includes(vat) ? vat : (ex?.vat ?? 20),
+        a = {id, name, brand: val(r, 'brand') || ex?.brand || '', cat, g: ex?.g || ({jacken: 'jacket', hosen: 'pants', schuhe: 'shoe', ski: 'ski', shirts: 'shirt', rucksaecke: 'backpack', acc: 'beanie'})[cat] || 'shirt', price: r2(price), sale: sale > 0 && sale < price ? r2(sale) : undefined, vat: [20, 13, 10, 0].includes(vat) ? vat : ex ? (ex.vat ?? 20) : (aeWgSatz(cat) ?? 20),   // ohne Angabe in der Datei: bestehender Artikel behält seinen Satz, neuer bekommt den der Warengruppe
           cost: cost > 0 ? r2(cost) : (ex?.cost ?? null), supplierId: sup?.id || ex?.supplierId || '', minStock: parseInt(val(r, 'min'), 10) >= 0 ? parseInt(val(r, 'min'), 10) : (ex?.minStock ?? 2), pop: ex?.pop || 50, tag: ex?.tag, prompts: ex?.prompts, fields, colors: [], sizes: [], combos: new Map(), ex};
         by.set(id, a);
       }
@@ -10361,7 +10521,7 @@ const ownWidgets = () => Array.isArray(CFG['dash.eigene']) ? CFG['dash.eigene'] 
 const OW_VORLAGEN = [
   ['Umsatz heute', 'kennzahl', "SELECT printf('€ %.2f', COALESCE(SUM(total),0)/100.0) AS wert FROM sales WHERE substr(ts,1,10) = date('now','localtime')", 'brutto'],
   ['Bons je Stunde (heute)', 'tabelle', "SELECT substr(ts,12,2) || ' Uhr' AS Stunde, COUNT(*) AS Bons, printf('€ %.2f', SUM(total)/100.0) AS Umsatz FROM sales WHERE kind = 'verkauf' AND substr(ts,1,10) = date('now','localtime') GROUP BY 1 ORDER BY 1", ''],
-  ['Unter Mindestbestand', 'liste', "SELECT a.name AS Artikel, v.stock || ' / ' || a.min_stock AS Bestand, v.ean AS EAN FROM variants v JOIN articles a ON a.id = v.article_id WHERE a.min_stock > 0 AND v.stock < a.min_stock ORDER BY v.stock LIMIT 20", ''],
+  ['Unter Mindestbestand', 'liste', "SELECT a.name AS Artikel, v.stock || ' / ' || a.min_stock AS Bestand, v.ean AS EAN FROM variants v JOIN articles a ON a.id = v.article_id LEFT JOIN stamm w ON w.kind = 'warengruppe' AND w.id = a.category WHERE a.min_stock > 0 AND v.stock < a.min_stock AND COALESCE(json_extract(w.data, '$.service'), 0) = 0 ORDER BY v.stock LIMIT 20", ''],
   ['Neue Kund:innen (30 Tage)', 'kennzahl', "SELECT COUNT(*) AS wert FROM customers WHERE created_at >= date('now','-30 days')", 'Kund:innen'],
 ];
 function registerOwnWidgets() {
@@ -10981,7 +11141,7 @@ async function wsBook() {
       toast('Zugang gebucht', {t2: `${Object.keys(cnt).length} Varianten`, type: 'pos', icon: 'boxes'});
     }
     Hooks.emit('purchasing.goods.received', {quelle: 'Scanner', stueck: WS.items.reduce((s, x) => s + x.qty, 0)});
-    const lbl = Object.entries(cnt).map(([ean, n]) => { const x = findEan(ean); return x ? {a: x.a, v: x.v, n} : null; }).filter(Boolean);
+    const lbl = Object.entries(cnt).map(([ean, n]) => { const x = findEan(ean); return x ? lblPos(x.a, x.v, n) : null; }).filter(Boolean);
     WS.items = []; WS.avis = null; WS.po = null; renderWeScanner();
     toast('Etiketten drucken?', {t2: `${lbl.length} Varianten`, icon: 'barcode', action: {label: 'Etiketten', run: () => openLabels(lbl)}, dur: 8000});
   } catch (e) { toast('Nicht gebucht', {t2: String(e), type: 'warn', dur: 8000}); }
@@ -11943,7 +12103,7 @@ async function renderSchaufenster() {
           ${tf('shop.oeffnung', 'Öffnungszeiten', 'erscheinen in der Fußzeile', true)}
           ${tf('shop.kontakt', 'Kontakt', 'Telefon, E-Mail, Social Media', true)}
           ${tf('shop.hinweis', 'Hinweis', 'z. B. Parkplätze, Anfahrt', true)}
-          <div class="set-row" style="border-bottom:0;display:block"><div class="set-l">Warengruppen im Schaufenster</div><div class="set-h" style="margin-bottom:8px">keine Auswahl = alle</div><div style="display:flex;flex-wrap:wrap;gap:6px">${catsInUse([...cats]).map(c => `<button class="chip" data-shc="${esc(c.id)}" aria-pressed="${cats.has(c.id)}">${esc(c.name)}</button>`).join('')}</div></div></div>
+          <div class="set-row" style="border-bottom:0;display:block"><div class="set-l">Warengruppen im Schaufenster</div><div class="set-h" style="margin-bottom:8px">keine Auswahl = alle – dazu gilt: sobald Warengruppen einer Webshop-Kategorie zugeordnet sind (Stammdaten › Warengruppen › Warengruppen, Karte „WebShop-Kategorien“), erscheinen nur Artikel aus aktiven, sichtbaren Webshop-Kategorien</div><div style="display:flex;flex-wrap:wrap;gap:6px">${catsInUse([...cats]).map(c => `<button class="chip" data-shc="${esc(c.id)}" aria-pressed="${cats.has(c.id)}">${esc(c.name)}</button>`).join('')}</div></div></div>
         <div class="card"><div class="set-row"><div><div class="set-l">Artikel ausblenden</div><div class="set-h">${hidden.size} ausgeblendet · Klick wechselt</div></div><div class="set-c"><input class="input" id="shQ" placeholder="Suchen …" style="width:200px"></div></div><div id="shArts" style="max-height:340px;overflow:auto"></div></div>
         <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" data-sh="save">${ic('check', 'i-sm')}Speichern</button></div>
       </div>
@@ -12062,11 +12222,11 @@ async function renderArtInfo(id, mode, title) {
 
 /* ── Bestandsinfo ── */
 const BI = {cat: 'alle', f: 'alle', q: ''};
-registerPage('bestandsinfo', {title: 'Bestandsinfo', sub: () => `${num(ART.reduce((s, a) => s + a.stock, 0))} Stück`, render: renderBestandsinfo});
+registerPage('bestandsinfo', {title: 'Bestandsinfo', sub: () => `${num(ART.reduce((s, a) => s + (wgService(a.cat) ? 0 : a.stock), 0))} Stück`, render: renderBestandsinfo});
 function renderBestandsinfo() {
   const v = $('#view-bestandsinfo'), n = norm(BI.q);
-  const rows = ART.filter(a => (BI.cat === 'alle' || a.cat === BI.cat) && (!n || a.hay.includes(n))).map(a => ({a, st: a.variants.reduce((s, x) => s + x.q, 0), neg: a.variants.filter(x => x.q < 0).length, low: a.variants.filter(x => x.q <= (a.minStock ?? 2)).length}))
-    .filter(r => BI.f === 'alle' || (BI.f === 'leer' && r.a.variants.some(x => x.q <= 0)) || (BI.f === 'min' && r.low) || (BI.f === 'neg' && r.neg));
+  const rows = ART.filter(a => (BI.cat === 'alle' || a.cat === BI.cat) && (!n || a.hay.includes(n))).map(a => { const svc = wgService(a.cat); return {a, svc, st: svc ? 0 : a.variants.reduce((s, x) => s + x.q, 0), neg: svc ? 0 : a.variants.filter(x => x.q < 0).length, low: svc ? 0 : a.variants.filter(x => x.q <= (a.minStock ?? 2)).length}; })   // Service-Warengruppen: keine Warnungen
+    .filter(r => BI.f === 'alle' || (BI.f === 'leer' && !r.svc && r.a.variants.some(x => x.q <= 0)) || (BI.f === 'min' && r.low) || (BI.f === 'neg' && r.neg));
   const ek = rows.reduce((s, r) => s + r.st * (r.a.cost || 0), 0), vk = rows.reduce((s, r) => s + r.st * (r.a.sale || r.a.price), 0);
   const byCat = {}; rows.forEach(r => { (byCat[r.a.cat] ||= {st: 0, ek: 0}); byCat[r.a.cat].st += r.st; byCat[r.a.cat].ek += r.st * (r.a.cost || 0); });
   v.innerHTML = `<div class="cv">${pageHead('Bestandsinfo', 'Bestand und Lagerwert je Artikel und Warengruppe – Klick öffnet die Artikelinfo')}
@@ -12240,7 +12400,7 @@ DK.preis = {t: 'Preisänderungen', one: 'Preisänderung', ic: 'tag', page: 'prei
   head: [{k: 'date', l: 'Gültig ab', t: 'date'}, {k: 'data.grund', l: 'Grund', t: 'select', o: ['Preisanpassung Lieferant', 'Saisonwechsel', 'Abverkauf', 'Wettbewerb', 'Sonstiges']}],
   acts: {geplant: [['durchfuehren', 'Jetzt durchführen', 'primary', {confirm: 'Preise jetzt ändern?'}], ['stornieren', 'Verwerfen', 'danger']]}};
 DOC_EDIT.preis = ['geplant'];
-DOC_AFTER.preis = {durchfuehren: async st => { await reloadArt(); toast('Preise geändert', {t2: `${st.data.lines.length} Artikel – Etiketten drucken?`, icon: 'tag', action: {label: 'Etiketten', run: () => openLabels(st.data.lines.map(l => artById(l.sku)).filter(Boolean).flatMap(a => a.variants.filter(v => v.q > 0).map(v => ({a, v, n: v.q}))))}}); }};
+DOC_AFTER.preis = {durchfuehren: async st => { await reloadArt(); toast('Preise geändert', {t2: `${st.data.lines.length} Artikel – Etiketten drucken?`, icon: 'tag', action: {label: 'Etiketten', run: () => openLabels(lblPreisPos(st.data.lines))}}); }};
 docPage('preis-uebersicht', 'preis', {title: 'Übersicht Preisänderungen', tabs: [['alle', 'Alle', () => true], ['durch', 'Durchgeführt', s => s === 'durchgefuehrt']], defTab: 'alle', noNew: true, actions: `<button class="btn btn-primary" data-goto="preisaenderung">${ic('plus', 'i-sm')}Preisänderung</button>`,
   cols: [{l: 'Gültig ab', f: d => esc(dDate(d.date))}, {l: 'Artikel', r: true, f: d => num((d.data.lines || []).length)}, {l: 'Grund', f: d => esc(d.data.grund || '')}]});
 docPage('preis-geplant', 'preis', {title: 'Geplante Preisänderungen', tabs: [['geplant', 'Geplant', s => s === 'geplant']], defTab: 'geplant', noNew: true, actions: `<button class="btn btn-primary" data-goto="preisaenderung">${ic('plus', 'i-sm')}Preisänderung</button>`,
@@ -12266,7 +12426,7 @@ async function preisGo() {
   try { await needPerm('artikel.bearbeiten', 'Preisänderung'); } catch { return; }
   try {
     const d = await invoke('doc_save', {doc: {kind: 'preis', partner_name: 'Preisänderung', date: PC.ab || today(), data: {lines, grund: PC.grund, modus: PC.modus, wert: PC.wert}}, user: S.user.name});
-    if (!PC.ab || PC.ab <= today()) { await invoke('doc_action', {id: d.id, action: 'durchfuehren', payload: {}, user: S.user.name}); await reloadArt(); toast('Preise geändert', {t2: `${lines.length} Artikel · ${d.no}`, type: 'pos', icon: 'tag', action: {label: 'Etiketten', run: () => openLabels(lines.map(l => artById(l.sku)).filter(Boolean).flatMap(a => a.variants.filter(v => v.q > 0).map(v => ({a, v, n: v.q}))))}}); }
+    if (!PC.ab || PC.ab <= today()) { await invoke('doc_action', {id: d.id, action: 'durchfuehren', payload: {}, user: S.user.name}); await reloadArt(); toast('Preise geändert', {t2: `${lines.length} Artikel · ${d.no}`, type: 'pos', icon: 'tag', action: {label: 'Etiketten', run: () => openLabels(lblPreisPos(lines))}}); }
     else toast('Preisänderung geplant', {t2: `${lines.length} Artikel ab ${dDate(PC.ab)} · ${d.no}`, type: 'pos', icon: 'clock'});
     Hooks.emit('pricing.change', {nr: d.no, artikel: lines.length, ab: PC.ab || today()}); PC.sel.clear(); renderPreisAend();
   } catch (e) { toast('Nicht möglich', {t2: String(e), type: 'warn'}); }
@@ -12375,7 +12535,7 @@ function bindArtikel() {
     const k = e.target.closest('[data-apk]'); if (k) { const p = k.closest('[style*="position:relative"]').querySelector('[data-apq]').dataset.apq, st = pickers[p]; if (st === MA) { const a = artById(k.dataset.apk); a.fields = {...a.fields, Master: 'ja'}; await artSave(a); MA.q = ''; return PAGES['master-artikel'].render(); } st.sel = k.dataset.apk; st.q = ''; return PAGES[S.view].render(); }
     const ao = e.target.closest('[data-aiopen]'); if (ao) { AIF.sel = ao.dataset.aiopen; return go('artikelinfo'); }
     const ed = e.target.closest('[data-aied]'); if (ed) return openEditor(artById(ed.dataset.aied));
-    const lb = e.target.closest('[data-ailbl]'); if (lb) { const a = artById(lb.dataset.ailbl); return openLabels(a.variants.filter(v => v.q > 0).map(v => ({a, v, n: v.q}))); }
+    const lb = e.target.closest('[data-ailbl]'); if (lb) { const a = artById(lb.dataset.ailbl); return openLabels(a.variants.filter(v => v.q > 0).map(v => lblPos(a, v, v.q))); }
     // Umlagerungen
     if (e.target.closest('[data-ulnew]')) return openTransferNew();
     const ts = e.target.closest('[data-tst2]'); if (ts) { await transferStatus(ts.dataset.no, ts.dataset.tst2); return PAGES[S.view].render(); }
@@ -12737,10 +12897,10 @@ const STAMM_DEF = {
     seed: [{id: 'STANDARD', name: 'Standard'}]},
   altersschluessel: {t: 'Altersbewertungs-Schlüssel', ic: 'percent', sub: 'Schlüssel, aus denen eine Warengruppe ihre Altersbewertung wählt – die Prozentsätze je Schlüssel stehen unter „Altersbewertung Prozentsätze“. Ein Schlüssel ohne eigene Stufen nutzt die Stufen von „Standard“', cols: [{k: 'name', l: 'Schlüssel'}],
     seed: [{id: 'STANDARD', name: 'Standard'}, {id: 'STATISTIK', name: 'Statistik'}]},
-  statgroessenset: {t: 'Statistik-Größen-Sets', ic: 'grid', sub: 'Fasst Größen für die Größen-Auswertung zusammen (z. B. 36 2/3 und 37 1/3 zählen als 37) – die Warengruppe wählt ihr Set; Größen ohne Zuordnung bleiben, wie sie sind', cols: [{k: 'name', l: 'Set'}, {k: 'zuordnung', l: 'Zuordnung (Größe=Statistik-Größe)', t: 'list', w: 380, ph: '36 2/3=37, 37 1/3=37, 38 2/3=39'}]},
+  statgroessenset: {t: 'Statistik-Größen-Sets', ic: 'grid', sub: 'Fasst Größen für die Größen-Auswertung zusammen (z. B. 36 2/3 und 37 1/3 zählen als 37) – die Warengruppe wählt ihr Set; Größen ohne Zuordnung bleiben, wie sie sind', cols: [{k: 'name', l: 'Set'}, {k: 'zuordnung', l: 'Zuordnung (Größe=Statistik-Größe, getrennt durch ;)', t: 'list', sep: ';', w: 380, ph: '36 2/3=37; 37 1/3=37; 37,5=38'}]},
   wghierarchie: {t: 'Warengruppenhierarchie (Etikett)', ic: 'layers', sub: 'Welche Ebenen der Hierarchie auf dem Etikett der Warengruppe stehen (z. B. Bereich › Haupt-Abteilung › Abteilung)', cols: [{k: 'name', l: 'Bezeichnung'}, {k: 'ebenen', l: 'Ebenen (von oben nach unten)', t: 'multi', o: [['hauptbereich', 'Haupt-Bereich'], ['bereich', 'Bereich'], ['hauptabteilung', 'Haupt-Abteilung'], ['abteilung', 'Abteilung']], w: 380}],
     seed: [{id: 'KEINE', name: 'Keine Hierarchie auf dem Etikett', ebenen: []}, {id: 'ABTEILUNG', name: 'Abteilung', ebenen: ['abteilung']}, {id: 'PFAD', name: 'Bereich › Haupt-Abteilung › Abteilung', ebenen: ['bereich', 'hauptabteilung', 'abteilung']}]},
-  groessenschluessel: {t: 'Größenschlüssel', ic: 'grid', sub: 'Größenläufe für die Artikelanlage (Order, EDI-Import, Artikel-Import)', cols: [{k: 'name', l: 'Größenschlüssel'}, {k: 'groessen', l: 'Größen', t: 'list', w: 340}],
+  groessenschluessel: {t: 'Größenschlüssel', ic: 'grid', sub: 'Größenläufe für die Artikelanlage – die Warengruppe wählt ihren Schlüssel, die Größen werden bei neuen Artikeln vorbelegt', cols: [{k: 'name', l: 'Größenschlüssel'}, {k: 'groessen', l: 'Größen', t: 'list', w: 340}],
     seed: [{id: 'KONF', name: 'Konfektion', groessen: ['XS', 'S', 'M', 'L', 'XL', 'XXL']}, {id: 'SCHUH', name: 'Schuhe EU', groessen: ['38', '39', '40', '41', '42', '43', '44', '45', '46']}, {id: 'HOSE', name: 'Hosen DE', groessen: ['44', '46', '48', '50', '52', '54', '56']}, {id: 'ONE', name: 'Einheitsgröße', groessen: ['one size']}]},
   groessenfolge: {t: 'Größen sortieren', ic: 'list', sub: 'Reihenfolge, in der Größen in Matrix, Etiketten und Auswertungen erscheinen', cols: [{k: 'name', l: 'Größe'}]},
   flaeche: {t: 'Flächen', ic: 'grid', sub: 'Verkaufsflächen je Filiale in m² – für Flächenproduktivität (Umsatz je m²)', cols: [{k: 'name', l: 'Fläche'}, {k: 'filiale', l: 'Filiale', t: 'select', o: storeOpts}, {k: 'm2', l: 'm²', t: 'num'}, {k: 'warengruppen', l: 'Warengruppen', t: 'multi', o: catOpts, w: 260}]},
@@ -12828,8 +12988,8 @@ const STAMM_DEF = {
   edimapwg: {t: 'Zuordnung Warengruppen', ic: 'swap', sub: 'Warengruppen-Codes der Lieferanten (EDI/PRICAT) auf eigene Warengruppen', cols: [{k: 'lieferant', l: 'Lieferant', t: 'select', o: supOpts}, {k: 'code', l: 'Code des Lieferanten'}, {k: 'warengruppe', l: 'Warengruppe', t: 'select', o: catOpts}]},
   edimapgr: {t: 'Zuordnung Größen', ic: 'swap', sub: 'Größenbezeichnungen der Lieferanten auf eigene Größen', cols: [{k: 'lieferant', l: 'Lieferant', t: 'select', o: supOpts}, {k: 'code', l: 'Größe beim Lieferanten'}, {k: 'groesse', l: 'eigene Größe'}]},
   wgschema: {t: 'Warengruppen Schemas', ic: 'grid', sub: 'Externe Warengruppen-Schemas (z. B. GS1 GPC, Verbands-Schlüssel) je Warengruppe', cols: [{k: 'name', l: 'Schema'}, {k: 'warengruppe', l: 'Warengruppe', t: 'select', o: catOpts}, {k: 'code', l: 'Code im Schema'}]},
-  webkategorie: {t: 'Webshop-Kategorie', ic: 'folder', sub: 'Kategorien im Schaufenster/Webshop – die Warengruppen ordnen sich ihnen selbst zu (Stammdaten › Warengruppen › Warengruppen, Karte „WebShop-Kategorien“); „Warengruppen“ hier ist die frühere Zuordnung und gilt weiter', cols: [{k: 'name', l: 'Kategorie'}, {k: 'sichtbar', l: 'sichtbar', t: 'check'}, {k: 'warengruppen', l: 'Warengruppen (früher)', t: 'multi', o: catOpts, w: 300}]},
-  webfilter: {t: 'Artikel-Filter (Webshop)', ic: 'filter', sub: 'Artikel vom Webshop ausschließen – nach Marke, Warengruppe, Feld oder Mindestbestand', cols: [{k: 'name', l: 'Regel'}, {k: 'feld', l: 'Feld', t: 'select', o: [['brand', 'Marke'], ['cat', 'Warengruppe'], ['id', 'Artikel-Nr.'], ['minbestand', 'Bestand unter']]}, {k: 'wert', l: 'Wert'}]},
+  webkategorie: {t: 'Webshop-Kategorie', ic: 'folder', def: {sichtbar: true}, sub: 'Kategorien im Schaufenster/Webshop – die Warengruppen ordnen sich ihnen selbst zu (Stammdaten › Warengruppen › Warengruppen, Karte „WebShop-Kategorien“); „Warengruppen“ hier ist die frühere Zuordnung und gilt weiter', cols: [{k: 'name', l: 'Kategorie'}, {k: 'sichtbar', l: 'im Schaufenster sichtbar', t: 'check'}, {k: 'warengruppen', l: 'Warengruppen (früher)', t: 'multi', o: catOpts, w: 300}]},
+  webfilter: {t: 'Artikel-Filter (Webshop)', ic: 'filter', sub: 'Artikel aus dem Digitalen Schaufenster ausschließen – nach Marke, Warengruppe, Feld oder Mindestbestand', cols: [{k: 'name', l: 'Regel'}, {k: 'feld', l: 'Feld', t: 'select', o: [['brand', 'Marke'], ['cat', 'Warengruppe'], ['id', 'Artikel-Nr.'], ['minbestand', 'Bestand unter']]}, {k: 'wert', l: 'Wert'}]},
   webversand: {t: 'Versand (Webshop)', ic: 'truck', sub: 'Versandarten und Kosten für Webshop-Bestellungen', cols: [{k: 'name', l: 'Versandart'}, {k: 'preis', l: 'Kosten €', t: 'num'}, {k: 'frei_ab', l: 'versandkostenfrei ab €', t: 'num'}, {k: 'spediteur', l: 'Spediteur', t: 'select', o: () => stOpts('spediteur')}],
     seed: [{id: 'STD', name: 'Standard', preis: 5.9, frei_ab: 100, spediteur: 'POST'}, {id: 'ABH', name: 'Abholung in der Filiale', preis: 0, frei_ab: 0}]},
   webfiliale: {t: 'Webshop-Service Filialen', ic: 'store', sub: 'Welche Filialen Bestand für den Webshop liefern und Bestellungen ausführen', cols: [{k: 'name', l: 'Filiale'}, {k: 'bestand', l: 'liefert Bestand', t: 'check'}, {k: 'versand', l: 'versendet', t: 'check'}, {k: 'abholung', l: 'Abholung', t: 'check'}]},
@@ -12863,7 +13023,7 @@ async function stammSave(kind, rows) {
 
 /* ── Eine Zeile einer Stammdaten-Tabelle im Dialog bearbeiten oder neu anlegen (Stift/Plus an den Auswahlfeldern der Masken) ── */
 const STROW = {};   // Tabellen mit eigenem Dialog: kind → (id|null, {preset, titel}) → Promise<id|null>
-const STNEW = {groessenschluessel: rows => { const nr = Math.max(0, ...rows.map(r => +r.nr || 0)) + 1; return {id: 'gs-' + nr, extra: {nr, sync: false}}; }};   // Schlüssel-Vergabe je Tabelle
+const STNEW = {groessenschluessel: (rows, r) => { const nr = r.nr != null && r.nr !== '' && +r.nr > 0 ? Math.round(+r.nr) : Math.max(0, ...rows.map(x => +x.nr || 0)) + 1; return {id: 'gs-' + nr, extra: {nr, sync: !!r.sync}}; }};   // Schlüssel-Vergabe je Tabelle: die eingegebene Nr. gilt, sonst die nächste freie
 const stSlug = x => String(x || '').toUpperCase().replace(/Ä/g, 'AE').replace(/Ö/g, 'OE').replace(/Ü/g, 'UE').replace(/ß/g, 'SS').replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 20);
 /** Dialog „Zeile bearbeiten / neu“ für jede Stammdaten-Art aus STAMM_DEF. id = null → neue Zeile (preset: Vorgaben). Gibt die Kennung der gespeicherten Zeile zurück, bei Abbruch null.
  *  Mehrfach-Auswahlen mit sehr vielen Einträgen (alle Warengruppen) bleiben unverändert und werden in der Tabelle gepflegt. */
@@ -12875,7 +13035,7 @@ async function stRowDialog(kind, id, o = {}) {
   if (!base.length) base = stRows(kind);   // Tabelle nur mit eingebauten Startzeilen: diese gehören beim Sichern dazu
   const rows = base.map(r => ({...r})), cur = id ? rows.find(r => String(r.id) === String(id)) : null;
   if (id && !cur) { toast(`${o.titel || D.t}: diese Zeile gibt es nicht mehr`, {type: 'warn'}); return null; }
-  const neu = !cur, row0 = cur || {...(o.preset || {})}, cols = D.cols.filter(c => c.t !== 'ro');
+  const neu = !cur, row0 = cur || {...(D.def || {}), ...(o.preset || {})}, cols = D.cols.filter(c => c.t !== 'ro'), first = cols.find(c => c.k === 'name') || cols[0];
   const opts = c => typeof c.o === 'function' ? c.o() : c.o || [];
   const fld = c => {
     const v = row0[c.k], op = opts(c), lbl = `<span>${esc(c.l)}</span>`;
@@ -12891,7 +13051,7 @@ async function stRowDialog(kind, id, o = {}) {
     }
     if (c.t === 'area') return `<label class="field" style="grid-column:1/-1">${lbl}<textarea class="input" rows="3" data-f="${c.k}" style="height:auto;padding:8px 12px">${esc(v ?? '')}</textarea></label>`;
     if (c.t === 'color') return `<label class="field">${lbl}<input type="color" data-f="${c.k}" value="${esc(v || '#888888')}" style="width:56px;height:36px;border:0;background:none"></label>`;
-    const val = c.t === 'list' ? (v || []).join(', ') : c.t === 'num' && v != null && v !== '' ? String(v).replace('.', ',') : v ?? '';
+    const val = c.t === 'list' ? (v || []).join(c.sep ? c.sep + ' ' : ', ') : c.t === 'num' && v != null && v !== '' ? String(v).replace('.', ',') : v ?? '';
     return `<label class="field" ${c.t === 'list' ? 'style="grid-column:1/-1"' : ''}>${lbl}<input class="input ${c.t === 'num' ? 'num' : ''}" type="${c.t === 'date' ? 'date' : c.t === 'time' ? 'time' : 'text'}" data-f="${c.k}" value="${esc(val)}" ${c.ph ? `placeholder="${esc(c.ph)}"` : ''} ${c.t === 'num' ? 'inputmode="decimal"' : ''} autocomplete="off"></label>`;
   };
   return new Promise(res => {
@@ -12899,10 +13059,10 @@ async function stRowDialog(kind, id, o = {}) {
     const el = openLayer(`<div class="modal" style="width:min(580px,100%)" role="dialog" aria-modal="true" aria-label="${esc(o.titel || D.t)}"><div class="m-head"><div class="m-ic">${ic(D.ic || 'list')}</div><div><h2>${esc(o.titel || D.t)} ${neu ? '– neu' : 'bearbeiten'}</h2><p>${neu ? 'Neue Zeile anlegen' : esc(cur[D.cols[0]?.k] || cur.id)}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
       <div class="m-body" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))"><label class="field"><span>Kürzel</span><input class="input mono" data-f="id" value="${esc(cur?.id || '')}" ${cur ? 'readonly tabindex="-1"' : ''} maxlength="32" autocomplete="off" placeholder="${cur ? '' : 'wird aus dem Namen gebildet'}"></label>${cols.map(fld).join('')}</div>
       <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" data-ok>${ic('check', 'i-sm')}Speichern</button></div></div>`,
-      {focus: `[data-f="${cols[0]?.k || 'id'}"]`, onClose: () => { if (!fertig) res(null); }});
+      {focus: `[data-f="${first?.k || 'id'}"]`, onClose: () => { if (!fertig) res(null); }});
     // große Auswahllisten erst beim Öffnen füllen
-    el.addEventListener('focusin', e => { const t = e.target; if (t.dataset?.lazy != null && t.tagName === 'SELECT') { const c = cols.find(x => x.k === t.dataset.f), cv = t.value; t.removeAttribute('data-lazy'); t.innerHTML = `<option value="">–</option>` + opts(c).map(([x, l]) => `<option value="${esc(x)}" ${String(x) === cv ? 'selected' : ''}>${esc(l)}</option>`).join(''); } });
-    const idIn = $('[data-f="id"]', el), first = cols[0];
+    el.addEventListener('focusin', e => { const t = e.target; if (t.dataset?.lazy != null && t.tagName === 'SELECT') { const c = cols.find(x => x.k === t.dataset.f), cv = t.value; t.removeAttribute('data-lazy'); const alle = opts(c), keep = cv && !alle.some(([x]) => String(x) === cv) ? t.querySelector(`option[value="${CSS.escape(cv)}"]`)?.outerHTML || '' : ''; t.innerHTML = `<option value="">–</option>${keep}` + alle.map(([x, l]) => `<option value="${esc(x)}" ${String(x) === cv ? 'selected' : ''}>${esc(l)}</option>`).join(''); t.value = cv; } });
+    const idIn = $('[data-f="id"]', el);
     if (neu && first) $(`[data-f="${first.k}"]`, el)?.addEventListener('input', e => { if (!idIn.dataset.hand) idIn.value = stSlug(e.target.value); });
     idIn.addEventListener('input', () => { idIn.dataset.hand = '1'; });
     $('[data-ok]', el).onclick = async () => {
@@ -12912,16 +13072,18 @@ async function stRowDialog(kind, id, o = {}) {
         const f = fv(c.k); if (!f) continue;
         if (c.t === 'check') r[c.k] = f.checked;
         else if (c.t === 'num') { const t = f.value.trim(); if (t === '') r[c.k] = null; else { const n = parseAmt(t); if (isNaN(n)) { toast(`${c.l}: Zahl angeben`, {type: 'warn'}); f.focus(); return; } r[c.k] = n; } }
-        else if (c.t === 'list') r[c.k] = f.value.split(/[,;]/).map(x => x.trim()).filter(Boolean);
+        else if (c.t === 'list') r[c.k] = f.value.split(c.sep || /[,;]/).map(x => x.trim()).filter(Boolean);
         else r[c.k] = f.value.trim();
       }
       if (first && first.t !== 'check' && !String(r[first.k] ?? '').trim()) { toast(`${first.l} angeben`, {type: 'warn'}); fv(first.k)?.focus(); return; }
       let all = rows;
       if (neu) {
-        const gen = STNEW[kind]?.(rows);
-        let nid = idIn.value.trim() || gen?.id || stSlug(r[first?.k]) || stSlug(kind) || 'NEU';
-        if (!idIn.value.trim() && !gen) { const b = nid; let k = 2; while (rows.some(x => String(x.id).toLowerCase() === nid.toLowerCase())) nid = `${b}-${k++}`; }
+        const gen = STNEW[kind]?.(rows, r);
+        const hand = idIn.dataset.hand ? idIn.value.trim() : '';   // nur ein von Hand getipptes Kürzel zählt; das aus dem Namen gebildete wird bei Bedarf durchnummeriert
+        let nid = hand || gen?.id || idIn.value.trim() || stSlug(r[first?.k]) || stSlug(kind) || 'NEU';
+        if (!hand && !gen) { const b = nid; let k = 2; while (rows.some(x => String(x.id).toLowerCase() === nid.toLowerCase())) nid = `${b}-${k++}`; }
         else if (rows.some(x => String(x.id).toLowerCase() === nid.toLowerCase())) { toast(`Das Kürzel „${nid}“ gibt es schon`, {type: 'warn'}); idIn.focus(); return; }
+        if (gen?.extra?.nr != null && rows.some(x => +x.nr === +gen.extra.nr)) { toast(`Die Nr. ${gen.extra.nr} gibt es schon`, {type: 'warn'}); $('[data-f="nr"]', el)?.focus(); return; }
         Object.assign(r, gen?.extra || {}); r.id = nid; r._aktiv = true; all = [...rows, r];
       } else all = rows.map(x => String(x.id) === String(cur.id) ? {...x, ...r, id: cur.id} : x);
       try { await stammSave(kind, all); } catch (err) { toast('Nicht gespeichert', {t2: String(err.message || err), type: 'warn', dur: 6000}); return; }
@@ -12943,7 +13105,7 @@ const stCell = (c, r, i) => {
   if (c.t === 'area') return `<textarea class="input" rows="2" ${a} ${w} style="height:auto;padding:6px 10px;${c.w ? `min-width:${c.w}px` : ''}">${esc(v ?? '')}</textarea>`;
   if (c.t === 'color') return `<input type="color" ${a} value="${esc(v || '#888888')}" style="width:44px;height:32px;border:0;background:none">`;
   const type = c.t === 'date' ? 'date' : c.t === 'time' ? 'time' : 'text';
-  const val = c.t === 'list' ? (v || []).join(', ') : c.t === 'num' && v != null && v !== '' ? String(v).replace('.', ',') : v ?? '';
+  const val = c.t === 'list' ? (v || []).join(c.sep ? c.sep + ' ' : ', ') : c.t === 'num' && v != null && v !== '' ? String(v).replace('.', ',') : v ?? '';
   return `<input class="input ${c.t === 'num' ? 'num' : ''}" type="${type}" ${a} value="${esc(val)}" ${c.ph ? `placeholder="${esc(c.ph)}"` : ''} ${w} ${c.t === 'num' ? 'inputmode="decimal" style="max-width:110px"' : ''}>`;
 };
 function stammPage(kind, page, extra = {}) {
@@ -12987,12 +13149,12 @@ async function renderStamm(kind, page, extra = {}) {
     if (t.dataset.stm) { const r = st.rows[i]; const set = new Set(r[t.dataset.stm] || []); t.checked ? set.add(t.value) : set.delete(t.value); r[t.dataset.stm] = [...set]; mark(); return; }
     if (!t.dataset.stc || isNaN(i)) return;
     const c = D.cols.find(x => x.k === t.dataset.stc) || {k: 'id'};
-    st.rows[i][c.k] = c.t === 'check' ? t.checked : c.t === 'num' ? (t.value.trim() === '' ? null : parseAmt(t.value)) : c.t === 'list' ? t.value.split(/[,;]/).map(x => x.trim()).filter(Boolean) : t.value;
+    st.rows[i][c.k] = c.t === 'check' ? t.checked : c.t === 'num' ? (t.value.trim() === '' ? null : parseAmt(t.value)) : c.t === 'list' ? t.value.split(c.sep || /[,;]/).map(x => x.trim()).filter(Boolean) : t.value;
     mark();
   };
   v.onclick = async e => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.stadd) { const r = {id: '', _aktiv: true}; D.cols.forEach(c => { r[c.k] = c.t === 'list' || c.t === 'multi' ? [] : c.t === 'check' ? false : ''; }); r.id = (kind.slice(0, 3).toUpperCase() + (st.rows.length + 1)).replace(/[^A-Z0-9]/g, ''); while (st.rows.some(x => x.id === r.id)) r.id += 'X'; st.rows.push(r); st.dirty = true; renderStamm(kind, page, extra).then(() => $$(`[data-stc="${D.cols[0].k}"]`, v).at(-1)?.focus()); return; }
+    if (b.dataset.stadd) { const r = {id: '', _aktiv: true}; D.cols.forEach(c => { r[c.k] = c.t === 'list' || c.t === 'multi' ? [] : c.t === 'check' ? false : ''; }); Object.assign(r, D.def || {}); r.id = (kind.slice(0, 3).toUpperCase() + (st.rows.length + 1)).replace(/[^A-Z0-9]/g, ''); while (st.rows.some(x => x.id === r.id)) r.id += 'X'; st.rows.push(r); st.dirty = true; renderStamm(kind, page, extra).then(() => $$(`[data-stc="${D.cols[0].k}"]`, v).at(-1)?.focus()); return; }
     if (b.dataset.stakt != null) { const r = st.rows[+b.dataset.stakt]; r._aktiv = r._aktiv === false; st.dirty = true; renderStamm(kind, page, extra); return; }
     if (b.dataset.stdel != null) { st.rows.splice(+b.dataset.stdel, 1); st.dirty = true; renderStamm(kind, page, extra); return; }
     if (b.dataset.stmv != null) { const i = +b.dataset.stmv, j = i + +b.dataset.d; if (j < 0 || j >= st.rows.length) return; [st.rows[i], st.rows[j]] = [st.rows[j], st.rows[i]]; st.dirty = true; renderStamm(kind, page, extra); return; }
@@ -13109,7 +13271,7 @@ function bindStamm() {
    Bericht, Intrastat, Artikelliste, Feste Rabatte, Prämien, Hotels,
    Altersbewertung, Flächenproduktivität) und Power-BI-Anbindung.
    ════════════════════════════════════════════════════════════════════ */
-const AN_DIMS = [['warengruppe', 'Warengruppe'], ['marke', 'Marke'], ['artikel', 'Artikel'], ['farbe', 'Farbe'], ['groesse', 'Größe'], ['preislage', 'Preislage'], ['lieferant', 'Lieferant'], ['saison', 'Saison'],
+const AN_DIMS = [['warengruppe', 'Warengruppe'], ['marke', 'Marke'], ['artikel', 'Artikel'], ['farbe', 'Farbe'], ['groesse', 'Größe'], ['statgroesse', 'Statistik-Größe'], ['preislage', 'Preislage'], ['lieferant', 'Lieferant'], ['saison', 'Saison'],
   ['verkaeufer', 'Verkäufer:in'], ['kassier', 'Kassier:in'], ['kunde', 'Kunde'], ['filiale', 'Filiale'], ['filialgruppe', 'Filialgruppe'], ['haustyp', 'Haus-Typ'], ['jahr', 'Jahr'], ['monat', 'Monat'], ['tag', 'Tag'], ['wochentag', 'Wochentag'], ['stunde', 'Stunde']];
 const AN_MEAS = [['menge', 'Menge', 'n'], ['umsatz', 'Umsatz brutto', 'e'], ['rabatt', 'Rabatt', 'e'], ['netto', 'Umsatz netto', 'e'], ['ek', 'Wareneinsatz EK', 'e'], ['rohertrag', 'Rohertrag', 'e'], ['bons', 'Bons', 'n']];
 Object.assign(DEFAULTS, {'analyse.zeitraum': 'monat', 'analyse.dims': ['warengruppe'], 'analyse.kennzahlen': ['menge', 'umsatz', 'rohertrag'], 'analyse.anteil': true, 'intrastat.laender': {}, 'intrastat.ware_kg': 0.5});
@@ -13344,8 +13506,8 @@ function anSimplePage(id, title, sub, dims, meas, cust = [], per = 'jahr') {
   }});
   VIEW_PERM[id] = 'berichte';
 }
-anSimplePage('an-groessen', 'Größen-Auswertung', 'Abverkauf je Warengruppe und Größe – für die Größenaufteilung in der Order', ['warengruppe', 'groesse'], ['menge', 'umsatz', 'rohertrag']);
-anSimplePage('an-preislagen', 'Preislagen-Auswertung', 'Umsatz und Spanne je Preislage – wo liegt der Schwerpunkt des Sortiments?', ['preislage', 'warengruppe'], ['menge', 'umsatz', 'rohertrag'], ['SPANNE']);
+anSimplePage('an-groessen', 'Größen-Auswertung', 'Abverkauf je Warengruppe und Statistik-Größe (das Statistik-Größen-Set der Warengruppe fasst Größen zusammen, z. B. 36 2/3 und 37 1/3 zu 37) – für die Größenaufteilung in der Order', ['warengruppe', 'statgroesse'], ['menge', 'umsatz', 'rohertrag']);
+anSimplePage('an-preislagen', 'Preislagen-Auswertung', 'Umsatz und Spanne je Preislage – die Stufen kommen aus dem Preislagen-Schlüssel der Warengruppe (Stammdaten › Preislagen); wo liegt der Schwerpunkt des Sortiments?', ['preislage', 'warengruppe'], ['menge', 'umsatz', 'rohertrag'], ['SPANNE']);
 
 /* Artikel Filialmanagement: Bestand je Filiale */
 registerPage('an-filialbestand', {title: 'Artikel Filialmanagement', sub: () => `${STORES.length} Filiale${STORES.length === 1 ? '' : 'n'}`, render: renderFilialBestand});
@@ -13398,6 +13560,33 @@ async function renderArtBericht() {
 registerPage('an-intrastat', {title: 'Intrastat Auswertung', sub: () => 'Innergemeinschaftliche Wareneingänge', render: renderIntrastat});
 VIEW_PERM['an-intrastat'] = 'berichte';
 const IS = {mon: dIso(new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)).slice(0, 7), data: null};
+/** Gewicht in kg aus einer Angabe: Zahl = Wert in der Standardeinheit std ('g' oder 'kg'); Text mit Einheit in deutscher Schreibweise („420 g“, „1.050 g“, „1,5 kg“, „0.35 kg“); sonst null */
+function anGewichtKg(v, std = 'g') {
+  if (v == null || v === '') return null;
+  let n, unit = std;
+  if (typeof v === 'number') n = v;
+  else {
+    const t = String(v).trim().toLowerCase(), m = t.match(/\d[\d.,\s]*/); if (!m) return null;
+    const rest = t.slice(m.index + m[0].length).trim();
+    unit = /^(kg|kilo)/.test(rest) ? 'kg' : /^g(r|ramm)?(\b|$)/.test(rest) ? 'g' : std;
+    let z = m[0].replace(/\s/g, '');
+    if (z.includes(',')) z = z.replace(/\./g, '').replace(',', '.');                  // 1.050,5 · 1,5
+    else if (unit === 'g' && /^\d{1,3}(\.\d{3})+$/.test(z)) z = z.replace(/\./g, '');   // „1.050 g“ = 1050 g (Punkt = Tausender)
+    n = parseFloat(z);                                                                 // sonst Punkt = Dezimalpunkt („0.35 kg“)
+  }
+  return isFinite(n) && n > 0 ? (unit === 'kg' ? n : n / 1000) : null;
+}
+/** Warennummer, Bezeichnung und Eigenmasse (kg je Stück) eines Artikels für Intrastat – jeweils mit Herkunft: Artikel, Warengruppe, Standardgewicht bzw. fehlt */
+function anIsWare(a) {
+  const wg = wgRaw(a.cat), roh = x => String(x ?? '').trim(), nr = x => roh(x).replace(/\D/g, '');   // Warennummer = nur Ziffern: „6201.12.90“, „6201 12 90“ und „62011290“ sind dieselbe Meldezeile (Anzeige, CSV, Gruppierung)
+  const quellen = [[a.fields?.Zolltarifnummer, 'Artikel'], [a.fields?.Zolltarif, 'Artikel'], [a.details?.zolltarif, 'Artikel'], [wg?.intrastat_nr, 'Warengruppe'], [wg?.zolltarif, 'Warengruppe']], hit = quellen.find(([x]) => nr(x));
+  let tarif = hit ? nr(hit[0]) : '', tq = hit ? hit[1] : 'fehlt';
+  if (!tarif) tarif = roh(quellen.find(([x]) => roh(x))?.[0]) || '–';   // Eintrag ohne eine einzige Ziffer: das Original bleibt sichtbar (als „Nummer fehlt“)
+  let kg = anGewichtKg(a.fields?.Gewicht, 'g') ?? anGewichtKg(a.details?.gewicht_g, 'g'), kq = 'Artikel';
+  if (kg == null) { kg = anGewichtKg(wg?.gewicht, 'kg'); kq = 'Warengruppe'; }
+  if (kg == null) { kg = +CFG['intrastat.ware_kg'] || 0.5; kq = 'Standard'; }
+  return {tarif, tq, kg, kq, bez: String(wg?.intrastat_bez || '').trim() || wg?.name || catName(a.cat)};
+}
 async function renderIntrastat() {
   const v = $('#view-an-intrastat');
   if (!DESKTOP) { v.innerHTML = desktopEmpty('globe', 'Intrastat'); return; }
@@ -13411,23 +13600,23 @@ async function renderIntrastat() {
     const a = artById(m.article_id); if (!a) continue;
     const land = SUPPLIERS_ALL.find(x => x.id === a.supplierId)?.country || lands[a.supplierId] || '';
     if (!land || !eu.has(land) || land === home) continue;
-    const wg = stRows('warengruppe').find(x => x.id === a.cat);
-    const tarif = a.fields?.Zolltarifnummer || a.fields?.Zolltarif || wg?.zolltarif || '–';
-    const kg = parseFloat(String(a.fields?.Gewicht || '').replace(',', '.')) / (/kg/i.test(a.fields?.Gewicht || '') ? 1 : 1000) || +CFG['intrastat.ware_kg'] || 0.5;
-    const k = `${land}|${tarif}`; const x = agg[k] ||= {land, tarif, menge: 0, wert: 0, kg: 0, arts: new Set()};
-    x.menge += m.delta; x.wert += m.delta * (a.cost || 0); x.kg += m.delta * kg; x.arts.add(a.name);
+    const {tarif, tq, kg, kq, bez} = anIsWare(a);
+    const k = `${land}|${tarif}`; const x = agg[k] ||= {land, tarif, menge: 0, wert: 0, kg: 0, arts: new Set(), bez: new Set(), tq: new Set(), kq: new Set()};
+    x.menge += m.delta; x.wert += m.delta * (a.cost || 0); x.kg += m.delta * kg; x.arts.add(a.name); x.bez.add(bez); x.tq.add(tq); x.kq.add(kq);
   }
   const rows = Object.values(agg).sort((a, b) => b.wert - a.wert), sum = rows.reduce((s, r) => s + r.wert, 0);
-  const tbl = `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Versendungsland</th><th>Warennummer (KN8)</th><th>Art des Geschäfts</th><th class="r">Menge</th><th class="r">Eigenmasse kg</th><th class="r" style="padding-right:16px">Rechnungsbetrag</th></tr></thead><tbody>${rows.map(r => `<tr><td style="padding-left:16px"><b>${esc(r.land)}</b> <span class="muted">${esc(stName('land', r.land))}</span></td><td class="mono">${esc(r.tarif)}<div class="muted" style="font-size:11.5px">${esc([...r.arts].slice(0, 3).join(', '))}</div></td><td>11 (Kauf)</td><td class="r num">${num(r.menge)}</td><td class="r num">${num(Math.round(r.kg * 10) / 10)}</td><td class="r num" style="padding-right:16px">${eur(r.wert)}</td></tr>`).join('')}</tbody></table>`;
-  v.innerHTML = `<div class="cv">${pageHead('Intrastat Auswertung', 'Eingänge aus anderen EU-Staaten je Land und Zolltarifnummer (Feld „Zolltarifnummer“ am Artikel oder an der Warengruppe; Gewicht aus Feld „Gewicht“)', `<button class="btn btn-secondary" data-isp>${ic('printer', 'i-sm')}Drucken</button><button class="btn btn-secondary" data-isx>${ic('upload', 'i-sm')}CSV</button>`)}
-    <div class="filters"><input class="input" type="month" data-ism value="${IS.mon}" style="width:auto"><span class="muted">${num(moves.length)} Eingangsbuchungen · Schwelle Eingänge AT: € 1.100.000 p. a.</span></div>
+  const herk = set => ['Artikel', 'Warengruppe', 'Standard'].filter(h => set.has(h)).join(' + '), bezTxt = r => { const l = [...r.bez]; return l.slice(0, 3).join(' / ') + (l.length > 3 ? ' …' : ''); }, ohneNr = rows.filter(r => r.tq.has('fehlt')).length;
+  const tbl = `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Versendungsland</th><th>Warennummer (KN8)</th><th>Warenbezeichnung</th><th>Art des Geschäfts</th><th class="r">Menge</th><th class="r">Eigenmasse kg</th><th class="r" style="padding-right:16px">Rechnungsbetrag</th></tr></thead><tbody>${rows.map(r => `<tr><td style="padding-left:16px"><b>${esc(r.land)}</b> <span class="muted">${esc(stName('land', r.land))}</span></td><td><span class="mono">${esc(r.tarif)}</span><div class="muted" style="font-size:11.5px">${r.tq.has('fehlt') ? `<span style="color:var(--warn)">Nummer fehlt</span>${r.tq.size > 1 ? ' · teils aus ' + esc(herk(r.tq)) : ''}` : 'aus ' + esc(herk(r.tq))}</div></td><td>${esc(bezTxt(r))}<div class="muted" style="font-size:11.5px">${esc([...r.arts].slice(0, 3).join(', '))}</div></td><td>11 (Kauf)</td><td class="r num">${num(r.menge)}</td><td class="r num">${num(Math.round(r.kg * 10) / 10, 1)}<div class="muted" style="font-size:11.5px">aus ${esc(herk(r.kq))}</div></td><td class="r num" style="padding-right:16px">${eur(r.wert)}</td></tr>`).join('')}</tbody></table>`;
+  v.innerHTML = `<div class="cv">${pageHead('Intrastat Auswertung', 'Eingänge aus anderen EU-Staaten je Land und Warennummer – Nummer vom Artikel (Zolltarifnummer), sonst von der Warengruppe (Intrastat-Waren-Nr.); Eigenmasse aus dem Artikelgewicht, sonst dem Durchschnitts-Gewicht der Warengruppe, sonst dem Standardgewicht (Analyseeinstellungen)', `<button class="btn btn-secondary" data-isp>${ic('printer', 'i-sm')}Drucken</button><button class="btn btn-secondary" data-isx>${ic('upload', 'i-sm')}CSV</button>`)}
+    <div class="filters"><input class="input" type="month" data-ism value="${IS.mon}" style="width:auto"><span class="muted">${num(moves.length)} Eingangsbuchungen · Schwelle Eingänge AT: € 1.100.000 p. a.${ohneNr ? ` · <span style="color:var(--warn)">${ohneNr} Meldezeile${ohneNr === 1 ? '' : 'n'} ohne Warennummer (am Artikel oder an der Warengruppe pflegen)</span>` : ''}</span></div>
     ${kpiCards([[eur0(sum), 'Rechnungsbetrag EU-Eingänge'], [num(rows.length), 'Meldezeilen'], [num(rows.reduce((s, r) => s + r.menge, 0)), 'Stück']])}
     <div class="card" style="margin-bottom:14px"><div class="set-row"><div><div class="set-l">Versendungsland je Lieferant</div><div class="set-h">Das Land des Lieferanten (Stammdaten › Lieferanten › Allgemein) gilt als Versendungsland; Lieferanten aus Österreich und aus Nicht-EU-Ländern werden nicht gemeldet.</div></div><div class="set-c"><button class="btn btn-secondary btn-sm" data-isgo>${ic('building', 'i-sm')}Lieferanten öffnen</button></div></div><div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 14px">${Object.entries(SUPPLIERS_ALL.reduce((m, s) => { const k = s.country || 'AT'; m[k] = (m[k] || 0) + 1; return m; }, {})).sort().map(([k, n]) => `<span class="pill ${eu.has(k) && k !== home ? 'info' : ''}" style="height:24px">${esc(landName(k))}: ${n} ${n === 1 ? 'Lieferant' : 'Lieferanten'}</span>`).join('')}</div></div>
     <div class="card" style="overflow:auto">${rows.length ? tbl : '<div class="empty" style="padding:40px 20px"><h3>Keine meldepflichtigen Eingänge</h3><p>Monat wählen und Versendungsland der Lieferanten festlegen.</p></div>'}</div></div>`;
   $('[data-ism]', v).onchange = e => { IS.mon = e.target.value; renderIntrastat(); };
   $('[data-isgo]', v).onclick = () => go('lieferanten');
   $('[data-isp]', v).onclick = () => anPrint(`Intrastat ${IS.mon}`, tbl);
-  $('[data-isx]', v).onclick = async () => { const csv = '﻿Land;Warennummer;Geschäftsart;Menge;Eigenmasse kg;Rechnungsbetrag\r\n' + rows.map(r => [r.land, r.tarif, 11, r.menge, String(Math.round(r.kg * 10) / 10).replace('.', ','), String(Math.round(r.wert * 100) / 100).replace('.', ',')].join(';')).join('\r\n'); try { const p = await invoke('save_text', {name: `Intrastat_${IS.mon}.csv`, content: csv, title: 'Intrastat exportieren'}); if (p) toast('Exportiert', {t2: p, type: 'pos', icon: 'download'}); } catch (err) { toast('Export fehlgeschlagen', {t2: String(err), type: 'warn'}); } };
+  // CSV: Spalten wie bisher; die Warenbezeichnung (von der Warengruppe) steht am Ende
+  $('[data-isx]', v).onclick = async () => { const csv = '﻿Land;Warennummer;Geschäftsart;Menge;Eigenmasse kg;Rechnungsbetrag;Warenbezeichnung\r\n' + rows.map(r => [r.land, r.tarif, 11, r.menge, String(Math.round(r.kg * 10) / 10).replace('.', ','), String(Math.round(r.wert * 100) / 100).replace('.', ','), `"${[...r.bez].join(' / ').replace(/"/g, '""')}"`].join(';')).join('\r\n'); try { const p = await invoke('save_text', {name: `Intrastat_${IS.mon}.csv`, content: csv, title: 'Intrastat exportieren'}); if (p) toast('Exportiert', {t2: p, type: 'pos', icon: 'download'}); } catch (err) { toast('Export fehlgeschlagen', {t2: String(err), type: 'warn'}); } };
 }
 
 /* Artikelliste (Druck/CSV mit wählbaren Spalten) */
@@ -13471,37 +13660,56 @@ VIEW_PERM['an-rabatte'] = 'berichte';
 
 /* Verkäuferprämien-Abrechnung */
 const PRM = {mon: today().slice(0, 7)};
+/** Prämienschlüssel einer Warengruppe: ihr eigener Schlüssel (Feld „Prämienschlüssel“), sonst die frühere Zuordnung (Zeile mit „Warengruppe“ = diese Gruppe), sonst keiner */
+function anPrmSchluessel(keys, cat) {
+  const id = wgKey('praemienschluessel', wgRaw(cat)?.praemienschluessel);
+  return (id && keys.find(z => z.id === id)) || keys.find(z => z.warengruppe === cat) || null;
+}
 registerPage('praemien', {title: 'Prämienabrechnung', sub: () => PRM.mon, render: async () => {
   const v = $('#view-praemien');
   if (!DESKTOP) { v.innerHTML = desktopEmpty('target', 'Prämien'); return; }
   await loadStamm();
   const [y, m] = PRM.mon.split('-').map(Number), von = `${PRM.mon}-01`, bis = dIso(new Date(y, m, 0));
-  v.innerHTML = `<div class="cv">${pageHead('Prämienabrechnung', 'Verkäuferprämien je Monat aus Prämienschlüsseln (je Warengruppe) und Monatszielen', `<button class="btn btn-secondary" data-goto="st-praemienschluessel">${ic('sliders', 'i-sm')}Prämienschlüssel</button><button class="btn btn-secondary" data-goto="st-praemienmonat">${ic('calendar', 'i-sm')}Monate & Ziele</button>`)}<div class="filters"><input class="input" type="month" data-prmm value="${PRM.mon}" style="width:auto"></div><div data-prmr>${loadingCard('Rechne')}</div></div>`;
+  v.innerHTML = `<div class="cv">${pageHead('Prämienabrechnung', 'Verkäuferprämien je Monat aus dem Prämienschlüssel der Warengruppe (sonst der früheren Zuordnung unter Prämienschlüssel) und Monatszielen. Der Schlüssel an der Warengruppe geht vor – auch der Standard-Schlüssel mit 0 % ersetzt dort eine frühere Zuordnung', `<button class="btn btn-secondary" data-goto="st-praemienschluessel">${ic('sliders', 'i-sm')}Prämienschlüssel</button><button class="btn btn-secondary" data-goto="st-praemienmonat">${ic('calendar', 'i-sm')}Monate & Ziele</button>`)}<div class="filters"><input class="input" type="month" data-prmm value="${PRM.mon}" style="width:auto"></div><div data-prmr>${loadingCard('Rechne')}</div></div>`;
   $('[data-prmm]', v).onchange = e => { PRM.mon = e.target.value; PAGES.praemien.render(); };
   let res; try { res = await anRun({von, bis, dims: ['verkaeufer', 'warengruppe']}); } catch (e) { $('[data-prmr]', v).innerHTML = `<div class="card" style="padding:16px">${esc(String(e))}</div>`; return; }
   const keys = stActive('praemienschluessel'), mon = stActive('praemienmonat').find(x => x.name === PRM.mon || x.id === PRM.mon);
-  const per = {};
-  for (const r of res.rows) { const [p, wg] = r.keys; const x = per[p] ||= {umsatz: 0, praemie: 0, det: []}; x.umsatz += r.umsatz; const k = keys.find(z => z.warengruppe === wg); if (k) { const pr = r.netto * (+k.pct || 0) / 100; x.praemie += pr; x.det.push(`${catName(wg)} ${num(+k.pct)} %`); } }
+  const per = {}, luecke = {netto: 0, umsatz: 0, wg: {}};
+  for (const r of res.rows) { const [p, wg] = r.keys; const x = per[p] ||= {umsatz: 0, praemie: 0, det: []}; x.umsatz += r.umsatz; const k = anPrmSchluessel(keys, wg); if (k) { const pr = r.netto * (+k.pct || 0) / 100; x.praemie += pr; x.det.push(`${catName(wg)} ${num(+k.pct)} %`); } else { luecke.netto += r.netto; luecke.umsatz += r.umsatz; luecke.wg[wg] = (luecke.wg[wg] || 0) + r.netto; } }
   Object.values(per).forEach(x => { x.ziel = mon ? +mon.ziel || 0 : 0; x.bonus = mon && x.umsatz > x.ziel ? (x.umsatz - x.ziel) * (+mon.pct || 0) / 100 : 0; });
   const rows = Object.entries(per).sort((a, b) => b[1].umsatz - a[1].umsatz);
-  const tbl = `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Verkäufer:in</th><th class="r">Umsatz</th><th class="r">Ziel</th><th class="r">Zielerreichung</th><th class="r">Prämie Warengruppen</th><th class="r">Bonus über Ziel</th><th class="r" style="padding-right:16px">Summe</th></tr></thead><tbody>${rows.map(([p, x]) => `<tr><td style="padding-left:16px"><b>${esc(p || '–')}</b><div class="muted" style="font-size:11.5px">${esc([...new Set(x.det)].join(' · '))}</div></td><td class="r num">${eur(x.umsatz)}</td><td class="r num">${x.ziel ? eur0(x.ziel) : '–'}</td><td class="r num" style="color:${x.ziel && x.umsatz >= x.ziel ? 'var(--pos)' : 'inherit'}">${x.ziel ? num(x.umsatz / x.ziel * 100, 0) + ' %' : '–'}</td><td class="r num">${eur(x.praemie)}</td><td class="r num">${eur(x.bonus)}</td><td class="r num" style="padding-right:16px;font-weight:700">${eur(x.praemie + x.bonus)}</td></tr>`).join('')}</tbody></table>`;
+  const tbl = `<table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Verkäufer:in</th><th class="r">Umsatz</th><th class="r">Ziel</th><th class="r">Zielerreichung</th><th class="r">Prämie Warengruppen</th><th class="r">Bonus über Ziel</th><th class="r" style="padding-right:16px">Summe</th></tr></thead><tbody>${rows.map(([p, x]) => `<tr><td style="padding-left:16px"><b>${esc(p || '–')}</b><div class="muted" style="font-size:11.5px">${esc([...new Set(x.det)].join(' · '))}</div></td><td class="r num">${eur(x.umsatz)}</td><td class="r num">${x.ziel ? eur0(x.ziel) : '–'}</td><td class="r num" style="color:${x.ziel && x.umsatz >= x.ziel ? 'var(--pos)' : 'inherit'}">${x.ziel ? num(x.umsatz / x.ziel * 100, 0) + ' %' : '–'}</td><td class="r num">${eur(x.praemie)}</td><td class="r num">${eur(x.bonus)}</td><td class="r num" style="padding-right:16px;font-weight:700">${eur(x.praemie + x.bonus)}</td></tr>`).join('')}</tbody>${Math.abs(luecke.netto) >= 0.005 ? `<tfoot><tr><td colspan="7" style="padding:10px 16px;color:var(--warn)"><b>Umsatz ohne Prämienschlüssel:</b> ${eur(luecke.netto)} netto (${eur(luecke.umsatz)} brutto) – dafür entsteht keine Prämie.<div class="muted" style="font-size:11.5px">Warengruppen: ${esc(Object.entries(luecke.wg).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 6).map(([w, n]) => `${catName(w)} ${eur0(n)}`).join(' · '))}${Object.keys(luecke.wg).length > 6 ? ` · + ${Object.keys(luecke.wg).length - 6} weitere` : ''} – Schlüssel in der Warengruppe (Feld „Prämienschlüssel“) wählen.</div></td></tr></tfoot>` : ''}</table>`;
   $('[data-prmr]', v).innerHTML = `${kpiCards([[eur0(rows.reduce((s, [, x]) => s + x.praemie + x.bonus, 0)), 'Prämien gesamt'], [num(rows.length), 'Personen'], [mon ? eur0(+mon.ziel || 0) : 'kein Ziel', 'Monatsziel je Person']])}<div class="card" style="overflow:auto">${rows.length ? tbl : '<div class="empty" style="padding:40px 20px"><h3>Keine Umsätze im Monat</h3></div>'}</div><div style="margin-top:12px"><button class="btn btn-secondary" data-prmp>${ic('printer', 'i-sm')}Drucken</button></div>`;
   $('[data-prmp]', v).onclick = () => anPrint(`Prämienabrechnung ${PRM.mon}`, tbl);
 }});
 VIEW_PERM.praemien = 'berichte';
 
 /* Altersbewertung des Lagers */
+/** Stufen je Altersbewertungs-Schlüssel (Kennung → Stufen nach Monaten aufsteigend); Stufen ohne Schlüssel gehören zu STANDARD */
+function anAlterStufen() {
+  const by = new Map();
+  for (const s of stActive('altersbewertung')) { const k = wgKey('altersschluessel', s.schluessel) || 'STANDARD'; if (!by.has(k)) by.set(k, []); by.get(k).push(s); }
+  by.forEach(l => l.sort((a, b) => (+a.ab || 0) - (+b.ab || 0)));
+  return by;
+}
+/** Welche Stufen für eine Warengruppe gelten: die ihres Schlüssels, sonst (Schlüssel ohne eigene Stufen) die von STANDARD; ohne Warengruppe/Schlüssel = STANDARD */
+function anAlterFuer(by, cat) {
+  const key = wgKey('altersschluessel', wgRaw(cat)?.altersbewertung) || 'STANDARD', own = by.get(key);
+  return own?.length ? {key, stufen: own, std: false} : {key, stufen: by.get('STANDARD') || [], std: key !== 'STANDARD'};
+}
 registerPage('altersbewertung', {title: 'Altersbewertung', sub: () => 'Lagerwert nach Alter', render: async () => {
   const v = $('#view-altersbewertung'); await loadStamm();
-  const stufen = stActive('altersbewertung').slice().sort((a, b) => (+a.ab || 0) - (+b.ab || 0)), sais = stRows('saison');
+  const stufen = anAlterStufen(), sais = stRows('saison'), UNB = 'Alter unbekannt (Saison am Artikel fehlt)';
   const monthsOf = a => { const s = sais.find(x => x.id === a.fields?.Saison || x.name === a.fields?.Saison); const d = s?.von ? new Date(s.von) : null; return d ? Math.max(0, (Date.now() - d) / (30.4 * 864e5)) : null; };
-  const rows = ART.map(a => { const st = a.variants.reduce((s, x) => s + x.q, 0), mo = monthsOf(a), stufe = mo == null ? null : stufen.filter(x => mo >= (+x.ab || 0)).at(-1), wert = st * (a.cost || 0), ab = stufe ? wert * (+stufe.pct || 0) / 100 : 0; return {a, st, mo, stufe, wert, ab}; }).filter(r => r.st > 0);
-  const by = {}; rows.forEach(r => { const k = r.stufe?.name || 'Alter unbekannt (Saison am Artikel fehlt)'; const x = by[k] ||= {wert: 0, ab: 0, n: 0}; x.wert += r.wert; x.ab += r.ab; x.n++; });
+  const rows = ART.map(a => { const st = a.variants.reduce((s, x) => s + x.q, 0), mo = monthsOf(a), al = anAlterFuer(stufen, a.cat), stufe = mo == null ? null : al.stufen.filter(x => mo >= (+x.ab || 0)).at(-1), wert = st * (a.cost || 0), ab = stufe ? wert * (+stufe.pct || 0) / 100 : 0; return {a, st, mo, al, stufe, wert, ab}; }).filter(r => r.st > 0);
+  const schl = r => wgNm('altersschluessel', r.al.key) || r.al.key;
+  const by = {}; rows.forEach(r => { const k = r.stufe ? `${r.al.key}|${r.stufe.id ?? r.stufe.name}` : 'unbekannt'; const x = by[k] ||= {schl: r.stufe ? schl(r) : '–', std: r.stufe ? r.al.std : false, name: r.stufe?.name || UNB, ab: r.stufe ? +r.stufe.ab || 0 : 1e9, pct: r.stufe ? +r.stufe.pct || 0 : null, wert: 0, abw: 0, n: 0}; x.wert += r.wert; x.abw += r.ab; x.n++; });
+  const grp = Object.values(by).sort((a, b) => (a.pct == null) - (b.pct == null) || a.schl.localeCompare(b.schl, 'de') || a.ab - b.ab);
   const wert = rows.reduce((s, r) => s + r.wert, 0), ab = rows.reduce((s, r) => s + r.ab, 0);
-  v.innerHTML = `<div class="cv">${pageHead('Altersbewertung', 'Lagerwert zum EK mit Abwertung nach Alter (Monate seit Saisonbeginn des Artikels) – Grundlage für die Inventurbewertung', `<button class="btn btn-secondary" data-goto="st-altersbewertung">${ic('percent', 'i-sm')}Prozentsätze</button>`)}
+  v.innerHTML = `<div class="cv">${pageHead('Altersbewertung', 'Lagerwert zum EK mit Abwertung nach Alter (Monate seit Saisonbeginn des Artikels) – Grundlage für die Inventurbewertung; die Stufen bestimmt der Altersbewertungs-Schlüssel der Warengruppe (ohne eigene Stufen gelten die von „Standard“)', `<button class="btn btn-secondary" data-goto="st-altersbewertung">${ic('percent', 'i-sm')}Prozentsätze</button>`)}
     ${kpiCards([[eur0(wert), 'Lagerwert EK'], [eur0(ab), 'Abwertung', 'neg'], [eur0(wert - ab), 'Bewerteter Lagerwert', 'pos']])}
-    <div class="card" style="margin-bottom:14px"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Altersstufe</th><th class="r">Artikel</th><th class="r">Lagerwert</th><th class="r" style="padding-right:16px">Abwertung</th></tr></thead><tbody>${Object.entries(by).map(([k, x]) => `<tr><td style="padding-left:16px">${esc(k)}</td><td class="r num">${x.n}</td><td class="r num">${eur(x.wert)}</td><td class="r num" style="padding-right:16px;color:var(--neg)">${eur(x.ab)}</td></tr>`).join('')}</tbody></table></div>
-    <div class="card" style="overflow:auto"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Artikel</th><th>Saison</th><th class="r">Alter</th><th class="r">Bestand</th><th class="r">Wert EK</th><th class="r" style="padding-right:16px">bewertet</th></tr></thead><tbody>${rows.sort((x, y) => y.ab - x.ab).slice(0, 300).map(r => `<tr><td style="padding-left:16px"><b>${esc(r.a.name)}</b></td><td>${esc(r.a.fields?.Saison || '–')}</td><td class="r num">${r.mo != null ? Math.floor(r.mo) + ' Mon.' : '–'}</td><td class="r num">${r.st}</td><td class="r num">${eur(r.wert)}</td><td class="r num" style="padding-right:16px">${eur(r.wert - r.ab)}</td></tr>`).join('')}</tbody></table></div></div>`;
+    <div class="card" style="margin-bottom:14px"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Schlüssel</th><th>Altersstufe</th><th class="r">Abwertung</th><th class="r">Artikel</th><th class="r">Lagerwert</th><th class="r" style="padding-right:16px">Abwertung €</th></tr></thead><tbody>${grp.map(x => `<tr><td style="padding-left:16px">${esc(x.schl)}${x.std ? '<div class="muted" style="font-size:11.5px">Stufen von Standard</div>' : ''}</td><td>${esc(x.name)}</td><td class="r num">${x.pct == null ? '–' : num(x.pct, 0) + ' %'}</td><td class="r num">${x.n}</td><td class="r num">${eur(x.wert)}</td><td class="r num" style="padding-right:16px;color:var(--neg)">${eur(x.abw)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="card" style="overflow:auto"><table class="tbl" style="margin:0"><thead><tr><th style="padding-left:16px">Artikel</th><th>Schlüssel</th><th>Saison</th><th class="r">Alter</th><th class="r">Bestand</th><th class="r">Wert EK</th><th class="r" style="padding-right:16px">bewertet</th></tr></thead><tbody>${rows.sort((x, y) => y.ab - x.ab).slice(0, 300).map(r => `<tr><td style="padding-left:16px"><b>${esc(r.a.name)}</b></td><td>${esc(schl(r))}${r.stufe ? `<div class="muted" style="font-size:11.5px">${esc(r.stufe.name)} · ${num(+r.stufe.pct || 0, 0)} %${r.al.std ? ' · Stufen von Standard' : ''}</div>` : ''}</td><td>${esc(r.a.fields?.Saison || '–')}</td><td class="r num">${r.mo != null ? Math.floor(r.mo) + ' Mon.' : '–'}</td><td class="r num">${r.st}</td><td class="r num">${eur(r.wert)}</td><td class="r num" style="padding-right:16px">${eur(r.wert - r.ab)}</td></tr>`).join('')}</tbody></table></div></div>`;
 }});
 VIEW_PERM.altersbewertung = 'berichte';
 
@@ -13526,7 +13734,7 @@ registerPage('analyse-einstellungen', {title: 'Analyseeinstellungen', sub: () =>
     <div class="set-row"><div><div class="set-l">Standard-Dimension</div></div><div class="set-c"><select class="input select" data-ase="analyse.dims" style="width:auto">${AN_DIMS.map(([k, l]) => `<option value="${k}" ${(CFG['analyse.dims'] || [])[0] === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div></div>
     <div class="set-row"><div><div class="set-l">Standard-Kennzahlen</div></div><div class="set-c" style="flex-wrap:wrap;gap:6px">${AN_MEAS.map(([k, l]) => `<label class="chip"><input type="checkbox" data-asek="${k}" ${(CFG['analyse.kennzahlen'] || []).includes(k) ? 'checked' : ''} style="margin:0 6px 0 0">${l}</label>`).join('')}</div></div>
     <div class="set-row"><div><div class="set-l">Anteil-Spalte anzeigen</div><div class="set-h">Prozentanteil am Gesamtumsatz je Zeile</div></div><div class="set-c"><button class="switch" role="switch" data-asea aria-checked="${CFG['analyse.anteil'] !== false}"></button></div></div>
-    <div class="set-row"><div><div class="set-l">Gewicht je Teil ohne Angabe (kg)</div><div class="set-h">Für Intrastat, wenn am Artikel kein Feld „Gewicht“ gepflegt ist</div></div><div class="set-c"><input class="input num" data-ase="intrastat.ware_kg" value="${esc(String(CFG['intrastat.ware_kg']).replace('.', ','))}" style="max-width:100px"></div></div>
+    <div class="set-row"><div><div class="set-l">Gewicht je Teil ohne Angabe (kg)</div><div class="set-h">Für Intrastat, wenn weder am Artikel noch an der Warengruppe (Durchschnitts-Gewicht) ein Gewicht gepflegt ist</div></div><div class="set-c"><input class="input num" data-ase="intrastat.ware_kg" value="${esc(String(CFG['intrastat.ware_kg']).replace('.', ','))}" style="max-width:100px"></div></div>
   </div><div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn btn-secondary" data-goto="st-analysespalte">${ic('list', 'i-sm')}Flexanalysespalten</button><button class="btn btn-secondary" data-goto="st-indikator">${ic('target', 'i-sm')}Wert-Indikator-Sets</button><button class="btn btn-secondary" data-goto="st-statistikfilter">${ic('filter', 'i-sm')}Statistikfilter</button></div></div>`;
   v.onchange = async e => { const t = e.target; if (t.dataset.ase) { const k = t.dataset.ase; await saveSettings({[k]: k === 'analyse.dims' ? [t.value] : k === 'intrastat.ware_kg' ? parseAmt(t.value) : t.value}); if (k === 'analyse.zeitraum') AN.per = t.value; } if (t.dataset.asek) { const l = AN_MEAS.map(m => m[0]).filter(k => k === t.dataset.asek ? t.checked : (CFG['analyse.kennzahlen'] || []).includes(k)); await saveSettings({'analyse.kennzahlen': l}); AN.meas = l.slice(); } };
   v.onclick = async e => { const b = e.target.closest('[data-asea]'); if (!b) return; const on = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', on); await saveSettings({'analyse.anteil': on}); };
@@ -13760,7 +13968,9 @@ async function ediArticleImport(items, updatePrices) {
       if (!colors.includes(ck)) colors.push(ck); if (!sizes.includes(sz)) sizes.push(sz);
       return {c: ck, s: sz, ean: x.ean, q: 0, other: null};
     });
-    const a = {id: nextArtId(), name: x0.name || x0.artikelnr || 'EDI-Artikel', brand: x0.marke || x0.sup || '', cat: ediMapWg(x0.sid, x0.wg) || (CATS.find(c => c.id !== 'alle')?.id || 'acc'), g: 'shirt', price: x0.vk || (x0.ek ? roundPrice(x0.ek * (+lfSup(x0.sid)?.profile?.kalk_faktor || 2.2)) : 0), vat: 20, pop: 40, colors, sizes, fields: {'Lieferanten-Art.-Nr.': x0.artikelnr || '', Quelle: `EDI ${x0.doc}`}, cost: x0.ek ?? null, supplierId: x0.sid || '', minStock: 1, variants,
+    // Steuersatz der Warengruppe (sonst 20 %); Verkaufspreis: Nachricht > Kalkulationsfaktor des Lieferanten > Spanne der Warengruppe > Faktor 2,2
+    const cat = ediMapWg(x0.sid, x0.wg) || (CATS.find(c => c.id !== 'alle')?.id || 'acc'), vat = aeWgSatz(cat) ?? 20;
+    const a = {id: nextArtId(), name: x0.name || x0.artikelnr || 'EDI-Artikel', brand: x0.marke || x0.sup || '', cat, g: 'shirt', price: x0.vk || aeWgVk(x0.ek, {cat, supplierId: x0.sid, vat, fallback: 2.2})?.vk || 0, vat, pop: 40, colors, sizes, fields: {'Lieferanten-Art.-Nr.': x0.artikelnr || '', Quelle: `EDI ${x0.doc}`}, cost: x0.ek ?? null, supplierId: x0.sid || '', minStock: 1, variants,
       // Warengruppen-Schema „FEDAS“ des Lieferanten: der Code in der Nachricht ist der FEDAS-Schlüssel
       details: lfSup(x0.sid)?.profile?.wg_schema === 'fedas' && /^\d{6}$/.test(String(x0.wg || '').trim()) ? {fedas_code: String(x0.wg).trim()} : {}};
     finishArt(a);
@@ -13931,13 +14141,23 @@ docPage('webshop-bestellungen', 'webbestellung', {newLabel: 'Bestellung erfassen
   kpi: l => [[num(l.filter(d => d.status === 'neu').length), 'neu', 'warn'], [num(l.filter(d => d.status === 'in_bearbeitung').length), 'in Bearbeitung'], [num(l.filter(d => d.status === 'versendet').length), 'versendet'], [eur0(l.filter(d => d.status !== 'storniert').reduce((s, d) => s + d.total, 0) / 100), 'Bestellwert']],
   cols: [{l: 'Shop', f: d => esc(d.data?.shop || '–')}, {l: 'Versand', f: d => esc(d.data?.versand?.tracking || d.data?.versandart || '–')}]});
 
-registerPage('webshop-suche', {title: 'Webshop-Service-Suche', sub: () => 'So sieht der Webshop den Artikel', render: () => {
+/** Webshop-Kategorien einer Warengruppe – dieselbe Regel wie shop.rs (webkat_laden): webkat1–5 der Warengruppe plus frühere Liste „Warengruppen“ der Kategorie,
+    nur aktive und sichtbare Kategorien in der Reihenfolge der Tabelle; `aktiv` = mindestens eine aktive, sichtbare Kategorie enthält Warengruppen (sonst wird nichts ausgeblendet) */
+function wssWebKat() {
+  const tab = stRows('webkategorie'), pos = new Map(tab.map((r, i) => [r.id, i])), zu = new Map();
+  const add = (wg, i) => { if (!wg) return; if (!zu.has(wg)) zu.set(wg, new Set()); zu.get(wg).add(i); };
+  tab.forEach((r, i) => (Array.isArray(r.warengruppen) ? r.warengruppen : []).forEach(w => add(String(w).trim(), i)));
+  for (const w of stRows('warengruppe')) for (let k = 1; k <= 5; k++) { const i = pos.get(String(w['webkat' + k] ?? '').trim()); if (i !== undefined) add(w.id, i); }
+  const gezeigt = i => tab[i]._aktiv !== false && tab[i].sichtbar === true;
+  return {aktiv: [...zu.values()].some(s => [...s].some(gezeigt)), von: wg => [...(zu.get(wg) || [])].filter(gezeigt).sort((a, b) => a - b).map(i => tab[i])};
+}
+registerPage('webshop-suche', {title: 'Webshop-Service-Suche', sub: () => 'So sieht das Digitale Schaufenster den Artikel', render: () => {
   const v = $('#view-webshop-suche'), q = WSS.q, n = norm(q);
-  const hidden = new Set(CFG['shop.ausgeblendet'] || []), cats = CFG['shop.kategorien'] || [];
+  const hidden = new Set(CFG['shop.ausgeblendet'] || []), cats = CFG['shop.kategorien'] || [], wk = wssWebKat();
   const hits = n ? ART.filter(a => a.hay.includes(n) || a.variants.some(x => x.ean === q.trim())).slice(0, 30) : [];
-  v.innerHTML = `<div class="cv">${pageHead('Webshop-Service-Suche', 'Artikel so prüfen, wie die Webshop-Schnittstelle sie ausliefert: sichtbar, Preis, Bestand je Filiale')}
+  v.innerHTML = `<div class="cv">${pageHead('Webshop-Service-Suche', 'Artikel so prüfen, wie das Digitale Schaufenster sie zeigt: sichtbar (und warum nicht), Preis, Bestand je Filiale – die REST-Schnittstelle liefert alle Artikel')}
     <label class="search-field" style="height:48px;margin-bottom:14px">${ic('search')}<input data-wsq value="${esc(q)}" placeholder="Artikel, Marke, Nummer oder EAN …" autocomplete="off"></label>
-    ${hits.map(a => { const why = hidden.has(a.id) ? 'ausgeblendet (Filter/Schaufenster)' : cats.length && !cats.includes(a.cat) ? 'Warengruppe nicht freigegeben' : ''; return `<div class="card" style="padding:14px 16px;margin-bottom:10px"><div style="display:flex;gap:12px;align-items:center"><div style="flex:1"><b>${esc(a.name)}</b> <span class="muted">${esc(a.brand)} · ${esc(a.id)} · ${esc(catName(a.cat))}</span></div><b>${eur(a.sale || a.price)}</b>${why ? `<span class="pill neg" style="height:22px">${esc(why)}</span>` : '<span class="pill pos" style="height:22px">im Webshop</span>'}</div>
+    ${hits.map(a => { const ks = wk.von(a.cat), why = [hidden.has(a.id) && 'ausgeblendet (Filter/Schaufenster)', cats.length && !cats.includes(a.cat) && 'Warengruppe nicht freigegeben', wk.aktiv && !ks.length && 'keine sichtbare Webshop-Kategorie'].filter(Boolean).join(' · '); return `<div class="card" style="padding:14px 16px;margin-bottom:10px"><div style="display:flex;gap:12px;align-items:center"><div style="flex:1"><b>${esc(a.name)}</b> <span class="muted">${esc(a.brand)} · ${esc(a.id)} · ${esc(catName(a.cat))}${ks.length ? ` · Webshop: ${esc(ks.map(k => k.name || k.id).join(', '))}` : ''}</span></div><b>${eur(a.sale || a.price)}</b>${why ? `<span class="pill neg" style="height:22px">${esc(why)}</span>` : '<span class="pill pos" style="height:22px">im Webshop</span>'}</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${a.variants.map(x => `<span class="chip" style="height:26px">${esc(vname(x))} · <b style="margin-left:4px;color:${x.q > 0 ? 'var(--pos)' : 'var(--neg)'}">${x.q}</b>${x.other ? `<span class="muted" style="margin-left:4px">+${x.other.reduce((s, y) => s + y, 0)}</span>` : ''}</span>`).join('')}</div></div>`; }).join('') || `<div class="card"><div class="empty" style="padding:40px 20px"><div class="empty-icon">${ic('globe')}</div><h3>Artikel suchen</h3></div></div>`}</div>`;
   const i = $('[data-wsq]', v); i.oninput = () => { WSS.q = i.value; clearTimeout(i._t); i._t = setTimeout(() => { PAGES['webshop-suche'].render(); const x = $('[data-wsq]'); x?.focus(); x?.setSelectionRange(x.value.length, x.value.length); }, 250); };
 }});
@@ -13953,7 +14173,7 @@ function apiLogPage(id, title, sub, filter) {
   }});
   VIEW_PERM[id] = 'einstellungen';
 }
-apiLogPage('webshop-abfragelog', 'Abfragelog', 'Alle Zugriffe des Webshops auf die Schnittstelle', x => /webshop|artikel|bestand/.test(x.path));
+apiLogPage('webshop-abfragelog', 'Abfragelog', 'Alle Zugriffe des Webshops auf die Schnittstelle', x => /webshop|webkategorien|artikel|bestand/.test(x.path));
 apiLogPage('webshop-importfehler', 'Order-Import-Fehler', 'Abgelehnte Bestellungen aus dem Webshop – z. B. unbekannte EAN oder fehlende Rechte des Schlüssels', x => x.path.includes('webshop') && x.status >= 400);
 apiLogPage('api-protokoll', 'Protokoll externe API Zugriffe', 'Jeder Aufruf der REST-API mit Zeit, Pfad, Status, Absender und verwendetem Schlüssel', () => true);
 
@@ -13965,10 +14185,10 @@ async function applyWebFilter() {
   return ids.length;
 }
 { const _rs2 = renderStamm; renderStamm = async function (kind, page, extra = {}) {
-  if (kind === 'webfilter' && !extra.above) extra = {...extra, above: () => `<div class="card" style="padding:12px 16px;margin-bottom:12px;display:flex;gap:10px;align-items:center">${ic('info', 'i-sm')}<span style="flex:1;font-size:13px">Nach dem Speichern „Filter anwenden“ – passende Artikel werden im Schaufenster/Webshop ausgeblendet (aktuell ${(CFG['shop.filter_ids'] || []).length}).</span><button class="btn btn-secondary btn-sm" data-wfapply>${ic('filter', 'i-sm')}Filter anwenden</button></div>`};
+  if (kind === 'webfilter' && !extra.above) extra = {...extra, above: () => `<div class="card" style="padding:12px 16px;margin-bottom:12px;display:flex;gap:10px;align-items:center">${ic('info', 'i-sm')}<span style="flex:1;font-size:13px">Nach dem Speichern „Filter anwenden“ – passende Artikel werden im Digitalen Schaufenster ausgeblendet (aktuell ${(CFG['shop.filter_ids'] || []).length}); die REST-Schnittstelle liefert weiterhin alle Artikel.</span><button class="btn btn-secondary btn-sm" data-wfapply>${ic('filter', 'i-sm')}Filter anwenden</button></div>`};
   return _rs2(kind, page, extra);
 }; }
-document.addEventListener('click', async e => { if (!e.target.closest('[data-wfapply]')) return; const n = await applyWebFilter(); toast(`${n} Artikel ausgeblendet`, {t2: 'Schaufenster und Webshop-Schnittstelle', type: 'pos', icon: 'filter'}); STE.webfilter = null; renderStamm('webfilter', 'st-webfilter'); });
+document.addEventListener('click', async e => { if (!e.target.closest('[data-wfapply]')) return; const n = await applyWebFilter(); toast(`${n} Artikel ausgeblendet`, {t2: 'Digitales Schaufenster', type: 'pos', icon: 'filter'}); STE.webfilter = null; renderStamm('webfilter', 'st-webfilter'); });
 
 registerPage('webshop-einstellungen', {title: 'Einstellungen Webshop', sub: () => 'Schnittstelle für externe Shops', render: async () => {
   const v = $('#view-webshop-einstellungen');
@@ -13978,7 +14198,7 @@ registerPage('webshop-einstellungen', {title: 'Einstellungen Webshop', sub: () =
     ${kpiCards([[st?.running ? 'aktiv' : 'aus', 'REST-API', st?.running ? 'pos' : 'warn'], [num((st?.keys || []).length), 'API-Schlüssel'], [CFG['shop.aktiv'] ? 'online' : 'aus', 'Digitales Schaufenster']])}
     <div class="card" style="padding:16px;margin-bottom:14px"><h3 style="margin:0 0 8px">Bestellungen empfangen</h3><p style="margin:0 0 10px;font-size:13.5px">Der Shop sendet <code>POST /api/v1/webshop/bestellungen</code> mit Schlüssel (Bereich <code>schreiben</code>) als <code>Authorization: Bearer …</code>. Kontor legt eine Webshop-Bestellung an (Status „neu“), prüft die EAN und meldet Fehler mit HTTP 400 – sichtbar unter „Order-Import-Fehler“. Status abfragen: <code>GET /api/v1/webshop/bestellungen?status=versendet</code> (inkl. Sendungsnummer).</p>
       <pre class="mono" style="white-space:pre-wrap;font-size:12px;margin:0;background:var(--surface-2);padding:12px;border-radius:10px">${esc(ex)}</pre></div>
-    <div class="card" style="padding:16px;margin-bottom:14px"><h3 style="margin:0 0 8px">Artikel und Bestand liefern</h3><p style="margin:0;font-size:13.5px"><code>GET /api/v1/artikel</code> und <code>GET /api/v1/bestand</code> (Bereich <code>lesen</code>). Ausgeblendete Artikel und nicht freigegebene Warengruppen legen Sie unter Artikel-Filter, Webshop-Kategorie und im Digitalen Schaufenster fest.</p></div>
+    <div class="card" style="padding:16px;margin-bottom:14px"><h3 style="margin:0 0 8px">Artikel und Bestand liefern</h3><p style="margin:0;font-size:13.5px"><code>GET /api/v1/artikel</code> und <code>GET /api/v1/bestand</code> (Bereich <code>lesen</code>) liefern alle aktiven Artikel – auch solche, die im Digitalen Schaufenster fehlen: „Artikel ausblenden“, Artikel-Filter, freigegebene Warengruppen und die Sichtbarkeit der Webshop-Kategorien gelten nur für das Schaufenster (die Webshop-Service-Suche nennt den Grund). Jeder Artikel nennt seine Webshop-Kategorien (<code>webkategorien</code>); <code>GET /api/v1/webkategorien</code> liefert die aktiven, sichtbaren Kategorien mit Artikelzahl, <code>GET /api/v1/artikel?webkategorie=&lt;Kennung&gt;</code> die Artikel einer Kategorie.</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-secondary" data-wstest>${ic('plus', 'i-sm')}Testbestellung anlegen</button><button class="btn btn-secondary" data-goto="st-webkategorie">${ic('folder', 'i-sm')}Webshop-Kategorien</button><button class="btn btn-secondary" data-goto="st-webversand">${ic('truck', 'i-sm')}Versand</button><button class="btn btn-secondary" data-goto="st-webfiliale">${ic('store', 'i-sm')}Filialen</button><button class="btn btn-secondary" data-goto="schaufenster">${ic('store', 'i-sm')}Digitales Schaufenster</button></div></div>`;
   v.onclick = async e => {
     if (!e.target.closest('[data-wstest]')) return;
@@ -14628,8 +14848,10 @@ function artEditorMount(host, a, tab0) {
         <div class="ae-card"><h4>Preis</h4>
           <label class="field"><span>EK netto €</span><input class="input num" data-f="cost" inputmode="decimal" value="${esc(st.cost)}"></label>
           <label class="field"><span>VK (UVP) € *</span><input class="input num" data-f="price" inputmode="decimal" value="${esc(st.price)}"></label>
+          <div class="muted" id="edVkSug" style="font-size:12px" aria-live="polite" hidden></div>
           <label class="field"><span>Aktionspreis €</span><input class="input num" data-f="sale" inputmode="decimal" value="${esc(st.sale)}" placeholder="leer = kein Aktionspreis"></label>
           <label class="field"><span>MwSt.-Typ</span><select class="input select" data-f="vat">${[[20, 'Standard 20 %'], [13, 'Reduziert 13 %'], [10, 'Reduziert 10 %'], [0, 'Ohne MwSt. 0 %']].map(([r, l]) => `<option value="${r}" ${+st.vat === r ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+          <div class="muted" id="edVatHint" style="font-size:12px" hidden></div>
           <div class="muted" id="edMargin" style="font-size:12px"></div></div>
         <div class="ae-card"><h4>Lieferant & Bestand</h4>
           <label class="field"><span>Lieferant</span><select class="input select" data-f="supplierId"><option value="">–</option>${lfOptionen(st.supplierId).map(([id, name]) => `<option value="${esc(id)}" ${id === st.supplierId ? 'selected' : ''}>${esc(name)}</option>`).join('')}</select></label>
@@ -14706,14 +14928,15 @@ function artEditorMount(host, a, tab0) {
     const rmf = t.closest('[data-rmf]'); if (rmf) { collect(); st.fields.splice($$('.frow', el).indexOf(rmf.closest('.frow')), 1); return render(); }
     if (t.closest('#edAi')) { collect(); const txt = await aiArticleText({...st, fields: st.fields}); if (txt) { st.d.beschreibung = txt; tab = 'beschreibung'; render(); toast('Beschreibung erstellt', {t2: 'Bitte prüfen und bei Bedarf anpassen', type: 'pos', icon: 'sparkle'}); } return; }
     if (t.closest('#edSki')) { st.ski = !st.ski; $('#edSki', el).setAttribute('aria-checked', st.ski); return; }
-    if (t.closest('#edLbl')) return openLabels(a.variants.map(v => ({a, v, n: 1})));
+    if (t.closest('#edLbl')) return openLabels(a.variants.map(v => lblPos(a, v, 1)));
     if (t.closest('#edPage')) {
       const url = await askUrl('Aus Produktseite übernehmen', 'Adresse der Produktseite (z. B. auf der Webseite der Marke) – Name, Beschreibung, Preis, Material und Bilder werden ausgelesen. Rechte an Texten und Bildern bleiben beim Hersteller.'); if (!url) return;
       try {
         collect(); const r = await invoke('web_read_page', {url}), p = pageToArticle(r);
         if (!p.name && !p.images.length) return toast('Nichts erkannt', {t2: 'Die Seite liefert keine lesbaren Produktdaten (JavaScript-Shop?)', type: 'warn'});
         if (!st.name.trim() && p.name) st.name = p.name; if (!st.brand && p.brand) st.brand = p.brand;
-        if (!String(st.price).trim() && p.price) st.price = num(p.price, 2);
+        const vkVorschlag = !!st._vkSug && st._vkSug.v === String(st.price).trim();   // nur der automatische Vorschlag der Warengruppe im Feld = noch keine Eingabe
+        if ((!String(st.price).trim() || vkVorschlag) && p.price) { st.price = num(p.price, 2); st._vkSug = null; }
         if (!st.d.beschreibung && p.beschreibung) st.d.beschreibung = p.beschreibung;
         if (!st.d.hersteller_artikelnr && p.sku) st.d.hersteller_artikelnr = p.sku; if (!st.d.mat_zusammensetzung && p.material) st.d.mat_zusammensetzung = p.material;
         st.d.quelle_url = p.url;
@@ -14775,10 +14998,11 @@ function artEditorMount(host, a, tab0) {
   const lfLieferantVorschlag = async marke => {
     const sel = $('[data-f="supplierId"]', el); if (!sel || sel.value) return;
     const id = await lfMarkeVorschlag(marke); const cur = $('[data-f="supplierId"]', el);
-    if (id && cur && !cur.value && [...cur.options].some(o => o.value === id)) { cur.value = id; st.supplierId = id; toast('Lieferant vorgeschlagen', {t2: lfName(lfSup(id)) + ' – laut Marken des Lieferanten', icon: 'truck', dur: 2200}); }
+    if (id && cur && !cur.value && [...cur.options].some(o => o.value === id)) { cur.value = id; st.supplierId = id; ctx.vkNeu?.(); toast('Lieferant vorgeschlagen', {t2: lfName(lfSup(id)) + ' – laut Marken des Lieferanten', icon: 'truck', dur: 2200}); }
   };
   el.addEventListener('change', async e => {
     if (e.target.matches?.('[data-f="brand"]')) { lfLieferantVorschlag(e.target.value); return; }
+    if (e.target.matches?.('[data-f="cat"]')) { aeWgWechsel(ctx); return; }   // Warengruppe als Vorgabe (Steuersatz, Größen, Hinweis, Preisvorschlag)
     const c = e.target.closest('[data-mcol]'), cap = e.target.closest('[data-mcap]');
     if ((c || cap) && a) { try { await saveMediaOrder(); await refreshMedia(); } catch (err) { toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); } }
   });
@@ -15290,21 +15514,26 @@ function aeGrundpreis(ctx, row, done) {
   const el = openLayer(`<div class="modal" style="width:min(820px,100%)" role="dialog" aria-modal="true"><div class="m-head"><div class="m-ic">${ic('tag')}</div><div><h2>Grundpreis</h2><p>${esc(row.ean)} · Größe ${esc(row.size)}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
     <div class="m-body" style="display:grid;gap:14px;grid-template-columns:repeat(3,1fr)">
       <div class="ae-card"><h4>Allgemein</h4><label class="field"><span>EAN/GTIN</span><input class="input" value="${esc(row.ean)}" disabled></label><label class="field"><span>Zolltarifnummer</span><input class="input" value="${esc(ctx.st.d.zolltarif || '')}" disabled></label></div>
-      <div class="ae-card"><h4>Preis</h4><label class="field"><span>EK</span><input class="input num" data-gp="cost" value="${esc(aeEk(ctx) != null ? num(aeEk(ctx), 2) : '')}"></label><label class="field"><span>VK</span><input class="input num" data-gp="price" value="${esc(String(ctx.st.price))}"></label><label class="field"><span>MwSt.-Typ</span><input class="input" value="${esc(row.mwst)}" disabled></label></div>
+      <div class="ae-card"><h4>Preis</h4><label class="field"><span>EK</span><input class="input num" data-gp="cost" value="${esc(aeEk(ctx) != null ? num(aeEk(ctx), 2) : '')}"></label><label class="field"><span>VK</span><input class="input num" data-gp="price" value="${esc(String(ctx.st.price))}"></label><div class="muted" data-gp-sug style="font-size:12px" hidden></div><label class="field"><span>MwSt.-Typ</span><input class="input" value="${esc(row.mwst)}" disabled></label></div>
       <div class="ae-card"><h4>Größen</h4><label class="field"><span>Größe</span><input class="input" value="${esc(row.size)}" disabled></label><label class="field"><span>Größensort.-Nr.</span><input class="input" value="${esc(row.gsort)}" disabled></label></div></div>
     <div class="m-foot"><span class="muted" style="font-size:12px">Preise gelten für den ganzen Artikel (alle Größen).</span><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" data-gok>${ic('check', 'i-sm')}Übernehmen</button></div></div>`);
-  $('[data-gok]', el).onclick = () => { ctx.st.cost = $('[data-gp="cost"]', el).value; ctx.st.price = $('[data-gp="price"]', el).value; closeLayer(el); done(); toast('Preis übernommen', {t2: 'mit „Sichern“ speichern', type: 'pos'}); };
+  // Verkaufspreis-Vorschlag auch hier, wenn der EK eingetragen wird und der VK noch leer ist (Zustand nur im Dialog, bis „Übernehmen“)
+  const vk = {s: {_vkSug: ctx.st._vkSug && ctx.st._vkSug.v === String(ctx.st.price).trim() ? ctx.st._vkSug : null}, c: $('[data-gp="cost"]', el), p: $('[data-gp="price"]', el), h: $('[data-gp-sug]', el)};
+  vk.c.addEventListener('input', () => aeWgVkNeu(vk, () => ({cat: ctx.st.cat, supplierId: ctx.st.supplierId, vat: ctx.st.vat})));
+  vk.p.addEventListener('input', () => aeWgVkEingabe(vk));
+  aeWgVkZeigen(vk);
+  $('[data-gok]', el).onclick = () => { ctx.st.cost = $('[data-gp="cost"]', el).value; ctx.st.price = $('[data-gp="price"]', el).value; ctx.st._vkSug = vk.s._vkSug && vk.s._vkSug.v === ctx.st.price.trim() ? vk.s._vkSug : null; closeLayer(el); done(); toast('Preis übernommen', {t2: 'mit „Sichern“ speichern', type: 'pos'}); };
 }
 
 /* ── Raster-Beschreibungen je Reiter ── */
 const AE_GRIDS = {
   basis: {
-    top: ctx => `<div class="ae-card ae-row"><label class="field" style="min-width:300px"><span>Größenschlüssel*</span><select class="input select" data-aesz><option value="">–</option>${stOpts('groessenschluessel').map(([x, l]) => `<option value="${esc(x)}">${esc(l)}</option>`).join('')}</select></label></div>`,
+    top: ctx => `<div class="ae-card ae-row"><label class="field" style="min-width:300px"><span>Größenschlüssel*</span><select class="input select" data-aesz><option value="">–</option>${stOpts('groessenschluessel').map(([x, l]) => `<option value="${esc(x)}" ${ctx.st._gsSel && ctx.st._gsSel.id === x && ctx.st._gsSel.sizes === ctx.st.sizes ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label></div>`,
     cfg: ctx => ({embed: true, title: 'Basispreise', cols: priceCols, rows: () => aeVariantRows(ctx),
       extra: [{k: 'neu', l: 'Neu', icon: 'plus'}, {k: 'alle', l: 'Preis für alle Filial-Preise für alle Größen übernehmen', icon: 'plus'}],
       actions: {neu: async () => { const o = await aeForm('Neue Größe', [{k: 'size', l: 'Größe', req: true}]); if (!o?.size) return; const s = new Set(ctx.sizesArr()); s.add(o.size); ctx.st.sizes = [...s].join(', '); toast('Größe vorgemerkt', {t2: 'mit „Sichern“ werden Variante und EAN angelegt', type: 'pos'}); }, alle: () => toast('Filial-Preise übernehmen den Basispreis', {t2: 'Preise gelten derzeit für alle Filialen gleich', icon: 'info'})},
       edit: (id, done) => { const r = aeVariantRows(ctx).find(x => x.id === id); if (r) aeGrundpreis(ctx, r, () => ctx.setTab('basis')); }}),
-    bind: (ctx, root) => { const s = $('[data-aesz]', root); s.onchange = () => { const g = stRows('groessenschluessel').find(x => x.id === s.value); const sizes = g?.groessen || g?.werte || g?.sizes; if (Array.isArray(sizes) && sizes.length) { ctx.st.sizes = sizes.join(', '); toast('Größenlauf übernommen', {t2: 'mit „Sichern“ speichern', type: 'pos'}); } }; },
+    bind: (ctx, root) => { const s = $('[data-aesz]', root); s.onchange = () => { const g = stRows('groessenschluessel').find(x => x.id === s.value); const sizes = g?.groessen || g?.werte || g?.sizes; if (Array.isArray(sizes) && sizes.length) { ctx.st.sizes = sizes.join(', '); ctx.st._gsSel = {id: g.id, sizes: ctx.st.sizes}; toast('Größenlauf übernommen', {t2: 'mit „Sichern“ speichern', type: 'pos'}); } }; },
   },
   filial: {
     card: true,
@@ -15462,12 +15691,115 @@ for (const [k, label, kind, key, src] of [['attr', 'Attribut', 'Attribut', 'attr
   }};
 }
 
+/* ── Warengruppe als Vorgabe für neue Artikel: Steuersatz, Größenreihe und Verkaufspreis-Vorschlag ──
+   Rangfolgen: Eingabe des Benutzers > Warengruppe > Einstellungen (Standardwerte) > bisheriger Rückfall.
+   Bestehende Artikel und eingegebene Werte werden nie von selbst geändert. */
+const AE_SAETZE = [20, 13, 10, 0];   // Sätze der Artikelmaske (und der Kasse/RKSV)
+{ const st = document.createElement('style'); st.textContent = '.field .input.ae-sug,.ae .field .input.ae-sug{border-style:dashed;border-color:var(--accent);color:var(--accent-strong,var(--accent))}.ae-lnk{border:0;background:none;padding:6px 4px;font:inherit;color:var(--accent-strong,var(--accent));text-decoration:underline;cursor:pointer}.ae-lnk:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-radius:3px}'; document.head.appendChild(st); }
+/** Steuersatz in % aus dem MwSt.-Typ der Warengruppe (Rückfall: gespeicherter Satz „ust“); null = Gruppe unbekannt, kein Satz hinterlegt (leer ist NICHT 0 %) oder Satz nicht in der Auswahl der Maske */
+function aeWgSatz(cat) {
+  const r = cat ? wgRaw(cat) : null; if (!r) return null;
+  const zahl = x => { if (x == null || (typeof x === 'string' && !x.trim())) return null; const n = +String(x).replace(',', '.'); return isFinite(n) ? n : null; };
+  const typ = r.mwsttyp ? (stRows('mwsttyp').find(x => x.id === r.mwsttyp) || stRows('mwsttyp').find(x => x.id === wgKey('mwsttyp', r.mwsttyp))) : null;   // zweiter Versuch: Altzeile mit Klartext statt Kennung
+  const v = (typ ? zahl(typ.satz) : null) ?? zahl(r.ust);
+  return AE_SAETZE.includes(v) ? v : null;
+}
+/** Größenreihe aus dem Größenschlüssel der Warengruppe: {id, name, sizes: 'S, M, L'}; null = kein Schlüssel oder leerer Schlüssel */
+function aeWgGroessen(cat) {
+  const r = cat ? wgRaw(cat) : null, id = r?.groessenschluessel ? wgKey('groessenschluessel', r.groessenschluessel) : '';
+  const g = id ? stRows('groessenschluessel').find(x => x.id === id) : null, l = g && (g.groessen || g.werte || g.sizes);
+  return Array.isArray(l) && l.length ? {id: g.id, name: g.name || g.id, sizes: l.join(', ')} : null;
+}
+/** Neuer Artikel (nach den Standardwerten der Einstellungen): Steuersatz und Größen der Warengruppe vorbelegen; merkt, was automatisch gesetzt wurde */
+function aeWgVorbelegen(st) {
+  if (!CATS.some(c => c.id === st.cat && c.id !== 'alle')) { const f = CATS.find(c => c.id !== 'alle'); if (f) st.cat = f.id; }   // so, wie das Auswahlfeld sie ohnehin zeigt
+  st._wgBasis = {vat: +st.vat, sizes: st.sizes, gs: st._gsSel || null};
+  const sz = aeWgSatz(st.cat), gs = aeWgGroessen(st.cat);
+  if (sz != null) st.vat = sz;
+  if (gs) { st.sizes = gs.sizes; st._gsSel = {id: gs.id, sizes: gs.sizes}; }
+  st._wgAuto = {vat: +st.vat, sizes: st.sizes};
+  return st;
+}
+/** Warengruppe im Formular gewechselt: neuer Artikel → Steuersatz und Größen nachführen, solange nicht von Hand geändert; danach Hinweis und Preisvorschlag neu rechnen */
+function aeWgWechsel(ctx) {
+  const st = ctx.st; ctx.collect();
+  let gs = null, neu = false;
+  if (ctx.isNew && st._wgAuto) {
+    const au = st._wgAuto, ba = st._wgBasis, sz = aeWgSatz(st.cat);
+    gs = aeWgGroessen(st.cat);
+    if (+st.vat === au.vat) {                       // Steuersatz noch nicht von Hand geändert
+      const v = sz ?? ba.vat; au.vat = v; st.vat = v;
+      const sel = $('[data-f="vat"]', ctx.el); if (sel) sel.value = String(v);
+      ctx.margeNeu?.();                             // „Spanne … % · Aufschlag … %“ unter dem MwSt.-Typ gilt jetzt für den neuen Satz (auch bei von Hand eingegebenem VK)
+    }
+    if (st.sizes === au.sizes) {                    // Größen noch nicht von Hand geändert
+      const s = gs ? gs.sizes : ba.sizes;
+      neu = s !== st.sizes;
+      au.sizes = s; st.sizes = s; st._gsSel = gs ? {id: gs.id, sizes: gs.sizes} : ba.gs;
+    }
+  }
+  if (neu) {                                        // Zähler „Varianten“ und Reiter nachziehen
+    ctx.rerender(); $('[data-f="cat"]', ctx.el)?.focus();
+    if (gs) toast(`Größen aus Schlüssel „${gs.name}“`, {t2: `${gs.sizes.split(', ').length} Größen vorbelegt – im Reiter „Farben & Größen“ änderbar`, icon: 'grid', dur: 2600});
+  }
+  aeWgHinweise(ctx); ctx.vkNeu?.();
+}
+/** Dezenter Hinweis unter dem MwSt.-Typ, wenn der Satz des Artikels von dem der Warengruppe abweicht (mit Übernehmen für diesen Artikel) */
+function aeWgHinweise(ctx) {
+  const h = $('#edVatHint', ctx.el), sel = $('[data-f="vat"]', ctx.el); if (!h || !sel) return;
+  const cat = $('[data-f="cat"]', ctx.el)?.value, sz = aeWgSatz(cat);
+  if (sz == null || sz === +sel.value) { h.hidden = true; h.textContent = ''; return; }
+  h.hidden = false; h.innerHTML = `Warengruppe „${esc(wgRaw(cat)?.name || cat)}“: ${sz} % MwSt. <button type="button" class="ae-lnk" data-wg-vat="${sz}">${sz} % übernehmen</button>`;
+}
+/** Auf ganze Cent runden, bevor die Preisrundung greift: Fließkomma-Rauschen (24,000000000000004 oder 23,999999999999996) darf nicht über die Stufe entscheiden */
+const aeCent = x => Math.round(+(x * 100).toFixed(6)) / 100;
+/** Verkaufspreis-Vorschlag (brutto) aus dem Netto-EK: Kalkulationsfaktor des Lieferanten > Handelsspanne der Warengruppe (vom Netto-VK) > o.fallback (Faktor, falls angegeben).
+ *  Liefert {vk, text} (gerundet nach Stammdaten › Preisrundung) oder null. */
+function aeWgVk(ek, o) {
+  if (!(ek > 0)) return null;
+  const f = +lfSup(o.supplierId)?.profile?.kalk_faktor;
+  if (f > 0) return {vk: roundPrice(aeCent(ek * f)), text: `laut Kalkulationsfaktor ${num(f, 2)} des Lieferanten (EK × Faktor, gerundet)`};
+  const r = o.cat ? wgRaw(o.cat) : null, s = r && r.spanne != null && r.spanne !== '' ? +String(r.spanne).replace(',', '.') : NaN;
+  if (s > 0 && s < 1) { const m = AE_SAETZE.includes(+o.vat) ? +o.vat : 20, pct = Math.round(s * 1000) / 10; return {vk: roundPrice(aeCent(ek / (1 - s) * (1 + m / 100))), text: `laut Spanne ${num(pct, pct % 1 ? 1 : 0)} % der Warengruppe „${r.name || o.cat}“ (vom Netto-VK, inkl. ${m} % MwSt., gerundet)`}; }
+  return o.fallback > 0 ? {vk: roundPrice(aeCent(ek * o.fallback)), text: `laut Standardfaktor ${num(o.fallback, 2)} (EK × Faktor, gerundet)`} : null;
+}
+/** Vorschlag im Preisfeld kenntlich machen (gestrichelter Rahmen und Hinweiszeile) – nur solange das Feld noch den Vorschlag enthält. h = {s: Zustand mit _vkSug, c: EK-Feld, p: VK-Feld, h: Hinweiszeile} */
+function aeWgVkZeigen(h) {
+  const s = h.s._vkSug && h.p.value.trim() === h.s._vkSug.v ? h.s._vkSug : null;
+  h.p.classList.toggle('ae-sug', !!s);
+  if (h.h) { h.h.hidden = !s; h.h.textContent = s ? `Vorschlag ${s.text} – bitte prüfen` : ''; }
+}
+/** Der Benutzer tippt im VK-Feld: der Vorschlag gehört ihm, spätere Änderungen am EK überschreiben ihn nicht mehr */
+function aeWgVkEingabe(h) { if (h.s._vkSug && h.p.value.trim() !== h.s._vkSug.v) h.s._vkSug = null; aeWgVkZeigen(h); }
+/** EK (oder Warengruppe, Lieferant, MwSt.) geändert: VK vorschlagen, solange er leer/0 ist oder noch der zuletzt gemachte Vorschlag – ein vorhandener Preis bleibt unberührt */
+function aeWgVkNeu(h, o) {
+  const cur = h.p.value.trim(), mine = !!h.s._vkSug && cur === h.s._vkSug.v;
+  if (!mine && parseAmt(cur) > 0) { h.s._vkSug = null; return aeWgVkZeigen(h); }
+  const v = aeWgVk(parseAmt(h.c.value), o());
+  if (v) { const t = num(v.vk, 2); h.p.value = t; h.s._vkSug = {v: t, text: v.text}; }
+  else if (mine) { h.p.value = ''; h.s._vkSug = null; }
+  h.p.dispatchEvent(new Event('input', {bubbles: true}));   // Spanne/Aufschlag unter dem Preis mitrechnen
+  aeWgVkZeigen(h);
+}
+
 /** Nach dem Zeichnen eines Reiters: Tabellen einhängen, Daten der Reiter laden */
 function aeAfter(ctx, tab) {
   const spec = AE_GRIDS[tab];
+  ctx.vkNeu = null; ctx.margeNeu = null;
   if (tab === 'stamm') {
-    const calc = () => { const m = $('#edMargin', ctx.el); if (!m) return; const vk = parseAmt($('[data-f="price"]', ctx.el)?.value || ''), ek = parseAmt($('[data-f="cost"]', ctx.el)?.value || ''), vat = +($('[data-f="vat"]', ctx.el)?.value || 20); if (vk > 0 && ek > 0) { const net = vk / (1 + vat / 100); m.textContent = `Spanne ${num((net - ek) / net * 100, 1)} % · Aufschlag ${num((net - ek) / ek * 100, 1)} %`; } else m.textContent = ''; };
-    ['price', 'cost', 'vat'].forEach(k => $(`[data-f="${k}"]`, ctx.el)?.addEventListener('input', calc)); calc(); return;
+    const calc = ctx.margeNeu = () => { const m = $('#edMargin', ctx.el); if (!m) return; const vk = parseAmt($('[data-f="price"]', ctx.el)?.value || ''), ek = parseAmt($('[data-f="cost"]', ctx.el)?.value || ''), vat = +($('[data-f="vat"]', ctx.el)?.value || 20); if (vk > 0 && ek > 0) { const net = vk / (1 + vat / 100); m.textContent = `Spanne ${num((net - ek) / net * 100, 1)} % · Aufschlag ${num((net - ek) / ek * 100, 1)} %`; } else m.textContent = ''; };
+    ['price', 'cost', 'vat'].forEach(k => $(`[data-f="${k}"]`, ctx.el)?.addEventListener('input', calc)); calc();
+    // Warengruppe als Vorgabe: Hinweis bei abweichendem Steuersatz, Verkaufspreis-Vorschlag aus dem Einkaufspreis
+    const q = k => $(`[data-f="${k}"]`, ctx.el), c = q('cost'), p = q('price');
+    if (c && p) {
+      const h = {s: ctx.st, c, p, h: $('#edVkSug', ctx.el)}, o = () => ({cat: q('cat')?.value, supplierId: q('supplierId')?.value, vat: q('vat')?.value});
+      ctx.vkNeu = () => aeWgVkNeu(h, o);
+      c.addEventListener('input', ctx.vkNeu); p.addEventListener('input', () => aeWgVkEingabe(h));
+      q('vat')?.addEventListener('change', () => { aeWgHinweise(ctx); ctx.vkNeu(); }); q('supplierId')?.addEventListener('change', ctx.vkNeu);
+      aeWgVkZeigen(h);
+    }
+    $('#edVatHint', ctx.el)?.addEventListener('click', e => { const b = e.target.closest('[data-wg-vat]'), sel = q('vat'); if (!b || !sel) return; sel.value = b.dataset.wgVat; sel.dispatchEvent(new Event('input', {bubbles: true})); sel.dispatchEvent(new Event('change', {bubbles: true})); });
+    aeWgHinweise(ctx); return;
   }
   if (tab === 'karte') { $('#aeKarteRef', ctx.el)?.addEventListener('click', () => ctx.setTab('karte')); $('[data-mk-open]', ctx.el)?.addEventListener('click', e => mkOeffnen(e.currentTarget.dataset.mkOpen)); return; }
   if (!spec) return;
@@ -15493,7 +15825,7 @@ function aeService(ctx, anchor) {
   el?.addEventListener('click', e => {
     const b = e.target.closest('[data-sv]'); if (!b) return; closePopover();
     const k = b.dataset.sv;
-    if (k === 'lbl') { if (a) openLabels(a.variants.map(v => ({a, v, n: 1}))); else toast('Erst Artikel speichern', {type: 'warn'}); return; }
+    if (k === 'lbl') { if (a) openLabels(a.variants.map(v => lblPos(a, v, 1))); else toast('Erst Artikel speichern', {type: 'warn'}); return; }
     if (k === 'info') { if (a) { AIF.sel = a.id; go('artikelinfo'); } return; }
     const tab = items.find(x => x[0] === k)[3]; ctx.setTab(tab);
     setTimeout(() => $(k === 'page' ? '#edPage' : k === 'ai' ? '#edAi' : '#gAdd', ctx.el)?.click(), 60);
@@ -15545,7 +15877,7 @@ agridPage('artikel', {
     refresh: async () => { try { if (DESKTOP) replaceCatalog(await invoke('catalog_list')); } catch { /* */ } PAGES.artikel.render(); },
     new: () => openEditor(null, 'stamm', []),
     imp: () => go('advarics-import'),
-    label: () => { const sel = AG.artikel.sel; const l = ART.filter(a => sel.has(a.id)); if (!l.length) return toast('Artikel ankreuzen', {t2: 'für die Etikettenausgabe', icon: 'info'}); openLabels(l.flatMap(a => a.variants.map(v => ({a, v, n: 1})))); },
+    label: () => { const sel = AG.artikel.sel; const l = ART.filter(a => sel.has(a.id)); if (!l.length) return toast('Artikel ankreuzen', {t2: 'für die Etikettenausgabe', icon: 'info'}); openLabels(l.flatMap(a => a.variants.map(v => lblPos(a, v, 1)))); },
   },
   edit: id => { const a = artById(id); if (a) openEditor(a, 'stamm', (AG.artikel.filtered || []).map(r => r.id)); },
   remove: async ids => {
@@ -15587,7 +15919,7 @@ agridPage('st-groesse', {
 
 /* ── Stammdaten › Größen › Größenschlüssel ── */
 delete STAMM_DEF.groessenschluessel.seed;
-STAMM_DEF.groessenschluessel.cols = [{k: 'nr', l: 'Nr.', t: 'num'}, {k: 'name', l: 'Name'}, {k: 'sync', l: 'Synchronisiert', t: 'check'}, {k: 'groessen', l: 'Größen', t: 'list'}];
+STAMM_DEF.groessenschluessel.cols = [{k: 'nr', l: 'Nr.', t: 'num'}, {k: 'name', l: 'Name'}, {k: 'sync', l: 'Synchronisiert', t: 'check'}, {k: 'groessen', l: 'Größen (getrennt durch ;)', t: 'list', sep: ';'}];   // Halbgrößen wie 6,5 enthalten ein Komma
 const gsRows = () => stRows('groessenschluessel').map(r => ({id: r.id, nr: +r.nr || 0, name: r.name || '', sync: !!r.sync, anz: (r.groessen || []).length, groessen: (r.groessen || []).join(', '), _raw: r}));
 function gsEdit(id, done) {
   const all = stRows('groessenschluessel'), r = id ? all.find(x => x.id === id) : null;
@@ -15703,8 +16035,8 @@ const EA_GROUPS = () => [
   {h: 'Standardwerte für neue Artikel', f: [
     {k: 'allg.warengruppe', l: 'Warengruppe', t: 'combo', o: eaOpt('warengruppe'), page: 'st-warengruppe', hint: 'Wird beim Anlegen eines Artikels vorgewählt'},
     {k: 'allg.marke', l: 'Marke', t: 'combo', o: eaMarken, page: 'st-marke'},
-    {k: 'allg.mwst', l: 'MwSt.-Satz', t: 'combo', o: eaOpt('mwsttyp', false), page: 'st-mwsttyp'},
-    {k: 'allg.groessenschluessel', l: 'Größenschlüssel', t: 'combo', o: eaOpt('groessenschluessel'), page: 'st-groessenschluessel', hint: 'Die Größen des Schlüssels werden als Größenreihe vorbelegt'}]}
+    {k: 'allg.mwst', l: 'MwSt.-Satz', t: 'combo', o: eaOpt('mwsttyp', false), page: 'st-mwsttyp', hint: 'Gilt für neue Artikel, deren Warengruppe keinen MwSt.-Typ hat'},
+    {k: 'allg.groessenschluessel', l: 'Größenschlüssel', t: 'combo', o: eaOpt('groessenschluessel'), page: 'st-groessenschluessel', hint: 'Die Größen des Schlüssels werden als Größenreihe vorbelegt – hat die Warengruppe einen eigenen Größen-Schlüssel, gilt dieser'}]}
 ];
 const EA = {draft: null};
 const eaLoad = () => { const o = {}; for (const k in EA_DEFAULTS) o[k] = CFG[k] ?? EA_DEFAULTS[k]; return o; };
@@ -15762,7 +16094,9 @@ const eaNeuArtikel = st => {
   const wg = CFG['allg.warengruppe']; if (wg && CATS.some(c => c.id === wg) && (typeof AV === 'undefined' || AV.cat === 'alle')) st.cat = wg;
   if (CFG['allg.marke']) { st.brand = CFG['allg.marke']; st.supplierId = st.supplierId || lfMarkeSync(st.brand); }
   const m = stRows('mwsttyp').find(x => x.id === CFG['allg.mwst']); if (m) st.vat = +m.satz || 0;
-  const g = stRows('groessenschluessel').find(x => x.id === CFG['allg.groessenschluessel']); if (g?.groessen?.length) st.sizes = g.groessen.join(', ');
+  const g = stRows('groessenschluessel').find(x => x.id === CFG['allg.groessenschluessel']); if (g?.groessen?.length) { st.sizes = g.groessen.join(', '); st._gsSel = {id: g.id, sizes: st.sizes}; }
+  // Warengruppe geht vor den Standardwerten: Steuersatz und Größenreihe (Größenschlüssel) der gewählten Warengruppe
+  aeWgVorbelegen(st);
   return st;
 };
 /* ═════════════════════════════════════════════════════════════════
@@ -18186,7 +18520,7 @@ function maskeNew(o) {
     const k = bt.dataset.mfK, d = K.refs[k]; if (!d) return; const a = bt.dataset.mfRef;
     if (a === 'find') { const v = await eaPick({l: d.op.titel || d.l.replace(/[\s*]+$/, ''), o: () => refRows(d.kind, d.op).map(r => [String(r.id), refLbl(r, d.op)])}); if (v !== undefined) K.pick(k, v, el); return; }
     const id = await (STROW[d.kind] || stRowDialog)(d.kind, a === 'edit' ? K.val(k) : null, {preset: a === 'new' ? d.op.preset?.(st.d) : null, titel: d.op.titel || d.l.replace(/[\s*]+$/, '')});
-    if (id) { if (a === 'new') K.pick(k, id, el); else K.render(); }
+    if (id) { if (a === 'new') K.pick(k, id, el); else { o.onRefEdit?.(k, el); K.render(); } }
   };
   K.card = (h, inner, cls = '') => `<div class="ae-card ea-card ${cls}">${h ? `<h4>${esc(h)}</h4>` : ''}<div class="ea-fields ge-one">${inner}</div></div>`;
   K.landSel = (k, l = 'Land *', op = {}) => K.sel(k, l, landListe().map(x => [x.id, x.name]), {leer: op.leer ?? '–', ...op});
@@ -18230,7 +18564,7 @@ function maskeNew(o) {
 
   K.render = () => {
     const host = $('#view-' + o.page); if (!host || !st.d) return;
-    const fk = document.activeElement?.closest?.('[data-mf]')?.dataset?.mf;   // nach dem Zeichnen wieder in dasselbe Feld (Tastaturbedienung)
+    const ae = document.activeElement, fk = ae?.closest?.('[data-mf]')?.dataset?.mf, fsw = ae?.closest?.('[data-mf-sw]')?.dataset?.mfSw;   // nach dem Zeichnen wieder in dasselbe Feld bzw. denselben Schalter (Tastaturbedienung)
     const pos = st.ids.indexOf(st.id), el = document.createElement('div'); el.className = 'ae ue ge fl'; host.replaceChildren(el);
     const can = {new: true, del: !!st.id, refresh: !!st.id, ...(o.can?.() || {})}, lk = lock();
     const btn = (a, icon, l, dis, text = true, kurz) => `<button class="ag-btn" data-mf-a="${a}" title="${esc(l)}" aria-label="${esc(l)}" ${dis ? 'disabled' : ''}>${ic(icon, 'i-sm')}${text ? `<span>${kurz || l}</span>` : ''}</button>`;
@@ -18253,7 +18587,7 @@ function maskeNew(o) {
       if (!b || b.disabled) return;
       const a = b.dataset.mfA, ask = async () => !st.dirty || await confirmBox('Ungesicherte Änderungen verwerfen?', 'Verwerfen');
       if (a === 'back') { if (!await ask()) return; st.dirty = false; return go(o.list); }
-      if (a === 'refresh' || a === 'undo') { if (a === 'refresh' && !await ask()) return; await o.reload(); K.reset(); return K.render(); }
+      if (a === 'refresh' || a === 'undo') { if (a === 'refresh' && !await ask()) return; await o.reload(); K.reset(); K.render(); return renderTopbar(); }
       if (a === 'new') { if (!await ask()) return; return K.open(null, st.ids); }
       if (a === 'prev' || a === 'next') { if (!await ask()) return; const id = st.ids[pos + (a === 'next' ? 1 : -1)]; if (id != null) K.open(id); return; }
       if (a === 'del') { try { await o.remove([st.id], true); } catch (err) { if (!/abgebrochen/.test(String(err?.message || err))) throw err; } return; }
@@ -18270,12 +18604,16 @@ function maskeNew(o) {
     };
     el.addEventListener('focusin', e => fill(e.target)); el.addEventListener('mousedown', e => fill(e.target));
     body.mount?.(el);
-    if (fk) { const f = $(`[data-mf="${CSS.escape(fk)}"]`, el); if (f && !f.disabled) try { f.focus({preventScroll: true}); } catch { /* */ } }
+    const fb = fk ? $(`[data-mf="${CSS.escape(fk)}"]`, el) : fsw ? $(`[data-mf-sw="${CSS.escape(fsw)}"]`, el) : null;
+    if (fb && !fb.disabled) try { fb.focus({preventScroll: true}); } catch { /* */ }
   };
   /** Erster Fehler beim Sichern: zum Reiter springen und Fehler zeigen; true = alles in Ordnung */
   K.gate = () => {
     const errs = o.errors(st.d); if (!errs.length) return true;
-    st.tab = o.tabOf(errs[0].k); st.show = true; K.render(); toast(errs[0].t, {t2: 'Angabe prüfen', type: 'warn'}); return false;
+    st.tab = o.tabOf(errs[0].k); st.show = true; K.render(); toast(errs[0].t, {t2: 'Angabe prüfen', type: 'warn'});
+    // zum ersten fehlerhaften Feld blättern und es anwählen
+    setTimeout(() => { const f = $(`#view-${o.page} .zp-bad [data-mf]`); if (f) { try { f.scrollIntoView({block: 'center'}); f.focus({preventScroll: true}); } catch { /* */ } } }, 30);
+    return false;
   };
   return K;
 }
@@ -18714,7 +19052,7 @@ function lfErrors(d) {
   if (t(p.zahlungsbed) && !stRows('zahlungsbedingung').some(z => z.id === p.zahlungsbed)) add('profile.zahlungsbed', 'Zahlungs-Bed.: diese Zahlungsbedingung gibt es nicht mehr – bitte neu wählen');
   if (t(p.skonto) !== '' && !(isFinite(lfPct(p.skonto)) && lfPct(p.skonto) >= 0 && lfPct(p.skonto) <= 100)) add('profile.skonto', 'Skonto: Prozentwert von 0 bis 100');
   if (t(p.valuta) !== '' && !(/^\d+$/.test(t(p.valuta)) && +p.valuta <= 365)) add('profile.valuta', 'Valuta: Tage von 0 bis 365');
-  if (t(p.kalk_faktor) !== '' && !(isFinite(lfPct(p.kalk_faktor)) && (lfPct(p.kalk_faktor) === 0 || (lfPct(p.kalk_faktor) >= 1 && lfPct(p.kalk_faktor) <= 20)))) add('profile.kalk_faktor', 'Kalkulationsfaktor: Zahl von 1 bis 20 (leer = 2,2)');
+  if (t(p.kalk_faktor) !== '' && !(isFinite(lfPct(p.kalk_faktor)) && (lfPct(p.kalk_faktor) === 0 || (lfPct(p.kalk_faktor) >= 1 && lfPct(p.kalk_faktor) <= 20)))) add('profile.kalk_faktor', 'Kalkulationsfaktor: Zahl von 1 bis 20 (leer = Spanne der Warengruppe)');
   if (t(p.term2) !== '' && !(/^\d+$/.test(t(p.term2)) && +p.term2 <= 365)) add('profile.term2', 'Lief.-Term. 2 Offset: Tage von 0 bis 365');
   for (const [a, wo] of [['adresse', 'Haupt-Adresse'], ['rechnung', 'Rechnungsadresse']]) {
     const v = p[a]; for (const k of LF_ADR) if (t(v[k]).length > 80) add(`profile.${a}.${k}`, 'Höchstens 80 Zeichen');
@@ -18792,7 +19130,7 @@ function lfAllg() {
       ${K.card('EDI und Kalkulation', `${K.sw(`${P}desadv_auto`, 'DESADV automatisch verbuchen', 'Ein Lieferavis (DESADV) dieses Lieferanten wird beim Verarbeiten gleich als Wareneingang eingebucht – das Verarbeiten geschieht automatisch, wenn der Lieferant unter EDI › EDI-Einstellungen › Lieferanten EDI-Einstellungen mit „automatisch verarbeiten“ angebunden ist und der Hintergrundjob „EDI-Import“ läuft, sonst von Hand in der EDI-Liste. Nicht bei „Gegenscannen“ (das Avis bleibt zum Scannen offen) und nicht bei Positionen ohne Menge.')}
         ${K.sw(`${P}pricat_ek`, 'EK-Preise aus PRICAT übernehmen', 'Wird ein Preiskatalog (PRICAT) dieses Lieferanten verarbeitet, bekommen vorhandene Artikel den neuen Einkaufspreis (der Verkaufspreis bleibt).')}
         ${K.sel(`${P}wg_schema`, 'Warengruppen-Schema', [['fedas', 'FEDAS']], {leer: '–', hint: 'FEDAS: Die Warengruppe in den PRICAT-Artikeln gilt als FEDAS-Schlüssel (6 Ziffern) und wird bei neuen Artikeln als FEDAS-Schlüssel eingetragen.'})}
-        ${K.in(`${P}kalk_faktor`, 'Kalkulationsfaktor (EK → VK)', {num: true, inputmode: 'decimal', hint: 'Verkaufspreis-Vorschlag für neue PRICAT-Artikel ohne Verkaufspreis: EK × Faktor (leer = 2,2), gerundet nach Stammdaten › Preisrundung.'})}`)}</div>
+        ${K.in(`${P}kalk_faktor`, 'Kalkulationsfaktor (EK → VK)', {num: true, inputmode: 'decimal', hint: 'Verkaufspreis-Vorschlag für neue Artikel ohne Verkaufspreis (Artikelmaske und PRICAT): EK × Faktor, gerundet nach Stammdaten › Preisrundung. Leer = die Spanne der Warengruppe gilt; hat die Warengruppe keine Spanne, rechnet PRICAT mit 2,2.'})}`)}</div>
     <div class="fl-stack">${K.card('Finanzeinstellungen', `${K.in(`${P}uid`, 'USt-IdNr.', {mono: true, ph: 'ATU12345678', hint: 'Erscheint auf der Eingangsrechnung.'})}${K.in(`${P}steuernr`, 'Steuernummer')}
       ${K.in(`${P}min_summe`, 'Min. Auftragssumme (€)', {num: true, inputmode: 'decimal', hint: 'Beim Bestellen fragt Kontor nach, wenn die Bestellung darunter liegt.'})}${K.in(`${P}min_menge`, 'Min. Auftragsmenge', {num: true, inputmode: 'numeric', hint: 'Stückzahl der ganzen Bestellung.'})}
       <label class="field"><span>Währung</span><select class="input select" disabled><option>EUR – Euro</option></select><small class="ea-hint">Alle Beträge in Kontor sind in Euro.</small></label>
@@ -19220,7 +19558,7 @@ async function wgLoadZaehler() {
     try { const r = await invoke('warengruppe_zaehler'); WG.zaehler = r.artikel || {}; WG.naechste = r.naechste_nr || 1; WG.rolle = r.rolle || 'einzel'; } catch (e) { console.error(e); }
   } else {
     const z = {}; for (const a of ART) { const x = z[a.cat] ||= [0, 0]; x[0]++; if (a.active !== false) x[1]++; }
-    WG.zaehler = z; WG.naechste = wgNaechsteNr(); WG.rolle = 'zentrale';
+    WG.zaehler = z; WG.naechste = wgNaechsteNr(); WG.rolle = WG.rolle === 'filiale' ? 'filiale' : 'zentrale';   // Vorschau: Zentrale (zum Prüfen lässt sich die Filial-Sperre über KONTOR_UI.wgRolle setzen)
   }
   WG.geladen = true;
 }
@@ -19241,9 +19579,9 @@ function wgRows() {
   const lvl = r => r ? [r.nr ?? '0', r.name || 'NA'] : ['0', 'NA'];
   return stRows('warengruppe').map(r => {
     const {a, h, b, x} = wgKette(r.abteilung), [e1n, e1] = lvl(b), [e2n, e2] = lvl(h), [e3n, e3] = lvl(a);
-    const mt = r.mwsttyp ? mw.get(r.mwsttyp) : null, art = wgArtikel(r.id);
+    const mt = mw.get(r.mwsttyp || wgMwstTyp(r.ust ?? 20)), art = wgArtikel(r.id);
     return {id: r.id, nr: r.nr ?? String(r.id).replace(/^adv-/, ''), name: r.name || r.id, e1n, e1, e2n, e2, e3n, e3, e0: x?.name || '',
-      mwst: mt ? mt.name : nm(mw, r.mwsttyp) || (r.mwst || (+r.ust === 10 ? 'Reduziert' : +r.ust === 0 ? 'Ohne MwSt.' : 'Standard')), satz: mt ? +mt.satz : +(r.ust ?? 20),
+      mwst: mt ? mt.name : r.mwsttyp || (+r.ust === 10 ? 'Reduziert' : +r.ust === 0 ? 'Ohne MwSt.' : 'Standard'), satz: mt ? +mt.satz : +(r.ust ?? 20),
       etikett: nm(et, r.etikett), etikett2: nm(et, r.etikett2), anz: r.anz_etiketten ?? 1, hier: nm(hi, r.hierarchie),
       inventur: r.inventur !== false, alter: nm(al, r.altersbewertung), praemie: nm(pr, r.praemienschluessel), gschl: nm(gs, r.groessenschluessel), sgs: nm(sg, r.statgroessen), plschl: nm(pl, r.preislage),
       spanne: r.spanne == null || r.spanne === '' ? 0 : Math.round(+r.spanne * 10000) / 100, service: !!r.service, rabattsperre: !!r.rabattsperre,
@@ -19286,7 +19624,7 @@ function wgNeu() {
 function wgBlank() {
   return {id: '', _aktiv: true, nr: String(Math.max(WG.naechste, wgNaechsteNr())), name: '', hb: '', be: '', ha: '', abteilung: '', altersbewertung: wgKey('altersschluessel', 'Statistik') || 'STATISTIK', praemienschluessel: 'STANDARD', service: false, inventur: true,
     intrastat_nr: '', intrastat_bez: '', gewicht: '', webkat1: '', webkat2: '', webkat3: '', webkat4: '', webkat5: '', groessenschluessel: wgGsStd(), statgroessen: '',
-    rabattsperre: false, mwsttyp: wgMwstTyp(+CFG['allg.mwst'] ? CFG['allg.mwst'] : 20), preislage: 'STANDARD', spanne: '50', etikett: wgKey('etikettentyp', 'Klebe 50x30') || 'K50X30', etikett2: '', anz_etiketten: '1', hierarchie: ''};
+    rabattsperre: false, mwsttyp: stRows('mwsttyp').some(x => x.id === CFG['allg.mwst']) ? CFG['allg.mwst'] : wgMwstTyp(20), preislage: 'STANDARD', spanne: '50', etikett: wgKey('etikettentyp', 'Klebe 50x30') || 'K50X30', etikett2: '', anz_etiketten: '1', hierarchie: ''};
 }
 function wgDraft(id) {
   const r = id ? wgRaw(id) : null; if (!r) return wgBlank();
@@ -19316,7 +19654,8 @@ const WG_WEITERE = [['statgroessen', 'Statistik-Größen-Set', 'statgroessenset'
 /** Prüfungen wie im Backend (warengruppe.rs); k = Feld */
 function wgErrors(d) {
   const m = [], add = (k, t) => m.push({k, t}), alt = d.id ? wgRaw(d.id) : null, nr = String(d.nr).trim(), name = String(d.name).trim();
-  if (!nr) add('nr', 'Nr. angeben'); else if (!/^\d{1,6}$/.test(nr)) add('nr', 'Nr.: eine ganze Zahl bis 999999 (nur Ziffern)');
+  const altNr = alt ? String(alt.nr ?? String(alt.id).replace(/^adv-/, '')) : null;   // vom Artikelimport angelegte Gruppen haben keine Zahl als Nr.: der bisherige Wert bleibt speicherbar
+  if (!nr) add('nr', 'Nr. angeben'); else if (!/^\d{1,6}$/.test(nr)) { if (nr !== altNr) add('nr', 'Nr.: eine ganze Zahl bis 999999 (nur Ziffern)'); }
   else if (!alt && wgIdx().has('adv-' + String(+nr))) add('nr', `Die Nr. ${+nr} gibt es schon`);
   if (!name) add('name', 'Name angeben'); else if (name.length > 50) add('name', 'Name: höchstens 50 Zeichen');
   const H = wgH();
@@ -19328,7 +19667,10 @@ function wgErrors(d) {
   for (let i = 1; i <= 5; i++) { const v = d['webkat' + i]; if (!v) continue; if (seen.has(v)) add('webkat' + i, 'Diese Kategorie ist schon eingetragen'); else if (!gibt('webkategorie', v, alt?.['webkat' + i])) add('webkat' + i, 'Diese Kategorie gibt es nicht mehr – bitte neu wählen'); seen.add(v); }
   const sp = wgTxtNum(d.spanne); if (typeof sp !== 'number') add('spanne', 'Zahl angeben'); else if (sp < 0 || sp >= 100) add('spanne', 'Zwischen 0 und unter 100 %');
   const gw = wgTxtNum(d.gewicht); if (typeof gw !== 'number') add('gewicht', 'Zahl angeben (kg)'); else if (gw < 0 || gw > 10000) add('gewicht', 'Zwischen 0 und 10.000 kg');
-  const ins = String(d.intrastat_nr).replace(/\s/g, ''); if (ins && !/^\d{4,10}$/.test(ins)) add('intrastat_nr', '4 bis 10 Ziffern (Warennummer, z. B. 62011290)');
+  const insRaw = String(d.intrastat_nr).trim(), ins = insRaw.replace(/[\s.\-]/g, ''), altIns = alt ? String(alt.intrastat_nr || alt.zolltarif || '') : '';
+  if (ins && !/^\d{4,10}$/.test(ins) && insRaw !== altIns) add('intrastat_nr', '4 bis 10 Ziffern (Warennummer, z. B. 62011290)');
+  const mt = d.mwsttyp && stRows('mwsttyp').find(x => x.id === d.mwsttyp);
+  if (mt && mt.satz != null && String(mt.satz).trim() !== '' && ![20, 13, 10, 0].includes(+mt.satz)) add('mwsttyp', `Der Satz ${num(+mt.satz)} % wird an der Kasse nicht unterstützt (erlaubt: 20, 13, 10, 0 %)`);
   if (String(d.intrastat_bez).trim().length > 120) add('intrastat_bez', 'Höchstens 120 Zeichen');
   const an = String(d.anz_etiketten).trim(); if (an === '' || !/^\d{1,2}$/.test(an)) add('anz_etiketten', 'Ganze Zahl von 0 bis 99');
   return m;
@@ -19359,6 +19701,7 @@ function wgKetteSetzen(d, k) {
     const b = H.be.get(d.be); if (b?.parent && b.parent !== d.hb) { d.be = ''; d.ha = ''; d.abteilung = ''; d._f.be = d._f.ha = false; }
   }
 }
+const wgWebLabel = r => r.sichtbar === true ? String(r.name || r.id) : `${r.name || r.id} (im Schaufenster unsichtbar)`;
 const wgWebRows = k => () => { const d = WGE.d || {}, used = new Set([1, 2, 3, 4, 5].map(i => 'webkat' + i).filter(x => x !== k).map(x => d[x]).filter(Boolean)); return stActive('webkategorie').filter(r => !used.has(r.id)); };
 
 /* ── Maske ── */
@@ -19374,6 +19717,7 @@ const WGK = maskeNew({
   onSet: (k, el) => { wgKetteSetzen(WGE.d, k); if (k === 'name' || k === 'nr') renderTopbar(); },
   rerender: k => ['abteilung', 'ha', 'be', 'hb', 'mwsttyp', 'etikett', 'etikett2'].includes(k),
   act: async a => { if (a === 'copy') wgKopieren(); },
+  onRefEdit: k => { if (['abteilung', 'ha', 'be', 'hb'].includes(k)) wgKetteSetzen(WGE.d, 'abteilung'); },   // Stift an einer Ebene: die Kette im Entwurf neu aus der Abteilung ableiten
   save: () => wgSave(), remove: () => { /* Löschen nur in der Liste */ },
 });
 WGK.register();
@@ -19382,7 +19726,7 @@ function wgKopieren() {
   if (wgLocked() || !WGE.id) return;
   const src = mclone(WGE.d);
   WGK.open(null, WGE.ids);
-  Object.assign(WGE.d, src, {id: '', nr: String(Math.max(WG.naechste, wgNaechsteNr())), name: `Kopie von ${src.name}`});
+  Object.assign(WGE.d, src, {id: '', nr: String(Math.max(WG.naechste, wgNaechsteNr())), name: `Kopie von ${src.name}`.slice(0, 50)});
   WGE.dirty = true; WGK.render(); renderTopbar();
 }
 const wgNote = () => wgLocked() ? `<div class="zp-note">${ic('lock', 'i-sm')}<span><b>Warengruppen pflegt die Zentrale.</b> Diese Kasse bekommt die Angaben beim Abgleich; hier sind sie nur lesbar.</span></div>` : '';
@@ -19402,11 +19746,11 @@ function wgMaske() {
     ${K.ref('praemienschluessel', 'Prämienschlüssel *', 'praemienschluessel', {pflicht: true, label: r => `${r.name || r.id}${r.pct != null && r.pct !== '' ? ` (${num(+r.pct)} %)` : ''}`, tip: 'Prämiensatz der Verkäufer:innen auf den Netto-Umsatz dieser Gruppe.'})}
     ${K.sw('service', 'Service-Warengruppe', '', false, 'Dienstleistung: kein Bestand, nie „ausverkauft“, keine Inventur, kein Bestellvorschlag.')}
     ${K.sw('inventur', 'Inventur', '', false, 'Aus: Artikel dieser Gruppe stehen nicht in der Zählliste.')}
-    ${K.in('intrastat_nr', 'Intrastat-Waren-Nr.', {mono: true, inputmode: 'numeric', max: 12, tip: 'Warennummer (KN) für die Intrastat-Auswertung, wenn der Artikel keine eigene hat.'})}
+    ${K.in('intrastat_nr', 'Intrastat-Waren-Nr.', {mono: true, inputmode: 'numeric', max: 24, tip: 'Warennummer (KN) für die Intrastat-Auswertung, wenn der Artikel keine eigene hat.'})}
     ${K.in('intrastat_bez', 'Intrastat-Waren-Bez.', {max: 120})}
     ${K.in('gewicht', 'Durchschnitts Gewicht', {num: true, inputmode: 'decimal', suffix: 'kg', tip: 'Eigenmasse je Stück für die Intrastat-Auswertung, wenn der Artikel kein Gewicht hat.'})}
     <p class="wg-facts">${WGE.id ? `${art[0] ? `${num(art[0])} Artikel in dieser Warengruppe${art[1] !== art[0] ? ` (davon ${num(art[1])} aktiv)` : ''}.` : 'Noch kein Artikel in dieser Warengruppe.'}` : 'Neue Warengruppe.'}</p>`);
-  const c2 = card('WebShop-Kategorien', [1, 2, 3, 4, 5].map(i => 'webkat' + i), [1, 2, 3, 4, 5].map(i => K.ref('webkat' + i, `WebShop-Kategorie ${i}`, 'webkategorie', {...leer, rows: wgWebRows('webkat' + i), titel: 'WebShop-Kategorie', tip: i === 1 ? 'Im Digitalen Schaufenster und in der Schnittstelle erscheinen die Artikel dieser Gruppe in diesen Kategorien.' : ''})).join(''));
+  const c2 = card('WebShop-Kategorien', [1, 2, 3, 4, 5].map(i => 'webkat' + i), [1, 2, 3, 4, 5].map(i => K.ref('webkat' + i, `WebShop-Kategorie ${i}`, 'webkategorie', {...leer, rows: wgWebRows('webkat' + i), label: wgWebLabel, titel: 'WebShop-Kategorie', tip: i === 1 ? 'Im Digitalen Schaufenster und in der Schnittstelle erscheinen die Artikel dieser Gruppe in diesen Kategorien.' : ''})).join('') + '<p class="wg-facts">Sobald irgendeine Warengruppe einer sichtbaren Kategorie zugeordnet ist, zeigt das Digitale Schaufenster nur noch Artikel aus zugeordneten Warengruppen.</p>');
   const c3 = card('Größeneinstellungen', ['groessenschluessel', 'statgroessen'], `
     ${K.ref('groessenschluessel', 'Größen-Schlüssel *', 'groessenschluessel', {pflicht: true, label: r => r.name || r.id, tip: 'Die Größenreihe wird bei neuen Artikeln dieser Gruppe vorbelegt.'})}
     ${K.ref('statgroessen', 'Statistik-Größen-Set', 'statgroessenset', {...leer, tip: 'Fasst Größen in der Größen-Auswertung zusammen.'})}`);
@@ -19424,8 +19768,13 @@ function wgMaske() {
 }
 
 /* ── Sichern, Löschen ── */
+let wgBusy = false;
 async function wgSave() {
-  if (wgLocked()) return;
+  if (wgLocked() || wgBusy) return;   // ein zweiter Klick während des Sicherns tut nichts (sonst „Die Nr. gibt es schon“ nach dem Erfolg)
+  wgBusy = true;
+  try { await wgSaveEnd(); } finally { wgBusy = false; }
+}
+async function wgSaveEnd() {
   const isNew = !WGE.id;
   if (!WGK.gate()) return;
   try { await needPerm('einstellungen', 'Warengruppen'); } catch { return; }
@@ -19438,7 +19787,7 @@ async function wgSave() {
       if (isNew && all.some(r => r.id === id)) throw new Error(`Die Nr. ${nr} gibt es schon`);
       const o = {...(all.find(r => r.id === id) || {}), ...row, nr, id, ust: +(stRows('mwsttyp').find(m => m.id === row.mwsttyp)?.satz ?? 20)};
       for (const k of ['service', 'rabattsperre', 'etikett2', 'hierarchie', 'statgroessen', 'intrastat_nr', 'intrastat_bez', 'webkat1', 'webkat2', 'webkat3', 'webkat4', 'webkat5']) if (!o[k]) delete o[k];
-      o.intrastat_nr = String(o.intrastat_nr || '').replace(/\s/g, ''); if (!o.intrastat_nr) delete o.intrastat_nr;
+      { const roh = String(o.intrastat_nr || '').trim(), n = roh.replace(/[\s.\-]/g, ''); o.intrastat_nr = /^\d{4,10}$/.test(n) ? n : roh; if (!o.intrastat_nr) delete o.intrastat_nr; delete o.zolltarif; }
       if (!o.gewicht) delete o.gewicht; if (String(o.anz_etiketten) === '1') delete o.anz_etiketten; else o.anz_etiketten = +o.anz_etiketten;
       const i = all.findIndex(r => r.id === id); if (i < 0) all.push(o); else all[i] = o;
       await stammSave('warengruppe', all); saved = o;
@@ -19460,13 +19809,14 @@ async function wgRemove(ids) {
   const wer = rs.length === 1 ? `Warengruppe „${rs[0].name}“` : `${num(rs.length)} Warengruppen`;
   if (!await confirmBox(`${wer} löschen?${mit.length ? ` ${mit.length === 1 ? 'Eine Gruppe hat' : `${mit.length} Gruppen haben`} Artikel und lässt sich nicht löschen.` : ''}`, 'Löschen')) abort();
   try { await needPerm('einstellungen', 'Warengruppen'); } catch { abort(); }
-  let n = 0, fehler = '';
+  let n = 0, fehler = '', nicht = [];
   try {
-    if (DESKTOP) n = await invoke('warengruppe_delete', {ids: rs.map(r => r.id), by: S.user.name});
+    if (DESKTOP) { const r = await invoke('warengruppe_delete', {ids: rs.map(x => x.id), by: S.user.name}); n = r.geloescht || 0; nicht = r.nicht || []; }
     else { const weg = new Set(rs.filter(r => !wgArtikel(r.id)[0]).map(r => r.id)); n = weg.size; if (n) await stammSave('warengruppe', stRows('warengruppe').filter(r => !weg.has(r.id)).map(r => ({...r}))); if (n < rs.length) throw new Error(`${rs.length - n} Gruppe(n) mit Artikeln nicht gelöscht`); }
   } catch (e) { fehler = String(e.message || e); }
   await wgReload();
   if (fehler) { toast(n ? 'Nicht alles gelöscht' : 'Nicht gelöscht', {t2: fehler, type: 'warn', dur: 9000}); if (!n) abort(); return; }
+  if (nicht.length) { toast(n ? `${num(n)} gelöscht, der Rest nicht` : 'Nicht gelöscht', {t2: `Weil Artikel dazugehören: ${nicht.slice(0, 4).join('; ')}${nicht.length > 4 ? ' …' : ''}`, type: 'warn', dur: 9000}); if (!n) abort(); return; }
   toast(n === 1 ? 'Warengruppe gelöscht' : `${num(n)} Warengruppen gelöscht`, {t2: rs.slice(0, 3).map(r => r.name).join(', '), icon: 'tag', dur: 2400});
 }
 
@@ -19481,7 +19831,8 @@ const wgInventur = cat => !cat || wgRaw(cat)?.inventur !== false;
 /** Steuersatz in % aus dem MwSt.-Typ der Warengruppe (Rückfall: gespeicherter Satz); null = nicht bekannt */
 function wgSatz(cat) {
   const r = cat ? wgRaw(cat) : null; if (!r) return null;
-  const m = r.mwsttyp ? stRows('mwsttyp').find(x => x.id === r.mwsttyp) : null, v = m ? +m.satz : r.ust != null && r.ust !== '' ? +r.ust : NaN;
+  const m = r.mwsttyp ? stRows('mwsttyp').find(x => x.id === r.mwsttyp) : null, hat = m && m.satz != null && String(m.satz).trim() !== '';   // Typ ohne Satz zählt nicht als 0 %
+  const v = hat ? +m.satz : r.ust != null && r.ust !== '' ? +r.ust : NaN;
   return isFinite(v) ? v : null;
 }
 /** Rabattsperre der Warengruppe eines Artikels (art.cat) */
@@ -19491,7 +19842,7 @@ const rabattGesperrt = art => lfRabattGesperrt(art) || wgRabattSperre(art);
 const rabattSperreGrund = art => lfRabattGesperrt(art) ? `Lieferant ${supName(art.supplierId)}` : wgRabattSperre(art) ? `Warengruppe „${wgNm('warengruppe', art.cat)}“` : '';
 
 // nur lesend / für Prüfungen
-if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {wgDraft, wgErrors, wgToRow, wgRows, wgKette, wgInfo: id => wgRaw(id), wgService, wgInventur, wgSatz, rabattGesperrt});
+if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {wgDraft, wgErrors, wgToRow, wgRows, wgKette, wgInfo: id => wgRaw(id), wgService, wgInventur, wgSatz, rabattGesperrt, wgRolle: r => { WG.rolle = r; }});
 /* ═════════════════════════════════════════════════════════════════
    56 · MENÜPUNKTE UND RECHTE
    Wer ein Recht nicht hat – weder über seine Rolle noch über seine Benutzergruppe – sieht die zugehörigen Menüpunkte nicht

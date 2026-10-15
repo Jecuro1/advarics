@@ -321,7 +321,7 @@ pub fn po_lines(c: &Connection, id: i64) -> rusqlite::Result<Vec<Value>> {
 /// Bestellvorschlag: Varianten unter Mindestbestand (abzüglich offener Bestellmengen), aufgefüllt auf
 /// Mindestbestand + erwarteten Abverkauf, gruppiert nach Lieferant. Einstellbar unter „order.vorschlag“:
 /// tage (Betrachtungszeitraum, 28), reichweite (Tage, 0 = wie Zeitraum), faktor (Sicherheitsfaktor, 1.0),
-/// runden (Packeinheit, 1), ohne (Warengruppen ausschließen), nur_lieferant (nur Artikel mit Lieferant).
+/// runden (Packeinheit, 1), ohne (Warengruppen ausschließen), nur_lieferant (nur Artikel mit Lieferant). Service-Warengruppen (Dienstleistungen) kommen nie vor.
 pub fn suggest(c: &Connection) -> Result<Vec<Value>, String> {
     let cfg = db::setting_get(c, "order.vorschlag").unwrap_or(json!({}));
     let tage = cfg["tage"].as_i64().unwrap_or(28).clamp(7, 365);
@@ -347,7 +347,9 @@ pub fn suggest(c: &Connection) -> Result<Vec<Value>, String> {
                (SELECT COALESCE(SUM(l.qty - l.received), 0) FROM po_lines l JOIN purchase_orders p ON p.id = l.po_id WHERE l.variant_id = v.id AND p.status IN ('entwurf','bestellt','teilgeliefert')),
                a.category, v.ean
              FROM variants v JOIN articles a ON a.id = v.article_id LEFT JOIN suppliers s ON s.id = a.supplier_id
-             WHERE v.active = 1 AND a.active = 1 AND COALESCE(s.active, 1) = 1 AND COALESCE(json_extract(s.profile, '$.order_vorschlag'), 1) <> 0",
+               LEFT JOIN stamm w ON w.kind = 'warengruppe' AND w.id = a.category
+             WHERE v.active = 1 AND a.active = 1 AND COALESCE(s.active, 1) = 1 AND COALESCE(json_extract(s.profile, '$.order_vorschlag'), 1) <> 0
+               AND COALESCE(json_extract(w.data, '$.service'), 0) = 0",
         )
         .map_err(|e| e.to_string())?;
     let rows = st
@@ -399,6 +401,10 @@ mod tests {
         let sg = suggest(&c).unwrap();
         assert_eq!(sg.len(), 1);
         assert_eq!(sg[0]["supplier_id"], json!(sup));
+        // Service-Warengruppe (Dienstleistung): kein Bestellvorschlag
+        c.execute("INSERT INTO stamm(kind, id, data, pos, active, updated_at) VALUES ('warengruppe', 'jacken', '{\"service\":true}', 0, 1, 't')", []).unwrap();
+        assert!(suggest(&c).unwrap().is_empty());
+        c.execute("DELETE FROM stamm WHERE kind = 'warengruppe'", []).unwrap();
         let tx = c.transaction().unwrap();
         let id = po_save(&tx, None, &sup, "", &[PoLineIn { variant_id: 1, qty: 5, cost: Some(4000) }], "T").unwrap();
         tx.commit().unwrap();

@@ -87,6 +87,10 @@ async function loadInventories() {
   if (!DESKTOP) return;
   try { IV.list = await invoke('inventory_list'); const open = IV.list.find(i => i.status === 'offen'); IV.cur = open ? await invoke('inventory_get', {id: open.id}) : null; } catch (e) { toast('Inventur nicht verfügbar', {t2: String(e), type: 'warn'}); }
 }
+/** Varianten, die wegen „Inventur aus“ oder Service-Warengruppe nicht in die Zählliste kommen (nur zur Anzeige vor dem Start) */
+const ivKeine = a => !wgInventur(a.cat) || wgService(a.cat);
+const ivAusgenommen = () => ART.filter(a => a.active !== false && ivKeine(a)).reduce((s, a) => s + a.variants.length, 0);
+const ivAusgenommenBsp = () => { const a = ART.find(x => x.active !== false && ivKeine(x)); return a ? wgNm('warengruppe', a.cat) : ''; };
 async function renderInventur() {
   const v = $('#view-inventur');
   if (!DESKTOP) { v.innerHTML = `<div class="cv"><div class="card"><div class="empty" style="padding:64px 20px"><div class="empty-icon">${ic('boxes')}</div><h3>Inventur nur in der Desktop-App</h3><p>Zähllisten und Buchungen brauchen die lokale Datenbank.</p></div></div></div>`; return; }
@@ -96,9 +100,9 @@ async function renderInventur() {
     const brands = [...new Set(ART.map(a => a.brand).filter(Boolean))].sort();
     v.innerHTML = `<div class="cv"><div class="cv-head"><div><h2 class="h-title">Inventur</h2><div class="dash-meta" style="margin-top:6px"><span>Zählen per Scanner oder Eingabe · Verkäufe während der Zählung werden berücksichtigt</span></div></div></div>
       <div class="card" style="padding:18px;display:grid;gap:12px;max-width:760px"><div class="set-l">Neue Inventur starten</div>
-        <div class="ed-grid"><label class="field"><span>Warengruppe</span><select class="input select" id="ivCat"><option value="">alle</option>${CATS.filter(x => x.id !== 'alle').map(x => `<option value="${x.id}">${x.name}</option>`).join('')}</select></label>
+        <div class="ed-grid"><label class="field"><span>Warengruppe</span><select class="input select" id="ivCat"><option value="">alle</option>${CATS.filter(x => x.id !== 'alle').map(x => { const keine = !wgInventur(x.id) || wgService(x.id); return `<option value="${x.id}" ${keine ? 'disabled' : ''}>${esc(x.name)}${keine ? ' (keine Inventur)' : ''}</option>`; }).join('')}</select></label>
           <label class="field"><span>Marke</span><select class="input select" id="ivBrand"><option value="">alle</option>${brands.map(b => `<option>${esc(b)}</option>`).join('')}</select></label></div>
-        <div class="prompt-hint">${ic('info', 'i-xs')}Der Sollbestand wird beim Start festgehalten. Abschluss bucht nur die Differenzen (Grund „Inventur“).</div>
+        <div class="prompt-hint">${ic('info', 'i-xs')}Der Sollbestand wird beim Start festgehalten. Abschluss bucht nur die Differenzen (Grund „Inventur“). Warengruppen mit ausgeschaltetem Schalter „Inventur“ und Service-Warengruppen werden nicht gezählt${ivAusgenommen() ? ` – derzeit ${num(ivAusgenommen())} Varianten (z. B. in „${esc(ivAusgenommenBsp())}“); der Schalter steht in Stammdaten › Warengruppen › Warengruppen` : ''}.</div>
         <div><button class="btn btn-primary" id="ivStart">${ic('boxes', 'i-sm')}Inventur starten</button></div></div>
       <div class="card" style="margin-top:14px">${IV.list.length ? `<table class="tbl art-tbl"><thead><tr><th style="padding-left:16px">Inventur</th><th>Status</th><th>Zeitpunkt</th><th class="r">gezählt</th><th class="r">Plus</th><th class="r">Minus</th><th class="r">Differenz VK</th><th class="r" style="padding-right:16px">Differenz EK</th></tr></thead><tbody>${IV.list.map(i => `<tr><td style="padding-left:16px"><b>${esc(i.no)}</b><div class="muted" style="font-size:12px">${esc(i.user || '')}</div></td><td><span class="pill ${i.status === 'abgeschlossen' ? 'pos' : ''}" style="height:20px">${esc(i.status)}</span></td><td class="muted">${esc(fmtTs(i.closed_at || i.created_at))}</td><td class="r num">${i.counted} / ${i.lines}</td><td class="r num">${i.result ? '+' + i.result.plus : '–'}</td><td class="r num">${i.result ? '−' + i.result.minus : '–'}</td><td class="r">${i.result ? eur(i.result.value_vk / 100) : '–'}</td><td class="r" style="padding-right:16px">${i.result ? eur(i.result.value_ek / 100) : '–'}</td></tr>`).join('')}</tbody></table>`
         : '<div class="empty" style="padding:40px 20px"><p>Noch keine Inventuren.</p></div>'}</div></div>`;
@@ -106,7 +110,7 @@ async function renderInventur() {
   }
   const done = c.lines.filter(l => l.counted != null).length;
   v.innerHTML = `<div class="cv">
-    <div class="cv-head"><div><h2 class="h-title">Inventur ${esc(c.no)}</h2><div class="dash-meta" style="margin-top:6px"><span>gestartet ${esc(fmtTs(c.created_at))} · ${esc(c.user || '')}</span>${c.scope?.cat ? `<span>·</span><span>${esc(catName(c.scope.cat))}</span>` : ''}${c.scope?.brand ? `<span>·</span><span>${esc(c.scope.brand)}</span>` : ''}</div></div>
+    <div class="cv-head"><div><h2 class="h-title">Inventur ${esc(c.no)}</h2><div class="dash-meta" style="margin-top:6px"><span>gestartet ${esc(fmtTs(c.created_at))} · ${esc(c.user || '')}</span>${c.scope?.ausgenommen ? `<span>·</span><span title="Warengruppen mit ausgeschaltetem Schalter „Inventur“ und Service-Warengruppen">${num(c.scope.ausgenommen)} Varianten ohne Inventur</span>` : ''}${c.scope?.cat ? `<span>·</span><span>${esc(catName(c.scope.cat))}</span>` : ''}${c.scope?.brand ? `<span>·</span><span>${esc(c.scope.brand)}</span>` : ''}</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" id="ivPrint">${ic('printer', 'i-sm')}Zählliste</button><button class="btn btn-secondary" id="ivDiscard">${ic('x', 'i-sm')}Verwerfen</button><button class="btn btn-primary" id="ivFinish">${ic('check', 'i-sm')}Abschließen</button></div></div>
     <div class="kpis" id="ivKpis"></div>
     <div class="cv-tools"><label class="search-field" style="flex:0 1 420px">${ic('barcode')}<input id="ivScan" placeholder="EAN scannen (+1) oder Artikel suchen …" autocomplete="off" value="${esc(IV.q)}"></label>
@@ -148,7 +152,7 @@ function bindStockViews() {
     if (e.target.closest('#ivStart')) {
       const scope = {cat: $('#ivCat').value, brand: $('#ivBrand').value};
       try { IV.cur = await invoke('inventory_start', {scope, user: S.user.name}); } catch (err) { return toast('Start nicht möglich', {t2: String(err), type: 'warn'}); }
-      toast(`Inventur ${IV.cur.no} gestartet`, {t2: `${IV.cur.lines.length} Varianten in der Zählliste`, type: 'pos', icon: 'boxes'}); Hooks.emit('inventory.started', {inventur: IV.cur.no});
+      toast(`Inventur ${IV.cur.no} gestartet`, {t2: `${IV.cur.lines.length} Varianten in der Zählliste${IV.cur.scope?.ausgenommen ? ` · ${IV.cur.scope.ausgenommen} ohne Inventur (Warengruppe)` : ''}`, type: 'pos', icon: 'boxes'}); Hooks.emit('inventory.started', {inventur: IV.cur.no});
       return renderInventur();
     }
     if (e.target.closest('#ivDiscard')) { try { await stepUp({title: 'Inventur verwerfen', text: `${IV.cur.no} – Zählungen gehen verloren, Bestand bleibt unverändert`}); await invoke('inventory_discard', {id: IV.cur.id}); } catch (err) { if (!String(err).includes('abgebrochen')) toast('Nicht möglich', {t2: String(err), type: 'warn'}); return; } toast('Inventur verworfen', {icon: 'x'}); return renderInventur(); }

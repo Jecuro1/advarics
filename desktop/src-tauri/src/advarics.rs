@@ -437,6 +437,12 @@ pub fn wg_apply(c: &mut Connection, rows: &[WgRow]) -> Result<Value, String> {
         let mut v: Value = cur.as_deref().and_then(|d| serde_json::from_str(d).ok()).unwrap_or(json!({}));
         // Vorhandene Warengruppen: Name, Nr., Abteilung und Gruppe kommen aus der Liste; was in der Maske gepflegt wurde (MwSt.-Typ, Etikett, Inventur, Spanne …) bleibt
         let ergaenzen = kind == "warengruppe" && cur.is_some();
+        if ergaenzen && v.get("mwsttyp").is_none() {
+            // Alt-Zeile ohne MwSt.-Typ: der Typ folgt dem bisher gespeicherten Satz (nicht der Liste), sonst widersprächen sich Typ und Satz
+            if let Some(u) = v.get("ust").and_then(|x| x.as_i64()) {
+                v["mwsttyp"] = json!(match u { 0 => "F", 10 => "E", 13 => "E13", _ => "N" });
+            }
+        }
         for (k, x) in add.as_object().unwrap() {
             if ergaenzen && !["name", "nr", "abteilung", "gruppe"].contains(&k.as_str()) && v.get(k).map(|y| !y.is_null() && y != "").unwrap_or(false) {
                 continue;
@@ -497,8 +503,37 @@ pub fn wg_apply(c: &mut Connection, rows: &[WgRow]) -> Result<Value, String> {
         }
     }
     let mut entfernt = 0usize;
-    for k in ["warengruppe", "abteilung", "hauptabteilung", "bereich", "hauptbereich"] {
-        entfernt += tx.execute("DELETE FROM stamm WHERE kind = ?1 AND id NOT LIKE 'adv-%'", [k]).map_err(|e| e.to_string())?;
+    entfernt += tx.execute("DELETE FROM stamm WHERE kind = 'warengruppe' AND id NOT LIKE 'adv-%'", []).map_err(|e| e.to_string())?;
+    // Von Hand angelegte Ebenen entfallen – außer die, auf die die verbleibenden Warengruppen zeigen (z. B. in der Maske angelegt): sie bleiben samt Kette nach oben
+    let mut behalten: std::collections::HashSet<(String, String)> = Default::default();
+    {
+        let mut ids: Vec<String> = {
+            let mut st = tx.prepare("SELECT DISTINCT json_extract(data, '$.abteilung') FROM stamm WHERE kind = 'warengruppe'").map_err(|e| e.to_string())?;
+            let v: Vec<String> = st.query_map([], |r| r.get::<_, Option<String>>(0)).map_err(|e| e.to_string())?.filter_map(|x| x.ok().flatten()).filter(|x| !x.is_empty()).collect();
+            v
+        };
+        for k in ["abteilung", "hauptabteilung", "bereich", "hauptbereich"] {
+            let mut oben: Vec<String> = vec![];
+            for id in ids.drain(..) {
+                if let Some(d) = tx.query_row("SELECT data FROM stamm WHERE kind = ?1 AND id = ?2", params![k, id], |r| r.get::<_, String>(0)).optional().map_err(|e| e.to_string())? {
+                    if let Some(p) = serde_json::from_str::<Value>(&d).ok().and_then(|v| v["parent"].as_str().map(str::to_string)).filter(|p| !p.is_empty()) {
+                        oben.push(p);
+                    }
+                    behalten.insert((k.to_string(), id));
+                }
+            }
+            ids = oben;
+        }
+    }
+    for k in ["abteilung", "hauptabteilung", "bereich", "hauptbereich"] {
+        let alle: Vec<String> = {
+            let mut st = tx.prepare("SELECT id FROM stamm WHERE kind = ?1 AND id NOT LIKE 'adv-%'").map_err(|e| e.to_string())?;
+            let v: Vec<String> = st.query_map([k], |r| r.get::<_, String>(0)).map_err(|e| e.to_string())?.filter_map(Result::ok).collect();
+            v
+        };
+        for id in alle.into_iter().filter(|id| !behalten.contains(&(k.to_string(), id.clone()))) {
+            entfernt += tx.execute("DELETE FROM stamm WHERE kind = ?1 AND id = ?2", params![k, id]).map_err(|e| e.to_string())?;
+        }
     }
     tx.commit().map_err(|e| e.to_string())?;
     Ok(json!({ "entfernt": entfernt, "artikel_umgehaengt": umgehaengt, "warengruppen_neu": neu[0], "warengruppen_aktualisiert": upd[0], "abteilungen_neu": neu[1], "hauptabteilungen_neu": neu[2], "bereiche_neu": neu[3], "zeilen": rows.len() }))
@@ -645,7 +680,7 @@ pub fn import(c: &mut Connection, data_dir: &Path, path: &Path, o: &Opts, user: 
                 upd += 1;
             } else {
                 let art = catalog::Article {
-                    id: id.clone(), name: first.name.clone(), brand: first.marke.clone(), category: cat.clone(), glyph: "shirt".into(), price, sale_price: None, vat: 20, tag: None,
+                    id: id.clone(), name: first.name.clone(), brand: first.marke.clone(), category: cat.clone(), glyph: "shirt".into(), price, sale_price: None, vat: fedas::wg_satz(&tx, &cat), tag: None,   // Satz der Warengruppe (MwSt.-Typ), unbekannt = 20
                     popularity: 40, colors: variants.iter().map(|v| v.0.color.clone()).collect(), sizes: vec!["one size".into()], fields: Value::Object(fields.clone()), prompts: Value::Null,
                     active: true, variants: variants.iter().map(|v| catalog::Variant { stock: 0, ..v.0.clone() }).collect(), cost, supplier_id: supplier.clone(), min_stock: 1,
                     image: None, details: Value::Object(det.clone()), media: vec![],
@@ -714,6 +749,110 @@ pub fn import(c: &mut Connection, data_dir: &Path, path: &Path, o: &Opts, user: 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn warengruppen_import_schreibt_kennungen_und_schont_manuelle_aenderungen() {
+        let mut c = Connection::open_in_memory().unwrap();
+        c.execute_batch("CREATE TABLE stamm (kind TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL DEFAULT '{}', pos INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, PRIMARY KEY (kind, id)); CREATE TABLE articles (id TEXT, category TEXT, updated_at TEXT);").unwrap();
+        let mut r = WgRow { nr: "5".into(), name: "Ski".into(), e: [("1".into(), "Hartware".into()), ("0".into(), "Multi".into()), ("1".into(), "Ehren".into())], mwst: "Reduziert".into(), etikett: "Klebe 50x30".into(), inventur: true, alter: "Statistik".into(), spanne: Some(0.5) };
+        wg_apply(&mut c, &[r.clone()]).unwrap();
+        let lies = |c: &Connection| -> Value { serde_json::from_str(&c.query_row::<String, _, _>("SELECT data FROM stamm WHERE kind = 'warengruppe' AND id = 'adv-5'", [], |x| x.get(0)).unwrap()).unwrap() };
+        let d = lies(&c);
+        assert_eq!((d["etikett"].clone(), d["altersbewertung"].clone(), d["mwsttyp"].clone(), d["ust"].clone()), (json!("K50X30"), json!("STATISTIK"), json!("E"), json!(10)));
+        // Pflege in der Maske (MwSt.-Typ, Spanne, Inventur) – die Liste ändert nur Name und Hierarchie
+        c.execute("UPDATE stamm SET data = json_set(data, '$.mwsttyp', 'N', '$.ust', 20, '$.spanne', 0.3, '$.inventur', json('false')) WHERE kind = 'warengruppe' AND id = 'adv-5'", []).unwrap();
+        r.name = "Ski neu".into();
+        r.mwst = "Standard".into();
+        r.spanne = Some(0.5);
+        r.inventur = true;
+        wg_apply(&mut c, &[r]).unwrap();
+        let d = lies(&c);
+        assert_eq!(d["name"], "Ski neu");
+        assert_eq!((d["mwsttyp"].clone(), d["ust"].clone(), d["spanne"].clone(), d["inventur"].clone()), (json!("N"), json!(20), json!(0.3), json!(false)), "Pflege bleibt");
+        // Alt-Zeile aus 0.45 (ust 10 in der alten Maske gesetzt, kein Typ): Typ folgt dem Satz, nicht der Liste („Standard“)
+        c.execute("INSERT INTO stamm(kind, id, data, pos, active, updated_at) VALUES ('warengruppe', 'adv-6', '{\"nr\":\"6\",\"name\":\"Alt\",\"ust\":10,\"mwst\":\"Reduziert\"}', 0, 1, 't')", []).unwrap();
+        let r6 = WgRow { nr: "6".into(), name: "Alt".into(), e: [("1".into(), "Hartware".into()), ("0".into(), "Multi".into()), ("1".into(), "Ehren".into())], mwst: "Standard".into(), etikett: "Klebe 50x30".into(), inventur: true, alter: "Statistik".into(), spanne: Some(0.5) };
+        wg_apply(&mut c, &[r6]).unwrap();
+        let d6: Value = serde_json::from_str(&c.query_row::<String, _, _>("SELECT data FROM stamm WHERE kind = 'warengruppe' AND id = 'adv-6'", [], |x| x.get(0)).unwrap()).unwrap();
+        assert_eq!((d6["mwsttyp"].clone(), d6["ust"].clone()), (json!("E"), json!(10)));
+    }
+
+    #[test]
+    fn warengruppen_import_behaelt_ebenen_auf_die_verbleibende_warengruppen_zeigen() {
+        let mut c = Connection::open_in_memory().unwrap();
+        c.execute_batch("CREATE TABLE stamm (kind TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL DEFAULT '{}', pos INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, PRIMARY KEY (kind, id)); CREATE TABLE articles (id TEXT, category TEXT, updated_at TEXT);").unwrap();
+        let ins = |c: &Connection, kind: &str, id: &str, d: &str| { c.execute("INSERT INTO stamm(kind, id, data, pos, active, updated_at) VALUES (?1, ?2, ?3, 0, 1, 't')", params![kind, id, d]).unwrap(); };
+        // in der Maske angelegt: Abteilung EIGENE (Haupt-Abteilung EH, Bereich EB), Gruppe adv-960100 zeigt darauf; dazu eine unbenutzte handgemachte Ebene
+        ins(&c, "abteilung", "EIGENE", "{\"name\":\"Eigene\",\"parent\":\"EH\"}");
+        ins(&c, "hauptabteilung", "EH", "{\"name\":\"Eigene HA\",\"parent\":\"EB\"}");
+        ins(&c, "bereich", "EB", "{\"name\":\"Eigener Bereich\"}");
+        ins(&c, "abteilung", "UNBENUTZT", "{\"name\":\"Weg\"}");
+        ins(&c, "warengruppe", "adv-960100", "{\"nr\":\"960100\",\"name\":\"Neu\",\"abteilung\":\"EIGENE\"}");
+        ins(&c, "warengruppe", "alt-demo", "{\"name\":\"Demo\"}");
+        let r = WgRow { nr: "5".into(), name: "Ski".into(), e: [("1".into(), "Hartware".into()), ("0".into(), "Multi".into()), ("1".into(), "Ehren".into())], mwst: "Standard".into(), etikett: "Klebe 50x30".into(), inventur: true, alter: "Statistik".into(), spanne: Some(0.5) };
+        wg_apply(&mut c, &[r]).unwrap();
+        let n = |k: &str, id: &str| -> i64 { c.query_row("SELECT COUNT(*) FROM stamm WHERE kind = ?1 AND id = ?2", params![k, id], |x| x.get(0)).unwrap() };
+        assert_eq!((n("abteilung", "EIGENE"), n("hauptabteilung", "EH"), n("bereich", "EB")), (1, 1, 1), "Kette der verbleibenden Gruppe bleibt");
+        assert_eq!((n("abteilung", "UNBENUTZT"), n("warengruppe", "alt-demo"), n("warengruppe", "adv-960100")), (0, 0, 1), "Unbenutztes und Demo entfällt, die Gruppe aus der Maske bleibt");
+    }
+
+    /// Kleine XLSX (ein Blatt, Texte inline) für Tests des Artikelimports – Zeilen als Spalten-Texte, Zahlen als `#29.9`
+    fn mini_xlsx(path: &Path, zeilen: &[Vec<&str>]) {
+        use std::io::Write;
+        let spalte = |i: usize| (b'A' + i as u8) as char;
+        let rows: String = zeilen.iter().enumerate().map(|(r, z)| {
+            let cells: String = z.iter().enumerate().map(|(c, v)| match v.strip_prefix('#') {
+                Some(n) => format!("<c r=\"{}{}\"><v>{n}</v></c>", spalte(c), r + 1),
+                None => format!("<c r=\"{}{}\" t=\"inlineStr\"><is><t>{v}</t></is></c>", spalte(c), r + 1),
+            }).collect();
+            format!("<row r=\"{}\">{cells}</row>", r + 1)
+        }).collect();
+        let mut zw = zip::ZipWriter::new(std::fs::File::create(path).unwrap());
+        let o = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
+        for (name, body) in [
+            ("[Content_Types].xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/><Override PartName=\"/xl/worksheets/sheet1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/></Types>".to_string()),
+            ("_rels/.rels", "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>".to_string()),
+            ("xl/workbook.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><sheets><sheet name=\"Tabelle1\" sheetId=\"1\" r:id=\"rId1\"/></sheets></workbook>".to_string()),
+            ("xl/_rels/workbook.xml.rels", "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/></Relationships>".to_string()),
+            ("xl/worksheets/sheet1.xml", format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?><worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetData>{rows}</sheetData></worksheet>")),
+        ] {
+            zw.start_file(name, o).unwrap();
+            zw.write_all(body.as_bytes()).unwrap();
+        }
+        zw.finish().unwrap();
+    }
+
+    #[test]
+    fn artikelimport_nimmt_den_satz_der_warengruppe_nur_fuer_neue_artikel() {
+        let dir = std::env::temp_dir().join(format!("kontor-advsatz-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut c = Connection::open_in_memory().unwrap();
+        db::migrate(&c).unwrap();
+        let put = |c: &Connection, kind: &str, id: &str, d: Value| { c.execute("INSERT OR REPLACE INTO stamm(kind, id, data, pos, active, updated_at) VALUES (?1, ?2, ?3, 0, 1, '2026-01-01')", params![kind, id, d.to_string()]).unwrap(); };
+        put(&c, "mwsttyp", "E", json!({ "name": "Ermäßigt", "satz": 10 }));
+        put(&c, "mwsttyp", "E13", json!({ "name": "Ermäßigt 13 %", "satz": 13 }));
+        put(&c, "warengruppe", "adv-5", json!({ "name": "Bücher", "mwsttyp": "E", "ust": 10 }));       // Gruppe aus der Maske: MwSt.-Typ „Ermäßigt“
+        put(&c, "warengruppe", "adv-6", json!({ "name": "Alt", "ust": 13 }));                          // Alt-Zeile: nur ust
+        let datei = dir.join("artikel.xlsx");
+        let kopf = vec!["Marke", "Artikel-Nr.", "Artikel-Name", "VK", "Warengruppe", "Warengruppen-Nr.", "Artikel-ID"];
+        mini_xlsx(&datei, &[kopf.clone(),
+            vec!["BUFF", "1001", "Buch A", "#29.9", "Bücher", "5", "101"],
+            vec!["BUFF", "1002", "Alt B", "#49.9", "Alt", "6", "102"],
+            vec!["BUFF", "1003", "Neue Gruppe C", "#19.9", "Nagelneu", "77", "103"],
+            vec!["BUFF", "1004", "Ohne Gruppe D", "#9.9", "", "", "104"]]);
+        let o = Opts { inaktiv: false, bestand: false, preise: true, bilder: false, demo_weg: false };
+        let r = import(&mut c, &dir, &datei, &o, "t").unwrap();
+        assert_eq!(r["neu"], 4, "{r}");
+        let vat = |c: &Connection, nr: &str| -> i64 { c.query_row("SELECT vat FROM articles WHERE name LIKE ?1", [format!("%{nr}%")], |x| x.get(0)).unwrap() };
+        assert_eq!((vat(&c, "Buch A"), vat(&c, "Alt B"), vat(&c, "Neue Gruppe C"), vat(&c, "Ohne Gruppe D")), (10, 13, 20, 20));
+        // zweiter Lauf nach geänderter Gruppe: bestehende Artikel behalten ihren Satz (keine Massenänderung), neue nehmen den neuen
+        put(&c, "warengruppe", "adv-5", json!({ "name": "Bücher", "mwsttyp": "E13", "ust": 13 }));
+        mini_xlsx(&datei, &[kopf, vec!["BUFF", "1001", "Buch A", "#29.9", "Bücher", "5", "101"], vec!["BUFF", "1005", "Buch E", "#14.9", "Bücher", "5", "105"]]);
+        let r2 = import(&mut c, &dir, &datei, &o, "t").unwrap();
+        assert_eq!((r2["neu"].as_i64(), r2["aktualisiert"].as_i64()), (Some(1), Some(1)), "{r2}");
+        assert_eq!((vat(&c, "Buch A"), vat(&c, "Buch E")), (10, 13));
+        let _ = std::fs::remove_dir_all(dir);
+    }
 
     /// Mit echter Datei: KONTOR_XLSX=/pfad/GridExport.xlsx cargo test advarics_echt -- --ignored --nocapture
     #[test]

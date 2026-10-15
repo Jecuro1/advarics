@@ -42,10 +42,10 @@ const STAMM_DEF = {
     seed: [{id: 'STANDARD', name: 'Standard'}]},
   altersschluessel: {t: 'Altersbewertungs-Schlüssel', ic: 'percent', sub: 'Schlüssel, aus denen eine Warengruppe ihre Altersbewertung wählt – die Prozentsätze je Schlüssel stehen unter „Altersbewertung Prozentsätze“. Ein Schlüssel ohne eigene Stufen nutzt die Stufen von „Standard“', cols: [{k: 'name', l: 'Schlüssel'}],
     seed: [{id: 'STANDARD', name: 'Standard'}, {id: 'STATISTIK', name: 'Statistik'}]},
-  statgroessenset: {t: 'Statistik-Größen-Sets', ic: 'grid', sub: 'Fasst Größen für die Größen-Auswertung zusammen (z. B. 36 2/3 und 37 1/3 zählen als 37) – die Warengruppe wählt ihr Set; Größen ohne Zuordnung bleiben, wie sie sind', cols: [{k: 'name', l: 'Set'}, {k: 'zuordnung', l: 'Zuordnung (Größe=Statistik-Größe)', t: 'list', w: 380, ph: '36 2/3=37, 37 1/3=37, 38 2/3=39'}]},
+  statgroessenset: {t: 'Statistik-Größen-Sets', ic: 'grid', sub: 'Fasst Größen für die Größen-Auswertung zusammen (z. B. 36 2/3 und 37 1/3 zählen als 37) – die Warengruppe wählt ihr Set; Größen ohne Zuordnung bleiben, wie sie sind', cols: [{k: 'name', l: 'Set'}, {k: 'zuordnung', l: 'Zuordnung (Größe=Statistik-Größe, getrennt durch ;)', t: 'list', sep: ';', w: 380, ph: '36 2/3=37; 37 1/3=37; 37,5=38'}]},
   wghierarchie: {t: 'Warengruppenhierarchie (Etikett)', ic: 'layers', sub: 'Welche Ebenen der Hierarchie auf dem Etikett der Warengruppe stehen (z. B. Bereich › Haupt-Abteilung › Abteilung)', cols: [{k: 'name', l: 'Bezeichnung'}, {k: 'ebenen', l: 'Ebenen (von oben nach unten)', t: 'multi', o: [['hauptbereich', 'Haupt-Bereich'], ['bereich', 'Bereich'], ['hauptabteilung', 'Haupt-Abteilung'], ['abteilung', 'Abteilung']], w: 380}],
     seed: [{id: 'KEINE', name: 'Keine Hierarchie auf dem Etikett', ebenen: []}, {id: 'ABTEILUNG', name: 'Abteilung', ebenen: ['abteilung']}, {id: 'PFAD', name: 'Bereich › Haupt-Abteilung › Abteilung', ebenen: ['bereich', 'hauptabteilung', 'abteilung']}]},
-  groessenschluessel: {t: 'Größenschlüssel', ic: 'grid', sub: 'Größenläufe für die Artikelanlage (Order, EDI-Import, Artikel-Import)', cols: [{k: 'name', l: 'Größenschlüssel'}, {k: 'groessen', l: 'Größen', t: 'list', w: 340}],
+  groessenschluessel: {t: 'Größenschlüssel', ic: 'grid', sub: 'Größenläufe für die Artikelanlage – die Warengruppe wählt ihren Schlüssel, die Größen werden bei neuen Artikeln vorbelegt', cols: [{k: 'name', l: 'Größenschlüssel'}, {k: 'groessen', l: 'Größen', t: 'list', w: 340}],
     seed: [{id: 'KONF', name: 'Konfektion', groessen: ['XS', 'S', 'M', 'L', 'XL', 'XXL']}, {id: 'SCHUH', name: 'Schuhe EU', groessen: ['38', '39', '40', '41', '42', '43', '44', '45', '46']}, {id: 'HOSE', name: 'Hosen DE', groessen: ['44', '46', '48', '50', '52', '54', '56']}, {id: 'ONE', name: 'Einheitsgröße', groessen: ['one size']}]},
   groessenfolge: {t: 'Größen sortieren', ic: 'list', sub: 'Reihenfolge, in der Größen in Matrix, Etiketten und Auswertungen erscheinen', cols: [{k: 'name', l: 'Größe'}]},
   flaeche: {t: 'Flächen', ic: 'grid', sub: 'Verkaufsflächen je Filiale in m² – für Flächenproduktivität (Umsatz je m²)', cols: [{k: 'name', l: 'Fläche'}, {k: 'filiale', l: 'Filiale', t: 'select', o: storeOpts}, {k: 'm2', l: 'm²', t: 'num'}, {k: 'warengruppen', l: 'Warengruppen', t: 'multi', o: catOpts, w: 260}]},
@@ -133,8 +133,8 @@ const STAMM_DEF = {
   edimapwg: {t: 'Zuordnung Warengruppen', ic: 'swap', sub: 'Warengruppen-Codes der Lieferanten (EDI/PRICAT) auf eigene Warengruppen', cols: [{k: 'lieferant', l: 'Lieferant', t: 'select', o: supOpts}, {k: 'code', l: 'Code des Lieferanten'}, {k: 'warengruppe', l: 'Warengruppe', t: 'select', o: catOpts}]},
   edimapgr: {t: 'Zuordnung Größen', ic: 'swap', sub: 'Größenbezeichnungen der Lieferanten auf eigene Größen', cols: [{k: 'lieferant', l: 'Lieferant', t: 'select', o: supOpts}, {k: 'code', l: 'Größe beim Lieferanten'}, {k: 'groesse', l: 'eigene Größe'}]},
   wgschema: {t: 'Warengruppen Schemas', ic: 'grid', sub: 'Externe Warengruppen-Schemas (z. B. GS1 GPC, Verbands-Schlüssel) je Warengruppe', cols: [{k: 'name', l: 'Schema'}, {k: 'warengruppe', l: 'Warengruppe', t: 'select', o: catOpts}, {k: 'code', l: 'Code im Schema'}]},
-  webkategorie: {t: 'Webshop-Kategorie', ic: 'folder', sub: 'Kategorien im Schaufenster/Webshop – die Warengruppen ordnen sich ihnen selbst zu (Stammdaten › Warengruppen › Warengruppen, Karte „WebShop-Kategorien“); „Warengruppen“ hier ist die frühere Zuordnung und gilt weiter', cols: [{k: 'name', l: 'Kategorie'}, {k: 'sichtbar', l: 'sichtbar', t: 'check'}, {k: 'warengruppen', l: 'Warengruppen (früher)', t: 'multi', o: catOpts, w: 300}]},
-  webfilter: {t: 'Artikel-Filter (Webshop)', ic: 'filter', sub: 'Artikel vom Webshop ausschließen – nach Marke, Warengruppe, Feld oder Mindestbestand', cols: [{k: 'name', l: 'Regel'}, {k: 'feld', l: 'Feld', t: 'select', o: [['brand', 'Marke'], ['cat', 'Warengruppe'], ['id', 'Artikel-Nr.'], ['minbestand', 'Bestand unter']]}, {k: 'wert', l: 'Wert'}]},
+  webkategorie: {t: 'Webshop-Kategorie', ic: 'folder', def: {sichtbar: true}, sub: 'Kategorien im Schaufenster/Webshop – die Warengruppen ordnen sich ihnen selbst zu (Stammdaten › Warengruppen › Warengruppen, Karte „WebShop-Kategorien“); „Warengruppen“ hier ist die frühere Zuordnung und gilt weiter', cols: [{k: 'name', l: 'Kategorie'}, {k: 'sichtbar', l: 'im Schaufenster sichtbar', t: 'check'}, {k: 'warengruppen', l: 'Warengruppen (früher)', t: 'multi', o: catOpts, w: 300}]},
+  webfilter: {t: 'Artikel-Filter (Webshop)', ic: 'filter', sub: 'Artikel aus dem Digitalen Schaufenster ausschließen – nach Marke, Warengruppe, Feld oder Mindestbestand', cols: [{k: 'name', l: 'Regel'}, {k: 'feld', l: 'Feld', t: 'select', o: [['brand', 'Marke'], ['cat', 'Warengruppe'], ['id', 'Artikel-Nr.'], ['minbestand', 'Bestand unter']]}, {k: 'wert', l: 'Wert'}]},
   webversand: {t: 'Versand (Webshop)', ic: 'truck', sub: 'Versandarten und Kosten für Webshop-Bestellungen', cols: [{k: 'name', l: 'Versandart'}, {k: 'preis', l: 'Kosten €', t: 'num'}, {k: 'frei_ab', l: 'versandkostenfrei ab €', t: 'num'}, {k: 'spediteur', l: 'Spediteur', t: 'select', o: () => stOpts('spediteur')}],
     seed: [{id: 'STD', name: 'Standard', preis: 5.9, frei_ab: 100, spediteur: 'POST'}, {id: 'ABH', name: 'Abholung in der Filiale', preis: 0, frei_ab: 0}]},
   webfiliale: {t: 'Webshop-Service Filialen', ic: 'store', sub: 'Welche Filialen Bestand für den Webshop liefern und Bestellungen ausführen', cols: [{k: 'name', l: 'Filiale'}, {k: 'bestand', l: 'liefert Bestand', t: 'check'}, {k: 'versand', l: 'versendet', t: 'check'}, {k: 'abholung', l: 'Abholung', t: 'check'}]},
@@ -168,7 +168,7 @@ async function stammSave(kind, rows) {
 
 /* ── Eine Zeile einer Stammdaten-Tabelle im Dialog bearbeiten oder neu anlegen (Stift/Plus an den Auswahlfeldern der Masken) ── */
 const STROW = {};   // Tabellen mit eigenem Dialog: kind → (id|null, {preset, titel}) → Promise<id|null>
-const STNEW = {groessenschluessel: rows => { const nr = Math.max(0, ...rows.map(r => +r.nr || 0)) + 1; return {id: 'gs-' + nr, extra: {nr, sync: false}}; }};   // Schlüssel-Vergabe je Tabelle
+const STNEW = {groessenschluessel: (rows, r) => { const nr = r.nr != null && r.nr !== '' && +r.nr > 0 ? Math.round(+r.nr) : Math.max(0, ...rows.map(x => +x.nr || 0)) + 1; return {id: 'gs-' + nr, extra: {nr, sync: !!r.sync}}; }};   // Schlüssel-Vergabe je Tabelle: die eingegebene Nr. gilt, sonst die nächste freie
 const stSlug = x => String(x || '').toUpperCase().replace(/Ä/g, 'AE').replace(/Ö/g, 'OE').replace(/Ü/g, 'UE').replace(/ß/g, 'SS').replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 20);
 /** Dialog „Zeile bearbeiten / neu“ für jede Stammdaten-Art aus STAMM_DEF. id = null → neue Zeile (preset: Vorgaben). Gibt die Kennung der gespeicherten Zeile zurück, bei Abbruch null.
  *  Mehrfach-Auswahlen mit sehr vielen Einträgen (alle Warengruppen) bleiben unverändert und werden in der Tabelle gepflegt. */
@@ -180,7 +180,7 @@ async function stRowDialog(kind, id, o = {}) {
   if (!base.length) base = stRows(kind);   // Tabelle nur mit eingebauten Startzeilen: diese gehören beim Sichern dazu
   const rows = base.map(r => ({...r})), cur = id ? rows.find(r => String(r.id) === String(id)) : null;
   if (id && !cur) { toast(`${o.titel || D.t}: diese Zeile gibt es nicht mehr`, {type: 'warn'}); return null; }
-  const neu = !cur, row0 = cur || {...(o.preset || {})}, cols = D.cols.filter(c => c.t !== 'ro');
+  const neu = !cur, row0 = cur || {...(D.def || {}), ...(o.preset || {})}, cols = D.cols.filter(c => c.t !== 'ro'), first = cols.find(c => c.k === 'name') || cols[0];
   const opts = c => typeof c.o === 'function' ? c.o() : c.o || [];
   const fld = c => {
     const v = row0[c.k], op = opts(c), lbl = `<span>${esc(c.l)}</span>`;
@@ -196,7 +196,7 @@ async function stRowDialog(kind, id, o = {}) {
     }
     if (c.t === 'area') return `<label class="field" style="grid-column:1/-1">${lbl}<textarea class="input" rows="3" data-f="${c.k}" style="height:auto;padding:8px 12px">${esc(v ?? '')}</textarea></label>`;
     if (c.t === 'color') return `<label class="field">${lbl}<input type="color" data-f="${c.k}" value="${esc(v || '#888888')}" style="width:56px;height:36px;border:0;background:none"></label>`;
-    const val = c.t === 'list' ? (v || []).join(', ') : c.t === 'num' && v != null && v !== '' ? String(v).replace('.', ',') : v ?? '';
+    const val = c.t === 'list' ? (v || []).join(c.sep ? c.sep + ' ' : ', ') : c.t === 'num' && v != null && v !== '' ? String(v).replace('.', ',') : v ?? '';
     return `<label class="field" ${c.t === 'list' ? 'style="grid-column:1/-1"' : ''}>${lbl}<input class="input ${c.t === 'num' ? 'num' : ''}" type="${c.t === 'date' ? 'date' : c.t === 'time' ? 'time' : 'text'}" data-f="${c.k}" value="${esc(val)}" ${c.ph ? `placeholder="${esc(c.ph)}"` : ''} ${c.t === 'num' ? 'inputmode="decimal"' : ''} autocomplete="off"></label>`;
   };
   return new Promise(res => {
@@ -204,10 +204,10 @@ async function stRowDialog(kind, id, o = {}) {
     const el = openLayer(`<div class="modal" style="width:min(580px,100%)" role="dialog" aria-modal="true" aria-label="${esc(o.titel || D.t)}"><div class="m-head"><div class="m-ic">${ic(D.ic || 'list')}</div><div><h2>${esc(o.titel || D.t)} ${neu ? '– neu' : 'bearbeiten'}</h2><p>${neu ? 'Neue Zeile anlegen' : esc(cur[D.cols[0]?.k] || cur.id)}</p></div><button class="btn btn-ghost btn-icon x" data-close aria-label="Schließen">${ic('x')}</button></div>
       <div class="m-body" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))"><label class="field"><span>Kürzel</span><input class="input mono" data-f="id" value="${esc(cur?.id || '')}" ${cur ? 'readonly tabindex="-1"' : ''} maxlength="32" autocomplete="off" placeholder="${cur ? '' : 'wird aus dem Namen gebildet'}"></label>${cols.map(fld).join('')}</div>
       <div class="m-foot"><span class="sp"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button class="btn btn-primary" data-ok>${ic('check', 'i-sm')}Speichern</button></div></div>`,
-      {focus: `[data-f="${cols[0]?.k || 'id'}"]`, onClose: () => { if (!fertig) res(null); }});
+      {focus: `[data-f="${first?.k || 'id'}"]`, onClose: () => { if (!fertig) res(null); }});
     // große Auswahllisten erst beim Öffnen füllen
-    el.addEventListener('focusin', e => { const t = e.target; if (t.dataset?.lazy != null && t.tagName === 'SELECT') { const c = cols.find(x => x.k === t.dataset.f), cv = t.value; t.removeAttribute('data-lazy'); t.innerHTML = `<option value="">–</option>` + opts(c).map(([x, l]) => `<option value="${esc(x)}" ${String(x) === cv ? 'selected' : ''}>${esc(l)}</option>`).join(''); } });
-    const idIn = $('[data-f="id"]', el), first = cols[0];
+    el.addEventListener('focusin', e => { const t = e.target; if (t.dataset?.lazy != null && t.tagName === 'SELECT') { const c = cols.find(x => x.k === t.dataset.f), cv = t.value; t.removeAttribute('data-lazy'); const alle = opts(c), keep = cv && !alle.some(([x]) => String(x) === cv) ? t.querySelector(`option[value="${CSS.escape(cv)}"]`)?.outerHTML || '' : ''; t.innerHTML = `<option value="">–</option>${keep}` + alle.map(([x, l]) => `<option value="${esc(x)}" ${String(x) === cv ? 'selected' : ''}>${esc(l)}</option>`).join(''); t.value = cv; } });
+    const idIn = $('[data-f="id"]', el);
     if (neu && first) $(`[data-f="${first.k}"]`, el)?.addEventListener('input', e => { if (!idIn.dataset.hand) idIn.value = stSlug(e.target.value); });
     idIn.addEventListener('input', () => { idIn.dataset.hand = '1'; });
     $('[data-ok]', el).onclick = async () => {
@@ -217,16 +217,18 @@ async function stRowDialog(kind, id, o = {}) {
         const f = fv(c.k); if (!f) continue;
         if (c.t === 'check') r[c.k] = f.checked;
         else if (c.t === 'num') { const t = f.value.trim(); if (t === '') r[c.k] = null; else { const n = parseAmt(t); if (isNaN(n)) { toast(`${c.l}: Zahl angeben`, {type: 'warn'}); f.focus(); return; } r[c.k] = n; } }
-        else if (c.t === 'list') r[c.k] = f.value.split(/[,;]/).map(x => x.trim()).filter(Boolean);
+        else if (c.t === 'list') r[c.k] = f.value.split(c.sep || /[,;]/).map(x => x.trim()).filter(Boolean);
         else r[c.k] = f.value.trim();
       }
       if (first && first.t !== 'check' && !String(r[first.k] ?? '').trim()) { toast(`${first.l} angeben`, {type: 'warn'}); fv(first.k)?.focus(); return; }
       let all = rows;
       if (neu) {
-        const gen = STNEW[kind]?.(rows);
-        let nid = idIn.value.trim() || gen?.id || stSlug(r[first?.k]) || stSlug(kind) || 'NEU';
-        if (!idIn.value.trim() && !gen) { const b = nid; let k = 2; while (rows.some(x => String(x.id).toLowerCase() === nid.toLowerCase())) nid = `${b}-${k++}`; }
+        const gen = STNEW[kind]?.(rows, r);
+        const hand = idIn.dataset.hand ? idIn.value.trim() : '';   // nur ein von Hand getipptes Kürzel zählt; das aus dem Namen gebildete wird bei Bedarf durchnummeriert
+        let nid = hand || gen?.id || idIn.value.trim() || stSlug(r[first?.k]) || stSlug(kind) || 'NEU';
+        if (!hand && !gen) { const b = nid; let k = 2; while (rows.some(x => String(x.id).toLowerCase() === nid.toLowerCase())) nid = `${b}-${k++}`; }
         else if (rows.some(x => String(x.id).toLowerCase() === nid.toLowerCase())) { toast(`Das Kürzel „${nid}“ gibt es schon`, {type: 'warn'}); idIn.focus(); return; }
+        if (gen?.extra?.nr != null && rows.some(x => +x.nr === +gen.extra.nr)) { toast(`Die Nr. ${gen.extra.nr} gibt es schon`, {type: 'warn'}); $('[data-f="nr"]', el)?.focus(); return; }
         Object.assign(r, gen?.extra || {}); r.id = nid; r._aktiv = true; all = [...rows, r];
       } else all = rows.map(x => String(x.id) === String(cur.id) ? {...x, ...r, id: cur.id} : x);
       try { await stammSave(kind, all); } catch (err) { toast('Nicht gespeichert', {t2: String(err.message || err), type: 'warn', dur: 6000}); return; }
@@ -248,7 +250,7 @@ const stCell = (c, r, i) => {
   if (c.t === 'area') return `<textarea class="input" rows="2" ${a} ${w} style="height:auto;padding:6px 10px;${c.w ? `min-width:${c.w}px` : ''}">${esc(v ?? '')}</textarea>`;
   if (c.t === 'color') return `<input type="color" ${a} value="${esc(v || '#888888')}" style="width:44px;height:32px;border:0;background:none">`;
   const type = c.t === 'date' ? 'date' : c.t === 'time' ? 'time' : 'text';
-  const val = c.t === 'list' ? (v || []).join(', ') : c.t === 'num' && v != null && v !== '' ? String(v).replace('.', ',') : v ?? '';
+  const val = c.t === 'list' ? (v || []).join(c.sep ? c.sep + ' ' : ', ') : c.t === 'num' && v != null && v !== '' ? String(v).replace('.', ',') : v ?? '';
   return `<input class="input ${c.t === 'num' ? 'num' : ''}" type="${type}" ${a} value="${esc(val)}" ${c.ph ? `placeholder="${esc(c.ph)}"` : ''} ${w} ${c.t === 'num' ? 'inputmode="decimal" style="max-width:110px"' : ''}>`;
 };
 function stammPage(kind, page, extra = {}) {
@@ -292,12 +294,12 @@ async function renderStamm(kind, page, extra = {}) {
     if (t.dataset.stm) { const r = st.rows[i]; const set = new Set(r[t.dataset.stm] || []); t.checked ? set.add(t.value) : set.delete(t.value); r[t.dataset.stm] = [...set]; mark(); return; }
     if (!t.dataset.stc || isNaN(i)) return;
     const c = D.cols.find(x => x.k === t.dataset.stc) || {k: 'id'};
-    st.rows[i][c.k] = c.t === 'check' ? t.checked : c.t === 'num' ? (t.value.trim() === '' ? null : parseAmt(t.value)) : c.t === 'list' ? t.value.split(/[,;]/).map(x => x.trim()).filter(Boolean) : t.value;
+    st.rows[i][c.k] = c.t === 'check' ? t.checked : c.t === 'num' ? (t.value.trim() === '' ? null : parseAmt(t.value)) : c.t === 'list' ? t.value.split(c.sep || /[,;]/).map(x => x.trim()).filter(Boolean) : t.value;
     mark();
   };
   v.onclick = async e => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.stadd) { const r = {id: '', _aktiv: true}; D.cols.forEach(c => { r[c.k] = c.t === 'list' || c.t === 'multi' ? [] : c.t === 'check' ? false : ''; }); r.id = (kind.slice(0, 3).toUpperCase() + (st.rows.length + 1)).replace(/[^A-Z0-9]/g, ''); while (st.rows.some(x => x.id === r.id)) r.id += 'X'; st.rows.push(r); st.dirty = true; renderStamm(kind, page, extra).then(() => $$(`[data-stc="${D.cols[0].k}"]`, v).at(-1)?.focus()); return; }
+    if (b.dataset.stadd) { const r = {id: '', _aktiv: true}; D.cols.forEach(c => { r[c.k] = c.t === 'list' || c.t === 'multi' ? [] : c.t === 'check' ? false : ''; }); Object.assign(r, D.def || {}); r.id = (kind.slice(0, 3).toUpperCase() + (st.rows.length + 1)).replace(/[^A-Z0-9]/g, ''); while (st.rows.some(x => x.id === r.id)) r.id += 'X'; st.rows.push(r); st.dirty = true; renderStamm(kind, page, extra).then(() => $$(`[data-stc="${D.cols[0].k}"]`, v).at(-1)?.focus()); return; }
     if (b.dataset.stakt != null) { const r = st.rows[+b.dataset.stakt]; r._aktiv = r._aktiv === false; st.dirty = true; renderStamm(kind, page, extra); return; }
     if (b.dataset.stdel != null) { st.rows.splice(+b.dataset.stdel, 1); st.dirty = true; renderStamm(kind, page, extra); return; }
     if (b.dataset.stmv != null) { const i = +b.dataset.stmv, j = i + +b.dataset.d; if (j < 0 || j >= st.rows.length) return; [st.rows[i], st.rows[j]] = [st.rows[j], st.rows[i]]; st.dirty = true; renderStamm(kind, page, extra); return; }

@@ -54,7 +54,7 @@ async function wgLoadZaehler() {
     try { const r = await invoke('warengruppe_zaehler'); WG.zaehler = r.artikel || {}; WG.naechste = r.naechste_nr || 1; WG.rolle = r.rolle || 'einzel'; } catch (e) { console.error(e); }
   } else {
     const z = {}; for (const a of ART) { const x = z[a.cat] ||= [0, 0]; x[0]++; if (a.active !== false) x[1]++; }
-    WG.zaehler = z; WG.naechste = wgNaechsteNr(); WG.rolle = 'zentrale';
+    WG.zaehler = z; WG.naechste = wgNaechsteNr(); WG.rolle = WG.rolle === 'filiale' ? 'filiale' : 'zentrale';   // Vorschau: Zentrale (zum Prüfen lässt sich die Filial-Sperre über KONTOR_UI.wgRolle setzen)
   }
   WG.geladen = true;
 }
@@ -75,9 +75,9 @@ function wgRows() {
   const lvl = r => r ? [r.nr ?? '0', r.name || 'NA'] : ['0', 'NA'];
   return stRows('warengruppe').map(r => {
     const {a, h, b, x} = wgKette(r.abteilung), [e1n, e1] = lvl(b), [e2n, e2] = lvl(h), [e3n, e3] = lvl(a);
-    const mt = r.mwsttyp ? mw.get(r.mwsttyp) : null, art = wgArtikel(r.id);
+    const mt = mw.get(r.mwsttyp || wgMwstTyp(r.ust ?? 20)), art = wgArtikel(r.id);
     return {id: r.id, nr: r.nr ?? String(r.id).replace(/^adv-/, ''), name: r.name || r.id, e1n, e1, e2n, e2, e3n, e3, e0: x?.name || '',
-      mwst: mt ? mt.name : nm(mw, r.mwsttyp) || (r.mwst || (+r.ust === 10 ? 'Reduziert' : +r.ust === 0 ? 'Ohne MwSt.' : 'Standard')), satz: mt ? +mt.satz : +(r.ust ?? 20),
+      mwst: mt ? mt.name : r.mwsttyp || (+r.ust === 10 ? 'Reduziert' : +r.ust === 0 ? 'Ohne MwSt.' : 'Standard'), satz: mt ? +mt.satz : +(r.ust ?? 20),
       etikett: nm(et, r.etikett), etikett2: nm(et, r.etikett2), anz: r.anz_etiketten ?? 1, hier: nm(hi, r.hierarchie),
       inventur: r.inventur !== false, alter: nm(al, r.altersbewertung), praemie: nm(pr, r.praemienschluessel), gschl: nm(gs, r.groessenschluessel), sgs: nm(sg, r.statgroessen), plschl: nm(pl, r.preislage),
       spanne: r.spanne == null || r.spanne === '' ? 0 : Math.round(+r.spanne * 10000) / 100, service: !!r.service, rabattsperre: !!r.rabattsperre,
@@ -120,7 +120,7 @@ function wgNeu() {
 function wgBlank() {
   return {id: '', _aktiv: true, nr: String(Math.max(WG.naechste, wgNaechsteNr())), name: '', hb: '', be: '', ha: '', abteilung: '', altersbewertung: wgKey('altersschluessel', 'Statistik') || 'STATISTIK', praemienschluessel: 'STANDARD', service: false, inventur: true,
     intrastat_nr: '', intrastat_bez: '', gewicht: '', webkat1: '', webkat2: '', webkat3: '', webkat4: '', webkat5: '', groessenschluessel: wgGsStd(), statgroessen: '',
-    rabattsperre: false, mwsttyp: wgMwstTyp(+CFG['allg.mwst'] ? CFG['allg.mwst'] : 20), preislage: 'STANDARD', spanne: '50', etikett: wgKey('etikettentyp', 'Klebe 50x30') || 'K50X30', etikett2: '', anz_etiketten: '1', hierarchie: ''};
+    rabattsperre: false, mwsttyp: stRows('mwsttyp').some(x => x.id === CFG['allg.mwst']) ? CFG['allg.mwst'] : wgMwstTyp(20), preislage: 'STANDARD', spanne: '50', etikett: wgKey('etikettentyp', 'Klebe 50x30') || 'K50X30', etikett2: '', anz_etiketten: '1', hierarchie: ''};
 }
 function wgDraft(id) {
   const r = id ? wgRaw(id) : null; if (!r) return wgBlank();
@@ -150,7 +150,8 @@ const WG_WEITERE = [['statgroessen', 'Statistik-Größen-Set', 'statgroessenset'
 /** Prüfungen wie im Backend (warengruppe.rs); k = Feld */
 function wgErrors(d) {
   const m = [], add = (k, t) => m.push({k, t}), alt = d.id ? wgRaw(d.id) : null, nr = String(d.nr).trim(), name = String(d.name).trim();
-  if (!nr) add('nr', 'Nr. angeben'); else if (!/^\d{1,6}$/.test(nr)) add('nr', 'Nr.: eine ganze Zahl bis 999999 (nur Ziffern)');
+  const altNr = alt ? String(alt.nr ?? String(alt.id).replace(/^adv-/, '')) : null;   // vom Artikelimport angelegte Gruppen haben keine Zahl als Nr.: der bisherige Wert bleibt speicherbar
+  if (!nr) add('nr', 'Nr. angeben'); else if (!/^\d{1,6}$/.test(nr)) { if (nr !== altNr) add('nr', 'Nr.: eine ganze Zahl bis 999999 (nur Ziffern)'); }
   else if (!alt && wgIdx().has('adv-' + String(+nr))) add('nr', `Die Nr. ${+nr} gibt es schon`);
   if (!name) add('name', 'Name angeben'); else if (name.length > 50) add('name', 'Name: höchstens 50 Zeichen');
   const H = wgH();
@@ -162,7 +163,10 @@ function wgErrors(d) {
   for (let i = 1; i <= 5; i++) { const v = d['webkat' + i]; if (!v) continue; if (seen.has(v)) add('webkat' + i, 'Diese Kategorie ist schon eingetragen'); else if (!gibt('webkategorie', v, alt?.['webkat' + i])) add('webkat' + i, 'Diese Kategorie gibt es nicht mehr – bitte neu wählen'); seen.add(v); }
   const sp = wgTxtNum(d.spanne); if (typeof sp !== 'number') add('spanne', 'Zahl angeben'); else if (sp < 0 || sp >= 100) add('spanne', 'Zwischen 0 und unter 100 %');
   const gw = wgTxtNum(d.gewicht); if (typeof gw !== 'number') add('gewicht', 'Zahl angeben (kg)'); else if (gw < 0 || gw > 10000) add('gewicht', 'Zwischen 0 und 10.000 kg');
-  const ins = String(d.intrastat_nr).replace(/\s/g, ''); if (ins && !/^\d{4,10}$/.test(ins)) add('intrastat_nr', '4 bis 10 Ziffern (Warennummer, z. B. 62011290)');
+  const insRaw = String(d.intrastat_nr).trim(), ins = insRaw.replace(/[\s.\-]/g, ''), altIns = alt ? String(alt.intrastat_nr || alt.zolltarif || '') : '';
+  if (ins && !/^\d{4,10}$/.test(ins) && insRaw !== altIns) add('intrastat_nr', '4 bis 10 Ziffern (Warennummer, z. B. 62011290)');
+  const mt = d.mwsttyp && stRows('mwsttyp').find(x => x.id === d.mwsttyp);
+  if (mt && mt.satz != null && String(mt.satz).trim() !== '' && ![20, 13, 10, 0].includes(+mt.satz)) add('mwsttyp', `Der Satz ${num(+mt.satz)} % wird an der Kasse nicht unterstützt (erlaubt: 20, 13, 10, 0 %)`);
   if (String(d.intrastat_bez).trim().length > 120) add('intrastat_bez', 'Höchstens 120 Zeichen');
   const an = String(d.anz_etiketten).trim(); if (an === '' || !/^\d{1,2}$/.test(an)) add('anz_etiketten', 'Ganze Zahl von 0 bis 99');
   return m;
@@ -193,6 +197,7 @@ function wgKetteSetzen(d, k) {
     const b = H.be.get(d.be); if (b?.parent && b.parent !== d.hb) { d.be = ''; d.ha = ''; d.abteilung = ''; d._f.be = d._f.ha = false; }
   }
 }
+const wgWebLabel = r => r.sichtbar === true ? String(r.name || r.id) : `${r.name || r.id} (im Schaufenster unsichtbar)`;
 const wgWebRows = k => () => { const d = WGE.d || {}, used = new Set([1, 2, 3, 4, 5].map(i => 'webkat' + i).filter(x => x !== k).map(x => d[x]).filter(Boolean)); return stActive('webkategorie').filter(r => !used.has(r.id)); };
 
 /* ── Maske ── */
@@ -208,6 +213,7 @@ const WGK = maskeNew({
   onSet: (k, el) => { wgKetteSetzen(WGE.d, k); if (k === 'name' || k === 'nr') renderTopbar(); },
   rerender: k => ['abteilung', 'ha', 'be', 'hb', 'mwsttyp', 'etikett', 'etikett2'].includes(k),
   act: async a => { if (a === 'copy') wgKopieren(); },
+  onRefEdit: k => { if (['abteilung', 'ha', 'be', 'hb'].includes(k)) wgKetteSetzen(WGE.d, 'abteilung'); },   // Stift an einer Ebene: die Kette im Entwurf neu aus der Abteilung ableiten
   save: () => wgSave(), remove: () => { /* Löschen nur in der Liste */ },
 });
 WGK.register();
@@ -216,7 +222,7 @@ function wgKopieren() {
   if (wgLocked() || !WGE.id) return;
   const src = mclone(WGE.d);
   WGK.open(null, WGE.ids);
-  Object.assign(WGE.d, src, {id: '', nr: String(Math.max(WG.naechste, wgNaechsteNr())), name: `Kopie von ${src.name}`});
+  Object.assign(WGE.d, src, {id: '', nr: String(Math.max(WG.naechste, wgNaechsteNr())), name: `Kopie von ${src.name}`.slice(0, 50)});
   WGE.dirty = true; WGK.render(); renderTopbar();
 }
 const wgNote = () => wgLocked() ? `<div class="zp-note">${ic('lock', 'i-sm')}<span><b>Warengruppen pflegt die Zentrale.</b> Diese Kasse bekommt die Angaben beim Abgleich; hier sind sie nur lesbar.</span></div>` : '';
@@ -236,11 +242,11 @@ function wgMaske() {
     ${K.ref('praemienschluessel', 'Prämienschlüssel *', 'praemienschluessel', {pflicht: true, label: r => `${r.name || r.id}${r.pct != null && r.pct !== '' ? ` (${num(+r.pct)} %)` : ''}`, tip: 'Prämiensatz der Verkäufer:innen auf den Netto-Umsatz dieser Gruppe.'})}
     ${K.sw('service', 'Service-Warengruppe', '', false, 'Dienstleistung: kein Bestand, nie „ausverkauft“, keine Inventur, kein Bestellvorschlag.')}
     ${K.sw('inventur', 'Inventur', '', false, 'Aus: Artikel dieser Gruppe stehen nicht in der Zählliste.')}
-    ${K.in('intrastat_nr', 'Intrastat-Waren-Nr.', {mono: true, inputmode: 'numeric', max: 12, tip: 'Warennummer (KN) für die Intrastat-Auswertung, wenn der Artikel keine eigene hat.'})}
+    ${K.in('intrastat_nr', 'Intrastat-Waren-Nr.', {mono: true, inputmode: 'numeric', max: 24, tip: 'Warennummer (KN) für die Intrastat-Auswertung, wenn der Artikel keine eigene hat.'})}
     ${K.in('intrastat_bez', 'Intrastat-Waren-Bez.', {max: 120})}
     ${K.in('gewicht', 'Durchschnitts Gewicht', {num: true, inputmode: 'decimal', suffix: 'kg', tip: 'Eigenmasse je Stück für die Intrastat-Auswertung, wenn der Artikel kein Gewicht hat.'})}
     <p class="wg-facts">${WGE.id ? `${art[0] ? `${num(art[0])} Artikel in dieser Warengruppe${art[1] !== art[0] ? ` (davon ${num(art[1])} aktiv)` : ''}.` : 'Noch kein Artikel in dieser Warengruppe.'}` : 'Neue Warengruppe.'}</p>`);
-  const c2 = card('WebShop-Kategorien', [1, 2, 3, 4, 5].map(i => 'webkat' + i), [1, 2, 3, 4, 5].map(i => K.ref('webkat' + i, `WebShop-Kategorie ${i}`, 'webkategorie', {...leer, rows: wgWebRows('webkat' + i), titel: 'WebShop-Kategorie', tip: i === 1 ? 'Im Digitalen Schaufenster und in der Schnittstelle erscheinen die Artikel dieser Gruppe in diesen Kategorien.' : ''})).join(''));
+  const c2 = card('WebShop-Kategorien', [1, 2, 3, 4, 5].map(i => 'webkat' + i), [1, 2, 3, 4, 5].map(i => K.ref('webkat' + i, `WebShop-Kategorie ${i}`, 'webkategorie', {...leer, rows: wgWebRows('webkat' + i), label: wgWebLabel, titel: 'WebShop-Kategorie', tip: i === 1 ? 'Im Digitalen Schaufenster und in der Schnittstelle erscheinen die Artikel dieser Gruppe in diesen Kategorien.' : ''})).join('') + '<p class="wg-facts">Sobald irgendeine Warengruppe einer sichtbaren Kategorie zugeordnet ist, zeigt das Digitale Schaufenster nur noch Artikel aus zugeordneten Warengruppen.</p>');
   const c3 = card('Größeneinstellungen', ['groessenschluessel', 'statgroessen'], `
     ${K.ref('groessenschluessel', 'Größen-Schlüssel *', 'groessenschluessel', {pflicht: true, label: r => r.name || r.id, tip: 'Die Größenreihe wird bei neuen Artikeln dieser Gruppe vorbelegt.'})}
     ${K.ref('statgroessen', 'Statistik-Größen-Set', 'statgroessenset', {...leer, tip: 'Fasst Größen in der Größen-Auswertung zusammen.'})}`);
@@ -258,8 +264,13 @@ function wgMaske() {
 }
 
 /* ── Sichern, Löschen ── */
+let wgBusy = false;
 async function wgSave() {
-  if (wgLocked()) return;
+  if (wgLocked() || wgBusy) return;   // ein zweiter Klick während des Sicherns tut nichts (sonst „Die Nr. gibt es schon“ nach dem Erfolg)
+  wgBusy = true;
+  try { await wgSaveEnd(); } finally { wgBusy = false; }
+}
+async function wgSaveEnd() {
   const isNew = !WGE.id;
   if (!WGK.gate()) return;
   try { await needPerm('einstellungen', 'Warengruppen'); } catch { return; }
@@ -272,7 +283,7 @@ async function wgSave() {
       if (isNew && all.some(r => r.id === id)) throw new Error(`Die Nr. ${nr} gibt es schon`);
       const o = {...(all.find(r => r.id === id) || {}), ...row, nr, id, ust: +(stRows('mwsttyp').find(m => m.id === row.mwsttyp)?.satz ?? 20)};
       for (const k of ['service', 'rabattsperre', 'etikett2', 'hierarchie', 'statgroessen', 'intrastat_nr', 'intrastat_bez', 'webkat1', 'webkat2', 'webkat3', 'webkat4', 'webkat5']) if (!o[k]) delete o[k];
-      o.intrastat_nr = String(o.intrastat_nr || '').replace(/\s/g, ''); if (!o.intrastat_nr) delete o.intrastat_nr;
+      { const roh = String(o.intrastat_nr || '').trim(), n = roh.replace(/[\s.\-]/g, ''); o.intrastat_nr = /^\d{4,10}$/.test(n) ? n : roh; if (!o.intrastat_nr) delete o.intrastat_nr; delete o.zolltarif; }
       if (!o.gewicht) delete o.gewicht; if (String(o.anz_etiketten) === '1') delete o.anz_etiketten; else o.anz_etiketten = +o.anz_etiketten;
       const i = all.findIndex(r => r.id === id); if (i < 0) all.push(o); else all[i] = o;
       await stammSave('warengruppe', all); saved = o;
@@ -294,13 +305,14 @@ async function wgRemove(ids) {
   const wer = rs.length === 1 ? `Warengruppe „${rs[0].name}“` : `${num(rs.length)} Warengruppen`;
   if (!await confirmBox(`${wer} löschen?${mit.length ? ` ${mit.length === 1 ? 'Eine Gruppe hat' : `${mit.length} Gruppen haben`} Artikel und lässt sich nicht löschen.` : ''}`, 'Löschen')) abort();
   try { await needPerm('einstellungen', 'Warengruppen'); } catch { abort(); }
-  let n = 0, fehler = '';
+  let n = 0, fehler = '', nicht = [];
   try {
-    if (DESKTOP) n = await invoke('warengruppe_delete', {ids: rs.map(r => r.id), by: S.user.name});
+    if (DESKTOP) { const r = await invoke('warengruppe_delete', {ids: rs.map(x => x.id), by: S.user.name}); n = r.geloescht || 0; nicht = r.nicht || []; }
     else { const weg = new Set(rs.filter(r => !wgArtikel(r.id)[0]).map(r => r.id)); n = weg.size; if (n) await stammSave('warengruppe', stRows('warengruppe').filter(r => !weg.has(r.id)).map(r => ({...r}))); if (n < rs.length) throw new Error(`${rs.length - n} Gruppe(n) mit Artikeln nicht gelöscht`); }
   } catch (e) { fehler = String(e.message || e); }
   await wgReload();
   if (fehler) { toast(n ? 'Nicht alles gelöscht' : 'Nicht gelöscht', {t2: fehler, type: 'warn', dur: 9000}); if (!n) abort(); return; }
+  if (nicht.length) { toast(n ? `${num(n)} gelöscht, der Rest nicht` : 'Nicht gelöscht', {t2: `Weil Artikel dazugehören: ${nicht.slice(0, 4).join('; ')}${nicht.length > 4 ? ' …' : ''}`, type: 'warn', dur: 9000}); if (!n) abort(); return; }
   toast(n === 1 ? 'Warengruppe gelöscht' : `${num(n)} Warengruppen gelöscht`, {t2: rs.slice(0, 3).map(r => r.name).join(', '), icon: 'tag', dur: 2400});
 }
 
@@ -315,7 +327,8 @@ const wgInventur = cat => !cat || wgRaw(cat)?.inventur !== false;
 /** Steuersatz in % aus dem MwSt.-Typ der Warengruppe (Rückfall: gespeicherter Satz); null = nicht bekannt */
 function wgSatz(cat) {
   const r = cat ? wgRaw(cat) : null; if (!r) return null;
-  const m = r.mwsttyp ? stRows('mwsttyp').find(x => x.id === r.mwsttyp) : null, v = m ? +m.satz : r.ust != null && r.ust !== '' ? +r.ust : NaN;
+  const m = r.mwsttyp ? stRows('mwsttyp').find(x => x.id === r.mwsttyp) : null, hat = m && m.satz != null && String(m.satz).trim() !== '';   // Typ ohne Satz zählt nicht als 0 %
+  const v = hat ? +m.satz : r.ust != null && r.ust !== '' ? +r.ust : NaN;
   return isFinite(v) ? v : null;
 }
 /** Rabattsperre der Warengruppe eines Artikels (art.cat) */
@@ -325,4 +338,4 @@ const rabattGesperrt = art => lfRabattGesperrt(art) || wgRabattSperre(art);
 const rabattSperreGrund = art => lfRabattGesperrt(art) ? `Lieferant ${supName(art.supplierId)}` : wgRabattSperre(art) ? `Warengruppe „${wgNm('warengruppe', art.cat)}“` : '';
 
 // nur lesend / für Prüfungen
-if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {wgDraft, wgErrors, wgToRow, wgRows, wgKette, wgInfo: id => wgRaw(id), wgService, wgInventur, wgSatz, rabattGesperrt});
+if (window.KONTOR_UI) Object.assign(window.KONTOR_UI, {wgDraft, wgErrors, wgToRow, wgRows, wgKette, wgInfo: id => wgRaw(id), wgService, wgInventur, wgSatz, rabattGesperrt, wgRolle: r => { WG.rolle = r; }});

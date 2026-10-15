@@ -132,8 +132,10 @@ function artEditorMount(host, a, tab0) {
         <div class="ae-card"><h4>Preis</h4>
           <label class="field"><span>EK netto €</span><input class="input num" data-f="cost" inputmode="decimal" value="${esc(st.cost)}"></label>
           <label class="field"><span>VK (UVP) € *</span><input class="input num" data-f="price" inputmode="decimal" value="${esc(st.price)}"></label>
+          <div class="muted" id="edVkSug" style="font-size:12px" aria-live="polite" hidden></div>
           <label class="field"><span>Aktionspreis €</span><input class="input num" data-f="sale" inputmode="decimal" value="${esc(st.sale)}" placeholder="leer = kein Aktionspreis"></label>
           <label class="field"><span>MwSt.-Typ</span><select class="input select" data-f="vat">${[[20, 'Standard 20 %'], [13, 'Reduziert 13 %'], [10, 'Reduziert 10 %'], [0, 'Ohne MwSt. 0 %']].map(([r, l]) => `<option value="${r}" ${+st.vat === r ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+          <div class="muted" id="edVatHint" style="font-size:12px" hidden></div>
           <div class="muted" id="edMargin" style="font-size:12px"></div></div>
         <div class="ae-card"><h4>Lieferant & Bestand</h4>
           <label class="field"><span>Lieferant</span><select class="input select" data-f="supplierId"><option value="">–</option>${lfOptionen(st.supplierId).map(([id, name]) => `<option value="${esc(id)}" ${id === st.supplierId ? 'selected' : ''}>${esc(name)}</option>`).join('')}</select></label>
@@ -210,14 +212,15 @@ function artEditorMount(host, a, tab0) {
     const rmf = t.closest('[data-rmf]'); if (rmf) { collect(); st.fields.splice($$('.frow', el).indexOf(rmf.closest('.frow')), 1); return render(); }
     if (t.closest('#edAi')) { collect(); const txt = await aiArticleText({...st, fields: st.fields}); if (txt) { st.d.beschreibung = txt; tab = 'beschreibung'; render(); toast('Beschreibung erstellt', {t2: 'Bitte prüfen und bei Bedarf anpassen', type: 'pos', icon: 'sparkle'}); } return; }
     if (t.closest('#edSki')) { st.ski = !st.ski; $('#edSki', el).setAttribute('aria-checked', st.ski); return; }
-    if (t.closest('#edLbl')) return openLabels(a.variants.map(v => ({a, v, n: 1})));
+    if (t.closest('#edLbl')) return openLabels(a.variants.map(v => lblPos(a, v, 1)));
     if (t.closest('#edPage')) {
       const url = await askUrl('Aus Produktseite übernehmen', 'Adresse der Produktseite (z. B. auf der Webseite der Marke) – Name, Beschreibung, Preis, Material und Bilder werden ausgelesen. Rechte an Texten und Bildern bleiben beim Hersteller.'); if (!url) return;
       try {
         collect(); const r = await invoke('web_read_page', {url}), p = pageToArticle(r);
         if (!p.name && !p.images.length) return toast('Nichts erkannt', {t2: 'Die Seite liefert keine lesbaren Produktdaten (JavaScript-Shop?)', type: 'warn'});
         if (!st.name.trim() && p.name) st.name = p.name; if (!st.brand && p.brand) st.brand = p.brand;
-        if (!String(st.price).trim() && p.price) st.price = num(p.price, 2);
+        const vkVorschlag = !!st._vkSug && st._vkSug.v === String(st.price).trim();   // nur der automatische Vorschlag der Warengruppe im Feld = noch keine Eingabe
+        if ((!String(st.price).trim() || vkVorschlag) && p.price) { st.price = num(p.price, 2); st._vkSug = null; }
         if (!st.d.beschreibung && p.beschreibung) st.d.beschreibung = p.beschreibung;
         if (!st.d.hersteller_artikelnr && p.sku) st.d.hersteller_artikelnr = p.sku; if (!st.d.mat_zusammensetzung && p.material) st.d.mat_zusammensetzung = p.material;
         st.d.quelle_url = p.url;
@@ -279,10 +282,11 @@ function artEditorMount(host, a, tab0) {
   const lfLieferantVorschlag = async marke => {
     const sel = $('[data-f="supplierId"]', el); if (!sel || sel.value) return;
     const id = await lfMarkeVorschlag(marke); const cur = $('[data-f="supplierId"]', el);
-    if (id && cur && !cur.value && [...cur.options].some(o => o.value === id)) { cur.value = id; st.supplierId = id; toast('Lieferant vorgeschlagen', {t2: lfName(lfSup(id)) + ' – laut Marken des Lieferanten', icon: 'truck', dur: 2200}); }
+    if (id && cur && !cur.value && [...cur.options].some(o => o.value === id)) { cur.value = id; st.supplierId = id; ctx.vkNeu?.(); toast('Lieferant vorgeschlagen', {t2: lfName(lfSup(id)) + ' – laut Marken des Lieferanten', icon: 'truck', dur: 2200}); }
   };
   el.addEventListener('change', async e => {
     if (e.target.matches?.('[data-f="brand"]')) { lfLieferantVorschlag(e.target.value); return; }
+    if (e.target.matches?.('[data-f="cat"]')) { aeWgWechsel(ctx); return; }   // Warengruppe als Vorgabe (Steuersatz, Größen, Hinweis, Preisvorschlag)
     const c = e.target.closest('[data-mcol]'), cap = e.target.closest('[data-mcap]');
     if ((c || cap) && a) { try { await saveMediaOrder(); await refreshMedia(); } catch (err) { toast('Nicht gespeichert', {t2: String(err), type: 'warn'}); } }
   });

@@ -168,7 +168,7 @@ function openReceive(head, lines) {
     if (!items.length) return toast('Keine Menge erfasst', {type: 'warn'});
     let r; try { r = await invoke('po_receive', {id: head.id, items, user: S.user.name}); } catch (e) { return toast('Wareneingang fehlgeschlagen', {t2: String(e), type: 'warn', dur: 7000}); }
     applyStocks(r); await loadPurchasing(); closeLayer(el);
-    toast('Wareneingang gebucht', {t2: `${head.no} · ${items.reduce((s, x) => s + x.qty, 0)} Stück`, type: 'pos', icon: 'boxes', dur: 8000, action: {label: 'Etiketten', run: () => openLabels(items.map(x => { const l = lines.find(y => y.id === x.line_id), vv = varById(l.variant_id); return vv ? {a: vv.a, v: vv.v, n: x.qty} : null; }).filter(Boolean))}});
+    toast('Wareneingang gebucht', {t2: `${head.no} · ${items.reduce((s, x) => s + x.qty, 0)} Stück`, type: 'pos', icon: 'boxes', dur: 8000, action: {label: 'Etiketten', run: () => openLabels(items.map(x => { const l = lines.find(y => y.id === x.line_id), vv = varById(l.variant_id); return vv ? lblPos(vv.a, vv.v, x.qty) : null; }).filter(Boolean))}});
     Hooks.emit('purchasing.goods.received', {bestellung: head.no, stueck: items.reduce((s, x) => s + x.qty, 0)});
     if (S.view === 'einkauf') renderEinkauf();
   };

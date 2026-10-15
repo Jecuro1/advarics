@@ -192,7 +192,7 @@ async function wsBook() {
       toast('Zugang gebucht', {t2: `${Object.keys(cnt).length} Varianten`, type: 'pos', icon: 'boxes'});
     }
     Hooks.emit('purchasing.goods.received', {quelle: 'Scanner', stueck: WS.items.reduce((s, x) => s + x.qty, 0)});
-    const lbl = Object.entries(cnt).map(([ean, n]) => { const x = findEan(ean); return x ? {a: x.a, v: x.v, n} : null; }).filter(Boolean);
+    const lbl = Object.entries(cnt).map(([ean, n]) => { const x = findEan(ean); return x ? lblPos(x.a, x.v, n) : null; }).filter(Boolean);
     WS.items = []; WS.avis = null; WS.po = null; renderWeScanner();
     toast('Etiketten drucken?', {t2: `${lbl.length} Varianten`, icon: 'barcode', action: {label: 'Etiketten', run: () => openLabels(lbl)}, dur: 8000});
   } catch (e) { toast('Nicht gebucht', {t2: String(e), type: 'warn', dur: 8000}); }

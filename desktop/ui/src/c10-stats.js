@@ -135,7 +135,7 @@ function realHeatHTML() {
 }
 function realLowRows() {
   const sold = {}; (ST.d28?.items || []).forEach(i => { sold[i.sku] = i.qty; });
-  return ART.flatMap(a => a.variants.filter(v => v.q <= 2).map(v => ({a, v, s: sold[a.id] || 0})))
+  return ART.filter(a => !wgService(a.cat)).flatMap(a => a.variants.filter(v => v.q <= 2).map(v => ({a, v, s: sold[a.id] || 0})))   // Dienstleistungen haben keinen Bestand
     .sort((x, y) => (y.s - x.s) || (x.v.q - y.v.q) || (y.a.pop || 0) - (x.a.pop || 0));
 }
 function realLowHTML(it) {

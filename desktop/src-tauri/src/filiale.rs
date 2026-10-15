@@ -52,8 +52,10 @@ pub fn projekt(rows: &[Value], store: &str) -> Vec<Value> {
 pub fn all_for(c: &Connection, store: &str) -> Result<Value, String> {
     let mut v = stamm::all(c)?;
     // Tabellen, die auch leer an die Filialen gehen müssen: sonst bliebe dort der zuletzt gelöschte Eintrag stehen (z. B. der letzte Lieferantenrabatt)
-    if v[crate::lieferant::RABATT_KIND].is_null() {
-        v[crate::lieferant::RABATT_KIND] = json!([]);
+    for k in [crate::lieferant::RABATT_KIND, "warengruppe", "webkategorie", "statgroessenset", "preislage", "preislagenschluessel", "altersbewertung", "altersschluessel", "praemienschluessel", "etikettentyp", "wghierarchie"] {
+        if v[k].is_null() {
+            v[k] = json!([]);
+        }
     }
     if let Some(rows) = v[KIND].as_array() {
         let p = projekt(rows, store);

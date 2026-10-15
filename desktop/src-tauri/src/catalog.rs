@@ -209,6 +209,20 @@ fn variant_by_ean(tx: &Connection, ean: &str) -> rusqlite::Result<Option<(i64, i
     tx.query_row("SELECT id, stock FROM variants WHERE ean = ?1", [ean], |r| Ok((r.get(0)?, r.get(1)?))).optional()
 }
 
+/// Gehört die Variante zu einer Service-Warengruppe (Schalter in Stammdaten › Warengruppen)? Solche Artikel sind Dienstleistungen ohne Bestand.
+pub fn service_variante(c: &Connection, variant_id: i64) -> bool {
+    c.query_row(
+        "SELECT 1 FROM variants v JOIN articles a ON a.id = v.article_id JOIN stamm w ON w.kind = 'warengruppe' AND w.id = a.category
+         WHERE v.id = ?1 AND COALESCE(json_extract(w.data, '$.service'), 0) <> 0",
+        [variant_id],
+        |_| Ok(()),
+    )
+    .optional()
+    .ok()
+    .flatten()
+    .is_some()
+}
+
 /// Bestandsbuchung. `set = true` → Zählbestand (Inventur), sonst Zu-/Abgang.
 pub fn book(tx: &Transaction, variant_id: i64, value: i64, set: bool, reason: &str, refno: Option<&str>, user: Option<&str>) -> Result<i64, String> {
     let cur: i64 = tx
@@ -294,6 +308,26 @@ pub fn commit_sale(tx: &Transaction, lines: &[SaleLine], total: i64, cashier: &s
     if let Some(ps) = data["parts"].as_array_mut() {
         ps.iter_mut().for_each(|p| { if let Some(o) = p.as_object_mut() { o.remove("pin"); } });
     }
+    // Service-Warengruppen führen keinen Bestand: nicht buchen; der Beleg hält es je Position fest (Retoure/Storno buchen dann auch nichts zurück)
+    let mut ohne_bestand: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for l in lines {
+        if let Some(ean) = &l.ean {
+            if let Some((vid, _)) = variant_by_ean(tx, ean).map_err(|e| e.to_string())? {
+                if service_variante(tx, vid) {
+                    ohne_bestand.insert(ean.clone());
+                }
+            }
+        }
+    }
+    if !ohne_bestand.is_empty() {
+        if let Some(ls) = data["lines"].as_array_mut() {
+            for l in ls.iter_mut() {
+                if l["ean"].as_str().map(|e| ohne_bestand.contains(e)).unwrap_or(false) {
+                    l["nostock"] = json!(true);
+                }
+            }
+        }
+    }
     // RKSV
     let signed = crate::rksv::sign(tx, &no, &ts, &data, "beleg")?;
     if let Some(s) = &signed {
@@ -307,6 +341,9 @@ pub fn commit_sale(tx: &Transaction, lines: &[SaleLine], total: i64, cashier: &s
     let mut stocks = vec![];
     for l in lines {
         if let Some(ean) = &l.ean {
+            if ohne_bestand.contains(ean) {
+                continue;
+            }
             if let Some((vid, _)) = variant_by_ean(tx, ean).map_err(|e| e.to_string())? {
                 let after = book(tx, vid, -l.qty, false, "Verkauf", Some(&no), Some(cashier))?;
                 stocks.push(json!({ "ean": ean, "stock": after }));

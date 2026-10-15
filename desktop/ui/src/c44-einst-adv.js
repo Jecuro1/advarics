@@ -13,8 +13,8 @@ const EA_GROUPS = () => [
   {h: 'Standardwerte für neue Artikel', f: [
     {k: 'allg.warengruppe', l: 'Warengruppe', t: 'combo', o: eaOpt('warengruppe'), page: 'st-warengruppe', hint: 'Wird beim Anlegen eines Artikels vorgewählt'},
     {k: 'allg.marke', l: 'Marke', t: 'combo', o: eaMarken, page: 'st-marke'},
-    {k: 'allg.mwst', l: 'MwSt.-Satz', t: 'combo', o: eaOpt('mwsttyp', false), page: 'st-mwsttyp'},
-    {k: 'allg.groessenschluessel', l: 'Größenschlüssel', t: 'combo', o: eaOpt('groessenschluessel'), page: 'st-groessenschluessel', hint: 'Die Größen des Schlüssels werden als Größenreihe vorbelegt'}]}
+    {k: 'allg.mwst', l: 'MwSt.-Satz', t: 'combo', o: eaOpt('mwsttyp', false), page: 'st-mwsttyp', hint: 'Gilt für neue Artikel, deren Warengruppe keinen MwSt.-Typ hat'},
+    {k: 'allg.groessenschluessel', l: 'Größenschlüssel', t: 'combo', o: eaOpt('groessenschluessel'), page: 'st-groessenschluessel', hint: 'Die Größen des Schlüssels werden als Größenreihe vorbelegt – hat die Warengruppe einen eigenen Größen-Schlüssel, gilt dieser'}]}
 ];
 const EA = {draft: null};
 const eaLoad = () => { const o = {}; for (const k in EA_DEFAULTS) o[k] = CFG[k] ?? EA_DEFAULTS[k]; return o; };
@@ -72,6 +72,8 @@ const eaNeuArtikel = st => {
   const wg = CFG['allg.warengruppe']; if (wg && CATS.some(c => c.id === wg) && (typeof AV === 'undefined' || AV.cat === 'alle')) st.cat = wg;
   if (CFG['allg.marke']) { st.brand = CFG['allg.marke']; st.supplierId = st.supplierId || lfMarkeSync(st.brand); }
   const m = stRows('mwsttyp').find(x => x.id === CFG['allg.mwst']); if (m) st.vat = +m.satz || 0;
-  const g = stRows('groessenschluessel').find(x => x.id === CFG['allg.groessenschluessel']); if (g?.groessen?.length) st.sizes = g.groessen.join(', ');
+  const g = stRows('groessenschluessel').find(x => x.id === CFG['allg.groessenschluessel']); if (g?.groessen?.length) { st.sizes = g.groessen.join(', '); st._gsSel = {id: g.id, sizes: st.sizes}; }
+  // Warengruppe geht vor den Standardwerten: Steuersatz und Größenreihe (Größenschlüssel) der gewählten Warengruppe
+  aeWgVorbelegen(st);
   return st;
 };

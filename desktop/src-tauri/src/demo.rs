@@ -113,7 +113,7 @@ pub fn seed(c: &mut Connection) -> Result<(usize, usize), String> {
         }
         d.insert("quelle".into(), json!("Demo-Sortiment (Markenseite)"));
         let art = catalog::Article {
-            id: id.clone(), name, brand, category: cat, glyph: "shirt".into(), price, sale_price: None, vat: 20, tag: None,
+            id: id.clone(), name, brand, category: cat.clone(), glyph: "shirt".into(), price, sale_price: None, vat: fedas::wg_satz(&tx, &cat), tag: None,
             popularity: 50 + (hash(&id) % 49) as i64, colors, sizes, fields: json!({ "Saison": text(&a["model_year"]).unwrap_or_default() }), prompts: Value::Null,
             active: true, variants: variants.clone(), cost: Some((price as f64 / 1.2 * 0.5).round() as i64), supplier_id: None, min_stock: 2, image: None,
             details: Value::Object(d), media: vec![],
@@ -159,5 +159,19 @@ mod tests {
         let list = catalog::list(&c).unwrap();
         assert!(list.iter().all(|a| a.details.get("quelle").is_some() && !a.media.is_empty() || a.media.is_empty()));
         assert!(list.iter().filter(|a| a.details["beschreibung"].is_string()).count() > n / 2);
+        // ohne Warengruppen-Zeilen bleibt es bei 20 %
+        assert!(list.iter().all(|a| a.vat == 20));
+    }
+
+    #[test]
+    fn demo_artikel_nehmen_den_satz_der_warengruppe() {
+        let mut c = Connection::open_in_memory().unwrap();
+        db::migrate(&c).unwrap();
+        c.execute("INSERT INTO stamm(kind, id, data, pos, active, updated_at) VALUES ('warengruppe', 'schuhe', ?1, 0, 1, '2026-01-01')", [json!({ "name": "Schuhe", "ust": 10 }).to_string()]).unwrap();
+        seed(&mut c).unwrap();
+        let list = catalog::list(&c).unwrap();
+        let schuhe: Vec<_> = list.iter().filter(|a| a.category == "schuhe").collect();
+        assert!(!schuhe.is_empty() && schuhe.iter().all(|a| a.vat == 10), "Schuhe mit dem Satz ihrer Warengruppe");
+        assert!(list.iter().filter(|a| a.category != "schuhe").all(|a| a.vat == 20), "alle anderen 20 %");
     }
 }

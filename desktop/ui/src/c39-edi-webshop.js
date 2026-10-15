@@ -210,7 +210,9 @@ async function ediArticleImport(items, updatePrices) {
       if (!colors.includes(ck)) colors.push(ck); if (!sizes.includes(sz)) sizes.push(sz);
       return {c: ck, s: sz, ean: x.ean, q: 0, other: null};
     });
-    const a = {id: nextArtId(), name: x0.name || x0.artikelnr || 'EDI-Artikel', brand: x0.marke || x0.sup || '', cat: ediMapWg(x0.sid, x0.wg) || (CATS.find(c => c.id !== 'alle')?.id || 'acc'), g: 'shirt', price: x0.vk || (x0.ek ? roundPrice(x0.ek * (+lfSup(x0.sid)?.profile?.kalk_faktor || 2.2)) : 0), vat: 20, pop: 40, colors, sizes, fields: {'Lieferanten-Art.-Nr.': x0.artikelnr || '', Quelle: `EDI ${x0.doc}`}, cost: x0.ek ?? null, supplierId: x0.sid || '', minStock: 1, variants,
+    // Steuersatz der Warengruppe (sonst 20 %); Verkaufspreis: Nachricht > Kalkulationsfaktor des Lieferanten > Spanne der Warengruppe > Faktor 2,2
+    const cat = ediMapWg(x0.sid, x0.wg) || (CATS.find(c => c.id !== 'alle')?.id || 'acc'), vat = aeWgSatz(cat) ?? 20;
+    const a = {id: nextArtId(), name: x0.name || x0.artikelnr || 'EDI-Artikel', brand: x0.marke || x0.sup || '', cat, g: 'shirt', price: x0.vk || aeWgVk(x0.ek, {cat, supplierId: x0.sid, vat, fallback: 2.2})?.vk || 0, vat, pop: 40, colors, sizes, fields: {'Lieferanten-Art.-Nr.': x0.artikelnr || '', Quelle: `EDI ${x0.doc}`}, cost: x0.ek ?? null, supplierId: x0.sid || '', minStock: 1, variants,
       // Warengruppen-Schema „FEDAS“ des Lieferanten: der Code in der Nachricht ist der FEDAS-Schlüssel
       details: lfSup(x0.sid)?.profile?.wg_schema === 'fedas' && /^\d{6}$/.test(String(x0.wg || '').trim()) ? {fedas_code: String(x0.wg).trim()} : {}};
     finishArt(a);
@@ -381,13 +383,23 @@ docPage('webshop-bestellungen', 'webbestellung', {newLabel: 'Bestellung erfassen
   kpi: l => [[num(l.filter(d => d.status === 'neu').length), 'neu', 'warn'], [num(l.filter(d => d.status === 'in_bearbeitung').length), 'in Bearbeitung'], [num(l.filter(d => d.status === 'versendet').length), 'versendet'], [eur0(l.filter(d => d.status !== 'storniert').reduce((s, d) => s + d.total, 0) / 100), 'Bestellwert']],
   cols: [{l: 'Shop', f: d => esc(d.data?.shop || '–')}, {l: 'Versand', f: d => esc(d.data?.versand?.tracking || d.data?.versandart || '–')}]});
 
-registerPage('webshop-suche', {title: 'Webshop-Service-Suche', sub: () => 'So sieht der Webshop den Artikel', render: () => {
+/** Webshop-Kategorien einer Warengruppe – dieselbe Regel wie shop.rs (webkat_laden): webkat1–5 der Warengruppe plus frühere Liste „Warengruppen“ der Kategorie,
+    nur aktive und sichtbare Kategorien in der Reihenfolge der Tabelle; `aktiv` = mindestens eine aktive, sichtbare Kategorie enthält Warengruppen (sonst wird nichts ausgeblendet) */
+function wssWebKat() {
+  const tab = stRows('webkategorie'), pos = new Map(tab.map((r, i) => [r.id, i])), zu = new Map();
+  const add = (wg, i) => { if (!wg) return; if (!zu.has(wg)) zu.set(wg, new Set()); zu.get(wg).add(i); };
+  tab.forEach((r, i) => (Array.isArray(r.warengruppen) ? r.warengruppen : []).forEach(w => add(String(w).trim(), i)));
+  for (const w of stRows('warengruppe')) for (let k = 1; k <= 5; k++) { const i = pos.get(String(w['webkat' + k] ?? '').trim()); if (i !== undefined) add(w.id, i); }
+  const gezeigt = i => tab[i]._aktiv !== false && tab[i].sichtbar === true;
+  return {aktiv: [...zu.values()].some(s => [...s].some(gezeigt)), von: wg => [...(zu.get(wg) || [])].filter(gezeigt).sort((a, b) => a - b).map(i => tab[i])};
+}
+registerPage('webshop-suche', {title: 'Webshop-Service-Suche', sub: () => 'So sieht das Digitale Schaufenster den Artikel', render: () => {
   const v = $('#view-webshop-suche'), q = WSS.q, n = norm(q);
-  const hidden = new Set(CFG['shop.ausgeblendet'] || []), cats = CFG['shop.kategorien'] || [];
+  const hidden = new Set(CFG['shop.ausgeblendet'] || []), cats = CFG['shop.kategorien'] || [], wk = wssWebKat();
   const hits = n ? ART.filter(a => a.hay.includes(n) || a.variants.some(x => x.ean === q.trim())).slice(0, 30) : [];
-  v.innerHTML = `<div class="cv">${pageHead('Webshop-Service-Suche', 'Artikel so prüfen, wie die Webshop-Schnittstelle sie ausliefert: sichtbar, Preis, Bestand je Filiale')}
+  v.innerHTML = `<div class="cv">${pageHead('Webshop-Service-Suche', 'Artikel so prüfen, wie das Digitale Schaufenster sie zeigt: sichtbar (und warum nicht), Preis, Bestand je Filiale – die REST-Schnittstelle liefert alle Artikel')}
     <label class="search-field" style="height:48px;margin-bottom:14px">${ic('search')}<input data-wsq value="${esc(q)}" placeholder="Artikel, Marke, Nummer oder EAN …" autocomplete="off"></label>
-    ${hits.map(a => { const why = hidden.has(a.id) ? 'ausgeblendet (Filter/Schaufenster)' : cats.length && !cats.includes(a.cat) ? 'Warengruppe nicht freigegeben' : ''; return `<div class="card" style="padding:14px 16px;margin-bottom:10px"><div style="display:flex;gap:12px;align-items:center"><div style="flex:1"><b>${esc(a.name)}</b> <span class="muted">${esc(a.brand)} · ${esc(a.id)} · ${esc(catName(a.cat))}</span></div><b>${eur(a.sale || a.price)}</b>${why ? `<span class="pill neg" style="height:22px">${esc(why)}</span>` : '<span class="pill pos" style="height:22px">im Webshop</span>'}</div>
+    ${hits.map(a => { const ks = wk.von(a.cat), why = [hidden.has(a.id) && 'ausgeblendet (Filter/Schaufenster)', cats.length && !cats.includes(a.cat) && 'Warengruppe nicht freigegeben', wk.aktiv && !ks.length && 'keine sichtbare Webshop-Kategorie'].filter(Boolean).join(' · '); return `<div class="card" style="padding:14px 16px;margin-bottom:10px"><div style="display:flex;gap:12px;align-items:center"><div style="flex:1"><b>${esc(a.name)}</b> <span class="muted">${esc(a.brand)} · ${esc(a.id)} · ${esc(catName(a.cat))}${ks.length ? ` · Webshop: ${esc(ks.map(k => k.name || k.id).join(', '))}` : ''}</span></div><b>${eur(a.sale || a.price)}</b>${why ? `<span class="pill neg" style="height:22px">${esc(why)}</span>` : '<span class="pill pos" style="height:22px">im Webshop</span>'}</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${a.variants.map(x => `<span class="chip" style="height:26px">${esc(vname(x))} · <b style="margin-left:4px;color:${x.q > 0 ? 'var(--pos)' : 'var(--neg)'}">${x.q}</b>${x.other ? `<span class="muted" style="margin-left:4px">+${x.other.reduce((s, y) => s + y, 0)}</span>` : ''}</span>`).join('')}</div></div>`; }).join('') || `<div class="card"><div class="empty" style="padding:40px 20px"><div class="empty-icon">${ic('globe')}</div><h3>Artikel suchen</h3></div></div>`}</div>`;
   const i = $('[data-wsq]', v); i.oninput = () => { WSS.q = i.value; clearTimeout(i._t); i._t = setTimeout(() => { PAGES['webshop-suche'].render(); const x = $('[data-wsq]'); x?.focus(); x?.setSelectionRange(x.value.length, x.value.length); }, 250); };
 }});
@@ -403,7 +415,7 @@ function apiLogPage(id, title, sub, filter) {
   }});
   VIEW_PERM[id] = 'einstellungen';
 }
-apiLogPage('webshop-abfragelog', 'Abfragelog', 'Alle Zugriffe des Webshops auf die Schnittstelle', x => /webshop|artikel|bestand/.test(x.path));
+apiLogPage('webshop-abfragelog', 'Abfragelog', 'Alle Zugriffe des Webshops auf die Schnittstelle', x => /webshop|webkategorien|artikel|bestand/.test(x.path));
 apiLogPage('webshop-importfehler', 'Order-Import-Fehler', 'Abgelehnte Bestellungen aus dem Webshop – z. B. unbekannte EAN oder fehlende Rechte des Schlüssels', x => x.path.includes('webshop') && x.status >= 400);
 apiLogPage('api-protokoll', 'Protokoll externe API Zugriffe', 'Jeder Aufruf der REST-API mit Zeit, Pfad, Status, Absender und verwendetem Schlüssel', () => true);
 
@@ -415,10 +427,10 @@ async function applyWebFilter() {
   return ids.length;
 }
 { const _rs2 = renderStamm; renderStamm = async function (kind, page, extra = {}) {
-  if (kind === 'webfilter' && !extra.above) extra = {...extra, above: () => `<div class="card" style="padding:12px 16px;margin-bottom:12px;display:flex;gap:10px;align-items:center">${ic('info', 'i-sm')}<span style="flex:1;font-size:13px">Nach dem Speichern „Filter anwenden“ – passende Artikel werden im Schaufenster/Webshop ausgeblendet (aktuell ${(CFG['shop.filter_ids'] || []).length}).</span><button class="btn btn-secondary btn-sm" data-wfapply>${ic('filter', 'i-sm')}Filter anwenden</button></div>`};
+  if (kind === 'webfilter' && !extra.above) extra = {...extra, above: () => `<div class="card" style="padding:12px 16px;margin-bottom:12px;display:flex;gap:10px;align-items:center">${ic('info', 'i-sm')}<span style="flex:1;font-size:13px">Nach dem Speichern „Filter anwenden“ – passende Artikel werden im Digitalen Schaufenster ausgeblendet (aktuell ${(CFG['shop.filter_ids'] || []).length}); die REST-Schnittstelle liefert weiterhin alle Artikel.</span><button class="btn btn-secondary btn-sm" data-wfapply>${ic('filter', 'i-sm')}Filter anwenden</button></div>`};
   return _rs2(kind, page, extra);
 }; }
-document.addEventListener('click', async e => { if (!e.target.closest('[data-wfapply]')) return; const n = await applyWebFilter(); toast(`${n} Artikel ausgeblendet`, {t2: 'Schaufenster und Webshop-Schnittstelle', type: 'pos', icon: 'filter'}); STE.webfilter = null; renderStamm('webfilter', 'st-webfilter'); });
+document.addEventListener('click', async e => { if (!e.target.closest('[data-wfapply]')) return; const n = await applyWebFilter(); toast(`${n} Artikel ausgeblendet`, {t2: 'Digitales Schaufenster', type: 'pos', icon: 'filter'}); STE.webfilter = null; renderStamm('webfilter', 'st-webfilter'); });
 
 registerPage('webshop-einstellungen', {title: 'Einstellungen Webshop', sub: () => 'Schnittstelle für externe Shops', render: async () => {
   const v = $('#view-webshop-einstellungen');
@@ -428,7 +440,7 @@ registerPage('webshop-einstellungen', {title: 'Einstellungen Webshop', sub: () =
     ${kpiCards([[st?.running ? 'aktiv' : 'aus', 'REST-API', st?.running ? 'pos' : 'warn'], [num((st?.keys || []).length), 'API-Schlüssel'], [CFG['shop.aktiv'] ? 'online' : 'aus', 'Digitales Schaufenster']])}
     <div class="card" style="padding:16px;margin-bottom:14px"><h3 style="margin:0 0 8px">Bestellungen empfangen</h3><p style="margin:0 0 10px;font-size:13.5px">Der Shop sendet <code>POST /api/v1/webshop/bestellungen</code> mit Schlüssel (Bereich <code>schreiben</code>) als <code>Authorization: Bearer …</code>. Kontor legt eine Webshop-Bestellung an (Status „neu“), prüft die EAN und meldet Fehler mit HTTP 400 – sichtbar unter „Order-Import-Fehler“. Status abfragen: <code>GET /api/v1/webshop/bestellungen?status=versendet</code> (inkl. Sendungsnummer).</p>
       <pre class="mono" style="white-space:pre-wrap;font-size:12px;margin:0;background:var(--surface-2);padding:12px;border-radius:10px">${esc(ex)}</pre></div>
-    <div class="card" style="padding:16px;margin-bottom:14px"><h3 style="margin:0 0 8px">Artikel und Bestand liefern</h3><p style="margin:0;font-size:13.5px"><code>GET /api/v1/artikel</code> und <code>GET /api/v1/bestand</code> (Bereich <code>lesen</code>). Ausgeblendete Artikel und nicht freigegebene Warengruppen legen Sie unter Artikel-Filter, Webshop-Kategorie und im Digitalen Schaufenster fest.</p></div>
+    <div class="card" style="padding:16px;margin-bottom:14px"><h3 style="margin:0 0 8px">Artikel und Bestand liefern</h3><p style="margin:0;font-size:13.5px"><code>GET /api/v1/artikel</code> und <code>GET /api/v1/bestand</code> (Bereich <code>lesen</code>) liefern alle aktiven Artikel – auch solche, die im Digitalen Schaufenster fehlen: „Artikel ausblenden“, Artikel-Filter, freigegebene Warengruppen und die Sichtbarkeit der Webshop-Kategorien gelten nur für das Schaufenster (die Webshop-Service-Suche nennt den Grund). Jeder Artikel nennt seine Webshop-Kategorien (<code>webkategorien</code>); <code>GET /api/v1/webkategorien</code> liefert die aktiven, sichtbaren Kategorien mit Artikelzahl, <code>GET /api/v1/artikel?webkategorie=&lt;Kennung&gt;</code> die Artikel einer Kategorie.</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-secondary" data-wstest>${ic('plus', 'i-sm')}Testbestellung anlegen</button><button class="btn btn-secondary" data-goto="st-webkategorie">${ic('folder', 'i-sm')}Webshop-Kategorien</button><button class="btn btn-secondary" data-goto="st-webversand">${ic('truck', 'i-sm')}Versand</button><button class="btn btn-secondary" data-goto="st-webfiliale">${ic('store', 'i-sm')}Filialen</button><button class="btn btn-secondary" data-goto="schaufenster">${ic('store', 'i-sm')}Digitales Schaufenster</button></div></div>`;
   v.onclick = async e => {
     if (!e.target.closest('[data-wstest]')) return;

@@ -11,25 +11,61 @@ pub fn start(tx: &Transaction, scope: &Value, user: &str) -> Result<i64, String>
     if tx.query_row("SELECT 1 FROM inventories WHERE status = 'offen'", [], |_| Ok(())).optional().map_err(|e| e.to_string())?.is_some() {
         return Err("Es läuft bereits eine Inventur – bitte zuerst abschließen oder verwerfen".into());
     }
+    let cat = scope["cat"].as_str().filter(|s| !s.is_empty());
+    let brand = scope["brand"].as_str().filter(|s| !s.is_empty());
+    // Warengruppen mit „Inventur“ aus oder als Service-Warengruppe stehen nicht in der Zählliste
+    if let Some(c) = cat {
+        if let Some(grund) = ausgenommen_grund(tx, c) {
+            return Err(format!("Die Warengruppe „{}“ {grund} – ihre Artikel werden nicht gezählt (Stammdaten › Warengruppen › Warengruppen)", gruppenname(tx, c)));
+        }
+    }
     let n: i64 = tx.query_row("UPDATE counters SET value = value + 1 WHERE name = 'inventur' RETURNING value", [], |r| r.get(0)).map_err(|e| e.to_string())?;
     let no = format!("INV-{}-{n:03}", chrono::Local::now().format("%Y"));
     tx.execute("INSERT INTO inventories(no, status, scope, created_at, user) VALUES (?1,'offen',?2,?3,?4)", params![no, scope.to_string(), db::now(), user])
         .map_err(|e| e.to_string())?;
     let id = tx.last_insert_rowid();
-    let cat = scope["cat"].as_str().filter(|s| !s.is_empty());
-    let brand = scope["brand"].as_str().filter(|s| !s.is_empty());
+    let ausgenommen: i64 = tx
+        .query_row(
+            &format!("SELECT COUNT(*) FROM variants v JOIN articles a ON a.id = v.article_id JOIN stamm w ON w.kind = 'warengruppe' AND w.id = a.category
+             WHERE v.active = 1 AND a.active = 1 AND (?1 IS NULL OR a.category = ?1) AND (?2 IS NULL OR a.brand = ?2) AND {OHNE_INVENTUR}"),
+            params![cat, brand],
+            |r| r.get(0),
+        )
+        .map_err(|e| e.to_string())?;
     let k = tx
         .execute(
-            "INSERT INTO inventory_lines(inv_id, variant_id, expected)
-             SELECT ?1, v.id, v.stock FROM variants v JOIN articles a ON a.id = v.article_id
-             WHERE v.active = 1 AND a.active = 1 AND (?2 IS NULL OR a.category = ?2) AND (?3 IS NULL OR a.brand = ?3)",
+            &format!("INSERT INTO inventory_lines(inv_id, variant_id, expected)
+             SELECT ?1, v.id, v.stock FROM variants v JOIN articles a ON a.id = v.article_id LEFT JOIN stamm w ON w.kind = 'warengruppe' AND w.id = a.category
+             WHERE v.active = 1 AND a.active = 1 AND (?2 IS NULL OR a.category = ?2) AND (?3 IS NULL OR a.brand = ?3) AND NOT COALESCE({OHNE_INVENTUR}, 0)"),
             params![id, cat, brand],
         )
         .map_err(|e| e.to_string())?;
     if k == 0 {
-        return Err("Keine Artikel in diesem Bereich".into());
+        return Err(if ausgenommen > 0 { format!("Keine Artikel zum Zählen in diesem Bereich – {ausgenommen} Varianten gehören zu Warengruppen ohne Inventur bzw. zu Service-Warengruppen") } else { "Keine Artikel in diesem Bereich".into() });
+    }
+    if ausgenommen > 0 {
+        tx.execute("UPDATE inventories SET scope = json_set(scope, '$.ausgenommen', ?2) WHERE id = ?1", params![id, ausgenommen]).map_err(|e| e.to_string())?;
     }
     Ok(id)
+}
+
+/// Warengruppen, deren Artikel nicht in die Zählliste kommen: Schalter „Inventur“ aus oder „Service-Warengruppe“ an (Zeile `w` der Stammdaten)
+pub const OHNE_INVENTUR: &str = "(COALESCE(json_extract(w.data, '$.inventur'), 1) = 0 OR COALESCE(json_extract(w.data, '$.service'), 0) <> 0)";
+
+fn ausgenommen_grund(c: &Connection, kat: &str) -> Option<&'static str> {
+    let d: String = c.query_row("SELECT data FROM stamm WHERE kind = 'warengruppe' AND id = ?1", [kat], |r| r.get(0)).optional().ok().flatten()?;
+    let v: Value = serde_json::from_str(&d).ok()?;
+    if v["service"].as_bool().unwrap_or(false) {
+        Some("ist eine Service-Warengruppe")
+    } else if v["inventur"].as_bool() == Some(false) {
+        Some("ist von der Inventur ausgenommen")
+    } else {
+        None
+    }
+}
+
+fn gruppenname(c: &Connection, kat: &str) -> String {
+    c.query_row("SELECT json_extract(data, '$.name') FROM stamm WHERE kind = 'warengruppe' AND id = ?1", [kat], |r| r.get::<_, Option<String>>(0)).optional().ok().flatten().flatten().unwrap_or_else(|| kat.to_string())
 }
 
 /// Zählung erfassen: `add` = zur bisherigen Zählung addieren (Scan), sonst Wert setzen.
@@ -177,5 +213,38 @@ mod tests {
         assert_eq!(r["minus"], json!(3));
         assert_eq!(r["value_ek"], json!(-12000));
         assert!(count(&c, id, None, Some(1), 1, true).is_err(), "abgeschlossen");
+    }
+
+    fn artikel(tx: &Transaction, id: &str, kat: &str, ean: &str) {
+        let a: catalog::Article = serde_json::from_value(json!({ "id": id, "name": id, "category": kat, "price": 1000, "vat": 20, "cost": 400,
+            "colors": ["moos"], "sizes": ["M"], "variants": [{ "color": "moos", "size": "M", "ean": ean }] })).unwrap();
+        catalog::save(tx, &a).unwrap();
+    }
+
+    #[test]
+    fn warengruppen_ohne_inventur_und_service_stehen_nicht_in_der_zaehlliste() {
+        let mut c = Connection::open_in_memory().unwrap();
+        db::migrate(&c).unwrap();
+        let tx = c.transaction().unwrap();
+        for (kat, data) in [("adv-1", json!({ "name": "Ware", "inventur": true })), ("adv-2", json!({ "name": "Pfand", "inventur": false })), ("adv-3", json!({ "name": "Service", "service": true, "inventur": true })), ("adv-4", json!({ "name": "Alt" }))] {
+            tx.execute("INSERT INTO stamm(kind, id, data, pos, active, updated_at) VALUES ('warengruppe', ?1, ?2, 0, 1, 't')", params![kat, data.to_string()]).unwrap();
+        }
+        artikel(&tx, "W", "adv-1", "2000000000015");
+        artikel(&tx, "P", "adv-2", "2000000000022");
+        artikel(&tx, "S", "adv-3", "2000000000039");
+        artikel(&tx, "A", "adv-4", "2000000000046");
+        artikel(&tx, "X", "unbekannt", "2000000000053");
+        let id = start(&tx, &json!({}), "T").unwrap();
+        let namen: Vec<String> = tx.prepare("SELECT a.id FROM inventory_lines l JOIN variants v ON v.id = l.variant_id JOIN articles a ON a.id = v.article_id WHERE l.inv_id = ?1 ORDER BY a.id").unwrap().query_map([id], |r| r.get(0)).unwrap().filter_map(Result::ok).collect();
+        assert_eq!(namen, vec!["A", "W", "X"], "ohne Inventur und Service ausgenommen, Alt-Gruppen ohne Angabe und unbekannte Kategorien gezählt");
+        let scope: String = tx.query_row("SELECT scope FROM inventories WHERE id = ?1", [id], |r| r.get(0)).unwrap();
+        assert_eq!(serde_json::from_str::<Value>(&scope).unwrap()["ausgenommen"], json!(2));
+        tx.execute("UPDATE inventories SET status = 'verworfen'", []).unwrap();
+        // ausdrücklich gewählte ausgenommene Gruppe: Fehler mit Grund
+        let e = start(&tx, &json!({ "cat": "adv-2" }), "T").unwrap_err();
+        assert!(e.contains("Pfand") && e.contains("ausgenommen"), "{e}");
+        let e = start(&tx, &json!({ "cat": "adv-3" }), "T").unwrap_err();
+        assert!(e.contains("Service-Warengruppe"), "{e}");
+        assert!(start(&tx, &json!({ "cat": "adv-1" }), "T").is_ok());
     }
 }

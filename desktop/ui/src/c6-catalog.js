@@ -45,17 +45,17 @@ function recData(rec) {
   return {date: rec.date.toISOString(), cashier: rec.cashier, offline: rec.offline, sig: rec.sig, change: rec.change, billDisc: rec.billDisc || null, t: rec.t,
     parts: rec.parts.map(p => ({m: p.m, label: p.label, amount: p.amount, ref: p.ref, given: p.given || null, change: p.change || 0, code: p.code || null})),
     customer: rec.customer ? {id: rec.customer.id, name: rec.customer.name, points: rec.customer.points, email: rec.customer.email} : null,
-    lines: rec.lines.map(l => ({name: l.name, sku: l.art?.id || null, ean: l.art && l.art.variants ? variant(l.art, l.c, l.s)?.ean || null : null, glyph: l.art?.g || null, c: l.c || null, s: l.s || null, qty: l.qty, unit: l.unit, was: l.was || null, vat: l.vat, disc: l.disc || null, service: !!l.service, voucher: !!l.voucher, icon: l.icon || null, meta: l.meta || null, vals: l.vals || null, ...(l.art && rabattGesperrt(l.art) ? {nodisc: true} : {})}))};
+    lines: rec.lines.map(l => ({name: l.name, sku: l.art?.id || null, ean: l.art && l.art.variants ? variant(l.art, l.c, l.s)?.ean || null : null, glyph: l.art?.g || null, c: l.c || null, s: l.s || null, qty: l.qty, unit: l.unit, was: l.was || null, vat: l.vat, disc: l.disc || null, service: !!l.service, voucher: !!l.voucher, icon: l.icon || null, meta: l.meta || null, vals: l.vals || null, ...(l.art && rabattGesperrt(l.art) ? {nodisc: true} : {}), ...(l.art && wgService(l.art.cat) ? {nostock: true} : {})}))};
 }
 const recFromData = (no, d) => ({...d, no, date: new Date(d.date), lines: d.lines.map(l => ({...l, art: l.sku ? (artById(l.sku) || {g: l.glyph, id: l.sku}) : null}))});
 async function commitSale(rec) {
   const data = recData(rec);
   if (!DESKTOP) {
-    rec.lines.forEach(l => { if (l.art) { const v = variant(l.art, l.c, l.s); v.q -= l.qty; finishArt(l.art); } });
+    rec.lines.forEach(l => { if (l.art && !wgService(l.art.cat)) { const v = variant(l.art, l.c, l.s); v.q -= l.qty; finishArt(l.art); } });
     MEM.sales.unshift({no: rec.no, ts: new Date().toISOString(), total: Math.round(rec.t.total * 100), cashier: rec.cashier, data});
     return null;
   }
-  const lines = rec.lines.filter(l => l.art).map(l => ({ean: variant(l.art, l.c, l.s).ean, qty: l.qty}));
+  const lines = rec.lines.filter(l => l.art && !wgService(l.art.cat)).map(l => ({ean: variant(l.art, l.c, l.s).ean, qty: l.qty}));   // Service-Warengruppe: kein Bestand
   const r = await invoke('sale_commit', {lines, total: Math.round(rec.t.total * 100), cashier: S.user.name, customer: rec.customer?.id || null, data});
   r.stocks.forEach(({ean, stock}) => { for (const a of ART) { const v = a.variants.find(x => x.ean === ean); if (v) { v.q = stock; finishArt(a); } } });
   return r;
@@ -153,7 +153,7 @@ function openEditor(a) {
     if (t.closest('#edSki')) { st.ski = !st.ski; $('#edSki', el).setAttribute('aria-checked', st.ski); return; }
     if (t.closest('#edImg')) { collect(); try { const n = await invoke('article_image_pick', {id: a.id}); if (n) { a.image = n; render(); renderArtTable(); toast('Bild übernommen', {t2: a.name, type: 'pos', icon: 'check'}); } } catch (err) { toast('Bild nicht übernommen', {t2: String(err), type: 'warn'}); } return; }
     if (t.closest('#edImgRm')) { collect(); try { await invoke('article_image_remove', {id: a.id}); a.image = null; render(); renderArtTable(); } catch (err) { toast('Fehler', {t2: String(err), type: 'warn'}); } return; }
-    if (t.closest('#edLbl')) return openLabels(a.variants.map(v => ({a, v, n: 1})));
+    if (t.closest('#edLbl')) return openLabels(a.variants.map(v => lblPos(a, v, 1)));
     if (t.closest('#edDel')) {
       try { await stepUp({title: 'Artikel deaktivieren', text: `${a.name} wird aus Kasse und Liste entfernt. Belege und Historie bleiben erhalten.`}); } catch { return; }
       if (DESKTOP) { try { await invoke('article_delete', {id: a.id, user: S.user.name}); } catch (err) { return toast('Fehler', {t2: String(err), type: 'warn'}); } }
@@ -196,7 +196,7 @@ function openEditor(a) {
 const INV = {q: '', f: 'alle'};
 function renderBestand() {
   const v = $('#view-bestand');
-  const vars = ART.flatMap(a => a.variants.map(x => ({a, v: x})));
+  const vars = ART.filter(a => !wgService(a.cat)).flatMap(a => a.variants.map(x => ({a, v: x})));   // Service-Warengruppen führen keinen Bestand
   const pieces = vars.reduce((s, x) => s + Math.max(0, x.v.q), 0), value = vars.reduce((s, x) => s + Math.max(0, x.v.q) * (x.a.sale || x.a.price), 0);
   const low = vars.filter(x => x.v.q > 0 && x.v.q <= 2).length, out = vars.filter(x => x.v.q <= 0).length;
   v.innerHTML = `<div class="cv">
@@ -211,7 +211,7 @@ function renderBestand() {
 }
 function renderInvList() {
   const toks = norm(INV.q.trim()).split(/\s+/).filter(Boolean);
-  const list = ART.filter(a => toks.every(t => a.hay.includes(t)) && (INV.f === 'alle' || a.variants.some(x => INV.f === 'aus' ? x.q <= 0 : x.q > 0 && x.q <= 2)));
+  const list = ART.filter(a => toks.every(t => a.hay.includes(t)) && (INV.f === 'alle' ? true : !wgService(a.cat) && a.variants.some(x => INV.f === 'aus' ? x.q <= 0 : x.q > 0 && x.q <= 2)));
   $('#invList').innerHTML = list.length ? list.map(a => {
     const c = COLORS[a.colors[0]]?.[1] || '#888';
     return `<div class="card inv-card" data-inv="${esc(a.id)}"><div class="inv-h"><span class="thumb" style="--c:${c}">${artVisual(a, c)}</span><div style="flex:1;min-width:0"><div style="font-weight:600">${esc(a.name)}</div><div class="muted" style="font-size:12px">${esc(a.brand)} · ${esc(a.id)} · ${eur(a.sale || a.price)}</div></div><span class="stock ${a.stock <= 0 ? 'out' : a.stock <= 6 ? 'low' : 'ok'}"><span class="dot"></span>${num(a.stock)} Stk.</span><button class="btn btn-ghost btn-sm btn-icon" data-lbl="${esc(a.id)}" data-tip="Etiketten (Anzahl = Bestand)" aria-label="Etiketten">${ic('tag', 'i-sm')}</button></div>
@@ -270,7 +270,7 @@ function bindCatalog() {
   const bv = $('#view-bestand');
   bv.addEventListener('input', e => { if (e.target.id === 'invQ') { INV.q = e.target.value; renderInvList(); } });
   bv.addEventListener('click', e => {
-    const lb = e.target.closest('[data-lbl]'); if (lb) { const a = artById(lb.dataset.lbl); return openLabels(a.variants.map(v => ({a, v, n: Math.max(0, v.q)}))); }
+    const lb = e.target.closest('[data-lbl]'); if (lb) { const a = artById(lb.dataset.lbl); return openLabels(a.variants.map(v => lblPos(a, v, Math.max(0, v.q)))); }
     const cell = e.target.closest('[data-vk]'); if (!cell) return;
     for (const a of ART) { const v = a.variants.find(x => x.ean === cell.dataset.vk); if (v) return openBooking(a, v); }
   });
