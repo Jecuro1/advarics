@@ -1735,18 +1735,22 @@ button.ge-caret:hover{background:var(--surface-3);color:var(--text)}
 .fl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px;align-items:start}
 /* ── Auswahl mit Stift/Plus/Lupe (K.ref), Pflichtpunkt, Einheit; Warengruppen-Maske ── */
 .ea-cmb-row.rf>select{flex:1;min-width:0}
-.ea-cmb-row.rf{gap:4px}
-.ea-cmb-row.rf .ea-ib{width:30px;height:34px;border-radius:8px}
+.ea-cmb-row.rf{gap:8px}
+.rf-btns{display:inline-flex;flex:none;align-self:stretch;border:1px solid var(--line-2);border-radius:var(--r-sm);overflow:hidden;background:var(--surface)}
+.rf-btns .ea-ib{width:34px;height:auto;border:0;border-radius:0;background:transparent}
+.rf-btns .ea-ib+.ea-ib{border-left:1px solid var(--line-2)}
+.rf-btns .ea-ib:hover:not(:disabled){background:var(--accent-soft);color:var(--accent)}
+.rf-btns .ea-ib:disabled{opacity:.4;pointer-events:none}
 .ea-cmb-row .ea-unit{flex:none;font-size:13px;color:var(--text-3);min-width:22px}
 .wg-grid .ea-cmb-row>.input{flex:1;min-width:0}
 .field.rq-miss>span::after{content:'';display:inline-block;width:7px;height:7px;margin-left:6px;border-radius:50%;background:var(--neg);vertical-align:middle}
-.wg-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
-.wg-grid>.ea-card{max-width:none;flex:none;min-width:0;padding:16px 14px;gap:14px}
-.wg-grid .ea-card .ea-fields.ge-one{row-gap:16px}
+.wg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px;align-items:start}
+.wg-grid>.ue-stack{min-width:0}
+.wg-grid .ea-card{max-width:none;flex:none;min-width:0}
+.wg-grid .ea-card .ea-fields.ge-one{row-gap:20px}
 .wg-grid .ea-card h4{display:flex;align-items:center;gap:8px}
 .wg-grid .ea-card h4 .ed-badge{margin-left:auto}
 .wg-grid .ea-card h4 .ed-badge[hidden]{display:none}
-.wg-facts{font-size:12.5px;color:var(--text-3);line-height:1.5}
 .fl-grid.fl-2{grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),520px))}
 .fl-grid.fl-3{grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))}
 .fl-stack{display:grid;gap:16px;align-content:start;min-width:0}

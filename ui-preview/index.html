@@ -1735,18 +1735,22 @@ button.ge-caret:hover{background:var(--surface-3);color:var(--text)}
 .fl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px;align-items:start}
 /* ── Auswahl mit Stift/Plus/Lupe (K.ref), Pflichtpunkt, Einheit; Warengruppen-Maske ── */
 .ea-cmb-row.rf>select{flex:1;min-width:0}
-.ea-cmb-row.rf{gap:4px}
-.ea-cmb-row.rf .ea-ib{width:30px;height:34px;border-radius:8px}
+.ea-cmb-row.rf{gap:8px}
+.rf-btns{display:inline-flex;flex:none;align-self:stretch;border:1px solid var(--line-2);border-radius:var(--r-sm);overflow:hidden;background:var(--surface)}
+.rf-btns .ea-ib{width:34px;height:auto;border:0;border-radius:0;background:transparent}
+.rf-btns .ea-ib+.ea-ib{border-left:1px solid var(--line-2)}
+.rf-btns .ea-ib:hover:not(:disabled){background:var(--accent-soft);color:var(--accent)}
+.rf-btns .ea-ib:disabled{opacity:.4;pointer-events:none}
 .ea-cmb-row .ea-unit{flex:none;font-size:13px;color:var(--text-3);min-width:22px}
 .wg-grid .ea-cmb-row>.input{flex:1;min-width:0}
 .field.rq-miss>span::after{content:'';display:inline-block;width:7px;height:7px;margin-left:6px;border-radius:50%;background:var(--neg);vertical-align:middle}
-.wg-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
-.wg-grid>.ea-card{max-width:none;flex:none;min-width:0;padding:16px 14px;gap:14px}
-.wg-grid .ea-card .ea-fields.ge-one{row-gap:16px}
+.wg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px;align-items:start}
+.wg-grid>.ue-stack{min-width:0}
+.wg-grid .ea-card{max-width:none;flex:none;min-width:0}
+.wg-grid .ea-card .ea-fields.ge-one{row-gap:20px}
 .wg-grid .ea-card h4{display:flex;align-items:center;gap:8px}
 .wg-grid .ea-card h4 .ed-badge{margin-left:auto}
 .wg-grid .ea-card h4 .ed-badge[hidden]{display:none}
-.wg-facts{font-size:12.5px;color:var(--text-3);line-height:1.5}
 .fl-grid.fl-2{grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),520px))}
 .fl-grid.fl-3{grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))}
 .fl-stack{display:grid;gap:16px;align-content:start;min-width:0}
@@ -2408,7 +2412,7 @@ const SERVICES = [
 /* ════════════════════════════════════════════════════════════════════
    5 · SITZUNG
    ════════════════════════════════════════════════════════════════════ */
-const S = {appVersion: '0.46.0', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
+const S = {appVersion: '0.46.1', fullscreen: false, view: null, user: STAFF[0], store: 'INN', online: true, queue: 0, update: 'pending', backupH: 9, paletteOpen: false, locked: false, posSidebar: false, inspector: null};
 const storeObj = () => STORES.find(s => s.id === S.store) || {id: 'ALL', name: 'Alle Filialen', addr: '5 Standorte'};
 
 /* ════════════════════════════════════════════════════════════════════
@@ -18512,7 +18516,7 @@ function maskeNew(o) {
     K.refs[k] = {kind, op, l};
     const nm = (op.titel || l).replace(/[\s*]+$/, ''), b = (a, icon, t, off) => `<button type="button" class="ea-ib" data-mf-ref="${a}" data-mf-k="${k}" title="${esc(t)}" aria-label="${esc(t)}" ${dis || off ? 'disabled' : ''}>${ic(icon, 'i-sm')}</button>`;
     const curTxt = (list.find(([v]) => v === cur) || [])[1] || (lazy && cur ? '' : ''), tip = [op.tip, curTxt].filter(Boolean).join(' – ');
-    return `<label class="field rf-field ${er ? 'zp-bad' : ''} ${op.pflicht && !cur ? 'rq-miss' : ''}" ${tip ? `title="${esc(tip)}"` : ''}><span>${esc(l)}</span><div class="ea-cmb-row rf"><select class="input select" data-mf="${k}" ${op.pflicht ? 'data-req' : ''} ${lazy ? `data-lazy-ref="${k}"` : ''} ${dis ? 'disabled' : ''} ${er ? 'aria-invalid="true"' : ''}>${op.pflicht || op.leer != null ? `<option value="">${esc(op.leer ?? '– bitte wählen –')}</option>` : ''}${list.map(([v, t]) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>${op.bearbeiten === false ? '' : b('edit', 'edit', `${nm} bearbeiten`, !cur)}${op.neu === false ? '' : b('new', 'plus', `${nm}: neu anlegen`)}${op.suchen === false ? '' : b('find', 'search', `${nm} suchen`)}</div>${foot(er, op)}</label>`;
+    return `<label class="field rf-field ${er ? 'zp-bad' : ''} ${op.pflicht && !cur ? 'rq-miss' : ''}" ${tip ? `title="${esc(tip)}"` : ''}><span>${esc(l)}</span><div class="ea-cmb-row rf"><select class="input select" data-mf="${k}" ${op.pflicht ? 'data-req' : ''} ${lazy ? `data-lazy-ref="${k}"` : ''} ${dis ? 'disabled' : ''} ${er ? 'aria-invalid="true"' : ''}>${op.pflicht || op.leer != null ? `<option value="">${esc(op.leer ?? '– bitte wählen –')}</option>` : ''}${list.map(([v, t]) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select><span class="rf-btns">${op.bearbeiten === false ? '' : b('edit', 'edit', `${nm} bearbeiten`, !cur)}${op.neu === false ? '' : b('new', 'plus', `${nm}: neu anlegen`)}${op.suchen === false ? '' : b('find', 'search', `${nm} suchen`)}</span></div>${foot(er, op)}</label>`;
   };
   /** Wert einer Auswahl setzen (Suche/Neu), Entwurf als geändert markieren und neu zeichnen */
   K.pick = (k, v, el) => { msetp(st.d, k, v); K.dirty(el); o.onSet?.(k, el); K.render(); };
@@ -19736,35 +19740,35 @@ function wgMaske() {
   const art = WGE.id ? wgArtikel(WGE.id) : [0, 0];
   const leer = {leer: '–'};
   const c1 = card('Haupt-Abteilung', ['nr', 'name', 'be', 'hb', 'abteilung', 'ha', 'altersbewertung', 'praemienschluessel', 'intrastat_nr', 'intrastat_bez', 'gewicht'], `
-    ${K.in('nr', 'Nr. *', {pflicht: true, inputmode: 'numeric', max: 6, dis: !!WGE.id, tip: WGE.id ? 'Die Nr. ist der Schlüssel der Warengruppe und lässt sich nicht mehr ändern – zum Umnummerieren kopieren.' : 'Nächste freie Nr. vorgeschlagen; frei wählbar, bis 999999.'})}
+    ${K.in('nr', 'Nr. *', {pflicht: true, inputmode: 'numeric', max: 6, dis: !!WGE.id, hint: WGE.id ? 'Schlüssel der Warengruppe – nicht mehr änderbar. Zum Umnummerieren kopieren.' : 'Nächste freie Nr. vorgeschlagen, frei wählbar bis 999999.'})}
     ${K.in('name', 'Name *', {pflicht: true, max: 50})}
-    ${K.ref('be', 'Bereich *', 'bereich', {pflicht: true, rows: wgRowsBe, preset: d => (d.hb ? {parent: d.hb} : null), tip: 'Ebene 1 der Hierarchie – ergibt sich aus der Abteilung.'})}
-    ${K.ref('hb', 'Haupt-Bereich', 'hauptbereich', {leer: '–', tip: 'Oberste Ebene – ergibt sich aus dem Bereich (dort zu pflegen).'})}
-    ${K.ref('abteilung', 'Abteilung *', 'abteilung', {pflicht: true, rows: wgRowsAbt, label: wgAbtPfad, preset: d => (d.ha ? {parent: d.ha} : null), tip: 'Ebene 3 – gespeichert wird diese Abteilung, die übrigen Ebenen folgen daraus.'})}
-    ${K.ref('ha', 'Haupt-Abteilung *', 'hauptabteilung', {pflicht: true, rows: wgRowsHa, label: wgHaPfad, preset: d => (d.be ? {parent: d.be} : null), titel: 'Haupt-Abteilung'})}
-    ${K.ref('altersbewertung', 'Altersbewertung *', 'altersschluessel', {pflicht: true, tip: 'Welche Prozentsätze die Altersbewertung des Lagers für diese Gruppe anwendet.'})}
-    ${K.ref('praemienschluessel', 'Prämienschlüssel *', 'praemienschluessel', {pflicht: true, label: r => `${r.name || r.id}${r.pct != null && r.pct !== '' ? ` (${num(+r.pct)} %)` : ''}`, tip: 'Prämiensatz der Verkäufer:innen auf den Netto-Umsatz dieser Gruppe.'})}
-    ${K.sw('service', 'Service-Warengruppe', '', false, 'Dienstleistung: kein Bestand, nie „ausverkauft“, keine Inventur, kein Bestellvorschlag.')}
-    ${K.sw('inventur', 'Inventur', '', false, 'Aus: Artikel dieser Gruppe stehen nicht in der Zählliste.')}
-    ${K.in('intrastat_nr', 'Intrastat-Waren-Nr.', {mono: true, inputmode: 'numeric', max: 24, tip: 'Warennummer (KN) für die Intrastat-Auswertung, wenn der Artikel keine eigene hat.'})}
+    ${K.ref('be', 'Bereich *', 'bereich', {pflicht: true, rows: wgRowsBe, preset: d => (d.hb ? {parent: d.hb} : null)})}
+    ${K.ref('hb', 'Haupt-Bereich', 'hauptbereich', {leer: '–'})}
+    ${K.ref('abteilung', 'Abteilung *', 'abteilung', {pflicht: true, rows: wgRowsAbt, label: wgAbtPfad, preset: d => (d.ha ? {parent: d.ha} : null)})}
+    ${K.ref('ha', 'Haupt-Abteilung *', 'hauptabteilung', {pflicht: true, rows: wgRowsHa, label: wgHaPfad, preset: d => (d.be ? {parent: d.be} : null), titel: 'Haupt-Abteilung', hint: 'Die vier Ebenen hängen zusammen: Mit der Abteilung ergeben sich die übrigen.'})}
+    ${K.ref('altersbewertung', 'Altersbewertung *', 'altersschluessel', {pflicht: true, hint: 'Welche Prozentsätze die Altersbewertung des Lagers für diese Gruppe anwendet.'})}
+    ${K.ref('praemienschluessel', 'Prämienschlüssel *', 'praemienschluessel', {pflicht: true, label: r => `${r.name || r.id}${r.pct != null && r.pct !== '' ? ` (${num(+r.pct)} %)` : ''}`, hint: 'Prämiensatz der Verkäufer:innen auf den Netto-Umsatz dieser Gruppe.'})}
+    ${K.sw('service', 'Service-Warengruppe', 'Dienstleistung: kein Bestand, nie „ausverkauft“, keine Inventur, kein Bestellvorschlag.')}
+    ${K.sw('inventur', 'Inventur', 'Aus: Artikel dieser Gruppe stehen nicht in der Zählliste.')}
+    ${K.in('intrastat_nr', 'Intrastat-Waren-Nr.', {mono: true, inputmode: 'numeric', max: 24, hint: 'Gilt für Artikel ohne eigene Warennummer (Intrastat).'})}
     ${K.in('intrastat_bez', 'Intrastat-Waren-Bez.', {max: 120})}
-    ${K.in('gewicht', 'Durchschnitts Gewicht', {num: true, inputmode: 'decimal', suffix: 'kg', tip: 'Eigenmasse je Stück für die Intrastat-Auswertung, wenn der Artikel kein Gewicht hat.'})}
-    <p class="wg-facts">${WGE.id ? `${art[0] ? `${num(art[0])} Artikel in dieser Warengruppe${art[1] !== art[0] ? ` (davon ${num(art[1])} aktiv)` : ''}.` : 'Noch kein Artikel in dieser Warengruppe.'}` : 'Neue Warengruppe.'}</p>`);
-  const c2 = card('WebShop-Kategorien', [1, 2, 3, 4, 5].map(i => 'webkat' + i), [1, 2, 3, 4, 5].map(i => K.ref('webkat' + i, `WebShop-Kategorie ${i}`, 'webkategorie', {...leer, rows: wgWebRows('webkat' + i), label: wgWebLabel, titel: 'WebShop-Kategorie', tip: i === 1 ? 'Im Digitalen Schaufenster und in der Schnittstelle erscheinen die Artikel dieser Gruppe in diesen Kategorien.' : ''})).join('') + '<p class="wg-facts">Sobald irgendeine Warengruppe einer sichtbaren Kategorie zugeordnet ist, zeigt das Digitale Schaufenster nur noch Artikel aus zugeordneten Warengruppen.</p>');
+    ${K.in('gewicht', 'Durchschnitts Gewicht', {num: true, inputmode: 'decimal', suffix: 'kg', hint: 'Gilt für Artikel ohne eigenes Gewicht (Intrastat).'})}
+    <p class="ea-hint">${WGE.id ? `${art[0] ? `${num(art[0])} Artikel in dieser Warengruppe${art[1] !== art[0] ? ` (davon ${num(art[1])} aktiv)` : ''}.` : 'Noch kein Artikel in dieser Warengruppe.'}` : 'Neue Warengruppe.'}</p>`);
+  const c2 = card('WebShop-Kategorien', [1, 2, 3, 4, 5].map(i => 'webkat' + i), [1, 2, 3, 4, 5].map(i => K.ref('webkat' + i, `WebShop-Kategorie ${i}`, 'webkategorie', {...leer, rows: wgWebRows('webkat' + i), label: wgWebLabel, titel: 'WebShop-Kategorie'})).join('') + '<p class="ea-hint">Die Artikel dieser Gruppe erscheinen im Digitalen Schaufenster und in der Schnittstelle in diesen Kategorien. Sobald eine sichtbare Kategorie Warengruppen hat, zeigt das Schaufenster nur noch Artikel aus zugeordneten Gruppen.</p>');
   const c3 = card('Größeneinstellungen', ['groessenschluessel', 'statgroessen'], `
-    ${K.ref('groessenschluessel', 'Größen-Schlüssel *', 'groessenschluessel', {pflicht: true, label: r => r.name || r.id, tip: 'Die Größenreihe wird bei neuen Artikeln dieser Gruppe vorbelegt.'})}
-    ${K.ref('statgroessen', 'Statistik-Größen-Set', 'statgroessenset', {...leer, tip: 'Fasst Größen in der Größen-Auswertung zusammen.'})}`);
+    ${K.ref('groessenschluessel', 'Größen-Schlüssel *', 'groessenschluessel', {pflicht: true, label: r => r.name || r.id, hint: 'Die Größenreihe wird bei neuen Artikeln dieser Gruppe vorbelegt.'})}
+    ${K.ref('statgroessen', 'Statistik-Größen-Set', 'statgroessenset', {...leer, hint: 'Fasst Größen in der Größen-Auswertung zusammen.'})}`);
   const c4 = card('Finanzeinstellungen', ['mwsttyp', 'preislage', 'spanne'], `
-    ${K.sw('rabattsperre', 'Rabattsperre', '', false, 'An der Kasse kein Rabatt auf Artikel dieser Gruppe (Aktionspreise bleiben).')}
-    ${K.ref('mwsttyp', 'MwSt.-Typ *', 'mwsttyp', {pflicht: true, label: r => `${r.name || r.id} (${num(+r.satz || 0)} %)`, tip: 'Steuersatz neuer Artikel dieser Gruppe.'})}
-    ${K.ref('preislage', 'Preisl.-Schl. *', 'preislagenschluessel', {pflicht: true, titel: 'Preislagen-Schlüssel', tip: 'Preisstufen der Preislagen-Auswertung für diese Gruppe.'})}
-    ${K.in('spanne', 'Vorschl.-Spanne/Kalk.', {num: true, inputmode: 'decimal', suffix: '%', tip: 'Handelsspanne vom Netto-Verkaufspreis: schlägt den Verkaufspreis vor, wenn der Einkaufspreis eingegeben wird.'})}`);
+    ${K.sw('rabattsperre', 'Rabattsperre', 'An der Kasse kein Rabatt auf Artikel dieser Gruppe (Aktionspreise bleiben).')}
+    ${K.ref('mwsttyp', 'MwSt.-Typ *', 'mwsttyp', {pflicht: true, label: r => `${r.name || r.id} (${num(+r.satz || 0)} %)`, hint: 'Steuersatz neuer Artikel dieser Gruppe.'})}
+    ${K.ref('preislage', 'Preisl.-Schl. *', 'preislagenschluessel', {pflicht: true, titel: 'Preislagen-Schlüssel', hint: 'Preisstufen der Preislagen-Auswertung für diese Gruppe.'})}
+    ${K.in('spanne', 'Vorschl.-Spanne/Kalk.', {num: true, inputmode: 'decimal', suffix: '%', hint: 'Schlägt den Verkaufspreis vor, sobald der Einkaufspreis eingegeben wird.'})}`);
   const c5 = card('Etiketten', ['etikett', 'etikett2', 'anz_etiketten', 'hierarchie'], `
-    ${K.ref('etikett', 'Etiketten-Typ *', 'etikettentyp', {pflicht: true, tip: 'Größe und Inhalt des Etiketts dieser Gruppe.'})}
-    ${K.ref('etikett2', 'Etiketten-Typ2 (Preisreduzierung)', 'etikettentyp', {...leer, titel: 'Etiketten-Typ', tip: 'Dieser Typ ersetzt den Typ bei reduzierter Ware (Preissenkung, Aktionspreis).'})}
-    ${K.in('anz_etiketten', 'Anz. Etiketten', {num: true, inputmode: 'numeric', max: 2, tip: 'Etiketten je Stück bei automatischen Mengen (Wareneingang, Preisänderung); 0 = keine.'})}
-    ${K.ref('hierarchie', 'Warengruppenhierarchie', 'wghierarchie', {...leer, tip: 'Welche Ebenen der Hierarchie auf dem Etikett stehen.'})}`);
-  return `${wgNote()}<div class="fl-grid wg-grid">${c1}${c2}${c3}${c4}${c5}</div>`;
+    ${K.ref('etikett', 'Etiketten-Typ *', 'etikettentyp', {pflicht: true, hint: 'Größe und Inhalt des Etiketts dieser Gruppe.'})}
+    ${K.ref('etikett2', 'Etiketten-Typ2 (Preisreduzierung)', 'etikettentyp', {...leer, titel: 'Etiketten-Typ', hint: 'Dieser Typ ersetzt den Typ bei reduzierter Ware (Preissenkung, Aktionspreis).'})}
+    ${K.in('anz_etiketten', 'Anz. Etiketten', {num: true, inputmode: 'numeric', max: 2, hint: 'Etiketten je Stück bei automatischen Mengen (Wareneingang, Preisänderung); 0 = keine.'})}
+    ${K.ref('hierarchie', 'Warengruppenhierarchie', 'wghierarchie', {...leer, hint: 'Welche Ebenen der Hierarchie auf dem Etikett stehen.'})}`);
+  return `${wgNote()}<div class="wg-grid"><div class="ue-stack">${c1}</div><div class="ue-stack">${c2}${c3}</div><div class="ue-stack">${c4}${c5}</div></div>`;
 }
 
 /* ── Sichern, Löschen ── */

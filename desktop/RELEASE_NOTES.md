@@ -1,3 +1,11 @@
+## Neu in 0.46.1
+
+- **Stammdaten › Warengruppen › Warengruppen: Maske im Stil der übrigen Masken.** Die Maske sah neben Benutzer, Marken und Lieferanten wie ein Fremdkörper aus – jetzt hat sie dasselbe Raster:
+  - **Drei gleich breite Spalten** wie bei den anderen Masken: Haupt-Abteilung links, WebShop-Kategorien und Größeneinstellungen in der Mitte, Finanzeinstellungen und Etiketten rechts. In schmaleren Fenstern werden es zwei oder eine Spalte.
+  - **Gleiche Karten:** Innenabstand, Feldabstand und Feldhöhe wie in den anderen Masken (vorher enger und mit abgeschnittenen Werten wie „Ehrenpreise · Mul“).
+  - **Erklärungen als Text unter dem Feld** statt als Hinweisblase; die Hinweise sind gekürzt, bei den vier Hierarchie-Ebenen steht nur noch einer.
+  - **Stift, Plus und Lupe** sind eine zusammenhängende Knopfgruppe in Feldhöhe statt drei kleiner einzelner Knöpfe. Der Name in der Auswahl steht beim Überfahren als Hinweis.
+
 ## Neu in 0.46.0
 
 - **Stammdaten › Warengruppen › Warengruppen: neue Maske mit Auswahlmenüs.** Doppelklick auf eine Warengruppe (oder „Neu“) öffnet die Maske mit fünf Karten: Haupt-Abteilung, WebShop-Kategorien, Größeneinstellungen, Finanzeinstellungen und Etiketten. Werkzeugleiste: Übersicht, Aktualisieren, Sichern, Neu, Änderungen zurücknehmen und Kopieren (neue Nr., Name „Kopie von …“); Löschen steht in der Liste (mehrere markieren: was keine Artikel hat, wird gelöscht, der Rest mit Grund gemeldet).
